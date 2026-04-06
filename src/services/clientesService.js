@@ -19,6 +19,8 @@ export const getClientes = async () => {
     return clientesFiltrados;
   } catch (error) {
     console.error("Erro ao buscar clientes:", error);
-    return [];
+
+    // A MUDANÇA É AQUI: Repassamos o erro adiante para que a tela consiga capturá-lo!
+    throw error;
   }
 };
