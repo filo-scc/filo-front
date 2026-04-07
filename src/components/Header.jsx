@@ -6,12 +6,9 @@ export function Header() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <header className="w-full pt-8 pb-2 flex items-center justify-between bg-transparent relative z-50">      
-      <div className="pl-[77px]">
-        <img src="/filo-logo.png" alt="Filo" className="h-[47px] w-auto" />
-      </div>
-
-      <div className="relative pr-10">
+    // Mudamos justify-between para justify-end
+    <header className="w-full pt-8 pb-2 flex items-center justify-end bg-transparent relative z-50 pr-10">      
+      <div className="relative">
         {/* Acionador do Menu */}
         <div 
           className="flex items-center gap-3 cursor-pointer select-none"
@@ -34,7 +31,6 @@ export function Header() {
             />
           </div>
 
-          {/* ANIMAÇÃO 1: Rotação da Seta */}
           <img 
             src="/arrow-down.png" 
             alt="Seta" 
@@ -44,9 +40,9 @@ export function Header() {
           />
         </div>
 
-        {/* ANIMAÇÃO 2: Abertura da Seção (Dropdown) */}
+        {/* Dropdown - Mantido exatamente como no checkpoint */}
         <div className={`
-          absolute right-10 mt-2 w-[180px] bg-white 
+          absolute right-0 mt-2 w-[175px] bg-white 
           shadow-[0_4px_15px_rgba(0,0,0,0.08)] border border-[#eeeeee] rounded-[4px] 
           flex flex-col overflow-hidden origin-top-right
           transition-all duration-300 ease-out
@@ -55,7 +51,6 @@ export function Header() {
             : "opacity-0 scale-95 -translate-y-2 invisible pointer-events-none"
           }
         `}>
-          
           <button 
             className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#F5F5F5] transition-colors rounded-b-[8px] rounded-t-[4px]"
             onClick={() => setIsOpen(false)}
@@ -74,7 +69,6 @@ export function Header() {
             <img src="/sair.png" alt="" className="w-4 h-4 opacity-80" />
             <span className="text-[#7B7D80] text-[14px]">Sair</span>
           </button>
-          
         </div>
       </div>
     </header>
