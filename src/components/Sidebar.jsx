@@ -38,13 +38,12 @@ export function Sidebar() {
             className={({ isActive }) => `
               flex items-center gap-3 h-[39px] px-4 transition-all duration-300
               ${isActive 
-                ? "w-[182px] bg-[#D7FE65] rounded-[18.5px] text-black shadow-sm" 
+                ? "w-[182px] text-[#404040] bg-[#D7FE65] rounded-[18.5px]" 
                 : "w-[169px] text-[#898C8F] hover:bg-[#F9F9F9] hover:rounded-[18.5px] hover:text-[#404040] hover:w-[182px]"
               }
             `}
           >
             {({ isActive }) => {
-              // Lógica de ícone: Se estiver Ativo OU se estiver em Hover, mostra o 'ativado'
               const isItemHovered = hoveredPath === item.path;
               const iconSrc = (isActive || isItemHovered) 
                 ? `/${item.slug}-ativado.png` 
