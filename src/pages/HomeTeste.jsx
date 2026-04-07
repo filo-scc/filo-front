@@ -1,4 +1,3 @@
-// src/pages/HomeTeste.jsx
 export default function HomeTeste() {
   return (
     <div className="bg-white p-8 rounded-[24px] shadow-sm min-h-[400px]">
