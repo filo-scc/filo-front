@@ -6,7 +6,6 @@ export function Header() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    // Mudamos justify-between para justify-end
     <header className="w-full pt-8 pb-2 flex items-center justify-end bg-transparent relative z-50 pr-10">      
       <div className="relative">
         {/* Acionador do Menu */}
@@ -40,7 +39,7 @@ export function Header() {
           />
         </div>
 
-        {/* Dropdown - Mantido exatamente como no checkpoint */}
+        {/* Dropdown */}
         <div className={`
           absolute right-0 mt-2 w-[175px] bg-white 
           shadow-[0_4px_15px_rgba(0,0,0,0.08)] border border-[#eeeeee] rounded-[4px] 

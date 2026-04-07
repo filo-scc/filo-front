@@ -3,7 +3,6 @@ import { Sidebar } from "./Sidebar";
 
 export function Layout({ children }) {
   return (
-    // Mantemos o gradiente no container principal para consistência visual
     <div 
       className="min-h-screen flex" 
       style={{ 
@@ -11,12 +10,12 @@ export function Layout({ children }) {
         backgroundAttachment: "fixed" 
       }}>
       
-      {/* Sidebar Fixa: Ocupa a altura total da tela e permite scroll próprio se necessário */}
+      {/* Sidebar Fixa*/}
       <div className="fixed inset-y-0 left-0 z-40">
         <Sidebar />
       </div>
       
-      {/* Área de Conteúdo: Header + Main. O ml-[219px] reserva o espaço da Sidebar */}
+      {/* Área de Conteúdo*/}
       <div className="flex-1 ml-[219px] flex flex-col">
         <Header />
         

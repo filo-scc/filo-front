@@ -16,10 +16,9 @@ export function Sidebar() {
   const [hoveredPath, setHoveredPath] = useState(null);
 
   return (
-    // Adicionado h-screen (altura total) e overflow-y-auto (scroll interno)
     <aside className="w-[219px] h-screen pl-[24px] flex flex-col items-center py-8 gap-[32px] bg-transparent overflow-y-auto">
       
-      {/* Logo Filo: Movida do Header para cá com alinhamento preservado */}
+      {/* Logo Filo */}
       <div className="w-full pl-[53px] flex justify-start">
         <img src="/filo-logo.png" alt="Filo" className="h-[47px] w-auto" />
       </div>
