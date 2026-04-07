@@ -25,7 +25,7 @@ export function Header() {
           
           <div className="w-[48px] h-[48px] rounded-full border border-[#A9E2F2] p-[1px] overflow-hidden">
             <img 
-              src={user?.avatar || "https://github.com/shadcn.png"} 
+              src={user?.avatar || "filo-cliente.png"} 
               alt="Perfil" 
               className="w-full h-full rounded-full object-cover"
             />
