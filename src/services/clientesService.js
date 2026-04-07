@@ -1,20 +1,11 @@
 import api from "./api";
-import { getMe } from "./authService";
 
-export const getClientes = async () => {
+export const getClientes = async (fabricoId) => {
   try {
-    const usuarioLogado = await getMe();
-
-    if (!usuarioLogado) return [];
-
-    const response = await api.get(
-      `clientes/fabrico/${usuarioLogado.fabrico_id}`,
-    );
-
+    const response = await api.get(`/clientes/fabrico/${fabricoId}`);
     return response.data;
   } catch (error) {
     console.error("Erro ao buscar clientes:", error);
-
     throw error;
   }
 };

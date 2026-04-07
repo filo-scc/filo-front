@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getClientes } from "../services/clientesService";
 import { useNavigate } from "react-router-dom";
+import { getMe } from "../services/authService";
 
 export default function Clientes() {
   const [clientes, setClientes] = useState([]);
@@ -8,39 +9,55 @@ export default function Clientes() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    let componenteMontado = true;
+
     async function carregarDados() {
       try {
         setCarregando(true);
-        const dados = await getClientes();
 
-        setClientes(dados);
-        console.log("Clientes carregados:", dados);
+        const usuarioLogado = await getMe();
 
-        // Se deu sucesso, paramos o loading aqui
-        setCarregando(false);
-      } catch (erro) {
-        console.log("Status do erro capturado:", erro?.response?.status);
-
-        if (erro.response && erro.response.status === 403) {
-          // Navega imediatamente
-          navigate("/", {
-            replace: true,
-            state: {
-              error:
-                "Acesso negado. Administradores não podem acessar esta área.",
-            },
-          });
+        if (!usuarioLogado || !usuarioLogado.fabrico_id) {
+          if (componenteMontado) setCarregando(false);
           return;
         }
 
-        console.error("Erro desconhecido:", erro);
+        const dados = await getClientes(usuarioLogado.fabrico_id);
 
-        setCarregando(false);
+        if (componenteMontado) {
+          setClientes(dados);
+          console.log("Clientes carregados:", dados);
+          setCarregando(false);
+        }
+      } catch (erro) {
+        if (componenteMontado) {
+          console.log("Status do erro capturado:", erro?.response?.status);
+
+          if (erro.response && erro.response.status === 403) {
+            navigate("/", {
+              replace: true,
+              state: {
+                error:
+                  "Acesso negado. Administradores não podem acessar esta área.",
+              },
+            });
+            return;
+          }
+
+          console.error("Erro desconhecido:", erro);
+          setCarregando(false);
+        }
       }
     }
 
     carregarDados();
+
+   
+    return () => {
+      componenteMontado = false;
+    };
   }, [navigate]);
+
   if (carregando) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -162,7 +179,6 @@ export default function Clientes() {
                         {cliente.status ? "Ativo" : "Inativo"}
                       </span>
                     </td>
-                    {/* Aqui está o TD corrigido com a div interna! */}
                     <td className="py-5 px-4 align-middle">
                       <div className="flex items-center justify-center w-full h-full">
                         <svg
