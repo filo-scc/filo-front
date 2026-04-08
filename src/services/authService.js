@@ -20,6 +20,18 @@ export const getMe = async () => {
 
 // LOGOUT
 export const logout = () => {
+  // Garanta que o access o access token esteja como parametro da requisição
+  const accessToken = localStorage.getItem("accessToken");
+  
+  // Passe no header
+  api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
+
+  api.post("/usuarios/logout");
+
+  // Remova os tokens do localStorage
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
+
+  window.location.href = "/login";
+
 };
