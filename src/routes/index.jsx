@@ -2,7 +2,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
-import HomeTeste from "@/pages/HomeTeste"; 
 import PrivateRoute from "./PrivateRoute";
 import { Layout } from "@/components/Layout";
 
@@ -12,16 +11,6 @@ function AppRoutes() {
       <Routes>
         {/* Rota de Login (Totalmente Limpa) */}
         <Route path="/login" element={<Login />} />
-
-        {/* Rota de Teste (Pública, mas com a moldura do sistema) */}
-        <Route
-          path="/teste"
-          element={
-            <Layout>
-              <HomeTeste />
-            </Layout>
-          }
-        />
 
         {/* Rota Oficial (Protegida) */}
         <Route
