@@ -62,7 +62,6 @@ export default function Clientes() {
 
   if (carregando) {
     return (
-      // Envolvi o Loading no Layout também para a interface não "piscar" ao carregar
       <Layout>
         <div className="flex items-center justify-center h-full min-h-[50vh]">
           <p className="text-[#4696AD] animate-pulse font-Outfit">
@@ -77,13 +76,13 @@ export default function Clientes() {
     <Layout>
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 w-full max-w-6xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4 translate-x-5">
             <img
               src="/star.png"
               alt="Ícone de Clientes"
-              className="w-10 h-10 object-contain"
+              className="w-30 h-30 object-contain"
             />
-            <h2 className="text-3xl font-Outfit font-extralight text-[#404040] tracking-tight">
+            <h2 className="text-3xl font-Outfit font-thin text-[#404040] tracking-tight">
               Clientes
             </h2>
           </div>
