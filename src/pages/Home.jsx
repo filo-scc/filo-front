@@ -22,7 +22,7 @@ export default function Home() {
   return (
     <div className="p-6">
       {mostrarErro && mensagem && (
-        <div className="fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-2xl animate-fade-in-out">
+        <div className="fixed top-4 right-4 z-50 bg-red-500 text-white px-6 py-3 rounded-lg shadow-2xl animate-fade-in-out">
           <div className="flex items-center gap-2">
             <p>{mensagem}</p>
           </div>
