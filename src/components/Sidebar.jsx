@@ -2,7 +2,7 @@ import { useState } from "react";
 import { NavLink } from "react-router-dom";
 
 const menuItems = [
-  { name: "Início", slug: "inicio", path: "/teste" },
+  { name: "Início", slug: "inicio", path: "/" },
   { name: "Pedidos", slug: "pedidos", path: "/pedidos" },
   { name: "Facções", slug: "faccoes", path: "/faccoes" },
   { name: "Clientes", slug: "clientes", path: "/clientes" },
