@@ -92,7 +92,7 @@ export default function Clientes() {
                 <input
                   type="text"
                   placeholder="Buscar"
-                  className="w-full border border-gray-300 rounded-full pl-4 pr-10 py-2 text-sm text-[#404040] focus:outline-none focus:border-[#4696AD] transition-colors w-full"
+                  className="w-full border border-gray-300 rounded-[16px] pl-4 pr-10 py-2 text-sm text-[#898C8F] focus:outline-none focus:border-[#898C8F] transition-colors"
                 />
                 <img
                   src="public/search.png"
@@ -101,7 +101,7 @@ export default function Clientes() {
                 />
               </div>
 
-              <button className="bg-[#9be0ee] text-white rounded-full px-5 py-2.5 flex items-center gap-2 text-sm font-Outfit font-light hover:bg-[#7ecbda] transition-colors whitespace-nowrap">
+              <button className="bg-[#9be0ee] text-white rounded-full px-10 py-2.5 flex items-center gap-2 text-sm font-Outfit font-light hover:bg-[#7ecbda] transition-colors whitespace-nowrap">
                 <img src="/add-star.png" alt="Estrela Pequena" />
                 Cadastrar cliente
               </button>
