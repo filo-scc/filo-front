@@ -31,7 +31,9 @@ function AppRoutes() {
           path="/faccoes" 
           element={
             <PrivateRoute>
-              <Faccoes />
+              <Layout>
+                <Faccoes />
+              </Layout>
             </PrivateRoute>
           } 
         />
