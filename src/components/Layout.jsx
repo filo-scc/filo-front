@@ -23,7 +23,7 @@ export function Layout({ children }) {
           {children}
         </main>
 
-        <footer className="w-full h-[117px] flex items-center justify-center p-10 mt-auto">
+        <footer className="w-full h-[117px] flex items-center justify-center p-10 mt-auto pr-[219px]">
           <p className="text-[#4696AD] text-sm font-medium">
             Filo® | Onde negócios fluem, resultados acontecem
           </p>
