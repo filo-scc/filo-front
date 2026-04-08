@@ -2,6 +2,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
+import Cliente from "@/pages/Clientes";
 import PrivateRoute from "./PrivateRoute";
 import { Layout } from "@/components/Layout";
 import Faccoes from "@/pages/Faccoes";
@@ -25,6 +26,14 @@ function AppRoutes() {
             </PrivateRoute>
           } 
         />
+        <Route
+          path="/clientes"
+          element={
+            <PrivateRoute>
+              <Cliente />
+            </PrivateRoute>
+          }
+        ></Route>
 
         {/* Envolvendo a página de Facções */}
         <Route 
