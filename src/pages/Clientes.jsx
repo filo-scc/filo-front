@@ -95,7 +95,7 @@ export default function Clientes() {
                   className="w-full border border-gray-300 rounded-[16px] pl-4 pr-10 py-2 text-sm text-[#898C8F] focus:outline-none focus:border-[#898C8F] transition-colors"
                 />
                 <img
-                  src="search.png"
+                  src="/search.png"
                   alt="icone de buscar"
                   className="w-[16px] h-[16px] absolute right-3 top-[12px] object-contain"
                 />
