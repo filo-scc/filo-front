@@ -31,30 +31,30 @@ const Faccoes = () => {
   }, [fabricoId]);
 
   return (
-    <div className="overflow-x-auto w-full flex justify-center py-4">
+    <div className="p-6 w-full">
       {/* Card Branco Principal - 1157px cravados */}
-      <div className="w-[1250px] bg-white rounded-[24px] py-8 px-4 flex flex-col items-center shadow-sm">
+      <div className="bg-white p-8 rounded-[24px] shadow-sm w-full mx-auto">
         {/* CONTAINER DA TABELA - 1112px cravados */}
-        <div className="w-[1200px]">
+        <div className="w-full">
           {/* CABEÇALHO CENTRALIZADO: Mudamos de w-full para w-[950px] e adicionamos mx-auto */}
-          <div className="w-[1130px] mx-auto flex flex-col md:flex-row justify-between items-center mb-8 gap-4 font-['Outfit',_sans-serif]">
-            {/* Título com Ícone */}
+          <div className="w-full flex items-center justify-between mb-8 px-6 font-['Outfit',_sans-serif]">
+            {/* ESQUERDA - Título */}
             <div className="flex items-center gap-3">
               <img
-                src="/maquina_costura_icone.png"
+                src="/maquina-costura-preta.png"
                 alt="Ícone de máquina de costura"
                 className="w-[30px] h-[30px]"
               />
               <h1 className="text-[30px] font-light text-gray-800">Facções</h1>
             </div>
 
-            {/* Ações (Input e Botão) */}
-            <div className="flex items-center gap-4">
+            {/* DIREITA - Ações */}
+            <div className="flex items-center gap-4 -mr-6">
               <div className="relative">
                 <input
                   type="text"
                   placeholder="Buscar"
-                  className="pl-4 pr-10 border border-[#898C8F] rounded-full text-sm focus:outline-none focus:border-cyan-400 w-[196px] h-[39px]"
+                  className="pl-4 pr-10 border border-[#D3D3D3] rounded-[16px] text-sm focus:outline-none focus:border-cyan-400 w-[196px] h-[39px]"
                 />
                 <svg
                   className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2"
@@ -73,7 +73,7 @@ const Faccoes = () => {
 
               <button className="bg-[#A9E2F2] hover:bg-[#8acbdc] text-white w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors">
                 <img
-                  src="/maquina_costura_icone_branco.png"
+                  src="/maquina-costura-icone-branco.png"
                   alt="Adicionar facção"
                   className="w-[20px] h-[20px]"
                 />
@@ -84,7 +84,7 @@ const Faccoes = () => {
 
           {/* Container da Tabela */}
           <div className="w-full overflow-x-auto">
-            <div className="w-full border border-gray-200 rounded-[24px] overflow-hidden">
+            <div className="w-full border border-gray-200 rounded-[5px] overflow-hidden">
               <table className="w-full text-[16px] font-['Outfit',_sans-serif] font-light text-center">
                 <thead className="bg-[#D3EBF2] text-[#4696AD]">
                   <tr className="h-[64px]">
@@ -130,7 +130,7 @@ const Faccoes = () => {
                           {faccao.telefone || "Não informado"}
                         </td>
                         <td className="px-6">
-                          <button className="text-[#404040] hover:opacity-70 flex justify-center w-full transition-opacity">
+                          <button className="text-[#7B7D80] hover:opacity-70 flex justify-center w-full transition-opacity">
                             <svg
                               className="w-5 h-5"
                               fill="currentColor"
