@@ -48,17 +48,14 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // 1. Se a requisição for para o login, NUNCA tenta fazer refresh. Apenas devolve o erro para o front mostrar "Credenciais inválidas"
     if (originalRequest.url.includes("/usuarios/login")) {
       return Promise.reject(error);
     }
 
-    // 2. Se não for erro 401 ou se já tentamos repetir a requisição, devolve o erro
     if (error.response?.status !== 401 || originalRequest._retry) {
       return Promise.reject(error);
     }
 
-    // 3. Se o erro 401 acontecer na própria rota de refresh, rejeita direto
     if (originalRequest.url.includes("/usuarios/refresh")) {
       return Promise.reject(error);
     }
@@ -89,7 +86,6 @@ api.interceptors.response.use(
     isRefreshing = true;
 
     try {
-      // Usamos o axios PURO aqui para não cair em loop no interceptor
       const response = await axios.post(`${API_URL}/usuarios/refresh`, {
         refreshToken,
       });
@@ -109,7 +105,7 @@ api.interceptors.response.use(
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
       window.location.href = "/login"; 
-      
+
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
