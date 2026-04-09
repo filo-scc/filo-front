@@ -84,7 +84,7 @@ const Faccoes = () => {
 
           {/* Container da Tabela */}
           <div className="w-full overflow-x-auto">
-            <div className="w-full border border-gray-200 rounded-[5px] overflow-hidden">
+            <div className="w-full border border-gray-200 rounded-xl overflow-hidden">
               <table className="w-full text-[16px] font-['Outfit',_sans-serif] font-light text-center">
                 <thead className="bg-[#D3EBF2] text-[#4696AD]">
                   <tr className="h-[64px]">
