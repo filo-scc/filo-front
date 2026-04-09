@@ -5,6 +5,7 @@ import Login from "@/pages/Login";
 import Cliente from "@/pages/Clientes";
 import PrivateRoute from "./PrivateRoute";
 import { Layout } from "@/components/Layout";
+import Faccoes from "@/pages/Faccoes";
 
 function AppRoutes() {
   return (
@@ -14,15 +15,16 @@ function AppRoutes() {
         <Route path="/login" element={<Login />} />
 
         {/* Rota Oficial (Protegida) */}
-        <Route
-          path="/"
+        {/* Envolvendo a Home */}
+        <Route 
+          path="/" 
           element={
             <PrivateRoute>
               <Layout>
                 <Home />
               </Layout>
             </PrivateRoute>
-          }
+          } 
         />
         <Route
           path="/clientes"
@@ -32,6 +34,19 @@ function AppRoutes() {
             </PrivateRoute>
           }
         ></Route>
+
+        {/* Envolvendo a página de Facções */}
+        <Route 
+          path="/faccoes" 
+          element={
+            <PrivateRoute>
+              <Layout>
+                <Faccoes />
+              </Layout>
+            </PrivateRoute>
+          } 
+        />
+        
       </Routes>
     </BrowserRouter>
   );

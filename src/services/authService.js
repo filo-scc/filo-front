@@ -9,6 +9,8 @@ export const login = async (data) => {
   localStorage.setItem("accessToken", accessToken);
   localStorage.setItem("refreshToken", refreshToken);
 
+  localStorage.setItem("user", JSON.stringify(user));
+
   return { user };
 };
 
@@ -22,7 +24,7 @@ export const getMe = async () => {
 export const logout = () => {
   // Garanta que o access o access token esteja como parametro da requisição
   const accessToken = localStorage.getItem("accessToken");
-  
+
   // Passe no header
   api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
 
@@ -31,7 +33,7 @@ export const logout = () => {
   // Remova os tokens do localStorage
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
+  localStorage.removeItem("user");
 
   window.location.href = "/login";
-
 };
