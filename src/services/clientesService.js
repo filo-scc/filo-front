@@ -9,3 +9,15 @@ export const getClientes = async (fabricoId) => {
     throw error;
   }
 };
+
+// Buscar detalhes de um cliente específico
+export const getClienteById = async (id) => {
+  const response = await api.get(`/clientes/${id}`);
+  return response.data;
+};
+
+// Buscar produtos vinculados ao cliente
+export const getProdutosDoCliente = async (clienteId) => {
+  const response = await api.get(`/clientes-produtos/cliente/${clienteId}`);
+  return response.data;
+};
