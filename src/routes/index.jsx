@@ -6,6 +6,7 @@ import Cliente from "@/pages/Clientes";
 import PrivateRoute from "./PrivateRoute";
 import { Layout } from "@/components/Layout";
 import Faccoes from "@/pages/Faccoes";
+import ClienteDetalhes from "../pages/ClienteDetalhes";
 
 function AppRoutes() {
   return (
@@ -16,15 +17,15 @@ function AppRoutes() {
 
         {/* Rota Oficial (Protegida) */}
         {/* Envolvendo a Home */}
-        <Route 
-          path="/" 
+        <Route
+          path="/"
           element={
             <PrivateRoute>
               <Layout>
                 <Home />
               </Layout>
             </PrivateRoute>
-          } 
+          }
         />
         <Route
           path="/clientes"
@@ -35,18 +36,26 @@ function AppRoutes() {
           }
         ></Route>
 
+        <Route
+          path="/clientes/:id"
+          element={
+            <PrivateRoute>
+              <ClienteDetalhes />
+            </PrivateRoute>
+          }
+        />
+
         {/* Envolvendo a página de Facções */}
-        <Route 
-          path="/faccoes" 
+        <Route
+          path="/faccoes"
           element={
             <PrivateRoute>
               <Layout>
                 <Faccoes />
               </Layout>
             </PrivateRoute>
-          } 
+          }
         />
-        
       </Routes>
     </BrowserRouter>
   );
