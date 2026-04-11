@@ -1,4 +1,4 @@
-export default function TabelaReferencias({ produtos }) {
+export default function TabelaReferencias({ produtos, onAbrirModal }) {
   const formatPreco = (valor) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -78,7 +78,7 @@ export default function TabelaReferencias({ produtos }) {
                   colSpan="4"
                   className="py-10 text-[#898c8f] font-Outfit font-light"
                 >
-                  Esse cliente ainda não possui referências associadas...
+                  Esse cliente ainda não possui referências associadas.
                 </td>
               </tr>
             )}
@@ -86,8 +86,11 @@ export default function TabelaReferencias({ produtos }) {
         </table>
       </div>
 
-      {/* Botão de + com largura total da tabela */}
-      <button className="w-full mt-2 flex justify-center items-center h-[45px] bg-[#f4f4f4] rounded-[10px] hover:bg-gray-200 transition-colors">
+      {/* Botão de + com largura total da tabela e função onAbrirModal */}
+      <button
+        onClick={onAbrirModal}
+        className="w-full mt-2 flex justify-center items-center h-[45px] bg-[#f4f4f4] rounded-[10px] hover:bg-gray-200 transition-colors"
+      >
         <img
           src="/mais_cinza.png"
           alt="Adicionar"
