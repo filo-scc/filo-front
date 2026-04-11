@@ -130,18 +130,29 @@ export default function Clientes() {
                             onClick={() => navigate(`/clientes/${cliente.id}`)}
                             className={`
         h-[64px] transition-colors cursor-pointer border-b last:border-0
-        ${isPar ? "bg-white hover:bg-[#F4F4F4]" : "bg-[#F4F4F4] hover:bg-gray-200"}
+        ${isPar ? "bg-white hover:bg-[#FBFBFB] hover:text-[#4696ad]" : "bg-[#F4F4F4] hover:bg-[#ededed] hover:text-[#4696ad]"}
       `}
                           >
-                            <td className="px-6 text-[14px]">{cliente.nome}</td>
-                            <td className="px-6 text-[14px]">
+                            <td
+                              title="Ver detalhes"
+                              className="px-6 text-[14px]"
+                            >
+                              {cliente.nome}
+                            </td>
+                            <td
+                              title="Ver detalhes"
+                              className="px-6 text-[14px]"
+                            >
                               {cliente.responsavel}
                             </td>
-                            <td className="px-6 text-[14px]">
+                            <td
+                              title="Ver detalhes"
+                              className="px-6 text-[14px]"
+                            >
                               {cliente.telefone}
                             </td>
 
-                            <td className="px-6">
+                            <td title="Ver detalhes" className="px-6">
                               <div className="flex justify-center">
                                 <span
                                   className={`w-[109px] h-[19px] flex items-center justify-center rounded-[10px] text-[12px] font-light ${
@@ -166,7 +177,6 @@ export default function Clientes() {
                Se a linha é Cinza, o botão no hover fica Branco. */
                                   className={`
               w-10 h-10 flex items-center justify-center transition-colors rounded-[8px]
-              ${isPar ? "hover:bg-gray-200" : "hover:bg-[#F4F4F4]"}
             `}
                                 >
                                   <img
