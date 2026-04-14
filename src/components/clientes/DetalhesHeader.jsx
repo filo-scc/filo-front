@@ -1,6 +1,6 @@
 export default function DetalhesClienteHeader({ title }) {
   return (
-    <div className="flex items-center gap-3 pl-6">
+    <div className="flex items-center gap-3">
       <img
         src="/star.png"
         alt="Star"
