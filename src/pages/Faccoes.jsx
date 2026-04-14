@@ -31,13 +31,13 @@ const Faccoes = () => {
   }, [fabricoId]);
 
   return (
-    <div className="p-6 w-full">
+    <div className="p-6 pt-0 w-full">
       {/* Card Branco Principal - 1157px cravados */}
       <div className="bg-white p-8 rounded-[24px] shadow-sm w-full mx-auto">
         {/* CONTAINER DA TABELA - 1112px cravados */}
         <div className="w-full">
           {/* CABEÇALHO CENTRALIZADO: Mudamos de w-full para w-[950px] e adicionamos mx-auto */}
-          <div className="w-full flex items-center justify-between mb-8 px-6 font-['Outfit',_sans-serif]">
+          <div className="w-full flex items-center justify-between mb-8 pl-6 font-['Outfit',_sans-serif]">
             {/* ESQUERDA - Título */}
             <div className="flex items-center gap-3">
               <img
@@ -49,7 +49,7 @@ const Faccoes = () => {
             </div>
 
             {/* DIREITA - Ações */}
-            <div className="flex items-center gap-4 -mr-6">
+            <div className="flex items-center gap-4">
               <div className="relative">
                 <input
                   type="text"
@@ -115,18 +115,18 @@ const Faccoes = () => {
                         key={faccao.id}
                         className={`h-[64px] ${index % 2 === 0 ? "bg-[#FFFFFF]" : "bg-[#F4F4F4]"}`}
                       >
-                        <td className="px-6">{faccao.nome}</td>
-                        <td className="px-6">
+                        <td className="px-6 text-[14px]">{faccao.nome}</td>
+                        <td className="px-6 text-[14px]">
                           <div className="flex justify-center">
-                            <span className="bg-gray-200 text-[#404040] w-[109px] h-[19px] flex items-center justify-center rounded-[10px] text-[16px] font-light">
+                            <span className="bg-gray-200 text-[#404040] w-[109px] h-[19px] flex items-center justify-center rounded-[10px] text-[12px] font-light">
                               {faccao.id % 2 !== 0 ? "Sim" : "Não"}
                             </span>
                           </div>
                         </td>
-                        <td className="px-6 cursor-pointer hover:font-normal">
+                        <td className="px-6 text-[14px] cursor-pointer hover:font-normal">
                           Endereço
                         </td>
-                        <td className="px-6">
+                        <td className="px-6 text-[14px]">
                           {faccao.telefone || "Não informado"}
                         </td>
                         <td className="px-6">

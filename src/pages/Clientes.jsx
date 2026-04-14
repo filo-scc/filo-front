@@ -1,187 +1,199 @@
-import { useEffect, useState } from "react";
-import { getClientes } from "../services/clientesService";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getMe } from "../services/authService";
-
 import { Layout } from "../components/Layout";
+import { getClientes } from "../services/clientesService";
 
 export default function Clientes() {
   const [clientes, setClientes] = useState([]);
-  const [carregando, setCarregando] = useState(true);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    let componenteMontado = true;
+    const carregarClientes = async () => {
+      const userString = localStorage.getItem("user");
+      const usuarioLogado = userString ? JSON.parse(userString) : null;
+      const fabricoId = usuarioLogado?.fabrico_id;
 
-    async function carregarDados() {
-      try {
-        setCarregando(true);
-
-        const usuarioLogado = await getMe();
-
-        if (!usuarioLogado || !usuarioLogado.fabrico_id) {
-          if (componenteMontado) setCarregando(false);
-          return;
-        }
-
-        const dados = await getClientes(usuarioLogado.fabrico_id);
-
-        if (componenteMontado) {
-          setClientes(dados);
-          console.log("Clientes carregados:", dados);
-          setCarregando(false);
-        }
-      } catch (erro) {
-        if (componenteMontado) {
-          console.log("Status do erro capturado:", erro?.response?.status);
-
-          if (erro.response && erro.response.status === 403) {
-            navigate("/", {
-              replace: true,
-              state: {
-                error:
-                  "Acesso negado. Administradores não podem acessar esta área.",
-              },
-            });
-            return;
-          }
-
-          console.error("Erro desconhecido:", erro);
-          setCarregando(false);
-        }
+      if (!fabricoId) {
+        setLoading(false);
+        return;
       }
-    }
 
-    carregarDados();
+      try {
+        setLoading(true);
+        const dados = await getClientes(fabricoId);
+        setClientes(dados);
+      } catch (erro) {
+        console.error("Erro ao carregar clientes:", erro);
 
-    return () => {
-      componenteMontado = false;
+        if (erro?.response?.status === 403) {
+          navigate("/", {
+            replace: true,
+            state: {
+              error:
+                "Acesso negado. Administradores não podem acessar esta área.",
+            },
+          });
+        }
+      } finally {
+        setLoading(false);
+      }
     };
-  }, [navigate]);
 
-  if (carregando) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center h-full min-h-[50vh]">
-          <p className="text-[#4696AD] animate-pulse font-Outfit">
-            Carregando clientes...
-          </p>
-        </div>
-      </Layout>
-    );
-  }
+    carregarClientes();
+  }, [navigate]);
 
   return (
     <Layout>
-      <div className="p-6">
-        <div className="bg-white p-8 rounded-[24px] shadow-sm min-h-[400px]">
-          <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-            <div className="flex items-center gap-4 translate-x-[60px]">
-              <img
-                src="/star.png"
-                alt="Ícone de Clientes"
-                className="w-30 h-30 object-contain"
-              />
-              <h2 className="text-3xl font-Outfit font-thin text-[#404040] tracking-tight">
-                Clientes
-              </h2>
-            </div>
-
-            <div className="flex items-center gap-4 w-full md:w-auto">
-              <div className="relative w-full md:w-[196px]">
-                <input
-                  type="text"
-                  placeholder="Buscar"
-                  className="w-full border border-gray-300 rounded-[16px] pl-4 pr-10 py-2 text-sm text-[#898C8F] focus:outline-none focus:border-[#898C8F] transition-colors"
-                />
+      <div className="p-6 pt-0 w-full">
+        <div className="bg-white p-8 rounded-[24px] shadow-sm w-full mx-auto">
+          <div className="w-full">
+            <div className="w-full flex items-center justify-between mb-8 pl-6 font-['Outfit',_sans-serif]">
+              <div className="flex items-center gap-3">
                 <img
-                  src="/search.png"
-                  alt="icone de buscar"
-                  className="w-[16px] h-[16px] absolute right-3 top-[12px] object-contain"
+                  src="/star.png"
+                  alt="Ícone de clientes"
+                  className="w-[30px] h-[30px]"
                 />
+                <h1 className="text-[30px] font-light text-gray-800">
+                  Clientes
+                </h1>
               </div>
 
-              <button className="bg-[#9be0ee] text-white rounded-full px-10 py-2.5 flex items-center gap-2 text-sm font-Outfit font-light hover:bg-[#7ecbda] transition-colors whitespace-nowrap">
-                <img src="/add-star.png" alt="Estrela Pequena" />
-                Cadastrar cliente
-              </button>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto border border-gray-100 rounded-xl">
-            <table className="w-full text-center border-collapse">
-              <thead>
-                <tr className="bg-[#C9EAF6] text-[#4696AD] text-sm border-b border-[#a9d8eb]">
-                  <th className="py-4 px-4 font-Outfit font-light w-1/6">
-                    Cliente
-                  </th>
-                  <th className="py-4 px-4 font-Outfit font-light w-1/6">
-                    Responsável
-                  </th>
-                  <th className="py-4 px-4 font-Outfit font-light w-1/6">
-                    Contato
-                  </th>
-                  <th className="py-4 px-4 font-Outfit font-light w-1/6">
-                    Status
-                  </th>
-                  <th className="py-4 px-4 font-Outfit font-light w-1/6 text-center">
-                    Opções
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {clientes.map((cliente, index) => (
-                  <tr
-                    key={cliente.id}
-                    className={
-                      index % 2 === 0
-                        ? "bg-white border-b border-gray-100"
-                        : "bg-[#F4F4F4] border-b border-gray-100"
-                    }
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Buscar"
+                    className="pl-4 pr-10 border border-[#D3D3D3] rounded-[16px] text-sm focus:outline-none focus:border-cyan-400 w-[196px] h-[39px]"
+                  />
+                  <svg
+                    className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                   >
-                    <td className="py-5 px-4 text-[#404040] font-Outfit font-light">
-                      {cliente.nome}
-                    </td>
-                    <td className="py-5 px-4 text-[#404040] font-Outfit font-light">
-                      {cliente.responsavel}
-                    </td>
-                    <td className="py-5 px-4 text-[#404040] font-Outfit font-light">
-                      {cliente.telefone}
-                    </td>
-                    <td className="py-5 px-4">
-                      <span
-                        className={`px-10 py-0.5 rounded-full text-xs font-Outfit font-light ${
-                          cliente.status
-                            ? "bg-[#B4D64E] text-white"
-                            : "bg-[#D9D9D9] text-[#404040]"
-                        }`}
-                      >
-                        {cliente.status ? "Ativo" : "Inativo"}
-                      </span>
-                    </td>
-                    <td className="py-5 px-4 align-middle">
-                      <div className="flex items-center justify-center w-full h-full">
-                        <button
-                          onClick={() => console.log("Clicou nas opções!")}
-                          className="p-2 rounded-full hover:bg-[#F4F4F4] transition-colors cursor-pointer flex items-center justify-center"
-                        >
-                          <img
-                            src="/tres-pontos.png"
-                            alt="Opções"
-                            className="w-5 h-5 object-contain"
-                          />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {clientes.length === 0 && (
-              <div className="text-center py-10 text-[#404040] font-Outfit">
-                Nenhum cliente encontrado.
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                </div>
+
+                <button className="bg-[#A9E2F2] hover:bg-[#8acbdc] text-white w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors">
+                  <img
+                    src="/add-star.png"
+                    alt="Adicionar cliente"
+                    className="w-[20px] h-[20px]"
+                  />
+                  Cadastrar cliente
+                </button>
               </div>
-            )}
+            </div>
+
+            <div className="w-full overflow-x-auto">
+              <div className="w-full border border-gray-200 rounded-xl overflow-hidden">
+                <table className="w-full text-[16px] font-['Outfit',_sans-serif] font-light text-center">
+                  <thead className="bg-[#D3EBF2] text-[#4696AD]">
+                    <tr className="h-[64px]">
+                      <th className="px-6 font-light">Cliente</th>
+                      <th className="px-6 font-light">Responsável</th>
+                      <th className="px-6 font-light">Contato</th>
+                      <th className="px-6 font-light">Status</th>
+                      <th className="px-6 font-light">Opções</th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="text-[#404040]">
+                    {loading ? (
+                      <tr className="h-[64px]">
+                        <td colSpan="5" className="text-gray-400">
+                          Carregando clientes...
+                        </td>
+                      </tr>
+                    ) : clientes.length === 0 ? (
+                      <tr className="h-[64px]">
+                        <td colSpan="5" className="text-gray-400">
+                          Nenhum cliente encontrado.
+                        </td>
+                      </tr>
+                    ) : (
+                      clientes.map((cliente, index) => {
+                        // Definimos se a linha é par (branca) ou ímpar (cinza)
+                        const isPar = index % 2 === 0;
+
+                        return (
+                          <tr
+                            key={cliente.id}
+                            onClick={() => navigate(`/clientes/${cliente.id}`)}
+                            className={`
+        h-[64px] transition-colors cursor-pointer border-b last:border-0
+        ${isPar ? "bg-white hover:bg-[#FBFBFB] hover:text-[#4696ad]" : "bg-[#F4F4F4] hover:bg-[#ededed] hover:text-[#4696ad]"}
+      `}
+                          >
+                            <td
+                              title="Ver detalhes"
+                              className="px-6 text-[14px]"
+                            >
+                              {cliente.nome}
+                            </td>
+                            <td
+                              title="Ver detalhes"
+                              className="px-6 text-[14px]"
+                            >
+                              {cliente.responsavel}
+                            </td>
+                            <td
+                              title="Ver detalhes"
+                              className="px-6 text-[14px]"
+                            >
+                              {cliente.telefone}
+                            </td>
+
+                            <td title="Ver detalhes" className="px-6">
+                              <div className="flex justify-center">
+                                <span
+                                  className={`w-[109px] h-[19px] flex items-center justify-center rounded-[10px] text-[12px] font-light ${
+                                    cliente.status
+                                      ? "bg-[#B4D64E] text-white"
+                                      : "bg-gray-200 text-[#404040]"
+                                  }`}
+                                >
+                                  {cliente.status ? "Ativo" : "Inativo"}
+                                </span>
+                              </div>
+                            </td>
+
+                            <td className="px-6">
+                              <div className="flex justify-center items-center">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    console.log("Opções");
+                                  }}
+                                  /* Se a linha é Branca, o botão no hover fica Cinza. 
+               Se a linha é Cinza, o botão no hover fica Branco. */
+                                  className={`
+              w-10 h-10 flex items-center justify-center transition-colors rounded-[8px]
+            `}
+                                >
+                                  <img
+                                    src="/tres-pontos.png"
+                                    className="w-5 h-5 object-contain opacity-60"
+                                  />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       </div>
