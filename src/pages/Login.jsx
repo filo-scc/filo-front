@@ -49,7 +49,7 @@ function Login() {
         <div
           className="hidden md:block md:w-1/2 bg-cover bg-center"
           style={{
-            backgroundImage: "url('/login-image.png')",
+            backgroundImage: "url('/imagem-login.png')",
           }}
         />
 
