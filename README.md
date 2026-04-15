@@ -1,16 +1,40 @@
-# React + Vite
+## Como Iniciar o Projeto
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Siga os passos abaixo para rodar o projeto na sua máquina local.
 
-Currently, two official plugins are available:
+### 1. Pré-requisitos
+Certifique-se de ter o **Node.js** instalado na sua máquina (recomendamos a versão 18 ou superior).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-## React Compiler
+### 2. Instalação
+Clone este repositório e instale as dependências:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+# Clone o repositório
+git clone <url-do-seu-repositorio>
 
-## Expanding the ESLint configuration
+# Entre na pasta do projeto
+cd <nome-da-pasta>
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+# Instale as dependências
+npm install
+```
+
+## Como Executar projeto
+
+```bash 
+npm run dev
+```
+
+*Lembre-se*: o vite o roda na porta 5174 caso ela esteja em uso pare de rodar comunicação que esta rodando na porta ou uso
+
+## Comandos uteis 
+
+
+```bash 
+npm run preview \\Inicia um servidor local para você testar a versão de produção (gerada pelo build).
+
+npm run lint \\Executa o ESLint para analisar o código e encontrar possíveis erros ou má formatação.
+```
+
+
