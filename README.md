@@ -26,7 +26,7 @@ npm install
 npm run dev
 ```
 
-*Lempresse*: o vite o roda na porta 5174 caso ela esteja em uso pare de rodar comunicação que esta rodando na porta ou uso
+*Lembre-se*: o vite o roda na porta 5174 caso ela esteja em uso pare de rodar comunicação que esta rodando na porta ou uso
 
 ## Comandos uteis 
 
