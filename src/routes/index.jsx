@@ -56,6 +56,72 @@ function AppRoutes() {
             </PrivateRoute>
           }
         />
+
+        {/* Telas provisórias com a header + sidebar por enquanto que não são implementadas */}
+        <Route
+          path="/pedidos"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <div className="flex justify-center items-center h-full text-gray-500 text-2xl font-light">
+                  Página de Pedidos em construção...
+                </div>
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/produtos"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <div className="flex justify-center items-center h-full text-gray-500 text-2xl font-light">
+                  Página de Produtos em construção...
+                </div>
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/estoque"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <div className="flex justify-center items-center h-full text-gray-500 text-2xl font-light">
+                  Página de Estoque em construção...
+                </div>
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/financeiro"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <div className="flex justify-center items-center h-full text-gray-500 text-2xl font-light">
+                  Página do Financeiro em construção...
+                </div>
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/configuracoes"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <div className="flex justify-center items-center h-full text-gray-500 text-2xl font-light">
+                  Página de Configurações em construção...
+                </div>
+              </Layout>
+            </PrivateRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
