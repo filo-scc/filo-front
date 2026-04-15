@@ -5,6 +5,8 @@ import Login from "@/pages/Login";
 import Cliente from "@/pages/Clientes";
 import PrivateRoute from "./PrivateRoute";
 import { Layout } from "@/components/Layout";
+import Faccoes from "@/pages/Faccoes";
+import ClienteDetalhes from "../pages/ClienteDetalhes";
 
 function AppRoutes() {
   return (
@@ -14,6 +16,7 @@ function AppRoutes() {
         <Route path="/login" element={<Login />} />
 
         {/* Rota Oficial (Protegida) */}
+        {/* Envolvendo a Home */}
         <Route
           path="/"
           element={
@@ -32,6 +35,93 @@ function AppRoutes() {
             </PrivateRoute>
           }
         ></Route>
+
+        <Route
+          path="/clientes/:id"
+          element={
+            <PrivateRoute>
+              <ClienteDetalhes />
+            </PrivateRoute>
+          }
+        />
+
+        {/* Envolvendo a página de Facções */}
+        <Route
+          path="/faccoes"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <Faccoes />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        {/* Telas provisórias com a header + sidebar por enquanto que não são implementadas */}
+        <Route
+          path="/pedidos"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <div className="flex justify-center items-center h-full text-gray-500 text-2xl font-light">
+                  Página de Pedidos em construção...
+                </div>
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/produtos"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <div className="flex justify-center items-center h-full text-gray-500 text-2xl font-light">
+                  Página de Produtos em construção...
+                </div>
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/estoque"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <div className="flex justify-center items-center h-full text-gray-500 text-2xl font-light">
+                  Página de Estoque em construção...
+                </div>
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/financeiro"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <div className="flex justify-center items-center h-full text-gray-500 text-2xl font-light">
+                  Página do Financeiro em construção...
+                </div>
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/configuracoes"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <div className="flex justify-center items-center h-full text-gray-500 text-2xl font-light">
+                  Página de Configurações em construção...
+                </div>
+              </Layout>
+            </PrivateRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );

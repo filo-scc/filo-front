@@ -91,8 +91,10 @@ api.interceptors.response.use(
       });
 
       const newAccessToken = response.data.accessToken;
+      const newRefreshToken = response.data.refreshToken;
 
       localStorage.setItem("accessToken", newAccessToken);
+      localStorage.setItem("refreshToken", newRefreshToken);
 
       processQueue(null, newAccessToken);
 
@@ -104,7 +106,7 @@ api.interceptors.response.use(
 
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
-      window.location.href = "/login"; 
+      window.location.href = "/login";
 
       return Promise.reject(refreshError);
     } finally {

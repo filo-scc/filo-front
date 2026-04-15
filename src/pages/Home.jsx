@@ -20,7 +20,7 @@ export default function Home() {
   }, [mostrarErro, location.pathname, navigate]);
 
   return (
-    <div className="p-6">
+    <div className="p-6 pt-0">
       {mostrarErro && mensagem && (
         <div className="fixed top-4 right-4 z-50 bg-red-500 text-white px-6 py-3 rounded-lg shadow-2xl animate-fade-in-out">
           <div className="flex items-center gap-2">
@@ -29,12 +29,18 @@ export default function Home() {
         </div>
       )}
 
-     <div className="bg-white p-8 rounded-[24px] shadow-sm min-h-[400px]">
-      <h1 className="text-2xl font-bold text-[#4696AD] mb-4">Lorem Ipsum</h1>
-      <p className="text-[#898C8F]">
-        Lorem ipsum dolor sit amet consectetur adipisicing elit. Accusantium eaque, doloremque aspernatur laborum repellat iste nesciunt a, molestias deleniti sunt nulla ullam expedita ad quia alias porro. Reprehenderit, error culpa.        Lorem ipsum dolor sit amet consectetur adipisicing elit. Accusantium eaque, doloremque aspernatur laborum repellat iste nesciunt a, molestias deleniti sunt nulla ullam expedita ad quia alias porro. Reprehenderit, error culpa.
-      </p>
-    </div>
+      <div className="bg-white p-8 rounded-[24px] shadow-sm min-h-[400px]">
+        <h1 className="text-2xl font-bold text-[#4696AD] mb-4">Lorem Ipsum</h1>
+        <p className="text-[#898C8F]">
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. Accusantium
+          eaque, doloremque aspernatur laborum repellat iste nesciunt a,
+          molestias deleniti sunt nulla ullam expedita ad quia alias porro.
+          Reprehenderit, error culpa. Lorem ipsum dolor sit amet consectetur
+          adipisicing elit. Accusantium eaque, doloremque aspernatur laborum
+          repellat iste nesciunt a, molestias deleniti sunt nulla ullam expedita
+          ad quia alias porro. Reprehenderit, error culpa.
+        </p>
+      </div>
     </div>
   );
 }
