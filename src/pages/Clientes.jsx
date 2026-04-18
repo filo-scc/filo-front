@@ -6,6 +6,7 @@ import { getClientes } from "../services/clientesService";
 export default function Clientes() {
   const [clientes, setClientes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [busca, setBusca] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -65,6 +66,8 @@ export default function Clientes() {
                   <input
                     type="text"
                     placeholder="Buscar"
+                    value={busca}
+                    onChange={(e) => setBusca(e.target.value)}
                     className="pl-4 pr-10 border border-[#D3D3D3] rounded-[16px] text-sm focus:outline-none focus:border-cyan-400 w-[196px] h-[39px]"
                   />
                   <svg
@@ -82,7 +85,11 @@ export default function Clientes() {
                   </svg>
                 </div>
 
-                <button className="bg-[#A9E2F2] hover:bg-[#8acbdc] text-white w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors">
+                <button
+                  type="button"
+                  onClick={() => navigate("/clientes/cadastrar")}
+                  className="bg-[#A9E2F2] hover:bg-[#8acbdc] text-white w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors"
+                >
                   <img
                     src="/add-star.png"
                     alt="Adicionar cliente"

@@ -7,6 +7,8 @@ import PrivateRoute from "./PrivateRoute";
 import { Layout } from "@/components/Layout";
 import Faccoes from "@/pages/Faccoes";
 import ClienteDetalhes from "../pages/ClienteDetalhes";
+import ClientesCadastrar from "../pages/ClientesCadastrar";
+import ClientesEditar from "../pages/ClientesEditar";
 
 function AppRoutes() {
   return (
@@ -35,6 +37,28 @@ function AppRoutes() {
             </PrivateRoute>
           }
         ></Route>
+
+        <Route
+          path="/clientes/cadastrar"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <ClientesCadastrar />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/clientes/editar"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <ClientesEditar />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
 
         <Route
           path="/clientes/:id"
