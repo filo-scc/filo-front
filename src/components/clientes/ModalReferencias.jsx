@@ -11,6 +11,7 @@ export default function ModalReferencias({
   fabricoId,
   produtosExistentes,
   onSuccess,
+  onAdicionarSelecionados,
 }) {
   const [produtos, setProdutos] = useState([]);
   const [selecionados, setSelecionados] = useState([]);
@@ -65,6 +66,15 @@ export default function ModalReferencias({
 
   const handleAdicionar = async () => {
     if (selecionados.length === 0) return;
+
+    if (onAdicionarSelecionados) {
+      const produtosSelecionados = produtos.filter((produto) =>
+        selecionados.includes(produto.id),
+      );
+      onAdicionarSelecionados(produtosSelecionados);
+      handleClose();
+      return;
+    }
 
     setLoadingSubmit(true);
     try {
