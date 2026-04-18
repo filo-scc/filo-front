@@ -63,7 +63,11 @@ export default function ClientesCadastrar() {
     <div className="w-full max-w-[1200px] xl:max-w-none mx-auto font-['Outfit',_sans-serif]">
       <div className="bg-white p-8 sm:p-10 rounded-[32px] shadow-[0_8px_40px_rgba(70,150,173,0.08)] border border-[#F0F4F6] w-full">
         <div className="flex items-center gap-3 mb-10">
-          <img src="/star.png" alt="" className="w-8 h-8 shrink-0" />
+          <img
+            src="/add-star.png"
+            alt=""
+            className="h-8 w-8 shrink-0 object-contain brightness-0 opacity-[0.85]"
+          />
           <h1 className="text-[28px] sm:text-[30px] font-light text-[#404040] tracking-tight">
             Cadastrar cliente
           </h1>
