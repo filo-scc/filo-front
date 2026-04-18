@@ -1,4 +1,8 @@
-export default function TabelaReferencias({ produtos, onAbrirModal }) {
+export default function TabelaReferencias({
+  produtos,
+  onAbrirModal,
+  title = "Referências associadas",
+}) {
   const formatPreco = (valor) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -11,7 +15,7 @@ export default function TabelaReferencias({ produtos, onAbrirModal }) {
   return (
     <section>
       <h3 className="text-[20px] font-Outfit font-light text-[#404040] mb-4">
-        Referências associadas
+        {title}
       </h3>
 
       <div
