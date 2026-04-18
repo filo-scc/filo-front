@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getFaccoesByFabrico } from "../services/faccaoService";
 
 const Faccoes = () => {
@@ -6,6 +7,8 @@ const Faccoes = () => {
 
   const [faccoes, setFaccoes] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  const navigate = useNavigate();
 
   const fabricoId = userString ? JSON.parse(userString).fabrico_id : null;
 
@@ -113,7 +116,10 @@ const Faccoes = () => {
                     faccoes.map((faccao, index) => (
                       <tr
                         key={faccao.id}
-                        className={`h-[64px] ${index % 2 === 0 ? "bg-[#FFFFFF]" : "bg-[#F4F4F4]"}`}
+                        onClick={() => navigate(`/faccoes/${faccao.id}`)}
+                        className={`h-[64px] cursor-pointer ${
+                          index % 2 === 0 ? "bg-[#FFFFFF]" : "bg-[#F4F4F4]"
+                        } hover:bg-[#EAF6FA]`}
                       >
                         <td className="px-6 text-[14px]">{faccao.nome}</td>
                         <td className="px-6 text-[14px]">

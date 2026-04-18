@@ -7,6 +7,7 @@ import PrivateRoute from "./PrivateRoute";
 import { Layout } from "@/components/Layout";
 import Faccoes from "@/pages/Faccoes";
 import ClienteDetalhes from "../pages/ClienteDetalhes";
+import FaccaoDetalhes from "../pages/FaccaoDetalhes";
 
 function AppRoutes() {
   return (
@@ -52,6 +53,17 @@ function AppRoutes() {
             <PrivateRoute>
               <Layout>
                 <Faccoes />
+              </Layout>
+            </PrivateRoute>
+          }
+        ></Route>
+
+        <Route
+          path="/faccoes/:id"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <FaccaoDetalhes />
               </Layout>
             </PrivateRoute>
           }
