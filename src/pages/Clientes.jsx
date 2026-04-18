@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Layout } from "../components/Layout";
-import FloatingLabelInput from "../components/FloatingLabelInput";
 import { getClientes } from "../services/clientesService";
 
 export default function Clientes() {
@@ -63,30 +62,34 @@ export default function Clientes() {
               </div>
 
               <div className="flex items-center gap-4">
-                <FloatingLabelInput
-                  label="Buscar"
-                  value={busca}
-                  onChange={(e) => setBusca(e.target.value)}
-                  className="w-[196px]"
-                  endAdornment={
-                    <svg
-                      className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      aria-hidden
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                      />
-                    </svg>
-                  }
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Buscar"
+                    value={busca}
+                    onChange={(e) => setBusca(e.target.value)}
+                    className="pl-4 pr-10 border border-[#D3D3D3] rounded-[16px] text-sm focus:outline-none focus:border-cyan-400 w-[196px] h-[39px]"
+                  />
+                  <svg
+                    className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                </div>
 
-                <button className="bg-[#A9E2F2] hover:bg-[#8acbdc] text-white w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors">
+                <button
+                  type="button"
+                  onClick={() => navigate("/clientes/cadastrar")}
+                  className="bg-[#A9E2F2] hover:bg-[#8acbdc] text-white w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors"
+                >
                   <img
                     src="/add-star.png"
                     alt="Adicionar cliente"
