@@ -5,6 +5,17 @@ export default function TabelaReferencias({ produtos, onAbrirModal }) {
             currency: "BRL",
         }).format(valor);
     };
+export default function TabelaReferencias({
+  produtos,
+  onAbrirModal,
+  title = "Referências associadas",
+}) {
+  const formatPreco = (valor) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(valor);
+  };
 
     const borderStyle = { borderColor: "#d9d9d9" };
 
