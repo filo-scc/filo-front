@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import TabelaReferencias from "../components/clientes/TabelaReferencias";
 import FloatingLabelInput from "../components/FloatingLabelInput";
+import ModalReferencias from "../components/clientes/ModalReferencias";
 
 const sectionTitleClass =
   "text-[20px] font-light text-[#404040] mb-4 font-['Outfit',_sans-serif]";
@@ -19,6 +20,8 @@ const produtosExemplo = [
 
 export default function ClientesCadastrar() {
   const navigate = useNavigate();
+  const usuarioLogado = JSON.parse(localStorage.getItem("user") || "{}");
+  const fabricoId = usuarioLogado?.fabrico_id;
   const [form, setForm] = useState({
     nomeEmpresa: "",
     cnpj: "",
@@ -33,10 +36,27 @@ export default function ClientesCadastrar() {
     estado: "",
   });
 
-  const [produtosAssociados] = useState(produtosExemplo);
+  const [produtosAssociados, setProdutosAssociados] = useState(produtosExemplo);
+  const [modalReferenciasAberto, setModalReferenciasAberto] = useState(false);
 
   const handleChange = (campo) => (e) => {
     setForm((prev) => ({ ...prev, [campo]: e.target.value }));
+  };
+
+  const handleAdicionarProdutos = (produtosSelecionados) => {
+    if (!produtosSelecionados?.length) return;
+
+    const novosProdutos = produtosSelecionados.map((produto) => ({
+      produto: {
+        id: produto.id,
+        foto: produto.foto,
+        nome: produto.nome,
+      },
+      nome_para_cliente: produto.nome,
+      preco_padrao: 0,
+    }));
+
+    setProdutosAssociados((prev) => [...prev, ...novosProdutos]);
   };
 
   return (
@@ -136,7 +156,7 @@ export default function ClientesCadastrar() {
           <TabelaReferencias
             title="Associar produtos e referências"
             produtos={produtosAssociados}
-            onAbrirModal={() => {}}
+            onAbrirModal={() => setModalReferenciasAberto(true)}
           />
         </div>
 
@@ -150,6 +170,16 @@ export default function ClientesCadastrar() {
           </button>
         </div>
       </div>
+
+      <ModalReferencias
+        isOpen={modalReferenciasAberto}
+        onClose={() => setModalReferenciasAberto(false)}
+        clienteId={null}
+        fabricoId={fabricoId}
+        produtosExistentes={produtosAssociados}
+        onSuccess={() => {}}
+        onAdicionarSelecionados={handleAdicionarProdutos}
+      />
     </div>
   );
 }
