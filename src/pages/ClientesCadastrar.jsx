@@ -7,17 +7,6 @@ import ModalReferencias from "../components/clientes/ModalReferencias";
 const sectionTitleClass =
   "text-[20px] font-light text-[#404040] mb-4 font-['Outfit',_sans-serif]";
 
-const produtosExemplo = [
-  {
-    produto: {
-      foto: "/imagem-login.png",
-      nome: "Breeze",
-    },
-    nome_para_cliente: "Celine",
-    preco_padrao: 0,
-  },
-];
-
 export default function ClientesCadastrar() {
   const navigate = useNavigate();
   const usuarioLogado = JSON.parse(localStorage.getItem("user") || "{}");
@@ -36,7 +25,7 @@ export default function ClientesCadastrar() {
     estado: "",
   });
 
-  const [produtosAssociados, setProdutosAssociados] = useState(produtosExemplo);
+  const [produtosAssociados, setProdutosAssociados] = useState([]);
   const [modalReferenciasAberto, setModalReferenciasAberto] = useState(false);
 
   const handleChange = (campo) => (e) => {
@@ -164,7 +153,14 @@ export default function ClientesCadastrar() {
           />
         </div>
 
-        <div className="flex justify-end pt-2">
+        <div className="flex flex-wrap justify-end gap-4 pt-2">
+          <button
+            type="button"
+            onClick={() => navigate("/clientes")}
+            className="bg-[#D75757] hover:bg-[#c94a4a] text-white h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px]"
+          >
+            Cancelar
+          </button>
           <button
             type="button"
             onClick={() => navigate("/clientes")}
