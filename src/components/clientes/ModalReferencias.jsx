@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
-  getProdutosPorFabrico,
+  getUnassociatedProductsForClient,
   vincularProdutoAoCliente,
 } from "../../services/clientesService";
 
@@ -36,14 +36,7 @@ export default function ModalReferencias({
     const carregarProdutos = async () => {
       setLoadingFetch(true);
       try {
-        const dados = await getProdutosPorFabrico(fabricoId, busca);
-
-        const produtosFiltrados = dados.filter((prod) => {
-          return !produtosExistentes.some(
-            (existente) =>
-              (existente.produto?.id || existente.produto_id) === prod.id,
-          );
-        });
+        const produtosFiltrados = await getUnassociatedProductsForClient(clienteId, fabricoId, busca);
 
         setProdutos(produtosFiltrados);
       } catch (error) {
@@ -55,7 +48,7 @@ export default function ModalReferencias({
 
     const delayDebounceFn = setTimeout(() => carregarProdutos(), 500);
     return () => clearTimeout(delayDebounceFn);
-  }, [isOpen, fabricoId, busca, produtosExistentes]);
+  }, [isOpen, clienteId, fabricoId, busca, produtosExistentes]);
 
   const toggleSelecao = (id) => {
     setSelecionados((prev) =>

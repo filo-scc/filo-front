@@ -78,10 +78,36 @@ const FaccaoDetalhes = () => {
             <p className="text-[20px] font-Outfit font-light text-[#4696AD] block">
               {faccao.forma_pagamento || "Forma de pagamento"}
             </p>
-            <p className="text-[16px] font-Outfit font-light text-[#898c8f] leading-none">
-              {faccao.chave_pix || "Chave pix"}
-            </p>
+
+            {/* Lógica para PIX */}
+            {faccao.forma_pagamento === "PIX" && (
+              <p className="text-[16px] font-Outfit font-light text-[#898c8f] leading-none">
+                {faccao.chave_pix || "Chave pix não informada"}
+              </p>
+            )}
+
+            {/* Lógica para TED */}
+            {faccao.forma_pagamento === "TED" && (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <p className="text-[16px] font-Outfit font-light text-[#898c8f]">
+                  <strong>Banco:</strong> {faccao.banco}
+                </p>
+                <p className="text-[16px] font-Outfit font-light text-[#898c8f]">
+                  <strong>Agência:</strong> {faccao.agencia}
+                </p>
+                <p className="text-[16px] font-Outfit font-light text-[#898c8f]">
+                  <strong>Conta:</strong> {faccao.conta}
+                </p>
+              </div>
+            )}
           </div>
+
+          {/* Lógica para quando NÃO for nem PIX nem TED */}
+          {faccao.forma_pagamento !== "PIX" && faccao.forma_pagamento !== "TED" && (
+            <p className="text-[16px] font-Outfit font-light text-[#898c8f] italic">
+              Forma de pagamento não informada
+            </p>
+          )}
         </div>
 
         {/* Ações */}
