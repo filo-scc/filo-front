@@ -1,36 +1,36 @@
-import { useState } from "react";
-import { useAuth } from "@/context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useState } from 'react'
+import { useAuth } from '@/context/AuthContext'
+import { useNavigate } from 'react-router-dom'
 
 function Login() {
-  const { login } = useAuth();
-  const navigate = useNavigate();
+  const { login } = useAuth()
+  const navigate = useNavigate()
 
-  const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [email, setEmail] = useState('')
+  const [senha, setSenha] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+    e.preventDefault()
+    setLoading(true)
+    setError('')
 
     try {
-      await login({ email, senha });
-      navigate("/");
+      await login({ email, senha })
+      navigate('/')
     } catch {
-      setError("Credenciais inválidas");
+      setError('Credenciais inválidas')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4"
       style={{
-        background: "linear-gradient(to bottom, white, #c7e9f5)",
+        background: 'linear-gradient(to bottom, white, #c7e9f5)',
       }}
     >
       <div
@@ -63,7 +63,7 @@ function Login() {
                 leading-none
               "
             >
-              Onde{" "}
+              Onde{' '}
               <span
                 className="
                   font-extrabold
@@ -116,8 +116,8 @@ function Login() {
 
                     ${
                       email
-                        ? "top-0 -translate-y-1/2 text-xs text-[#898C8F]"
-                        : "top-1/2 -translate-y-1/2 text-sm"
+                        ? 'top-0 -translate-y-1/2 text-xs text-[#898C8F]'
+                        : 'top-1/2 -translate-y-1/2 text-sm'
                     }
                     
                     group-focus-within:top-0
@@ -155,8 +155,8 @@ function Login() {
 
                     ${
                       senha
-                        ? "top-0 -translate-y-1/2 text-xs text-[#898C8F]"
-                        : "top-1/2 -translate-y-1/2 text-sm"
+                        ? 'top-0 -translate-y-1/2 text-xs text-[#898C8F]'
+                        : 'top-1/2 -translate-y-1/2 text-sm'
                     }
 
                     group-focus-within:top-0
@@ -171,7 +171,7 @@ function Login() {
 
             <button
               type="button"
-              onClick={() => navigate("/esqueci-senha")}
+              onClick={() => navigate('/esqueci-senha')}
               className="
                 text-xs
                 text-[#898C8F]
@@ -199,13 +199,13 @@ function Login() {
                 disabled:opacity-50
               "
             >
-              {loading ? "Entrando..." : "Entrar"}
+              {loading ? 'Entrando...' : 'Entrar'}
             </button>
           </form>
         </div>
       </div>
     </div>
-  );
+  )
 }
 
-export default Login;
+export default Login

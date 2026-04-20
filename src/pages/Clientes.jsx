@@ -1,47 +1,46 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Layout } from "../components/Layout";
-import { getClientes } from "../services/clientesService";
+import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Layout } from '../components/Layout'
+import { getClientes } from '../services/clientesService'
 
 export default function Clientes() {
-  const [clientes, setClientes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const [clientes, setClientes] = useState([])
+  const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
 
   useEffect(() => {
     const carregarClientes = async () => {
-      const userString = localStorage.getItem("user");
-      const usuarioLogado = userString ? JSON.parse(userString) : null;
-      const fabricoId = usuarioLogado?.fabrico_id;
+      const userString = localStorage.getItem('user')
+      const usuarioLogado = userString ? JSON.parse(userString) : null
+      const fabricoId = usuarioLogado?.fabrico_id
 
       if (!fabricoId) {
-        setLoading(false);
-        return;
+        setLoading(false)
+        return
       }
 
       try {
-        setLoading(true);
-        const dados = await getClientes(fabricoId);
-        setClientes(dados);
+        setLoading(true)
+        const dados = await getClientes(fabricoId)
+        setClientes(dados)
       } catch (erro) {
-        console.error("Erro ao carregar clientes:", erro);
+        console.error('Erro ao carregar clientes:', erro)
 
         if (erro?.response?.status === 403) {
-          navigate("/", {
+          navigate('/', {
             replace: true,
             state: {
-              error:
-                "Acesso negado. Administradores não podem acessar esta área.",
+              error: 'Acesso negado. Administradores não podem acessar esta área.',
             },
-          });
+          })
         }
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    carregarClientes();
-  }, [navigate]);
+    carregarClientes()
+  }, [navigate])
 
   return (
     <Layout>
@@ -50,14 +49,8 @@ export default function Clientes() {
           <div className="w-full">
             <div className="w-full flex items-center justify-between mb-8 pl-6 font-['Outfit',_sans-serif]">
               <div className="flex items-center gap-3">
-                <img
-                  src="/star.png"
-                  alt="Ícone de clientes"
-                  className="w-[30px] h-[30px]"
-                />
-                <h1 className="text-[30px] font-light text-gray-800">
-                  Clientes
-                </h1>
+                <img src="/star.png" alt="Ícone de clientes" className="w-[30px] h-[30px]" />
+                <h1 className="text-[30px] font-light text-gray-800">Clientes</h1>
               </div>
 
               <div className="flex items-center gap-4">
@@ -83,11 +76,7 @@ export default function Clientes() {
                 </div>
 
                 <button className="bg-[#A9E2F2] hover:bg-[#8acbdc] text-white w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors">
-                  <img
-                    src="/add-star.png"
-                    alt="Adicionar cliente"
-                    className="w-[20px] h-[20px]"
-                  />
+                  <img src="/add-star.png" alt="Adicionar cliente" className="w-[20px] h-[20px]" />
                   Cadastrar cliente
                 </button>
               </div>
@@ -122,7 +111,7 @@ export default function Clientes() {
                     ) : (
                       clientes.map((cliente, index) => {
                         // Definimos se a linha é par (branca) ou ímpar (cinza)
-                        const isPar = index % 2 === 0;
+                        const isPar = index % 2 === 0
 
                         return (
                           <tr
@@ -130,25 +119,16 @@ export default function Clientes() {
                             onClick={() => navigate(`/clientes/${cliente.id}`)}
                             className={`
         h-[64px] transition-colors cursor-pointer border-b last:border-0
-        ${isPar ? "bg-white hover:bg-[#FBFBFB] hover:text-[#4696ad]" : "bg-[#F4F4F4] hover:bg-[#ededed] hover:text-[#4696ad]"}
+        ${isPar ? 'bg-white hover:bg-[#FBFBFB] hover:text-[#4696ad]' : 'bg-[#F4F4F4] hover:bg-[#ededed] hover:text-[#4696ad]'}
       `}
                           >
-                            <td
-                              title="Ver detalhes"
-                              className="px-6 text-[14px]"
-                            >
+                            <td title="Ver detalhes" className="px-6 text-[14px]">
                               {cliente.nome}
                             </td>
-                            <td
-                              title="Ver detalhes"
-                              className="px-6 text-[14px]"
-                            >
+                            <td title="Ver detalhes" className="px-6 text-[14px]">
                               {cliente.responsavel}
                             </td>
-                            <td
-                              title="Ver detalhes"
-                              className="px-6 text-[14px]"
-                            >
+                            <td title="Ver detalhes" className="px-6 text-[14px]">
                               {cliente.telefone}
                             </td>
 
@@ -157,11 +137,11 @@ export default function Clientes() {
                                 <span
                                   className={`w-[109px] h-[19px] flex items-center justify-center rounded-[10px] text-[12px] font-light ${
                                     cliente.status
-                                      ? "bg-[#B4D64E] text-white"
-                                      : "bg-gray-200 text-[#404040]"
+                                      ? 'bg-[#B4D64E] text-white'
+                                      : 'bg-gray-200 text-[#404040]'
                                   }`}
                                 >
-                                  {cliente.status ? "Ativo" : "Inativo"}
+                                  {cliente.status ? 'Ativo' : 'Inativo'}
                                 </span>
                               </div>
                             </td>
@@ -170,8 +150,8 @@ export default function Clientes() {
                               <div className="flex justify-center items-center">
                                 <button
                                   onClick={(e) => {
-                                    e.stopPropagation();
-                                    console.log("Opções");
+                                    e.stopPropagation()
+                                    console.log('Opções')
                                   }}
                                   /* Se a linha é Branca, o botão no hover fica Cinza. 
                Se a linha é Cinza, o botão no hover fica Branco. */
@@ -187,7 +167,7 @@ export default function Clientes() {
                               </div>
                             </td>
                           </tr>
-                        );
+                        )
                       })
                     )}
                   </tbody>
@@ -198,5 +178,5 @@ export default function Clientes() {
         </div>
       </div>
     </Layout>
-  );
+  )
 }

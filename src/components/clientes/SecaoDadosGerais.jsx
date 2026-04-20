@@ -1,21 +1,17 @@
 const Label = ({ children }) => (
-  <span className="text-[20px] font-Outfit font-light text-[#4696AD] block">
-    {children}
-  </span>
-);
+  <span className="text-[20px] font-Outfit font-light text-[#4696AD] block">{children}</span>
+)
 
 const Valor = ({ children }) => (
   <p className="text-[16px] font-Outfit font-light text-[#898c8f] leading-none">
-    {children || "-"}
+    {children || '-'}
   </p>
-);
+)
 
 export default function SecaoDadosGerais({ cliente }) {
   return (
     <section>
-      <h3 className="text-[20px] font-Outfit font-light text-[#404040] mb-4">
-        Dados gerais
-      </h3>
+      <h3 className="text-[20px] font-Outfit font-light text-[#404040] mb-4">Dados gerais</h3>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div>
           <Label>Empresa</Label>
@@ -35,5 +31,5 @@ export default function SecaoDadosGerais({ cliente }) {
         </div>
       </div>
     </section>
-  );
+  )
 }

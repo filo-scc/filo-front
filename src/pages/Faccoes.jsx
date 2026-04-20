@@ -1,34 +1,34 @@
-import React, { useEffect, useState } from "react";
-import { getFaccoesByFabrico } from "../services/faccaoService";
+import React, { useEffect, useState } from 'react'
+import { getFaccoesByFabrico } from '../services/faccaoService'
 
 const Faccoes = () => {
-  const userString = localStorage.getItem("user");
+  const userString = localStorage.getItem('user')
 
-  const [faccoes, setFaccoes] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [faccoes, setFaccoes] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  const fabricoId = userString ? JSON.parse(userString).fabrico_id : null;
+  const fabricoId = userString ? JSON.parse(userString).fabrico_id : null
 
   useEffect(() => {
     const fetchFaccoes = async () => {
       // Se não tiver fabricoId, não faz a requisição
       if (!fabricoId) {
-        setLoading(false);
-        return;
+        setLoading(false)
+        return
       }
 
       try {
-        setLoading(true);
-        const data = await getFaccoesByFabrico(fabricoId);
-        setFaccoes(data);
+        setLoading(true)
+        const data = await getFaccoesByFabrico(fabricoId)
+        setFaccoes(data)
       } catch (error) {
-        console.error("Erro ao carregar facções", error);
+        console.error('Erro ao carregar facções', error)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
-    fetchFaccoes();
-  }, [fabricoId]);
+    }
+    fetchFaccoes()
+  }, [fabricoId])
 
   return (
     <div className="p-6 pt-0 w-full">
@@ -113,29 +113,23 @@ const Faccoes = () => {
                     faccoes.map((faccao, index) => (
                       <tr
                         key={faccao.id}
-                        className={`h-[64px] ${index % 2 === 0 ? "bg-[#FFFFFF]" : "bg-[#F4F4F4]"}`}
+                        className={`h-[64px] ${index % 2 === 0 ? 'bg-[#FFFFFF]' : 'bg-[#F4F4F4]'}`}
                       >
                         <td className="px-6 text-[14px]">{faccao.nome}</td>
                         <td className="px-6 text-[14px]">
                           <div className="flex justify-center">
                             <span className="bg-gray-200 text-[#404040] w-[109px] h-[19px] flex items-center justify-center rounded-[10px] text-[12px] font-light">
-                              {faccao.id % 2 !== 0 ? "Sim" : "Não"}
+                              {faccao.id % 2 !== 0 ? 'Sim' : 'Não'}
                             </span>
                           </div>
                         </td>
                         <td className="px-6 text-[14px] cursor-pointer hover:font-normal">
                           Endereço
                         </td>
-                        <td className="px-6 text-[14px]">
-                          {faccao.telefone || "Não informado"}
-                        </td>
+                        <td className="px-6 text-[14px]">{faccao.telefone || 'Não informado'}</td>
                         <td className="px-6">
                           <button className="text-[#7B7D80] hover:opacity-70 flex justify-center w-full transition-opacity">
-                            <svg
-                              className="w-5 h-5"
-                              fill="currentColor"
-                              viewBox="0 0 24 24"
-                            >
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                               <path d="M6 12a2 2 0 11-4 0 2 2 0 014 0zM14 12a2 2 0 11-4 0 2 2 0 014 0zM22 12a2 2 0 11-4 0 2 2 0 014 0z" />
                             </svg>
                           </button>
@@ -150,7 +144,7 @@ const Faccoes = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Faccoes;
+export default Faccoes

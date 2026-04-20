@@ -1,8 +1,5 @@
-import React, { useState, useEffect } from "react";
-import {
-  getProdutosPorFabrico,
-  vincularProdutoAoCliente,
-} from "../../services/clientesService";
+import React, { useState, useEffect } from 'react'
+import { getProdutosPorFabrico, vincularProdutoAoCliente } from '../../services/clientesService'
 
 export default function ModalReferencias({
   isOpen,
@@ -12,81 +9,80 @@ export default function ModalReferencias({
   produtosExistentes,
   onSuccess,
 }) {
-  const [produtos, setProdutos] = useState([]);
-  const [selecionados, setSelecionados] = useState([]);
-  const [busca, setBusca] = useState("");
-  const [loadingFetch, setLoadingFetch] = useState(false);
-  const [loadingSubmit, setLoadingSubmit] = useState(false);
+  const [produtos, setProdutos] = useState([])
+  const [selecionados, setSelecionados] = useState([])
+  const [busca, setBusca] = useState('')
+  const [loadingFetch, setLoadingFetch] = useState(false)
+  const [loadingSubmit, setLoadingSubmit] = useState(false)
 
   // Função para fechar e resetar os estados do modal
   const handleClose = () => {
-    setBusca("");
-    setSelecionados([]);
-    onClose();
-  };
+    setBusca('')
+    setSelecionados([])
+    onClose()
+  }
 
   useEffect(() => {
     // Se o modal fechar, garante a limpeza. Se abrir, faz a busca.
     if (!isOpen) {
-      setBusca("");
-      setSelecionados([]);
-      return;
+      setBusca('')
+      setSelecionados([])
+      return
     }
 
     const carregarProdutos = async () => {
-      setLoadingFetch(true);
+      setLoadingFetch(true)
       try {
-        const dados = await getProdutosPorFabrico(fabricoId, busca);
+        const dados = await getProdutosPorFabrico(fabricoId, busca)
 
         const produtosFiltrados = dados.filter((prod) => {
           return !produtosExistentes.some(
-            (existente) =>
-              (existente.produto?.id || existente.produto_id) === prod.id,
-          );
-        });
+            (existente) => (existente.produto?.id || existente.produto_id) === prod.id
+          )
+        })
 
-        setProdutos(produtosFiltrados);
+        setProdutos(produtosFiltrados)
       } catch (error) {
-        console.error("Erro ao buscar produtos:", error);
+        console.error('Erro ao buscar produtos:', error)
       } finally {
-        setLoadingFetch(false);
+        setLoadingFetch(false)
       }
-    };
+    }
 
-    const delayDebounceFn = setTimeout(() => carregarProdutos(), 500);
-    return () => clearTimeout(delayDebounceFn);
-  }, [isOpen, fabricoId, busca, produtosExistentes]);
+    const delayDebounceFn = setTimeout(() => carregarProdutos(), 500)
+    return () => clearTimeout(delayDebounceFn)
+  }, [isOpen, fabricoId, busca, produtosExistentes])
 
   const toggleSelecao = (id) => {
     setSelecionados((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
-    );
-  };
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    )
+  }
 
   const handleAdicionar = async () => {
-    if (selecionados.length === 0) return;
+    if (selecionados.length === 0) return
 
-    setLoadingSubmit(true);
+    setLoadingSubmit(true)
     try {
-      const body = { nome_para_cliente: "-", preco_padrao: 0 };
+      const body = { nome_para_cliente: '-', preco_padrao: 0 }
 
       const requests = selecionados.map((produtoId) =>
-        vincularProdutoAoCliente(clienteId, produtoId, body),
-      );
+        vincularProdutoAoCliente(clienteId, produtoId, body)
+      )
 
-      await Promise.all(requests);
+      await Promise.all(requests)
 
-      onSuccess();
-      handleClose(); // Já limpa e fecha
+      onSuccess()
+      handleClose() // Já limpa e fecha
     } catch (error) {
-      console.error("Erro ao vincular produtos:", error);
-      alert("Ocorreu um erro ao adicionar algumas referências.");
+      console.error('Erro ao vincular produtos:', error)
+      alert('Ocorreu um erro ao adicionar algumas referências.')
     } finally {
-      setLoadingSubmit(false);
+      setLoadingSubmit(false)
     }
-  };
+  }
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
   return (
     // Backdrop com onClick para fechar ao clicar fora
@@ -122,9 +118,7 @@ export default function ModalReferencias({
               alt="Ícone Referências"
               className="w-[26px] h-[26px] object-contain"
             />
-            <h2 className="text-[26px] font-light text-[#404040]">
-              Referências
-            </h2>
+            <h2 className="text-[26px] font-light text-[#404040]">Referências</h2>
           </div>
 
           <div className="relative">
@@ -166,7 +160,7 @@ export default function ModalReferencias({
           ) : (
             <div className="grid grid-cols-4 gap-4">
               {produtos.map((produto) => {
-                const isSelected = selecionados.includes(produto.id);
+                const isSelected = selecionados.includes(produto.id)
                 return (
                   <div
                     key={produto.id}
@@ -176,9 +170,7 @@ export default function ModalReferencias({
               - 'gap-1' (era gap-2) aproxima a imagem da linha do texto abaixo. 
             */
                     className={` rounded-[16px] p-1 flex flex-col gap-1 cursor-pointer transition-all duration-200 ${
-                      isSelected
-                        ? "bg-[#cbe8f0] text-[#4696ad]"
-                        : "bg-[#d7d7d7] text-[#7b7d80]"
+                      isSelected ? 'bg-[#cbe8f0] text-[#4696ad]' : 'bg-[#d7d7d7] text-[#7b7d80]'
                     }`}
                   >
                     {/* Contêiner da Foto - Aumente ou diminua h-[135px] para controlar o tamanho.
@@ -200,9 +192,9 @@ export default function ModalReferencias({
                         className={`absolute inset-0 z-10 bg-gradient-to-t to-transparent via-transparent via-50% transition-colors duration-200 ${
                           isSelected
                             ? // Selecionado: 40% da cor #4696AD no bottom
-                              "from-[#4696AD]/40"
+                              'from-[#4696AD]/40'
                             : // Não Selecionado: 50% da cor #898C8F no bottom
-                              "from-[#898C8F]/50"
+                              'from-[#898C8F]/50'
                         }`}
                       />
                     </div>
@@ -212,11 +204,7 @@ export default function ModalReferencias({
                       {/* AQUI: Mudei para 'gap-1' (era gap-2). Se ainda achar longe, use 'gap-[2px]' ou 'gap-0' */}
                       <div className="flex items-center gap-1 overflow-hidden">
                         <img
-                          src={
-                            isSelected
-                              ? "/etiqueta_azul.png"
-                              : "/etiqueta_cinza_claro.png"
-                          }
+                          src={isSelected ? '/etiqueta_azul.png' : '/etiqueta_cinza_claro.png'}
                           alt="Ícone"
                           className="w-[16px] h-[16px] shrink-0 object-contain"
                         />
@@ -227,16 +215,14 @@ export default function ModalReferencias({
 
                       <button className="shrink-0 flex items-center justify-center w-[20px] h-[20px]">
                         <img
-                          src={
-                            isSelected ? "/check_azul.png" : "/mais_cinza.png"
-                          }
-                          alt={isSelected ? "Selecionado" : "Adicionar"}
+                          src={isSelected ? '/check_azul.png' : '/mais_cinza.png'}
+                          alt={isSelected ? 'Selecionado' : 'Adicionar'}
                           className="w-[11px] h-[11px] object-contain"
                         />
                       </button>
                     </div>
                   </div>
-                );
+                )
               })}
             </div>
           )}
@@ -249,14 +235,14 @@ export default function ModalReferencias({
             disabled={loadingSubmit || selecionados.length === 0}
             className={`w-[189px] h-[39px] rounded-[18.9px] font-['Outfit',_sans-serif] text-[16px] transition-colors bg-[#A9E2F2] text-[#4696AD] ${
               selecionados.length > 0 && !loadingSubmit
-                ? "hover:bg-[#8acbdc]" // Leve hover para dar feedback
-                : "opacity-50 cursor-not-allowed" // Transparente quando inativo
+                ? 'hover:bg-[#8acbdc]' // Leve hover para dar feedback
+                : 'opacity-50 cursor-not-allowed' // Transparente quando inativo
             }`}
           >
-            {loadingSubmit ? "Adicionando..." : "Adicionar"}
+            {loadingSubmit ? 'Adicionando...' : 'Adicionar'}
           </button>
         </div>
       </div>
     </div>
-  );
+  )
 }

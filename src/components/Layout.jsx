@@ -1,13 +1,13 @@
-import { Header } from "./Header";
-import { Sidebar } from "./Sidebar";
+import { Header } from './Header'
+import { Sidebar } from './Sidebar'
 
 export function Layout({ children }) {
   return (
     <div
       className="min-h-screen flex flex-col"
       style={{
-        background: "linear-gradient(to bottom, #F4F4F4 25%, #C7E9F5 100%)",
-        backgroundAttachment: "fixed",
+        background: 'linear-gradient(to bottom, #F4F4F4 25%, #C7E9F5 100%)',
+        backgroundAttachment: 'fixed',
       }}
     >
       {/* Conteúdo principal (Sidebar + Área) */}
@@ -32,5 +32,5 @@ export function Layout({ children }) {
         </p>
       </footer>
     </div>
-  );
+  )
 }

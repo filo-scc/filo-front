@@ -1,23 +1,19 @@
 const Label = ({ children }) => (
-  <span className="text-[20px] font-Outfit font-light text-[#4696AD] block">
-    {children}
-  </span>
-);
+  <span className="text-[20px] font-Outfit font-light text-[#4696AD] block">{children}</span>
+)
 
 const Valor = ({ children }) => (
   <p className="text-[16px] font-Outfit font-light text-[#898c8f] leading-none">
-    {children || "-"}
+    {children || '-'}
   </p>
-);
+)
 
 export default function SecaoEndereco({ endereco }) {
-  if (!endereco) return null;
+  if (!endereco) return null
 
   return (
     <section>
-      <h3 className="text-[20px] font-Outfit font-light text-[#404040] mb-4">
-        Endereço
-      </h3>
+      <h3 className="text-[20px] font-Outfit font-light text-[#404040] mb-4">Endereço</h3>
 
       {/* Ajuste: max-w-4xl para não espalhar demais e grid com colunas menores */}
       <div className="flex flex-wrap gap-y-8 gap-x-20">
@@ -45,7 +41,7 @@ export default function SecaoEndereco({ endereco }) {
         {/* Segunda Linha */}
         <div>
           <Label>Complemento</Label>
-          <Valor>{endereco.complemento || "Nenhum"}</Valor>
+          <Valor>{endereco.complemento || 'Nenhum'}</Valor>
         </div>
         <div>
           <Label>Cidade</Label>
@@ -57,5 +53,5 @@ export default function SecaoEndereco({ endereco }) {
         </div>
       </div>
     </section>
-  );
+  )
 }

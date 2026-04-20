@@ -1,55 +1,55 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import * as authService from "@/services/authService";
+import { createContext, useContext, useEffect, useState } from 'react'
+import * as authService from '@/services/authService'
 
-const AuthContext = createContext();
+const AuthContext = createContext()
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   // ============================
   // CARREGAR USUÁRIO AO INICIAR
   // ============================
   useEffect(() => {
     const loadUser = async () => {
-      const token = localStorage.getItem("accessToken");
+      const token = localStorage.getItem('accessToken')
 
       if (!token) {
-        setLoading(false);
-        return;
+        setLoading(false)
+        return
       }
 
       try {
-        const userData = await authService.getMe();
+        const userData = await authService.getMe()
 
-        setUser(userData);
+        setUser(userData)
         // eslint-disable-next-line no-unused-vars
       } catch (error) {
-        setUser(null);
+        setUser(null)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    loadUser();
-  }, []);
+    loadUser()
+  }, [])
 
   // ============================
   // LOGIN
   // ============================
   const handleLogin = async (data) => {
-    const login = await authService.login(data);
+    const login = await authService.login(data)
 
-    setUser(login.user);
-  };
+    setUser(login.user)
+  }
 
   // ============================
   // LOGOUT
   // ============================
   const handleLogout = () => {
-    authService.logout();
-    setUser(null);
-  };
+    authService.logout()
+    setUser(null)
+  }
 
   return (
     <AuthContext.Provider
@@ -63,11 +63,11 @@ export function AuthProvider({ children }) {
     >
       {children}
     </AuthContext.Provider>
-  );
+  )
 }
 
 // Hook pra usar fácil
 // eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
-  return useContext(AuthContext);
+  return useContext(AuthContext)
 }

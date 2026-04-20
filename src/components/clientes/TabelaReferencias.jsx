@@ -1,12 +1,12 @@
 export default function TabelaReferencias({ produtos, onAbrirModal }) {
   const formatPreco = (valor) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(valor);
-  };
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(valor)
+  }
 
-  const borderStyle = { borderColor: "#d9d9d9" };
+  const borderStyle = { borderColor: '#d9d9d9' }
 
   return (
     <section>
@@ -14,18 +14,14 @@ export default function TabelaReferencias({ produtos, onAbrirModal }) {
         Referências associadas
       </h3>
 
-      <div
-        className="rounded-[10px] overflow-hidden border"
-        style={borderStyle}
-      >
+      <div className="rounded-[10px] overflow-hidden border" style={borderStyle}>
         <table className="w-full text-center border-collapse">
           <thead>
             <tr
               className="bg-[#d9d9d9] text-[#898c8f] text-[16px] font-Outfit font-light border-b"
               style={borderStyle}
             >
-              <th className="py-3 px-4 w-[200px]"></th>{" "}
-              {/* Coluna da foto sem label */}
+              <th className="py-3 px-4 w-[200px]"></th> {/* Coluna da foto sem label */}
               <th className="py-3 px-4 font-light border-l" style={borderStyle}>
                 Referência Interna
               </th>
@@ -52,32 +48,20 @@ export default function TabelaReferencias({ produtos, onAbrirModal }) {
                       className="w-48 h-32 rounded-[10px] object-cover"
                     />
                   </td>
-                  <td
-                    className="py-3 px-4 font-light border-l"
-                    style={borderStyle}
-                  >
+                  <td className="py-3 px-4 font-light border-l" style={borderStyle}>
                     {item.produto.nome}
                   </td>
-                  <td
-                    className="py-3 px-4 font-light border-l"
-                    style={borderStyle}
-                  >
+                  <td className="py-3 px-4 font-light border-l" style={borderStyle}>
                     {item.nome_para_cliente}
                   </td>
-                  <td
-                    className="py-3 px-4 font-light border-l"
-                    style={borderStyle}
-                  >
+                  <td className="py-3 px-4 font-light border-l" style={borderStyle}>
                     {formatPreco(item.preco_padrao)}
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td
-                  colSpan="4"
-                  className="py-10 text-[#898c8f] font-Outfit font-light"
-                >
+                <td colSpan="4" className="py-10 text-[#898c8f] font-Outfit font-light">
                   Esse cliente ainda não possui referências associadas.
                 </td>
               </tr>
@@ -91,12 +75,8 @@ export default function TabelaReferencias({ produtos, onAbrirModal }) {
         onClick={onAbrirModal}
         className="w-full mt-2 flex justify-center items-center h-[45px] bg-[#f4f4f4] rounded-[10px] hover:bg-gray-200 transition-colors"
       >
-        <img
-          src="/mais_cinza.png"
-          alt="Adicionar"
-          className="w-6 h-6 object-contain"
-        />
+        <img src="/mais_cinza.png" alt="Adicionar" className="w-6 h-6 object-contain" />
       </button>
     </section>
-  );
+  )
 }

@@ -1,12 +1,12 @@
 // src/routes/index.jsx
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Home from "@/pages/Home";
-import Login from "@/pages/Login";
-import Cliente from "@/pages/Clientes";
-import PrivateRoute from "./PrivateRoute";
-import { Layout } from "@/components/Layout";
-import Faccoes from "@/pages/Faccoes";
-import ClienteDetalhes from "../pages/ClienteDetalhes";
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import Home from '@/pages/Home'
+import Login from '@/pages/Login'
+import Cliente from '@/pages/Clientes'
+import PrivateRoute from './PrivateRoute'
+import { Layout } from '@/components/Layout'
+import Faccoes from '@/pages/Faccoes'
+import ClienteDetalhes from '../pages/ClienteDetalhes'
 
 function AppRoutes() {
   return (
@@ -124,7 +124,7 @@ function AppRoutes() {
         />
       </Routes>
     </BrowserRouter>
-  );
+  )
 }
 
-export default AppRoutes;
+export default AppRoutes
