@@ -104,7 +104,7 @@ const FaccaoDetalhes = () => {
 
           {/* Lógica para quando NÃO for nem PIX nem TED */}
           {faccao.forma_pagamento !== "PIX" && faccao.forma_pagamento !== "TED" && (
-            <p className="text-[16px] font-Outfit font-light text-[#898c8f] italic">
+            <p className="text-[16px] font-Outfit font-light text-[#898c8f]">
               Forma de pagamento não informada
             </p>
           )}
