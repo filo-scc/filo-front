@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getFaccoesByFabrico } from "../services/faccaoService";
 
 const Faccoes = () => {
@@ -6,6 +7,7 @@ const Faccoes = () => {
 
     const [faccoes, setFaccoes] = useState([]);
     const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
 
     const fabricoId = userString ? JSON.parse(userString).fabrico_id : null;
 
@@ -71,7 +73,10 @@ const Faccoes = () => {
                                 </svg>
                             </div>
 
-                            <button className="bg-[#A9E2F2] hover:bg-[#8acbdc] text-white w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors">
+                            <button
+                                onClick={() => navigate("/faccoes/novo")}
+                                className="bg-[#A9E2F2] hover:bg-[#8acbdc] text-white w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors"
+                            >
                                 <img
                                     src="/maquina-costura-icone-branco.png"
                                     alt="Adicionar facção"
@@ -110,38 +115,62 @@ const Faccoes = () => {
                                             </td>
                                         </tr>
                                     ) : (
-                                        faccoes.map((faccao, index) => (
-                                            <tr
-                                                key={faccao.id}
-                                                className={`h-[64px] ${index % 2 === 0 ? "bg-[#FFFFFF]" : "bg-[#F4F4F4]"}`}
-                                            >
-                                                <td className="px-6 text-[14px]">{faccao.nome}</td>
-                                                <td className="px-6 text-[14px]">
-                                                    <div className="flex justify-center">
-                                                        <span className="bg-gray-200 text-[#404040] w-[109px] h-[19px] flex items-center justify-center rounded-[10px] text-[12px] font-light">
-                                                            {faccao.id % 2 !== 0 ? "Sim" : "Não"}
-                                                        </span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 text-[14px] cursor-pointer hover:font-normal">
-                                                    Endereço
-                                                </td>
-                                                <td className="px-6 text-[14px]">
-                                                    {faccao.telefone || "Não informado"}
-                                                </td>
-                                                <td className="px-6">
-                                                    <button className="text-[#7B7D80] hover:opacity-70 flex justify-center w-full transition-opacity">
-                                                        <svg
-                                                            className="w-5 h-5"
-                                                            fill="currentColor"
-                                                            viewBox="0 0 24 24"
-                                                        >
-                                                            <path d="M6 12a2 2 0 11-4 0 2 2 0 014 0zM14 12a2 2 0 11-4 0 2 2 0 014 0zM22 12a2 2 0 11-4 0 2 2 0 014 0z" />
-                                                        </svg>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))
+                                        faccoes.map((faccao, index) => {
+                                            // Definimos se a linha é par (branca) ou ímpar (cinza)
+                                            const isPar = index % 2 === 0;
+
+                                            return (
+                                                <tr
+                                                    key={faccao.id}
+                                                    // Aqui aplicamos a mesma lógica de hover de clientes
+                                                    onClick={() =>
+                                                        navigate(`/faccoes/${faccao.id}`)
+                                                    }
+                                                    className={`
+                                                        h-[64px] transition-colors cursor-pointer border-b last:border-0
+                                                        ${isPar ? "bg-white hover:bg-[#FBFBFB] hover:text-[#4696ad]" : "bg-[#F4F4F4] hover:bg-[#ededed] hover:text-[#4696ad]"}
+                                                    `}
+                                                >
+                                                    <td className="px-6 text-[14px]">
+                                                        {faccao.nome}
+                                                    </td>
+                                                    <td className="px-6 text-[14px]">
+                                                        <div className="flex justify-center">
+                                                            <span className="bg-gray-200 text-[#404040] w-[109px] h-[19px] flex items-center justify-center rounded-[10px] text-[12px] font-light">
+                                                                {faccao.id % 2 !== 0
+                                                                    ? "Sim"
+                                                                    : "Não"}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 text-[14px] hover:font-normal">
+                                                        Endereço
+                                                    </td>
+                                                    <td className="px-6 text-[14px]">
+                                                        {faccao.telefone || "Não informado"}
+                                                    </td>
+                                                    <td className="px-6">
+                                                        <div className="flex justify-center items-center">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    console.log("Opções Facção");
+                                                                }}
+                                                                className="w-10 h-10 flex items-center justify-center transition-colors rounded-[8px] text-[#7B7D80]"
+                                                            >
+                                                                <svg
+                                                                    className="w-5 h-5"
+                                                                    fill="currentColor"
+                                                                    viewBox="0 0 24 24"
+                                                                >
+                                                                    <path d="M6 12a2 2 0 11-4 0 2 2 0 014 0zM14 12a2 2 0 11-4 0 2 2 0 014 0zM22 12a2 2 0 11-4 0 2 2 0 014 0z" />
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
                                     )}
                                 </tbody>
                             </table>

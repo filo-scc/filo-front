@@ -8,6 +8,7 @@ import { Layout } from "@/components/Layout";
 import Faccoes from "@/pages/Faccoes";
 import ClienteDetalhes from "../pages/ClienteDetalhes";
 import FaccaoDetalhes from "../pages/FaccaoDetalhes";
+import FaccaoCadastro from "../pages/FaccaoCadastro";
 
 function AppRoutes() {
     return (
@@ -64,6 +65,17 @@ function AppRoutes() {
                         <PrivateRoute>
                             <Layout>
                                 <FaccaoDetalhes />
+                            </Layout>
+                        </PrivateRoute>
+                    }
+                />
+
+                <Route
+                    path="/faccoes/novo"
+                    element={
+                        <PrivateRoute>
+                            <Layout>
+                                <FaccaoCadastro />
                             </Layout>
                         </PrivateRoute>
                     }
