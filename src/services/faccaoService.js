@@ -16,11 +16,11 @@ export const getFaccaoById = async (id) => {
 };
 
 export const createFaccao = async (data) => {
-    try{
-        const response = await api.post("/faccoes", data)
-        return response.data
-    } catch{
-        console.error("Erro ao cadastrar uma facção: ", error)
-        throw error
-    };
-}
+    try {
+        const response = await api.post("/faccoes", data);
+        return response.data;
+    } catch (error) {
+        console.error("Erro ao cadastrar uma facção: ", error);
+        throw error;
+    }
+};
