@@ -21,7 +21,7 @@ export default function FloatingLabelInput({
         onChange={onChange}
         className={`
           w-full h-[39px] border border-[#D3D3D3] rounded-[16px] text-sm text-[#404040]
-          leading-[39px] focus:outline-none focus:border-[#A9E2F2] focus:ring-1 focus:ring-[#A9E2F2]/40
+          leading-[39px] focus:outline-none
           transition-colors bg-white
           ${endAdornment ? "pl-4 pr-10" : "px-4"}
           ${inputClassName}
