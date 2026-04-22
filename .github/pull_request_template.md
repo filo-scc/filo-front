@@ -21,8 +21,8 @@ Remova as opções que não forem relevantes.
 - [ ]
 
 ## Checklist
-- [ ] Eu rodei npm run format:check e meu código segue os padrões de Prettier
-- [ ] Eu rodei npm run lint e meu código está sem nenhum erro ou warning pendente
+- [ ] Eu rodei `npm run format:check` e meu código segue os padrões de Prettier. Caso ele não atenda, utilizarei o comando `npm run format`
+- [ ] Eu rodei `npm run lint` e meu código está sem nenhum erro ou warning pendente
 - [ ] Realizei uma autorrevisão do meu próprio código
 - [ ] Adicionei ou atualizei testes relacionados às alterações
 - [ ] Não há `console.log`, comentários temporários ou código morto

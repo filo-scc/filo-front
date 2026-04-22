@@ -1,18 +1,18 @@
-import { Navigate } from 'react-router-dom'
-import { useAuth } from '@/context/AuthContext'
+import { Navigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 
 function PrivateRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth()
+    const { isAuthenticated, loading } = useAuth();
 
-  if (loading) {
-    return <p>Carregando...</p>
-  }
+    if (loading) {
+        return <p>Carregando...</p>;
+    }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" />
-  }
+    if (!isAuthenticated) {
+        return <Navigate to="/login" />;
+    }
 
-  return children
+    return children;
 }
 
-export default PrivateRoute
+export default PrivateRoute;
