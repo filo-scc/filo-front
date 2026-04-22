@@ -11,6 +11,6 @@ export const getFaccoesByFabrico = async (fabricoId) => {
 };
 
 export const getFaccaoById = async (id) => {
-  const response = await api.get(`/faccoes/${id}`);
-  return response.data;
+    const response = await api.get(`/faccoes/${id}`);
+    return response.data;
 };

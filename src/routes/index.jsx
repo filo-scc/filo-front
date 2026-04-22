@@ -56,17 +56,17 @@ function AppRoutes() {
                             </Layout>
                         </PrivateRoute>
                     }
-        ></Route>
+                ></Route>
 
-        <Route
-          path="/faccoes/:id"
-          element={
-            <PrivateRoute>
-              <Layout>
-                <FaccaoDetalhes />
-              </Layout>
-            </PrivateRoute>
-          }
+                <Route
+                    path="/faccoes/:id"
+                    element={
+                        <PrivateRoute>
+                            <Layout>
+                                <FaccaoDetalhes />
+                            </Layout>
+                        </PrivateRoute>
+                    }
                 />
 
                 {/* Telas provisórias com a header + sidebar por enquanto que não são implementadas */}

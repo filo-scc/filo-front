@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
-  getUnassociatedProductsForClient,
-  vincularProdutoAoCliente,
+    getUnassociatedProductsForClient,
+    vincularProdutoAoCliente,
 } from "../../services/clientesService";
 
 export default function ModalReferencias({
@@ -33,10 +33,14 @@ export default function ModalReferencias({
             return;
         }
 
-    const carregarProdutos = async () => {
-      setLoadingFetch(true);
-      try {
-        const produtosFiltrados = await getUnassociatedProductsForClient(clienteId, fabricoId, busca);
+        const carregarProdutos = async () => {
+            setLoadingFetch(true);
+            try {
+                const produtosFiltrados = await getUnassociatedProductsForClient(
+                    clienteId,
+                    fabricoId,
+                    busca,
+                );
 
                 setProdutos(produtosFiltrados);
             } catch (error) {
@@ -46,9 +50,9 @@ export default function ModalReferencias({
             }
         };
 
-    const delayDebounceFn = setTimeout(() => carregarProdutos(), 500);
-    return () => clearTimeout(delayDebounceFn);
-  }, [isOpen, clienteId, fabricoId, busca, produtosExistentes]);
+        const delayDebounceFn = setTimeout(() => carregarProdutos(), 500);
+        return () => clearTimeout(delayDebounceFn);
+    }, [isOpen, clienteId, fabricoId, busca, produtosExistentes]);
 
     const toggleSelecao = (id) => {
         setSelecionados((prev) =>

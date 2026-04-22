@@ -38,9 +38,9 @@ export const vincularProdutoAoCliente = async (clienteId, produtoId, body) => {
 };
 
 export const getUnassociatedProductsForClient = async (clienteId, fabricoId, body) => {
-  const response = await api.get(
-    `/produtos/cliente/${clienteId}/produtos-nao-associados/${fabricoId}`,
-    body,
-  );
-  return response.data;
-}
+    const response = await api.get(
+        `/produtos/cliente/${clienteId}/produtos-nao-associados/${fabricoId}`,
+        body,
+    );
+    return response.data;
+};
