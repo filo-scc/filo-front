@@ -1,12 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Layout } from "../components/Layout";
-import { getClientes } from "../services/clientesService";
+import { getClientes, excluirCliente } from "../services/clientesService";
+import MenuOpcoes from "../components/geral/MenuOpcoes"; // Ajuste o caminho conforme necessário
+import ModalExclusao from "../components/geral/ModalExclusao"; // Ajuste o caminho conforme necessário
 
 export default function Clientes() {
     const [clientes, setClientes] = useState([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+
+    // Estados para o Modal de Exclusão
+    const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
+    const [clienteSelecionado, setClienteSelecionado] = useState(null);
 
     useEffect(() => {
         const carregarClientes = async () => {
@@ -42,9 +48,34 @@ export default function Clientes() {
         carregarClientes();
     }, [navigate]);
 
+    // Funções de Ação do Menu
+    const handleEdit = (id) => {
+        navigate(`/editar-cliente/${id}`);
+    };
+
+    const abrirModalExclusao = (cliente) => {
+        setClienteSelecionado(cliente);
+        setModalExclusaoAberto(true);
+    };
+
+    const handleConfirmarExclusao = async () => {
+        if (!clienteSelecionado) return;
+
+        try {
+            await excluirCliente(clienteSelecionado.id);
+
+            setClientes(clientes.filter((c) => c.id !== clienteSelecionado.id));
+            setModalExclusaoAberto(false);
+            setClienteSelecionado(null);
+        } catch (error) {
+            console.error("Erro ao excluir cliente:", error);
+            alert("Erro ao excluir cliente.");
+        }
+    };
+
     return (
         <Layout>
-            <div className="p-6 pt-0 w-full">
+            <div className="p-6 pt-0 w-full relative z-0">
                 <div className="bg-white p-8 rounded-[24px] shadow-sm w-full mx-auto">
                     <div className="w-full">
                         <div className="w-full flex items-center justify-between mb-8 pl-6 font-['Outfit',_sans-serif]">
@@ -79,7 +110,10 @@ export default function Clientes() {
                                     </svg>
                                 </div>
 
-                                <button className="bg-[#A9E2F2] hover:bg-[#8acbdc] text-white w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors">
+                                <button
+                                    className="bg-[#A9E2F2] hover:bg-[#8acbdc] text-white w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors"
+                                    onClick={() => navigate("/cadastrar-cliente")}
+                                >
                                     <img
                                         src="/add-star.png"
                                         alt="Adicionar cliente"
@@ -90,16 +124,21 @@ export default function Clientes() {
                             </div>
                         </div>
 
-                        <div className="w-full overflow-x-auto">
-                            <div className="w-full border border-gray-200 rounded-xl overflow-hidden">
-                                <table className="w-full text-[16px] font-['Outfit',_sans-serif] font-light text-center">
+                        <div className="w-full overflow-visible">
+                            {" "}
+                            <div className="w-full border border-gray-200 rounded-xl">
+                                <table className="w-full text-[16px] font-['Outfit',_sans-serif] font-light text-center relative z-10">
                                     <thead className="bg-[#D3EBF2] text-[#4696AD]">
                                         <tr className="h-[64px]">
-                                            <th className="px-6 font-light">Cliente</th>
+                                            <th className="px-6 font-light rounded-tl-xl">
+                                                Cliente
+                                            </th>
                                             <th className="px-6 font-light">Responsável</th>
                                             <th className="px-6 font-light">Contato</th>
                                             <th className="px-6 font-light">Status</th>
-                                            <th className="px-6 font-light">Opções</th>
+                                            <th className="px-6 font-light rounded-tr-xl">
+                                                Opções
+                                            </th>
                                         </tr>
                                     </thead>
 
@@ -118,8 +157,8 @@ export default function Clientes() {
                                             </tr>
                                         ) : (
                                             clientes.map((cliente, index) => {
-                                                // Definimos se a linha é par (branca) ou ímpar (cinza)
                                                 const isPar = index % 2 === 0;
+                                                const isLast = index === clientes.length - 1;
 
                                                 return (
                                                     <tr
@@ -128,13 +167,13 @@ export default function Clientes() {
                                                             navigate(`/clientes/${cliente.id}`)
                                                         }
                                                         className={`
-        h-[64px] transition-colors cursor-pointer border-b last:border-0
-        ${isPar ? "bg-white hover:bg-[#FBFBFB] hover:text-[#4696ad]" : "bg-[#F4F4F4] hover:bg-[#ededed] hover:text-[#4696ad]"}
-      `}
+                                                            h-[64px] transition-colors cursor-pointer border-b last:border-0
+                                                            ${isPar ? "bg-white hover:bg-[#FBFBFB] hover:text-[#4696ad]" : "bg-[#F4F4F4] hover:bg-[#ededed] hover:text-[#4696ad]"}
+                                                        `}
                                                     >
                                                         <td
                                                             title="Ver detalhes"
-                                                            className="px-6 text-[14px]"
+                                                            className={`px-6 text-[14px] ${isLast ? "rounded-bl-xl" : ""}`}
                                                         >
                                                             {cliente.nome}
                                                         </td>
@@ -166,26 +205,18 @@ export default function Clientes() {
                                                                 </span>
                                                             </div>
                                                         </td>
-
-                                                        <td className="px-6">
-                                                            <div className="flex justify-center items-center">
-                                                                <button
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        console.log("Opções");
-                                                                    }}
-                                                                    /* Se a linha é Branca, o botão no hover fica Cinza. 
-               Se a linha é Cinza, o botão no hover fica Branco. */
-                                                                    className={`
-              w-10 h-10 flex items-center justify-center transition-colors rounded-[8px]
-            `}
-                                                                >
-                                                                    <img
-                                                                        src="/tres-pontos.png"
-                                                                        className="w-5 h-5 object-contain opacity-60"
-                                                                    />
-                                                                </button>
-                                                            </div>
+                                                        <td
+                                                            className={`px-6 ${isLast ? "rounded-br-xl" : ""}`}
+                                                        >
+                                                            {/* Implementação do Menu Componentizado */}
+                                                            <MenuOpcoes
+                                                                onEdit={() =>
+                                                                    handleEdit(cliente.id)
+                                                                }
+                                                                onDelete={() =>
+                                                                    abrirModalExclusao(cliente)
+                                                                }
+                                                            />
                                                         </td>
                                                     </tr>
                                                 );
@@ -198,6 +229,15 @@ export default function Clientes() {
                     </div>
                 </div>
             </div>
+
+            {/* Modal Renderizado fora do fluxo da tabela para evitar z-index issues */}
+            <ModalExclusao
+                isOpen={modalExclusaoAberto}
+                onClose={() => setModalExclusaoAberto(false)}
+                onConfirm={handleConfirmarExclusao}
+                nomeItem={clienteSelecionado?.nome}
+                tipoItem="o cliente"
+            />
         </Layout>
     );
 }
