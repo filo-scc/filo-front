@@ -86,7 +86,7 @@ export default function ClienteDetalhes() {
         <Layout>
             <div className="p-6 pt-0 w-full flex justify-center">
                 <div className="bg-white p-8 rounded-[24px] shadow-sm w-full min-h-[400px]">
-                    <DetalhesHeader title="Detalhes do cliente" />
+                    <DetalhesHeader title="Detalhes de cliente" />
 
                     <div className="mt-8 space-y-8">
                         <SecaoDadosGerais cliente={cliente} />
