@@ -230,7 +230,6 @@ export default function Clientes() {
                 </div>
             </div>
 
-            {/* Modal Renderizado fora do fluxo da tabela para evitar z-index issues */}
             <ModalExclusao
                 isOpen={modalExclusaoAberto}
                 onClose={() => setModalExclusaoAberto(false)}
