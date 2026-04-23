@@ -44,3 +44,12 @@ export const getUnassociatedProductsForClient = async (clienteId, fabricoId, bod
     );
     return response.data;
 };
+
+export const excluirCliente = async (clienteId) => {
+    try {
+        await api.delete(`/clientes/${clienteId}`);
+    } catch (error) {
+        console.error("Erro ao excluir cliente:", error);
+        throw error;
+    }
+};
