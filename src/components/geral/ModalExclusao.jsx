@@ -5,12 +5,15 @@ export default function ModalExclusao({
     onClose,
     onConfirm,
     nomeItem,
-    tipoItem = "o cadastro de", // <--- Valor padrão adicionado aqui
+    tipoItem = "o cadastro de",
 }) {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-sm transition-opacity font-Outfit">
+        <div
+            className="fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-sm transition-opacity font-Outfit"
+            onClick={onClose}
+        >
             <div
                 className="relative bg-[#F3F4FA] rounded-[24px] p-8 w-[90%] max-w-[400px] shadow-xl flex flex-col items-center text-center"
                 onClick={(e) => e.stopPropagation()}
