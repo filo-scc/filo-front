@@ -5,6 +5,7 @@ import { getProdutoById, getClientesDoProduto, excluirProduto } from "../service
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
 import SecaoDadosProduto from "../components/produtos/SecaoDadosProduto";
 import TabelaClientesDoProduto from "../components/produtos/TabelaClientesDoProduto";
+import ModalExclusao from "../components/geral/ModalExclusao"; // <-- Importado aqui (ajuste o caminho se necessário)
 
 export default function ProdutoDetalhes() {
     const { id } = useParams();
@@ -13,6 +14,7 @@ export default function ProdutoDetalhes() {
     const [loading, setLoading] = useState(true);
     const [produto, setProduto] = useState(null);
     const [clientesAssociados, setClientesAssociados] = useState([]);
+    const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
 
     useEffect(() => {
         async function fetchData() {
@@ -49,14 +51,13 @@ export default function ProdutoDetalhes() {
         fetchData();
     }, [id, navigate]);
 
-    const handleExcluir = async () => {
-        if (window.confirm("Tem certeza que deseja excluir este produto?")) {
-            try {
-                await excluirProduto(id);
-                navigate("/produtos");
-            } catch {
-                alert("Erro ao excluir produto.");
-            }
+    const handleConfirmarExclusao = async () => {
+        try {
+            await excluirProduto(id);
+            setModalExclusaoAberto(false);
+            navigate("/produtos");
+        } catch {
+            alert("Erro ao excluir produto.");
         }
     };
 
@@ -70,11 +71,9 @@ export default function ProdutoDetalhes() {
 
     return (
         <div className="p-6 pt-0 w-full flex justify-center">
-            {/* Removido o max-w-[1200px] para ocupar a mesma proporção fluida do ClienteDetalhes */}
             <div className="bg-white p-8 rounded-[24px] shadow-sm w-full min-h-[400px]">
                 <ProdutoDetalhesHeader title="Detalhes de produto" />
 
-                {/* Alterado de space-y-12 para space-y-8 para manter o mesmo ritmo visual */}
                 <div className="mt-8 space-y-8">
                     <SecaoDadosProduto produto={produto} />
                     <TabelaClientesDoProduto
@@ -93,7 +92,7 @@ export default function ProdutoDetalhes() {
 
                         <div className="flex gap-4">
                             <button
-                                onClick={handleExcluir}
+                                onClick={() => setModalExclusaoAberto(true)} // <-- Abre o modal
                                 className="w-[189px] h-[39px] rounded-[18.9px] bg-[#D75757] text-white font-Outfit text-[16px] transition-colors hover:bg-[#d74646]"
                             >
                                 Excluir produto
@@ -108,6 +107,14 @@ export default function ProdutoDetalhes() {
                     </div>
                 </div>
             </div>
+
+            <ModalExclusao
+                isOpen={modalExclusaoAberto}
+                onClose={() => setModalExclusaoAberto(false)}
+                onConfirm={handleConfirmarExclusao}
+                nomeItem={produto?.nome}
+                tipoItem="o produto"
+            />
         </div>
     );
 }
