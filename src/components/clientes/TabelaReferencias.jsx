@@ -21,7 +21,7 @@ export default function TabelaReferencias({ produtos, onAbrirModal }) {
                             className="bg-[#d9d9d9] text-[#898c8f] text-[16px] font-Outfit font-light border-b"
                             style={borderStyle}
                         >
-                            <th className="py-3 px-4 w-[200px]"></th>{" "}
+                            <th className="py-3 px-4 w-[200px]"></th>
                             {/* Coluna da foto sem label */}
                             <th className="py-3 px-4 font-light border-l" style={borderStyle}>
                                 Referência Interna
