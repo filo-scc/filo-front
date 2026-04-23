@@ -32,6 +32,47 @@ export default function ClientesCadastrar() {
     setForm((prev) => ({ ...prev, [campo]: e.target.value }));
   };
 
+  const apenasNumeros = (valor) => String(valor || "").replace(/\D/g, "");
+
+  const formatarCnpj = (valor) => {
+    const digitos = apenasNumeros(valor).slice(0, 14);
+    return digitos
+      .replace(/^(\d{2})(\d)/, "$1.$2")
+      .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+      .replace(/\.(\d{3})(\d)/, ".$1/$2")
+      .replace(/(\d{4})(\d)/, "$1-$2");
+  };
+
+  const formatarTelefone = (valor) => {
+    const digitos = apenasNumeros(valor).slice(0, 11);
+
+    if (!digitos) return "";
+    if (digitos.length <= 2) return `(${digitos}`;
+    if (digitos.length <= 6) return `(${digitos.slice(0, 2)}) ${digitos.slice(2)}`;
+    if (digitos.length <= 10) {
+      return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 6)}-${digitos.slice(6)}`;
+    }
+    return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 7)}-${digitos.slice(7)}`;
+  };
+
+  const formatarCep = (valor) => {
+    const digitos = apenasNumeros(valor).slice(0, 8);
+    if (digitos.length <= 5) return digitos;
+    return `${digitos.slice(0, 5)}-${digitos.slice(5)}`;
+  };
+
+  const handleChangeCnpj = (e) => {
+    setForm((prev) => ({ ...prev, cnpj: formatarCnpj(e.target.value) }));
+  };
+
+  const handleChangeTelefone = (e) => {
+    setForm((prev) => ({ ...prev, telefone: formatarTelefone(e.target.value) }));
+  };
+
+  const handleChangeCep = (e) => {
+    setForm((prev) => ({ ...prev, cep: formatarCep(e.target.value) }));
+  };
+
   const handleAdicionarProdutos = (produtosSelecionados) => {
     if (!produtosSelecionados?.length) return;
 
@@ -73,7 +114,7 @@ export default function ClientesCadastrar() {
             <FloatingLabelInput
               label="CNPJ"
               value={form.cnpj}
-              onChange={handleChange("cnpj")}
+              onChange={handleChangeCnpj}
             />
             <FloatingLabelInput
               label="Proprietário"
@@ -83,7 +124,7 @@ export default function ClientesCadastrar() {
             <FloatingLabelInput
               label="Telefone"
               value={form.telefone}
-              onChange={handleChange("telefone")}
+              onChange={handleChangeTelefone}
             />
           </div>
         </section>
@@ -95,7 +136,7 @@ export default function ClientesCadastrar() {
               <FloatingLabelInput
                 label="CEP"
                 value={form.cep}
-                onChange={handleChange("cep")}
+                onChange={handleChangeCep}
               />
             </div>
             <div className="sm:col-span-5">
