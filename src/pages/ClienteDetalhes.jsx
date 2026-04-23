@@ -10,6 +10,7 @@ import SecaoEndereco from "../components/clientes/SecaoEndereco";
 import TabelaReferencias from "../components/clientes/TabelaReferencias";
 import ModalReferencias from "../components/clientes/ModalReferencias";
 import ModalExclusao from "../components/geral/ModalExclusao";
+import ModalConfirmacaoExclusao from "../components/geral/ModalConfirmacaoExclusao";
 
 export default function ClienteDetalhes() {
     const { id } = useParams();
@@ -17,6 +18,7 @@ export default function ClienteDetalhes() {
 
     // Estados para o Modal de Exclusão
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
+    const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
 
     const abrirModalExclusao = () => {
         setModalExclusaoAberto(true);
@@ -29,10 +31,7 @@ export default function ClienteDetalhes() {
             await excluirCliente(cliente.id);
 
             setModalExclusaoAberto(false);
-            navigate("/clientes", {
-                replace: true,
-                state: { success: "Cliente excluído com sucesso." },
-            });
+            setModalConfirmacaoAberto(true);
         } catch (error) {
             console.error("Erro ao excluir cliente:", error);
             alert("Erro ao excluir cliente.");
@@ -169,6 +168,17 @@ export default function ClienteDetalhes() {
                 onConfirm={handleConfirmarExclusao}
                 nomeItem={cliente?.nome}
                 tipoItem="o cliente"
+            />
+
+            <ModalConfirmacaoExclusao
+                isOpen={modalConfirmacaoAberto}
+                onClose={() => {
+                    setModalConfirmacaoAberto(false);
+                    navigate("/clientes", {
+                        replace: true,
+                        state: { success: "Cliente excluído com sucesso." },
+                    });
+                }}
             />
         </Layout>
     );
