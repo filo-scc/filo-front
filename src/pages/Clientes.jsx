@@ -4,6 +4,7 @@ import { Layout } from "../components/Layout";
 import { getClientes, excluirCliente } from "../services/clientesService";
 import MenuOpcoes from "../components/geral/MenuOpcoes"; // Ajuste o caminho conforme necessário
 import ModalExclusao from "../components/geral/ModalExclusao"; // Ajuste o caminho conforme necessário
+import ModalConfirmacaoExclusao from "../components/geral/ModalConfirmacaoExclusao";
 
 export default function Clientes() {
     const [clientes, setClientes] = useState([]);
@@ -13,6 +14,9 @@ export default function Clientes() {
     // Estados para o Modal de Exclusão
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
     const [clienteSelecionado, setClienteSelecionado] = useState(null);
+
+    // Estado para o Modal de Confirmação de Exclusão
+    const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
 
     useEffect(() => {
         const carregarClientes = async () => {
@@ -67,6 +71,7 @@ export default function Clientes() {
             setClientes(clientes.filter((c) => c.id !== clienteSelecionado.id));
             setModalExclusaoAberto(false);
             setClienteSelecionado(null);
+            setModalConfirmacaoAberto(true);
         } catch (error) {
             console.error("Erro ao excluir cliente:", error);
             alert("Erro ao excluir cliente.");
@@ -236,6 +241,11 @@ export default function Clientes() {
                 onConfirm={handleConfirmarExclusao}
                 nomeItem={clienteSelecionado?.nome}
                 tipoItem="o cliente"
+            />
+
+            <ModalConfirmacaoExclusao
+                isOpen={modalConfirmacaoAberto}
+                onClose={() => setModalConfirmacaoAberto(false)}
             />
         </Layout>
     );
