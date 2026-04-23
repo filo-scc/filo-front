@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import TabelaReferencias from "../components/clientes/TabelaReferencias";
 import FloatingLabelInput from "../components/FloatingLabelInput";
 import ModalReferencias from "../components/clientes/ModalReferencias";
+import { cadastrarCliente } from "../services/clientesService";
 
 const sectionTitleClass =
   "text-[20px] font-light text-[#404040] mb-4 font-['Outfit',_sans-serif]";
@@ -10,7 +11,6 @@ const sectionTitleClass =
 export default function ClientesCadastrar() {
   const navigate = useNavigate();
   const usuarioLogado = JSON.parse(localStorage.getItem("user") || "{}");
-  const fabricoId = usuarioLogado?.fabrico_id;
   const [form, setForm] = useState({
     nomeEmpresa: "",
     cnpj: "",
@@ -27,6 +27,9 @@ export default function ClientesCadastrar() {
 
   const [produtosAssociados, setProdutosAssociados] = useState([]);
   const [modalReferenciasAberto, setModalReferenciasAberto] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  const [erroCadastro, setErroCadastro] = useState("");
+  const [payloadEnviado, setPayloadEnviado] = useState(null);
 
   const handleChange = (campo) => (e) => {
     setForm((prev) => ({ ...prev, [campo]: e.target.value }));
@@ -87,6 +90,128 @@ export default function ClientesCadastrar() {
     }));
 
     setProdutosAssociados((prev) => [...prev, ...novosProdutos]);
+  };
+
+  const valorOuUndefined = (valor) => {
+    const limpo = String(valor || "").trim();
+    return limpo.length > 0 ? limpo : undefined;
+  };
+
+  const numeroOuUndefined = (valor) => {
+    if (valor === null || valor === undefined) return undefined;
+    const texto = String(valor).trim();
+    if (!texto) return undefined;
+    const numero = Number(texto);
+    return Number.isFinite(numero) ? numero : undefined;
+  };
+
+  const primeiroNumeroValido = (...valores) => {
+    for (const valor of valores) {
+      const numero = numeroOuUndefined(valor);
+      if (numero !== undefined) return numero;
+    }
+    return undefined;
+  };
+
+  const fabricoId = primeiroNumeroValido(
+    usuarioLogado?.fabrico_id,
+    usuarioLogado?.fabricoId,
+    usuarioLogado?.fabrico?.id,
+  );
+  const usuarioId = primeiroNumeroValido(
+    usuarioLogado?.id,
+    usuarioLogado?.usuario_id,
+    usuarioLogado?.usuarioId,
+    usuarioLogado?.usuario?.id,
+    usuarioLogado?.usuario?.usuario_id,
+  );
+  const faccaoId = primeiroNumeroValido(
+    usuarioLogado?.faccao_id,
+    usuarioLogado?.faccaoId,
+    usuarioLogado?.faccao?.id,
+    usuarioLogado?.faccao?.faccao_id,
+    usuarioLogado?.faccao?.[0]?.id,
+    usuarioLogado?.faccao?.[0]?.faccao_id,
+    usuarioLogado?.usuario?.faccao_id,
+  );
+
+  const formatarErroApi = (error) => {
+    const data = error?.response?.data;
+    const message = data?.message;
+
+    if (Array.isArray(message)) return message.join(" ");
+    if (typeof message === "string" && message.trim()) return message;
+    if (typeof data?.error === "string" && data.error.trim()) return data.error;
+    if (typeof error?.message === "string" && error.message.trim()) return error.message;
+    return "Nao foi possivel cadastrar o cliente.";
+  };
+
+  const handleCadastrar = async () => {
+    setErroCadastro("");
+
+    const nome = valorOuUndefined(form.nomeEmpresa);
+    if (!nome) {
+      setErroCadastro("Informe o nome da empresa.");
+      return;
+    }
+
+    const fabricoIdNumerico = numeroOuUndefined(fabricoId);
+    if (!fabricoIdNumerico) {
+      setErroCadastro("Nao foi possivel identificar a fabrica do usuario.");
+      return;
+    }
+
+    const cnpjNumerico = valorOuUndefined(apenasNumeros(form.cnpj));
+    const telefoneNumerico = valorOuUndefined(apenasNumeros(form.telefone));
+
+    if (cnpjNumerico && cnpjNumerico.length !== 14) {
+      setErroCadastro("CNPJ invalido. Informe 14 digitos.");
+      return;
+    }
+    if (
+      telefoneNumerico &&
+      (telefoneNumerico.length < 9 || telefoneNumerico.length > 11)
+    ) {
+      setErroCadastro("Telefone invalido. Informe entre 9 e 11 digitos.");
+      return;
+    }
+
+    const endereco = {
+      rua: valorOuUndefined(form.rua),
+      numero: valorOuUndefined(form.numero),
+      bairro: valorOuUndefined(form.bairro),
+      complemento: valorOuUndefined(form.complemento),
+      cidade: valorOuUndefined(form.cidade),
+      estado: valorOuUndefined(form.estado),
+      // usuario_id: numeroOuUndefined(usuarioId),
+      faccao_id: numeroOuUndefined(faccaoId),
+    };
+
+    const payload = {
+      nome,
+      cnpj: cnpjNumerico,
+      telefone: telefoneNumerico,
+      status: true,
+      responsavel: valorOuUndefined(form.proprietario),
+      fabrico_id: fabricoIdNumerico,
+      endereco: Object.values(endereco).some((valor) => valor !== undefined)
+        ? endereco
+        : undefined,
+    };
+
+    try {
+      setSalvando(true);
+      setPayloadEnviado(payload);
+      await cadastrarCliente(payload);
+      navigate("/clientes", {
+        replace: true,
+        state: { success: "Cliente cadastrado com sucesso." },
+      });
+    } catch (error) {
+      setErroCadastro(formatarErroApi(error));
+    } finally {
+      setSalvando(false);
+    }
   };
 
   return (
@@ -204,12 +329,26 @@ export default function ClientesCadastrar() {
           </button>
           <button
             type="button"
-            onClick={() => navigate("/clientes")}
-            className="bg-[#A9E2F2] hover:bg-[#94d6eb] text-white h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px]"
+            onClick={handleCadastrar}
+            disabled={salvando}
+            className="bg-[#A9E2F2] hover:bg-[#94d6eb] disabled:opacity-60 disabled:cursor-not-allowed text-white h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px]"
           >
-            Concluir cadastro
+            {salvando ? "Salvando..." : "Concluir cadastro"}
           </button>
         </div>
+        {erroCadastro ? (
+          <p className="pt-4 text-sm text-[#D75757] text-right">{erroCadastro}</p>
+        ) : null}
+        {payloadEnviado ? (
+          <div className="mt-4 rounded-lg border border-[#E6EDF0] bg-[#F8FBFC] p-4">
+            <p className="mb-2 text-xs text-[#6A7B83]">
+              Payload enviado no ultimo submit:
+            </p>
+            <pre className="whitespace-pre-wrap break-all text-xs text-[#404040]">
+              {JSON.stringify(payloadEnviado, null, 2)}
+            </pre>
+          </div>
+        ) : null}
       </div>
 
       <ModalReferencias

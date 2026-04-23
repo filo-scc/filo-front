@@ -1,5 +1,12 @@
 import api from "./api";
 
+const limparUndefined = (obj) => {
+  if (!obj || typeof obj !== "object") return obj;
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, valor]) => valor !== undefined),
+  );
+};
+
 export const getClientes = async (fabricoId) => {
     try {
         const response = await api.get(`/clientes/fabrico/${fabricoId}`);
@@ -52,4 +59,32 @@ export const excluirCliente = async (clienteId) => {
         console.error("Erro ao excluir cliente:", error);
         throw error;
     }
+};
+
+// Cadastrar cliente (DTO compatível com backend)
+export const cadastrarCliente = async (data) => {
+  try {
+    const endereco = limparUndefined(data?.endereco);
+    const payloadBase = limparUndefined({
+      nome: data?.nome,
+      cnpj: data?.cnpj,
+      telefone: data?.telefone,
+      status: data?.status,
+      responsavel: data?.responsavel,
+      fabrico_id: data?.fabrico_id,
+    });
+
+    const payload =
+      endereco && Object.keys(endereco).length > 0
+        ? { ...payloadBase, endereco }
+        : payloadBase;
+
+    console.log("[clientesService] payload POST /clientes:", payload);
+
+    const response = await api.post("/clientes", payload);
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao criar cliente:", error);
+    throw error;
+  }
 };
