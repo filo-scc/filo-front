@@ -5,7 +5,7 @@ import { getProdutoById, getClientesDoProduto, excluirProduto } from "../service
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
 import SecaoDadosProduto from "../components/produtos/SecaoDadosProduto";
 import TabelaClientesDoProduto from "../components/produtos/TabelaClientesDoProduto";
-import ModalExclusao from "../components/geral/ModalExclusao"; // <-- Importado aqui (ajuste o caminho se necessário)
+import ModalExclusao from "../components/geral/ModalExclusao";
 
 export default function ProdutoDetalhes() {
     const { id } = useParams();
