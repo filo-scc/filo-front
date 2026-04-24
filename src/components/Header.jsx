@@ -4,6 +4,11 @@ import { useAuth } from "@/context/AuthContext";
 export function Header() {
     const { user, logout } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
+    const cargoMap = {
+        GERENTE: "Gerente",
+        PROPRIETARIO: "Proprietário",
+        ADMIN: "Admin",
+    };
 
     return (
         <header className="w-full pt-8 pb-2 flex items-center justify-end bg-transparent relative z-50 pr-10">
@@ -18,7 +23,7 @@ export function Header() {
                             {user?.nome || "Mateus Marinho"}
                         </span>
                         <span className="text-[#7B7D80] font-normal text-[15px] leading-none">
-                            {user?.cargo || "Gerente"}
+                            {user?.cargo ? cargoMap[user.cargo] || user.cargo : "Gerente"}
                         </span>
                     </div>
 

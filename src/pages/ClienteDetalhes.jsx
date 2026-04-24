@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getClienteById, getProdutosDoCliente } from "../services/clientesService";
+import { excluirCliente, getClienteById, getProdutosDoCliente } from "../services/clientesService";
 import { Layout } from "../components/Layout";
 
 // Sub-componentes
@@ -9,10 +9,34 @@ import SecaoDadosGerais from "../components/clientes/SecaoDadosGerais";
 import SecaoEndereco from "../components/clientes/SecaoEndereco";
 import TabelaReferencias from "../components/clientes/TabelaReferencias";
 import ModalReferencias from "../components/clientes/ModalReferencias";
+import ModalExclusao from "../components/geral/ModalExclusao";
+import ModalConfirmacaoExclusao from "../components/geral/ModalConfirmacaoExclusao";
 
 export default function ClienteDetalhes() {
     const { id } = useParams();
     const navigate = useNavigate();
+
+    // Estados para o Modal de Exclusão
+    const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
+    const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
+
+    const abrirModalExclusao = () => {
+        setModalExclusaoAberto(true);
+    };
+
+    const handleConfirmarExclusao = async () => {
+        if (!cliente) return;
+
+        try {
+            await excluirCliente(cliente.id);
+
+            setModalExclusaoAberto(false);
+            setModalConfirmacaoAberto(true);
+        } catch (error) {
+            console.error("Erro ao excluir cliente:", error);
+            alert("Erro ao excluir cliente.");
+        }
+    };
 
     const [loading, setLoading] = useState(true);
     const [cliente, setCliente] = useState(null);
@@ -86,7 +110,7 @@ export default function ClienteDetalhes() {
         <Layout>
             <div className="p-6 pt-0 w-full flex justify-center">
                 <div className="bg-white p-8 rounded-[24px] shadow-sm w-full min-h-[400px]">
-                    <DetalhesHeader title="Detalhes do cliente" />
+                    <DetalhesHeader title="Detalhes de cliente" />
 
                     <div className="mt-8 space-y-8">
                         <SecaoDadosGerais cliente={cliente} />
@@ -111,7 +135,10 @@ export default function ClienteDetalhes() {
 
                             {/* Grupo de botões de ação - Permanecem juntos à direita */}
                             <div className="flex gap-4">
-                                <button className="w-[189px] h-[39px] rounded-[18.9px] bg-[#D75757] text-white font-Outfit text-[16px] transition-colors hover:bg-[#d74646]">
+                                <button
+                                    onClick={() => abrirModalExclusao()}
+                                    className="w-[189px] h-[39px] rounded-[18.9px] bg-[#D75757] text-white font-Outfit text-[16px] transition-colors hover:bg-[#d74646]"
+                                >
                                     Excluir cliente
                                 </button>
                                 <button
@@ -133,6 +160,25 @@ export default function ClienteDetalhes() {
                 fabricoId={cliente?.fabrico_id}
                 produtosExistentes={produtos}
                 onSuccess={recarregarTabela}
+            />
+
+            <ModalExclusao
+                isOpen={modalExclusaoAberto}
+                onClose={() => setModalExclusaoAberto(false)}
+                onConfirm={handleConfirmarExclusao}
+                nomeItem={cliente?.nome}
+                tipoItem="o cliente"
+            />
+
+            <ModalConfirmacaoExclusao
+                isOpen={modalConfirmacaoAberto}
+                onClose={() => {
+                    setModalConfirmacaoAberto(false);
+                    navigate("/clientes", {
+                        replace: true,
+                        state: { success: "Cliente excluído com sucesso." },
+                    });
+                }}
             />
         </Layout>
     );

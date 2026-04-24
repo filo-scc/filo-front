@@ -1,4 +1,4 @@
-export default function TabelaReferencias({ produtos, onAbrirModal }) {
+export default function TabelaClientesDoProduto({ clientes, referenciaInterna }) {
     const formatPreco = (valor) => {
         return new Intl.NumberFormat("pt-BR", {
             style: "currency",
@@ -11,20 +11,19 @@ export default function TabelaReferencias({ produtos, onAbrirModal }) {
     return (
         <section>
             <h3 className="text-[20px] font-Outfit font-light text-[#404040] mb-4">
-                Referências associadas
+                Referências associadas a clientes
             </h3>
 
             <div className="rounded-[10px] overflow-hidden border" style={borderStyle}>
-                <table className="w-full text-center border-collapse">
+                <table className="w-full text-center border-collapse table-fixed">
                     <thead>
                         <tr
                             className="bg-[#d9d9d9] text-[#898c8f] text-[16px] font-Outfit font-light border-b"
                             style={borderStyle}
                         >
-                            <th className="py-3 px-4 w-[200px]"></th>
-                            {/* Coluna da foto sem label */}
+                            <th className="py-3 px-4 font-light">Referência Interna</th>
                             <th className="py-3 px-4 font-light border-l" style={borderStyle}>
-                                Referência Interna
+                                Cliente
                             </th>
                             <th className="py-3 px-4 font-light border-l" style={borderStyle}>
                                 Referência Cliente
@@ -35,25 +34,27 @@ export default function TabelaReferencias({ produtos, onAbrirModal }) {
                         </tr>
                     </thead>
                     <tbody>
-                        {produtos.length > 0 ? (
-                            produtos.map((item, idx) => (
+                        {clientes.length > 0 ? (
+                            clientes.map((item, idx) => (
                                 <tr
                                     key={idx}
                                     className="text-[#404040] text-[16px] font-Outfit border-b last:border-b-0"
                                     style={borderStyle}
                                 >
-                                    <td className="py-4 px-4 flex justify-center">
-                                        <img
-                                            src={item.produto.foto}
-                                            alt={item.produto.nome}
-                                            className="w-48 h-32 rounded-[10px] object-cover"
-                                        />
-                                    </td>
+                                    {/* A primeira linha carrega o rowSpan da Referência Interna */}
+                                    {idx === 0 && (
+                                        <td
+                                            rowSpan={clientes.length}
+                                            className="py-3 px-4 font-light align-middle bg-white"
+                                        >
+                                            {referenciaInterna}
+                                        </td>
+                                    )}
                                     <td
                                         className="py-3 px-4 font-light border-l"
                                         style={borderStyle}
                                     >
-                                        {item.produto.nome}
+                                        {item.cliente.nome}
                                     </td>
                                     <td
                                         className="py-3 px-4 font-light border-l"
@@ -73,23 +74,15 @@ export default function TabelaReferencias({ produtos, onAbrirModal }) {
                             <tr>
                                 <td
                                     colSpan="4"
-                                    className="py-10 text-[#898c8f] font-Outfit font-light"
+                                    className="py-10 text-[#898c8f] font-Outfit font-light bg-white"
                                 >
-                                    Esse cliente ainda não possui referências associadas.
+                                    Nenhum cliente associado a este produto.
                                 </td>
                             </tr>
                         )}
                     </tbody>
                 </table>
             </div>
-
-            {/* Botão de + com largura total da tabela e função onAbrirModal */}
-            <button
-                onClick={onAbrirModal}
-                className="w-full mt-2 flex justify-center items-center h-[45px] bg-[#f4f4f4] rounded-[10px] hover:bg-gray-200 transition-colors"
-            >
-                <img src="/mais_cinza.png" alt="Adicionar" className="w-6 h-6 object-contain" />
-            </button>
         </section>
     );
 }
