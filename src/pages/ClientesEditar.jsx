@@ -167,6 +167,10 @@ export default function ClientesEditar() {
     setForm((prev) => ({ ...prev, cep: formatarCep(e.target.value) }));
   };
 
+  const handleChangeNumeroEndereco = (e) => {
+    setForm((prev) => ({ ...prev, numero: apenasNumeros(e.target.value) }));
+  };
+
   const recarregarProdutos = async () => {
     if (!id || usarMock) return;
     try {
@@ -241,7 +245,10 @@ export default function ClientesEditar() {
             : "",
           cep: end.cep ? formatarCep(String(end.cep)) : "",
           rua: end.rua ?? "",
-          numero: end.numero ?? "",
+          numero:
+            end.numero != null && String(end.numero).trim() !== ""
+              ? apenasNumeros(String(end.numero))
+              : "",
           bairro: end.bairro ?? "",
           complemento: end.complemento ?? "",
           cidade: end.cidade ?? "",
@@ -307,7 +314,7 @@ export default function ClientesEditar() {
     const endereco = {
       cep: cepNumerico,
       rua: valorOuUndefined(form.rua),
-      numero: valorOuUndefined(form.numero),
+      numero: numeroOuUndefined(apenasNumeros(form.numero)),
       bairro: valorOuUndefined(form.bairro),
       complemento: valorOuUndefined(form.complemento),
       cidade: valorOuUndefined(form.cidade),
@@ -408,7 +415,9 @@ export default function ClientesEditar() {
                   <FloatingLabelInput
                     label="Nº"
                     value={form.numero}
-                    onChange={handleChange("numero")}
+                    onChange={handleChangeNumeroEndereco}
+                    inputMode="numeric"
+                    autoComplete="off"
                   />
                 </div>
                 <div className="sm:col-span-3">

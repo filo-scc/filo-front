@@ -10,12 +10,14 @@ export default function FloatingLabelInput({
   className = "",
   inputClassName = "",
   endAdornment,
+  ...inputProps
 }) {
   const hasValue = Boolean(value && String(value).length > 0);
 
   return (
     <div className={`relative w-full group ${className}`}>
       <input
+        {...inputProps}
         type={type}
         value={value}
         onChange={onChange}
