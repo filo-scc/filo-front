@@ -25,6 +25,16 @@ export const createFaccao = async (data) => {
     }
 };
 
+export const updateFaccao = async (id, data) => {
+    try {
+        const response = await api.put(`/faccoes/${id}`, data);
+        return response.data;
+    } catch (error) {
+        console.error("Erro ao atualizar facção:", error);
+        throw error;
+    }
+};
+
 export const excluirFaccao = async (id) => {
     await api.delete(`/faccoes/${id}`);
 };
