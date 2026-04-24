@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getFaccoesByFabrico } from "../services/faccaoService";
+import { excluirFaccao, getFaccoesByFabrico } from "../services/faccaoService";
+import ModalExclusao from "../components/geral/ModalExclusao";
+import ModalConfirmacaoExclusao from "../components/geral/ModalConfirmacaoExclusao";
+import MenuOpcoes from "../components/geral/MenuOpcoes";
 
 const Faccoes = () => {
     const userString = localStorage.getItem("user");
@@ -9,6 +12,12 @@ const Faccoes = () => {
     const [loading, setLoading] = useState(true);
     const [dropdownOpenId, setDropdownOpenId] = useState(null);
     const navigate = useNavigate();
+
+    const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
+    const [faccaoSelecionada, setFaccaoSelecionada] = useState(null);
+
+    // Estado para o Modal de Confirmação de Exclusão
+    const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
 
     const fabricoId = userString ? JSON.parse(userString).fabrico_id : null;
 
@@ -38,6 +47,32 @@ const Faccoes = () => {
         document.addEventListener("click", handleClickOutside);
         return () => document.removeEventListener("click", handleClickOutside);
     }, []);
+
+    // Funções de Ação do Menu
+    const handleEdit = (id) => {
+        navigate(`/editar-faccao/${id}`);
+    };
+
+    const abrirModalExclusao = (faccao) => {
+        setFaccaoSelecionada(faccao);
+        setModalExclusaoAberto(true);
+    };
+
+    const handleConfirmarExclusao = async () => {
+        if (!faccaoSelecionada) return;
+
+        try {
+            await excluirFaccao(faccaoSelecionada.id);
+
+            setFaccoes(faccoes.filter((c) => c.id !== faccaoSelecionada.id));
+            setModalExclusaoAberto(false);
+            setFaccaoSelecionada(null);
+            setModalConfirmacaoAberto(true);
+        } catch (error) {
+            console.error("Erro ao excluir facção:", error);
+            alert("Erro ao excluir facção.");
+        }
+    };
 
     return (
         <div className="p-6 pt-0 w-full">
@@ -130,6 +165,7 @@ const Faccoes = () => {
                                             // Definimos se a linha é par (branca) ou ímpar (cinza)
                                             const isPar = index % 2 === 0;
                                             const isMenuOpen = dropdownOpenId === faccao.id;
+                                            const isLast = index === faccoes.length - 1;
 
                                             return (
                                                 <tr
@@ -140,7 +176,7 @@ const Faccoes = () => {
                                                     }
                                                     className={`
                                                         h-[64px] transition-colors cursor-pointer border-b last:border-0
-                                                        ${isMenuOpen ? "relative z-50" : "relative z-0"}
+                                                        ${isMenuOpen ? "relative z-50" : ""}
                                                         ${isPar ? "bg-white hover:bg-[#FBFBFB] hover:text-[#4696ad]" : "bg-[#F4F4F4] hover:bg-[#ededed] hover:text-[#4696ad]"}
                                                     `}
                                                 >
@@ -162,72 +198,18 @@ const Faccoes = () => {
                                                     <td className="px-6 text-[14px]">
                                                         {faccao.telefone || "Não informado"}
                                                     </td>
-                                                    <td className="px-6">
-                                                        <div className="relative flex justify-center items-center">
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    setDropdownOpenId(
-                                                                        isMenuOpen
-                                                                            ? null
-                                                                            : faccao.id,
-                                                                    );
-                                                                }}
-                                                                className={`w-10 h-10 flex items-center justify-center transition-colors rounded-[8px] text-[#7B7D80] hover:bg-gray-200 ${isMenuOpen ? "bg-gray-200" : ""}`}
-                                                            >
-                                                                <svg
-                                                                    className="w-5 h-5"
-                                                                    fill="currentColor"
-                                                                    viewBox="0 0 24 24"
-                                                                >
-                                                                    <path d="M6 12a2 2 0 11-4 0 2 2 0 014 0zM14 12a2 2 0 11-4 0 2 2 0 014 0zM22 12a2 2 0 11-4 0 2 2 0 014 0z" />
-                                                                </svg>
-                                                            </button>
-
-                                                            {/* Dropdown Menu Visual */}
-                                                            {isMenuOpen && (
-                                                                <div
-                                                                    className="absolute top-full right-0 mt-2 bg-white border border-gray-100 rounded-[12px] shadow-[0px_4px_12px_rgba(0,0,0,0.15)] w-[120px] flex flex-col z-[999] overflow-hidden"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        setDropdownOpenId(null);
-                                                                    }}
-                                                                >
-                                                                    <button className="flex items-center gap-2 px-4 py-2.5 text-[14px] text-[#7B7D80] hover:bg-gray-50 transition-colors w-full text-left">
-                                                                        <svg
-                                                                            className="w-[14px] h-[14px] text-gray-500"
-                                                                            fill="none"
-                                                                            stroke="currentColor"
-                                                                            strokeWidth="2"
-                                                                            viewBox="0 0 24 24"
-                                                                            strokeLinecap="round"
-                                                                            strokeLinejoin="round"
-                                                                        >
-                                                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                                                        </svg>
-                                                                        Editar
-                                                                    </button>
-
-                                                                    <div className="h-[1px] w-full bg-gray-100"></div>
-
-                                                                    <button className="flex items-center gap-2 px-4 py-2.5 text-[14px] text-red-500 hover:bg-red-50 transition-colors w-full text-left">
-                                                                        <svg
-                                                                            className="w-[14px] h-[14px] text-red-500"
-                                                                            fill="none"
-                                                                            stroke="currentColor"
-                                                                            strokeWidth="2"
-                                                                            viewBox="0 0 24 24"
-                                                                            strokeLinecap="round"
-                                                                            strokeLinejoin="round"
-                                                                        >
-                                                                            <polyline points="3 6 5 6 21 6"></polyline>
-                                                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                                                        </svg>
-                                                                        Excluir
-                                                                    </button>
-                                                                </div>
-                                                            )}
+                                                    <td
+                                                        className={`px-6 ${isLast ? "rounded-br-xl" : ""}`}
+                                                    >
+                                                        {/* stopPropagation impede que o clique no menu acione a navegação da linha inteira */}
+                                                        <div onClick={(e) => e.stopPropagation()}>
+                                                            {/* Implementação do Menu Componentizado */}
+                                                            <MenuOpcoes
+                                                                onEdit={() => handleEdit(faccao.id)}
+                                                                onDelete={() =>
+                                                                    abrirModalExclusao(faccao)
+                                                                }
+                                                            />
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -240,6 +222,18 @@ const Faccoes = () => {
                     </div>
                 </div>
             </div>
+            <ModalExclusao
+                isOpen={modalExclusaoAberto}
+                onClose={() => setModalExclusaoAberto(false)}
+                onConfirm={handleConfirmarExclusao}
+                nomeItem={faccaoSelecionada?.nome}
+                tipoItem="a facção"
+            />
+
+            <ModalConfirmacaoExclusao
+                isOpen={modalConfirmacaoAberto}
+                onClose={() => setModalConfirmacaoAberto(false)}
+            />
         </div>
     );
 };

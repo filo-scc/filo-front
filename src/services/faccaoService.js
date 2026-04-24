@@ -24,3 +24,7 @@ export const createFaccao = async (data) => {
         throw error;
     }
 };
+
+export const excluirFaccao = async (id) => {
+    await api.delete(`/faccoes/${id}`);
+};

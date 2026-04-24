@@ -2,6 +2,27 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createFaccao } from "../services/faccaoService";
 
+const FloatingInput = ({ label, name, value, onChange, containerClass, ...rest }) => (
+    <div className={`relative group ${containerClass}`}>
+        <input
+            name={name}
+            value={value}
+            onChange={onChange}
+            className="w-full h-[39px] border border-[#D3D3D3] rounded-[10px] px-3 leading-[39px] text-sm text-gray-600 focus:outline-none"
+            {...rest}
+        />
+        <label
+            className={`absolute left-3 bg-white px-1 text-gray-400 transition-all duration-200 pointer-events-none ${
+                value
+                    ? "top-0 -translate-y-1/2 text-xs text-[#898C8F]"
+                    : "top-1/2 -translate-y-1/2 text-sm"
+            } group-focus-within:top-0 group-focus-within:-translate-y-1/2 group-focus-within:text-xs group-focus-within:text-[#898C8F]`}
+        >
+            {label}
+        </label>
+    </div>
+);
+
 const FaccaoCadastro = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
@@ -87,8 +108,9 @@ const FaccaoCadastro = () => {
         }
     };
 
+    //Para o Dropdown
     const inputClass =
-        "border border-[#D3D3D3] rounded-[10px] px-5 py-3 text-sm text-gray-600 focus:outline-none focus:border-[#A9E2F2] placeholder-gray-400";
+        "border border-[#D3D3D3] rounded-[10px] px-3 h-[39px] text-sm text-gray-600 focus:outline-none";
 
     return (
         <div className="w-full flex justify-center p-6">
@@ -110,31 +132,28 @@ const FaccaoCadastro = () => {
                     <div>
                         <h2 className="text-[#404040] font-light mb-4">Dados gerais</h2>
                         <div className="flex flex-wrap gap-4">
-                            <input
-                                required
-                                type="text"
+                            <FloatingInput
+                                label="Nome"
                                 name="nome"
                                 value={formData.nome}
                                 onChange={handleChange}
-                                placeholder="Nome"
-                                className={`${inputClass} w-full flex-1 min-w-[200px]`}
+                                containerClass="w-full flex-1 min-w-[200px]"
+                                required
                             />
-                            <input
-                                type="text"
+                            <FloatingInput
+                                label="Nome do responsável"
                                 name="responsavel"
                                 value={formData.responsavel}
                                 onChange={handleChange}
-                                placeholder="Nome do responsável"
-                                className={`${inputClass} w-full flex-[1.5] min-w-[250px]`}
+                                containerClass="w-full flex-[1.5] min-w-[250px]"
                             />
-                            <input
-                                type="text"
+                            <FloatingInput
+                                label="Telefone"
                                 name="telefone"
                                 value={formData.telefone}
                                 onChange={handleChange}
-                                placeholder="Telefone"
+                                containerClass="w-full flex-1 min-w-[200px]"
                                 maxLength={11}
-                                className={`${inputClass} w-full flex-1 min-w-[200px]`}
                             />
                         </div>
                     </div>
@@ -145,65 +164,58 @@ const FaccaoCadastro = () => {
                         <div className="flex flex-col gap-4">
                             {/* Linha 1 do Endereço */}
                             <div className="flex flex-wrap gap-4">
-                                <input
-                                    type="text"
+                                <FloatingInput
+                                    label="CEP"
                                     name="cep"
                                     value={formData.cep}
                                     onChange={handleChange}
-                                    placeholder="CEP"
-                                    className={`${inputClass} w-full flex-1 min-w-[150px]`}
+                                    containerClass="w-full flex-1 min-w-[150px]"
                                 />
-                                <input
-                                    type="text"
+                                <FloatingInput
+                                    label="Rua"
                                     name="rua"
                                     value={formData.rua}
                                     onChange={handleChange}
-                                    placeholder="Rua"
-                                    className={`${inputClass} w-full flex-[2] min-w-[250px]`}
+                                    containerClass="w-full flex-[2] min-w-[250px]"
                                 />
-                                <input
-                                    type="text"
+                                <FloatingInput
+                                    label="Nº"
                                     name="numero"
                                     value={formData.numero}
                                     onChange={handleChange}
-                                    placeholder="Nº"
-                                    className={`${inputClass} w-[100px] flex-shrink-0`}
+                                    containerClass="w-[100px] flex-shrink-0"
                                 />
-                                <input
-                                    type="text"
+                                <FloatingInput
+                                    label="Bairro"
                                     name="bairro"
                                     value={formData.bairro}
                                     onChange={handleChange}
-                                    placeholder="Bairro"
-                                    className={`${inputClass} w-full flex-1 min-w-[200px]`}
+                                    containerClass="w-full flex-1 min-w-[200px]"
                                 />
                             </div>
 
                             {/* Linha 2 do Endereço */}
                             <div className="flex flex-wrap gap-4">
-                                <input
-                                    type="text"
+                                <FloatingInput
+                                    label="Complemento"
                                     name="complemento"
                                     value={formData.complemento}
                                     onChange={handleChange}
-                                    placeholder="Complemento"
-                                    className={`${inputClass} w-full flex-[1.5] min-w-[200px]`}
+                                    containerClass="w-full flex-[1.5] min-w-[200px]"
                                 />
-                                <input
-                                    type="text"
+                                <FloatingInput
+                                    label="Cidade"
                                     name="cidade"
                                     value={formData.cidade}
                                     onChange={handleChange}
-                                    placeholder="Cidade"
-                                    className={`${inputClass} w-full flex-[1.5] min-w-[200px]`}
+                                    containerClass="w-full flex-[1.5] min-w-[200px]"
                                 />
-                                <input
-                                    type="text"
+                                <FloatingInput
+                                    label="Estado"
                                     name="estado"
                                     value={formData.estado}
                                     onChange={handleChange}
-                                    placeholder="Estado"
-                                    className={`${inputClass} w-full flex-1 min-w-[150px]`}
+                                    containerClass="w-full flex-1 min-w-[150px]"
                                 />
                             </div>
                         </div>
@@ -214,7 +226,7 @@ const FaccaoCadastro = () => {
                         <h2 className="text-[#404040] font-light mb-4">Financeiro</h2>
                         <div className="flex flex-col gap-4">
                             <div className="flex flex-wrap gap-4">
-                                {/* Dropdown Customizado */}
+                                {/* Dropdown Customizado (mantido) */}
                                 <div className="relative w-full md:w-[212px]">
                                     <div
                                         className={`${inputClass} bg-white flex justify-between items-center cursor-pointer`}
@@ -229,9 +241,10 @@ const FaccaoCadastro = () => {
                                         >
                                             {formData.forma_pagamento || "Dado de pagamento"}
                                         </span>
-                                        {/* Ícone de setinha para baixo */}
                                         <svg
-                                            className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${dropdownAberto ? "rotate-180" : ""}`}
+                                            className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
+                                                dropdownAberto ? "rotate-180" : ""
+                                            }`}
                                             fill="none"
                                             stroke="currentColor"
                                             viewBox="0 0 24 24"
@@ -253,7 +266,6 @@ const FaccaoCadastro = () => {
                                                 onClick={() => setDropdownAberto(false)}
                                             ></div>
 
-                                            {/* A caixinha com as opções */}
                                             <div className="absolute z-20 mt-2 w-full bg-white border border-[#D3D3D3] rounded-[10px] shadow-lg overflow-hidden">
                                                 <div
                                                     className="px-5 py-3 text-sm text-gray-600 hover:bg-[#A9E2F2]/30 cursor-pointer transition-colors"
@@ -288,46 +300,42 @@ const FaccaoCadastro = () => {
                                     )}
                                 </div>
 
-                                {/* Mostra o campo PIX ocupando o resto do espaço (flex-1) */}
+                                {/* Campo PIX */}
                                 {formData.forma_pagamento !== "TED" && (
-                                    <input
-                                        type="text"
+                                    <FloatingInput
+                                        label="Inserir chave PIX"
                                         name="chave_pix"
                                         value={formData.chave_pix}
                                         onChange={handleChange}
-                                        placeholder="Inserir chave PIX"
-                                        className={`${inputClass}  min-w-[328px]`}
+                                        containerClass="w-full flex-1 min-w-[328px]"
                                         disabled={!formData.forma_pagamento}
                                     />
                                 )}
                             </div>
 
-                            {/* Campos TED usando tamanhos proporcionais (flex-1) */}
+                            {/* Campos TED */}
                             {formData.forma_pagamento === "TED" && (
                                 <div className="flex flex-wrap gap-4">
-                                    <input
-                                        type="text"
+                                    <FloatingInput
+                                        label="Banco"
                                         name="banco"
                                         value={formData.banco}
                                         onChange={handleChange}
-                                        placeholder="Banco"
-                                        className={`${inputClass} w-full flex-1 min-w-[200px]`}
+                                        containerClass="w-full flex-1 min-w-[200px]"
                                     />
-                                    <input
-                                        type="text"
+                                    <FloatingInput
+                                        label="Agência"
                                         name="agencia"
                                         value={formData.agencia}
                                         onChange={handleChange}
-                                        placeholder="Agência"
-                                        className={`${inputClass} w-full flex-1 min-w-[200px]`}
+                                        containerClass="w-full flex-1 min-w-[200px]"
                                     />
-                                    <input
-                                        type="text"
+                                    <FloatingInput
+                                        label="Conta"
                                         name="conta"
                                         value={formData.conta}
                                         onChange={handleChange}
-                                        placeholder="Conta"
-                                        className={`${inputClass} w-full flex-1 min-w-[200px]`}
+                                        containerClass="w-full flex-1 min-w-[200px]"
                                     />
                                 </div>
                             )}
