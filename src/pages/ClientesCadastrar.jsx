@@ -118,13 +118,7 @@ export default function ClientesCadastrar() {
     usuarioLogado?.fabricoId,
     usuarioLogado?.fabrico?.id,
   );
-  const usuarioId = primeiroNumeroValido(
-    usuarioLogado?.id,
-    usuarioLogado?.usuario_id,
-    usuarioLogado?.usuarioId,
-    usuarioLogado?.usuario?.id,
-    usuarioLogado?.usuario?.usuario_id,
-  );
+
   const faccaoId = primeiroNumeroValido(
     usuarioLogado?.faccao_id,
     usuarioLogado?.faccaoId,
@@ -176,14 +170,20 @@ export default function ClientesCadastrar() {
       return;
     }
 
+    const cepNumerico = valorOuUndefined(apenasNumeros(form.cep));
+    if (cepNumerico && cepNumerico.length !== 8) {
+      setErroCadastro("CEP invalido. Informe 8 digitos.");
+      return;
+    }
+
     const endereco = {
+      cep: cepNumerico,
       rua: valorOuUndefined(form.rua),
       numero: valorOuUndefined(form.numero),
       bairro: valorOuUndefined(form.bairro),
       complemento: valorOuUndefined(form.complemento),
       cidade: valorOuUndefined(form.cidade),
       estado: valorOuUndefined(form.estado),
-      // usuario_id: numeroOuUndefined(usuarioId),
       faccao_id: numeroOuUndefined(faccaoId),
     };
 
@@ -336,19 +336,6 @@ export default function ClientesCadastrar() {
             {salvando ? "Salvando..." : "Concluir cadastro"}
           </button>
         </div>
-        {erroCadastro ? (
-          <p className="pt-4 text-sm text-[#D75757] text-right">{erroCadastro}</p>
-        ) : null}
-        {payloadEnviado ? (
-          <div className="mt-4 rounded-lg border border-[#E6EDF0] bg-[#F8FBFC] p-4">
-            <p className="mb-2 text-xs text-[#6A7B83]">
-              Payload enviado no ultimo submit:
-            </p>
-            <pre className="whitespace-pre-wrap break-all text-xs text-[#404040]">
-              {JSON.stringify(payloadEnviado, null, 2)}
-            </pre>
-          </div>
-        ) : null}
       </div>
 
       <ModalReferencias
