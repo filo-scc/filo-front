@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getFaccaoById, updateFaccao } from "../services/faccaoService";
+import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 
 const FloatingInput = ({ label, name, value, onChange, containerClass, ...rest }) => (
     <div className={`relative group ${containerClass}`}>
@@ -30,6 +31,7 @@ const EditarFaccao = () => {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
     const [dropdownAberto, setDropdownAberto] = useState(false);
+    const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
 
     const [formData, setFormData] = useState({
         nome: "",
@@ -146,7 +148,7 @@ const EditarFaccao = () => {
             }
 
             await updateFaccao(Number(id), payload);
-            navigate("/faccoes");
+            setModalConfirmacaoAberto(true);
         } catch (err) {
             console.error(err);
             setError(
@@ -175,6 +177,7 @@ const EditarFaccao = () => {
     }
 
     return (
+        <>
         <div className="p-6 pt-0 w-full">
             <div className="bg-white p-8 rounded-[24px] shadow-sm w-full mx-auto">
 
@@ -389,6 +392,13 @@ const EditarFaccao = () => {
                 </form>
             </div>
         </div>
+
+            <ModalConfirmacao
+                isOpen={modalConfirmacaoAberto}
+                onClose={() => { setModalConfirmacaoAberto(false); navigate("/faccoes"); }}
+                type="atualizado"
+            />
+        </>
     );
 };
 
