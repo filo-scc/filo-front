@@ -108,13 +108,13 @@ const FaccaoCadastro = () => {
         }
     };
 
-    //Para o Dropdown
     const inputClass =
         "border border-[#D3D3D3] rounded-[10px] px-3 h-[39px] text-sm text-gray-600 focus:outline-none";
 
     return (
-        <div className="w-full flex justify-center p-6">
-            <div className="bg-white p-6 rounded-[24px] shadow-sm w-full mx-auto">
+        <div className="w-full flex justify-center px-8 py-6 lg:px-16 lg:py-10">
+            {/* AQUI: lg:px-32 aumenta as laterais internas, lg:py-8 diminui a parte superior/inferior */}
+            <div className="bg-white p-14 lg:px-19 lg:py-8 rounded-[24px] shadow-sm w-full max-w-[1400px] mx-auto">
                 {/* Título */}
                 <div className="flex items-center gap-3 mb-10 text-gray-800">
                     <img
@@ -226,7 +226,7 @@ const FaccaoCadastro = () => {
                         <h2 className="text-[#404040] font-light mb-4">Financeiro</h2>
                         <div className="flex flex-col gap-4">
                             <div className="flex flex-wrap gap-4">
-                                {/* Dropdown Customizado (mantido) */}
+                                {/* Dropdown Customizado */}
                                 <div className="relative w-full md:w-[212px]">
                                     <div
                                         className={`${inputClass} bg-white flex justify-between items-center cursor-pointer`}
@@ -239,7 +239,11 @@ const FaccaoCadastro = () => {
                                                     : "text-gray-400"
                                             }
                                         >
-                                            {formData.forma_pagamento || "Dado de pagamento"}
+                                            {formData.forma_pagamento === "PIX"
+                                                ? "Pix"
+                                                : formData.forma_pagamento === "TED"
+                                                  ? "Conta bancária"
+                                                  : "Dado de pagamento"}
                                         </span>
                                         <svg
                                             className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
@@ -266,9 +270,13 @@ const FaccaoCadastro = () => {
                                                 onClick={() => setDropdownAberto(false)}
                                             ></div>
 
-                                            <div className="absolute z-20 mt-2 w-full bg-white border border-[#D3D3D3] rounded-[10px] shadow-lg overflow-hidden">
+                                            <div className="absolute z-20 mt-1 py-1 w-full bg-white border border-[#D3D3D3] rounded-[10px] shadow-lg overflow-hidden">
                                                 <div
-                                                    className="px-5 py-3 text-sm text-gray-600 hover:bg-[#A9E2F2]/30 cursor-pointer transition-colors"
+                                                    className={`px-4 py-2 text-sm cursor-pointer transition-colors ${
+                                                        formData.forma_pagamento === "PIX"
+                                                            ? "border-l-[3px] border-[#C4F042] text-gray-700 bg-white"
+                                                            : "border-l-[3px] border-transparent text-gray-600 hover:bg-gray-50"
+                                                    }`}
                                                     onClick={() => {
                                                         handleChange({
                                                             target: {
@@ -279,10 +287,14 @@ const FaccaoCadastro = () => {
                                                         setDropdownAberto(false);
                                                     }}
                                                 >
-                                                    PIX
+                                                    Pix
                                                 </div>
                                                 <div
-                                                    className="px-5 py-3 text-sm text-gray-600 hover:bg-[#A9E2F2]/30 cursor-pointer transition-colors border-t border-gray-100"
+                                                    className={`px-4 py-2 text-sm cursor-pointer transition-colors bg-[#F5F5F5] ${
+                                                        formData.forma_pagamento === "TED"
+                                                            ? "border-l-[3px] border-[#C4F042] text-gray-700"
+                                                            : "border-l-[3px] border-transparent text-gray-600 hover:bg-[#EBEBEB]"
+                                                    }`}
                                                     onClick={() => {
                                                         handleChange({
                                                             target: {
@@ -293,7 +305,7 @@ const FaccaoCadastro = () => {
                                                         setDropdownAberto(false);
                                                     }}
                                                 >
-                                                    TED (Transferência)
+                                                    Conta bancária
                                                 </div>
                                             </div>
                                         </>
