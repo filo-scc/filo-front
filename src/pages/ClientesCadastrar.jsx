@@ -76,6 +76,10 @@ export default function ClientesCadastrar() {
     setForm((prev) => ({ ...prev, cep: formatarCep(e.target.value) }));
   };
 
+  const handleChangeNumeroEndereco = (e) => {
+    setForm((prev) => ({ ...prev, numero: apenasNumeros(e.target.value) }));
+  };
+
   const handleAdicionarProdutos = (produtosSelecionados) => {
     if (!produtosSelecionados?.length) return;
 
@@ -179,7 +183,7 @@ export default function ClientesCadastrar() {
     const endereco = {
       cep: cepNumerico,
       rua: valorOuUndefined(form.rua),
-      numero: valorOuUndefined(form.numero),
+      numero: numeroOuUndefined(apenasNumeros(form.numero)),
       bairro: valorOuUndefined(form.bairro),
       complemento: valorOuUndefined(form.complemento),
       cidade: valorOuUndefined(form.cidade),
@@ -275,7 +279,9 @@ export default function ClientesCadastrar() {
               <FloatingLabelInput
                 label="Nº"
                 value={form.numero}
-                onChange={handleChange("numero")}
+                onChange={handleChangeNumeroEndereco}
+                inputMode="numeric"
+                autoComplete="off"
               />
             </div>
             <div className="sm:col-span-3">
