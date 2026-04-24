@@ -119,7 +119,7 @@ export default function ClienteDetalhes() {
                 </button>
                 <button
                   className="w-[189px] h-[39px] rounded-[18.9px] bg-[#a9e2f2] text-[#4696ad] font-Outfit text-[16px] transition-colors hover:bg-[#A2DCED]"
-                  onClick={() => navigate(`/clientes/editar`)}
+                  onClick={() => navigate(`/clientes/${id}/editar`)}
                 >
                   Editar cliente
                 </button>

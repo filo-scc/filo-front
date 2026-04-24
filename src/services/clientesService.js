@@ -74,3 +74,28 @@ export const cadastrarCliente = async (data) => {
     throw error;
   }
 };
+
+export const atualizarCliente = async (id, data) => {
+  try {
+    const endereco = limparUndefined(data?.endereco);
+    const payloadBase = limparUndefined({
+      nome: data?.nome,
+      cnpj: data?.cnpj,
+      telefone: data?.telefone,
+      status: data?.status,
+      responsavel: data?.responsavel,
+      fabrico_id: data?.fabrico_id,
+    });
+
+    const payload =
+      endereco && Object.keys(endereco).length > 0
+        ? { ...payloadBase, endereco }
+        : payloadBase;
+
+    const response = await api.put(`/clientes/${id}`, payload);
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao atualizar cliente:", error);
+    throw error;
+  }
+};

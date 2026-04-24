@@ -50,7 +50,7 @@ function AppRoutes() {
         />
 
         <Route
-          path="/clientes/editar"
+          path="/clientes/:id/editar"
           element={
             <PrivateRoute>
               <Layout>
