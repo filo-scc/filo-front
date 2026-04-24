@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function ModalConfirmacaoExclusao({ isOpen, onClose }) {
+export default function ModalConfirmacao({ isOpen, onClose, type }) {
     if (!isOpen) return null;
 
     return (
@@ -23,7 +23,7 @@ export default function ModalConfirmacaoExclusao({ isOpen, onClose }) {
 
                 {/* Texto dinâmico utilizando o tipoItem */}
                 <p className="text-[18px] font-light text-[#404040] px-6 mb-8">
-                    Cadastro excluído com sucesso!
+                    Cadastro {type} com sucesso!
                 </p>
 
                 <div className="flex gap-4 w-full">

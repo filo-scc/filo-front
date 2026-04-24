@@ -4,7 +4,7 @@ import { Layout } from "../components/Layout";
 import { getClientes, excluirCliente } from "../services/clientesService";
 import MenuOpcoes from "../components/geral/MenuOpcoes"; // Ajuste o caminho conforme necessário
 import ModalExclusao from "../components/geral/ModalExclusao"; // Ajuste o caminho conforme necessário
-import ModalConfirmacaoExclusao from "../components/geral/ModalConfirmacaoExclusao";
+import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 
 export default function Clientes() {
     const [clientes, setClientes] = useState([]);
@@ -243,9 +243,10 @@ export default function Clientes() {
                 tipoItem="o cliente"
             />
 
-            <ModalConfirmacaoExclusao
+            <ModalConfirmacao
                 isOpen={modalConfirmacaoAberto}
                 onClose={() => setModalConfirmacaoAberto(false)}
+                type="excluído"
             />
         </Layout>
     );
