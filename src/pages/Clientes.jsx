@@ -54,7 +54,7 @@ export default function Clientes() {
 
     // Funções de Ação do Menu
     const handleEdit = (id) => {
-        navigate(`/editar-cliente/${id}`);
+        navigate(`/cliente/editar/${id}`);
     };
 
     const abrirModalExclusao = (cliente) => {
