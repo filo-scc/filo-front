@@ -10,7 +10,7 @@ import SecaoEndereco from "../components/clientes/SecaoEndereco";
 import TabelaReferencias from "../components/clientes/TabelaReferencias";
 import ModalReferencias from "../components/clientes/ModalReferencias";
 import ModalExclusao from "../components/geral/ModalExclusao";
-import ModalConfirmacaoExclusao from "../components/geral/ModalConfirmacaoExclusao";
+import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 
 export default function ClienteDetalhes() {
     const { id } = useParams();
@@ -170,7 +170,7 @@ export default function ClienteDetalhes() {
                 tipoItem="o cliente"
             />
 
-            <ModalConfirmacaoExclusao
+            <ModalConfirmacao
                 isOpen={modalConfirmacaoAberto}
                 onClose={() => {
                     setModalConfirmacaoAberto(false);
@@ -179,6 +179,7 @@ export default function ClienteDetalhes() {
                         state: { success: "Cliente excluído com sucesso." },
                     });
                 }}
+                type="excluído"
             />
         </Layout>
     );
