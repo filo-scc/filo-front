@@ -157,9 +157,6 @@ const EditarFaccao = () => {
         }
     };
 
-    const inputClass =
-        "border border-[#D3D3D3] rounded-[10px] px-3 h-[39px] text-sm text-gray-600 focus:outline-none";
-
     if (loading) {
         return (
             <div className="p-6 pt-0 w-full">
