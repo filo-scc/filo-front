@@ -163,7 +163,7 @@ const EditarFaccao = () => {
                 <div className="bg-white p-8 rounded-[24px] shadow-sm w-full mx-auto">
                     <div className="flex items-center gap-3 mb-10">
                         <img
-                            src="/maquina-costura-preta.png"
+                            src="/maquina-costura-add.png"
                             alt="Ícone"
                             className="w-[30px] h-[30px]"
                         />
@@ -182,7 +182,7 @@ const EditarFaccao = () => {
                     {/* Título */}
                     <div className="flex items-center gap-3 mb-10 pl-6 text-gray-800">
                         <img
-                            src="/maquina-costura-preta.png"
+                            src="/maquina-costura-add.png"
                             alt="Ícone"
                             className="w-[30px] h-[30px]"
                         />
