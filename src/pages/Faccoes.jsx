@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { excluirFaccao, getFaccoesByFabrico } from "../services/faccaoService";
 import ModalExclusao from "../components/geral/ModalExclusao";
-import ModalConfirmacaoExclusao from "../components/geral/ModalConfirmacaoExclusao";
+import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import MenuOpcoes from "../components/geral/MenuOpcoes";
 
 const Faccoes = () => {
@@ -230,9 +230,10 @@ const Faccoes = () => {
                 tipoItem="a facção"
             />
 
-            <ModalConfirmacaoExclusao
+            <ModalConfirmacao
                 isOpen={modalConfirmacaoAberto}
                 onClose={() => setModalConfirmacaoAberto(false)}
+                type="excluído"
             />
         </div>
     );
