@@ -1,30 +1,74 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { getProdutosByFabrico } from "../services/produtoService";
+import { useNavigate } from "react-router-dom";
 
-// Componente do Card com o Fill e Radius solicitados
-const ProdutoCard = () => {
+// Componente do Card
+const ProdutoCard = ({ id, nome, tipo, data, foto }) => {
+  const navigate = useNavigate();
+
   return (
-    <div 
-      style={{ backgroundColor: '#F3F4FA' }}
-      className="w-full h-[238px] rounded-[16px] pt-4 px-4 pb-0 flex flex-col items-center justify-start opacity-100"
+    <div
+      onClick={() => navigate(`/produtos/${id}`)}
+      className="w-full bg-[#F3F4FA] rounded-[16px] p-[6px] flex flex-col transition-all hover:shadow-sm font-['Outfit',_sans-serif] cursor-pointer"
     >
-      {/* Conteúdo interno virá a seguir */}
+      {/* Contêiner da Imagem */}
+      <div className="relative w-full h-[155px] bg-white rounded-t-[14px] rounded-b-[4px] overflow-hidden">
+        <img src={foto} alt={nome} className="w-full h-full object-cover" />
+
+        {/* Overlay Gradiente: Azul do ModalReferencias (40% opacidade) */}
+        <div className="absolute inset-0 z-10 bg-gradient-to-t from-[#4696AD]/40 via-transparent via-50% to-transparent" />
+
+        {/* Nome do produto e Ícone etiqueta-branca.png*/}
+        <div className="absolute bottom-[10px] left-[10px] right-[10px] z-20 flex items-center gap-[4px]">
+          <img
+            src="/etiqueta-branca.png"
+            className="w-[14px] h-[14px] shrink-0 object-contain"
+          />
+          <span className="text-white text-[14px] font-normal tracking-wide drop-shadow-sm truncate block">
+            {nome}
+          </span>
+        </div>
+      </div>
+
+      {/* Legenda inferior */}
+      <div className="flex flex-col px-1 pt-1.5 pb-1">
+        <span className="text-[#7B7D80] text-[10px] font-light truncate leading-tight">
+          {tipo}
+        </span>
+        <span className="text-[#7B7D80] text-[10px] font-light truncate leading-tight">
+          {data}
+        </span>
+      </div>
     </div>
   );
 };
 
 export default function Produtos() {
+  const [produtos, setProdutos] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filtroAberto, setFiltroAberto] = useState(false);
-  const [filtroSelecionado, setFiltroSelecionado] = useState("Mais vendidos");
 
-  const opcoesFiltro = ["Mais vendidos", "Data de criação", "Nome"];
+  useEffect(() => {
+    const fetchProdutos = async () => {
+      setLoading(true);
+      try {
+        const dados = await getProdutosByFabrico(1);
+        setProdutos(Array.isArray(dados) ? dados : []);
+      } catch (error) {
+        console.error("Erro ao carregar produtos:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProdutos();
+  }, []);
 
   return (
-    <div className="p-6 pt-0">
-      {/* Container Branco */}
+    <div className="p-6 pt-0 font-['Outfit',_sans-serif]">
+      {/* Container Branco Principal */}
       <div className="bg-white rounded-[24px] shadow-sm min-h-[400px] w-full overflow-hidden pb-8">
-        
-        {/* Cabeçalho - Mantendo o padding original para o título */}
+        {/* Cabeçalho */}
         <div className="p-8 pb-0">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-[28px] pl-[21px]">
             <div className="flex items-center gap-2 flex-shrink-0">
@@ -32,57 +76,73 @@ export default function Produtos() {
               <h1 className="text-[30px] font-light text-gray-800">Produtos</h1>
             </div>
 
-            <div className="flex items-center justify-end gap-[15px] flex-1 min-w-[300px]">
-              <div className="relative w-full max-w-[196px] h-[33px]">
+            <div className="flex items-center gap-4 flex-1 justify-end min-w-[300px]">
+              {/* Input de Buscar (Padrão Clientes) */}
+              <div className="relative">
                 <input
                   type="text"
                   placeholder="Buscar"
-                  className="w-full h-full border border-[#898C8F] rounded-[10px] pl-4 pr-10 text-[14px] text-[#898C8F] outline-none"
+                  className="pl-4 pr-10 border border-[#D3D3D3] rounded-[16px] text-[14px] focus:outline-none w-[196px] h-[39px]"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
-                <img src="/search.png" alt="Lupa" className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 opacity-70" />
-              </div>
-
-              <div className="relative flex-shrink-0">
-                <button
-                  onClick={() => setFiltroAberto(!filtroAberto)}
-                  className="w-[155px] h-[33px] border border-[#898C8F] rounded-[10px] flex items-center justify-between px-4"
+                <svg
+                  className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <span className="text-[#7B7D80] text-[14px] truncate">{filtroSelecionado}</span>
-                  <img src="/arrow-down.png" alt="" className={`w-3 h-2 transition-transform duration-300 ${filtroAberto ? 'rotate-180' : ''}`} />
-                </button>
-
-                <div className={`absolute right-0 mt-2 w-[155px] bg-white border border-[#eeeeee] rounded-[4px] shadow-lg z-50 overflow-hidden origin-top transition-all duration-300 ${filtroAberto ? 'opacity-100 scale-y-100 visible' : 'opacity-0 scale-y-95 invisible pointer-events-none'}`}>
-                  {opcoesFiltro.map((opcao) => (
-                    <button
-                      key={opcao}
-                      className="w-full h-[35px] flex items-center px-4 text-[14px] relative text-[#898C8F] hover:bg-[#F5F5F5]"
-                      onClick={() => { setFiltroSelecionado(opcao); setFiltroAberto(false); }}
-                    >
-                      {filtroSelecionado === opcao && <div className="absolute left-0 top-0 w-[4px] h-full bg-[#D7FE65]" />}
-                      {opcao}
-                    </button>
-                  ))}
-                </div>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
               </div>
+
+              {/* Botão Cadastrar Produto (Padrão Clientes) */}
+              <button className="bg-[#A9E2F2] hover:bg-[#8acbdc] text-white w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-[14px] font-normal transition-colors">
+                <img
+                  src="/produtos-ativado.png"
+                  className="w-[20px] h-[20px]"
+                />
+                Cadastrar produto
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Grid de Cards com as margens específicas: Esquerda 16px, Direita 40px, Gap 11px */}
-        <div 
-          className="grid gap-[11px] pl-[16px] pr-[40px] 
+        {/* 2 - Grid configurado para apenas 4 produtos por linha (lg:grid-cols-4) */}
+        <div
+          className="grid gap-[11px] pl-[16px] pr-[32px] 
                      grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
         >
-          <ProdutoCard />
-          <ProdutoCard />
-          <ProdutoCard />
-          <ProdutoCard />
-          <ProdutoCard />
-          <ProdutoCard />
-          <ProdutoCard />
-          <ProdutoCard />
+          {loading ? (
+            <div className="col-span-full flex justify-center py-10 text-[#4696AD]">
+              Carregando produtos...
+            </div>
+          ) : produtos.length === 0 ? (
+            <div className="col-span-full flex justify-center py-10 text-gray-400 font-light">
+              Nenhum produto encontrado.
+            </div>
+          ) : (
+            produtos.map((produto) => (
+              <ProdutoCard
+                key={produto.id}
+                id={produto.id}
+                nome={produto.nome}
+                tipo={produto.tipo || "Geral"}
+                // Exemplo de tratamento de data (ajuste conforme o retorno do seu banco)
+                data={
+                  produto.created_at
+                    ? `Criado em ${new Date(produto.created_at).toLocaleDateString()}`
+                    : "Sem data"
+                }
+                foto={produto.foto || "https://via.placeholder.com/400x300"}
+              />
+            ))
+          )}
         </div>
       </div>
     </div>
