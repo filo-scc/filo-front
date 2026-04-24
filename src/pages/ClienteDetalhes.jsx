@@ -1,7 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { excluirCliente, getClienteById, getProdutosDoCliente } from "../services/clientesService";
 import { Layout } from "../components/Layout";
+import {
+    formatarCepExibicao,
+    formatarCnpjExibicao,
+    formatarTelefoneExibicao,
+} from "../utils/mascaras";
 
 // Sub-componentes
 import DetalhesHeader from "../components/clientes/DetalhesHeader";
@@ -94,6 +99,21 @@ export default function ClienteDetalhes() {
         fetchData();
     }, [id, navigate]);
 
+    const clienteExibicao = useMemo(() => {
+        if (!cliente) return null;
+        return {
+            ...cliente,
+            cnpj: formatarCnpjExibicao(cliente.cnpj),
+            telefone: formatarTelefoneExibicao(cliente.telefone),
+            endereco: cliente.endereco
+                ? {
+                      ...cliente.endereco,
+                      cep: formatarCepExibicao(cliente.endereco.cep),
+                  }
+                : null,
+        };
+    }, [cliente]);
+
     if (loading) {
         return (
             <Layout>
@@ -115,6 +135,9 @@ export default function ClienteDetalhes() {
                     <div className="mt-8 space-y-8">
                         <SecaoDadosGerais cliente={cliente} />
                         <SecaoEndereco endereco={cliente.endereco} />
+          <div className="mt-8 space-y-8">
+            <SecaoDadosGerais cliente={clienteExibicao} />
+            <SecaoEndereco endereco={clienteExibicao?.endereco} />
 
                         {/* Tabela de Referências: 
                 Passe a função de abrir o modal como prop, para acionar de lá! */}
