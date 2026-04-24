@@ -1,4 +1,3 @@
-// src/routes/index.jsx
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
@@ -8,16 +7,15 @@ import { Layout } from "@/components/Layout";
 import Faccoes from "@/pages/Faccoes";
 import ClienteDetalhes from "../pages/ClienteDetalhes";
 import FaccaoDetalhes from "../pages/FaccaoDetalhes";
+import ProdutoDetalhes from "../pages/ProdutoDetalhes";
 
 function AppRoutes() {
     return (
         <BrowserRouter>
             <Routes>
-                {/* Rota de Login (Totalmente Limpa) */}
                 <Route path="/login" element={<Login />} />
 
-                {/* Rota Oficial (Protegida) */}
-                {/* Envolvendo a Home */}
+                {/* Rotas Protegidas */}
                 <Route
                     path="/"
                     element={
@@ -35,8 +33,7 @@ function AppRoutes() {
                             <Cliente />
                         </PrivateRoute>
                     }
-                ></Route>
-
+                />
                 <Route
                     path="/clientes/:id"
                     element={
@@ -46,7 +43,17 @@ function AppRoutes() {
                     }
                 />
 
-                {/* Envolvendo a página de Facções */}
+                <Route
+                    path="/produtos/:id"
+                    element={
+                        <PrivateRoute>
+                            <Layout>
+                                <ProdutoDetalhes />
+                            </Layout>
+                        </PrivateRoute>
+                    }
+                />
+
                 <Route
                     path="/faccoes"
                     element={
@@ -56,8 +63,7 @@ function AppRoutes() {
                             </Layout>
                         </PrivateRoute>
                     }
-                ></Route>
-
+                />
                 <Route
                     path="/faccoes/:id"
                     element={
