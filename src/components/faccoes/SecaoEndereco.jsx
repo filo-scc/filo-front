@@ -15,25 +15,24 @@ export default function SecaoEndereco({ endereco }) {
         <section>
             <h3 className="text-[20px] font-Outfit font-light text-[#404040] mb-4">Endereço</h3>
 
-      {/* Ajuste: max-w-4xl para não espalhar demais e grid com colunas menores */}
-      <div className="flex flex-wrap gap-y-8 gap-x-20">
-        <div className="min-w-[120px]">
-          <Label>CEP</Label>
-          <Valor>{endereco.cep}</Valor>
-        </div>
-        <div className="min-w-[150px]">
-          <Label>Rua</Label>
-          <Valor>{endereco.rua}</Valor>
-        </div>
-        <div className="min-w-[60px]">
-          <Label>Nº</Label>
-          <Valor>{endereco.numero}</Valor>
-        </div>
-        <div className="min-w-[120px]">
-          <Label>Bairro</Label>
-          <Valor>{endereco.bairro}</Valor>
-        </div>
-        {/* O flex-wrap jogará os próximos para baixo se não couberem, 
+            <div className="flex flex-wrap gap-y-8 gap-x-20">
+                <div className="min-w-[120px]">
+                    <Label>CEP</Label>
+                    <Valor>00000-000</Valor>
+                </div>
+                <div className="min-w-[150px]">
+                    <Label>Rua</Label>
+                    <Valor>{endereco.rua}</Valor>
+                </div>
+                <div className="min-w-[60px]">
+                    <Label>Nº</Label>
+                    <Valor>{endereco.numero}</Valor>
+                </div>
+                <div className="min-w-[120px]">
+                    <Label>Bairro</Label>
+                    <Valor>{endereco.bairro}</Valor>
+                </div>
+                {/* O flex-wrap jogará os próximos para baixo se não couberem, 
       ou você pode colocar outra div flex abaixo para a segunda linha */}
             </div>
 
