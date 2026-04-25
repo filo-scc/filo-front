@@ -183,7 +183,7 @@ export default function ClientesCadastrar() {
     const endereco = {
       cep: cepNumerico,
       rua: valorOuUndefined(form.rua),
-      numero: numeroOuUndefined(apenasNumeros(form.numero)),
+      numero: valorOuUndefined(apenasNumeros(form.numero)),
       bairro: valorOuUndefined(form.bairro),
       complemento: valorOuUndefined(form.complemento),
       cidade: valorOuUndefined(form.cidade),
