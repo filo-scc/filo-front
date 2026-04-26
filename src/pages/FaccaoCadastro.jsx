@@ -112,13 +112,13 @@ const FaccaoCadastro = () => {
         "border border-[#D3D3D3] rounded-[10px] px-3 h-[39px] text-sm text-gray-600 focus:outline-none";
 
     return (
-        <div className="w-full flex justify-center px-8 py-6 lg:px-16 lg:py-10">
+        <div className="w-full flex justify-center px-6">
             {/* AQUI: lg:px-32 aumenta as laterais internas, lg:py-8 diminui a parte superior/inferior */}
             <div className="bg-white p-14 lg:px-19 lg:py-8 rounded-[24px] shadow-sm w-full max-w-[1400px] mx-auto">
                 {/* Título */}
                 <div className="flex items-center gap-3 mb-10 text-gray-800">
                     <img
-                        src="/maquina-costura-preta.png"
+                        src="/maquina+-costura-icone-preto.png"
                         alt="Ícone"
                         className="w-[30px] h-[30px]"
                     />
@@ -313,14 +313,13 @@ const FaccaoCadastro = () => {
                                 </div>
 
                                 {/* Campo PIX */}
-                                {formData.forma_pagamento !== "TED" && (
+                                {formData.forma_pagamento === "PIX" && (
                                     <FloatingInput
-                                        label="Inserir chave PIX"
+                                        label="chave Pix"
                                         name="chave_pix"
                                         value={formData.chave_pix}
                                         onChange={handleChange}
                                         containerClass="w-full flex-1 min-w-[328px]"
-                                        disabled={!formData.forma_pagamento}
                                     />
                                 )}
                             </div>
@@ -359,7 +358,7 @@ const FaccaoCadastro = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="bg-[#A9E2F2] hover:bg-[#8acbdc] text-[#4696ad] px-8 py-3 rounded-full text-sm font-medium transition-colors disabled:opacity-50 shadow-sm"
+                            className="bg-[#A9E2F2] hover:bg-[#8acbdc] text-[#4696ad] justify-center items-center rounded-full text-sm font-medium transition-colors disabled:opacity-50 shadow-sm w-[189px] h-[39px]"
                         >
                             {loading ? "Salvando..." : "Concluir cadastro"}
                         </button>
