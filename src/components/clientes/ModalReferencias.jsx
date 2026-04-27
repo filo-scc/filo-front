@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from "react";
 import {
-  getProdutosPorFabrico,
+  getUnassociatedProductsForClient,
   vincularProdutoAoCliente,
 } from "../../services/clientesService";
 
 export default function ModalReferencias({
-    isOpen,
-    onClose,
-    clienteId,
-    fabricoId,
-    produtosExistentes,
-    onSuccess,
-    onAdicionarSelecionados,
+  isOpen,
+  onClose,
+  clienteId,
+  fabricoId,
+  produtosExistentes,
+  onSuccess,
 }) {
   const [produtos, setProdutos] = useState([]);
   const [selecionados, setSelecionados] = useState([]);
@@ -37,14 +36,11 @@ export default function ModalReferencias({
     const carregarProdutos = async () => {
       setLoadingFetch(true);
       try {
-        const dados = await getProdutosPorFabrico(fabricoId, busca);
-
-        const produtosFiltrados = dados.filter((prod) => {
-          return !produtosExistentes.some(
-            (existente) =>
-              (existente.produto?.id || existente.produto_id) === prod.id,
-          );
-        });
+        const produtosFiltrados = await getUnassociatedProductsForClient(
+          clienteId,
+          fabricoId,
+          busca,
+        );
 
         setProdutos(produtosFiltrados);
       } catch (error) {
@@ -56,7 +52,7 @@ export default function ModalReferencias({
 
     const delayDebounceFn = setTimeout(() => carregarProdutos(), 500);
     return () => clearTimeout(delayDebounceFn);
-  }, [isOpen, fabricoId, busca, produtosExistentes]);
+  }, [isOpen, clienteId, fabricoId, busca, produtosExistentes]);
 
   const toggleSelecao = (id) => {
     setSelecionados((prev) =>
@@ -67,18 +63,9 @@ export default function ModalReferencias({
   const handleAdicionar = async () => {
     if (selecionados.length === 0) return;
 
-        if (onAdicionarSelecionados) {
-            const produtosSelecionados = produtos.filter((produto) =>
-                selecionados.includes(produto.id),
-            );
-            onAdicionarSelecionados(produtosSelecionados);
-            handleClose();
-            return;
-        }
-
-        setLoadingSubmit(true);
-        try {
-            const body = { nome_para_cliente: "-", preco_padrao: 0 };
+    setLoadingSubmit(true);
+    try {
+      const body = { nome_para_cliente: "-", preco_padrao: 0 };
 
       const requests = selecionados.map((produtoId) =>
         vincularProdutoAoCliente(clienteId, produtoId, body),

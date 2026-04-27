@@ -1,4 +1,3 @@
-// src/routes/index.jsx
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
@@ -7,14 +6,13 @@ import PrivateRoute from "./PrivateRoute";
 import { Layout } from "@/components/Layout";
 import Faccoes from "@/pages/Faccoes";
 import ClienteDetalhes from "../pages/ClienteDetalhes";
-import ClientesCadastrar from "../pages/ClientesCadastrar";
-import ClientesEditar from "../pages/ClientesEditar";
+import FaccaoDetalhes from "../pages/FaccaoDetalhes";
+import ProdutoDetalhes from "../pages/ProdutoDetalhes";
 
 function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Rota de Login (Totalmente Limpa) */}
         <Route path="/login" element={<Login />} />
 
         {/* Rotas Protegidas */}
@@ -46,36 +44,6 @@ function AppRoutes() {
         />
 
         <Route
-          path="/clientes/cadastrar"
-          element={
-            <PrivateRoute>
-              <Layout>
-                <ClientesCadastrar />
-              </Layout>
-            </PrivateRoute>
-          }
-        />
-
-        <Route
-          path="/clientes/:id/editar"
-          element={
-            <PrivateRoute>
-              <Layout>
-                <ClientesEditar />
-              </Layout>
-            </PrivateRoute>
-          }
-        />
-
-        <Route
-          path="/clientes/:id"
-          element={
-            <PrivateRoute>
-              <ClienteDetalhes />
-            </PrivateRoute>
-          }
-        />
-        <Route
           path="/produtos/:id"
           element={
             <PrivateRoute>
@@ -86,13 +54,22 @@ function AppRoutes() {
           }
         />
 
-        {/* Envolvendo a página de Facções */}
         <Route
           path="/faccoes"
           element={
             <PrivateRoute>
               <Layout>
                 <Faccoes />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/faccoes/:id"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <FaccaoDetalhes />
               </Layout>
             </PrivateRoute>
           }
