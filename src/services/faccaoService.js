@@ -14,3 +14,17 @@ export const getFaccaoById = async (id) => {
     const response = await api.get(`/faccoes/${id}`);
     return response.data;
 };
+
+export const createFaccao = async (data) => {
+    try {
+        const response = await api.post("/faccoes", data);
+        return response.data;
+    } catch (error) {
+        console.error("Erro ao cadastrar uma facção: ", error);
+        throw error;
+    }
+};
+
+export const excluirFaccao = async (id) => {
+    await api.delete(`/faccoes/${id}`);
+};
