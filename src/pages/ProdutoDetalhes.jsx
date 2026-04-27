@@ -5,7 +5,7 @@ import { getProdutoById, getClientesDoProduto, excluirProduto } from "../service
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
 import SecaoDadosProduto from "../components/produtos/SecaoDadosProduto";
 import TabelaClientesDoProduto from "../components/produtos/TabelaClientesDoProduto";
-import ModalExclusao from "../components/geral/ModalExclusao"; // <-- Importado aqui (ajuste o caminho se necessário)
+import ModalExclusao from "../components/geral/ModalExclusao";
 
 export default function ProdutoDetalhes() {
     const { id } = useParams();
@@ -82,7 +82,7 @@ export default function ProdutoDetalhes() {
                     />
 
                     {/* Botões de Ação */}
-                    <div className="flex justify-between items-center mt-10 w-full">
+                    <div className="flex justify-between items-center mt-14 py-4 w-full">
                         <button
                             onClick={() => navigate("/produtos")}
                             className="w-[147px] h-[39px] rounded-[18.9px] bg-[#F3F4FA] border border-[#4696ad] text-[#4696ad] font-Outfit text-[16px] transition-colors hover:bg-[#E1F1F6]"

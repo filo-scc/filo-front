@@ -7,7 +7,7 @@ import { Layout } from "@/components/Layout";
 import Faccoes from "@/pages/Faccoes";
 import ClienteDetalhes from "../pages/ClienteDetalhes";
 import FaccaoDetalhes from "../pages/FaccaoDetalhes";
-import ProdutoDetalhes from "../pages/ProdutoDetalhes"; // Importado
+import ProdutoDetalhes from "../pages/ProdutoDetalhes";
 import FaccaoCadastro from "../pages/FaccaoCadastro";
 
 function AppRoutes() {
