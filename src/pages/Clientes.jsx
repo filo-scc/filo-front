@@ -62,6 +62,61 @@ export default function Clientes() {
 
     const handleConfirmarExclusao = async () => {
         if (!clienteSelecionado) return;
+  return (
+    <Layout>
+      <div className="p-6 pt-0 w-full">
+        <div className="bg-white p-8 rounded-[24px] shadow-sm w-full mx-auto">
+          <div className="w-full">
+            <div className="w-full flex items-center justify-between mb-8 pl-6 font-['Outfit',_sans-serif]">
+              <div className="flex items-center gap-3">
+                <img
+                  src="/star.png"
+                  alt="Ícone de clientes"
+                  className="w-[30px] h-[30px]"
+                />
+                <h1 className="text-[30px] font-light text-gray-800">
+                  Clientes
+                </h1>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Buscar"
+                    value={busca}
+                    onChange={(e) => setBusca(e.target.value)}
+                    className="pl-4 pr-10 border border-[#D3D3D3] rounded-[16px] text-sm focus:outline-none focus:border-cyan-400 w-[196px] h-[39px]"
+                  />
+                  <svg
+                    className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => navigate("/clientes/cadastrar")}
+                  className="bg-[#A9E2F2] hover:bg-[#8acbdc] text-white w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors"
+                >
+                  <img
+                    src="/adicionar-cliente-branca.png"
+                    alt="Adicionar cliente"
+                    className="w-[20px] h-[20px]"
+                  />
+                  Cadastrar cliente
+                </button>
+              </div>
+            </div>
 
             <div className="w-full overflow-x-auto">
               <div className="w-full border border-gray-200 rounded-xl overflow-hidden">

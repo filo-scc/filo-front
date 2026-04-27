@@ -51,7 +51,8 @@ export default function ClientesCadastrar() {
 
     if (!digitos) return "";
     if (digitos.length <= 2) return `(${digitos}`;
-    if (digitos.length <= 6) return `(${digitos.slice(0, 2)}) ${digitos.slice(2)}`;
+    if (digitos.length <= 6)
+      return `(${digitos.slice(0, 2)}) ${digitos.slice(2)}`;
     if (digitos.length <= 10) {
       return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 6)}-${digitos.slice(6)}`;
     }
@@ -69,7 +70,10 @@ export default function ClientesCadastrar() {
   };
 
   const handleChangeTelefone = (e) => {
-    setForm((prev) => ({ ...prev, telefone: formatarTelefone(e.target.value) }));
+    setForm((prev) => ({
+      ...prev,
+      telefone: formatarTelefone(e.target.value),
+    }));
   };
 
   const handleChangeCep = (e) => {
@@ -93,6 +97,7 @@ export default function ClientesCadastrar() {
       preco_padrao: 0,
     }));
 
+    console.log("Produtos selecionados para associação:", novosProdutos);
     setProdutosAssociados((prev) => [...prev, ...novosProdutos]);
   };
 
@@ -140,7 +145,8 @@ export default function ClientesCadastrar() {
     if (Array.isArray(message)) return message.join(" ");
     if (typeof message === "string" && message.trim()) return message;
     if (typeof data?.error === "string" && data.error.trim()) return data.error;
-    if (typeof error?.message === "string" && error.message.trim()) return error.message;
+    if (typeof error?.message === "string" && error.message.trim())
+      return error.message;
     return "Nao foi possivel cadastrar o cliente.";
   };
 
