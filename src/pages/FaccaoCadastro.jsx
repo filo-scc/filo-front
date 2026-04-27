@@ -52,7 +52,7 @@ const FaccaoCadastro = () => {
     const handleChange = (e) => {
         const { name, value } = e.target;
 
-        if (name === "cep" || name == "telefone") {
+        if (name === "cep" || name == "telefone" || name == "numero") {
             const apenasNumeros = value.replace(/\D/g, "");
             setFormData((prev) => ({ ...prev, [name]: apenasNumeros }));
             return;
