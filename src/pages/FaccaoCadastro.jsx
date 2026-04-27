@@ -51,6 +51,13 @@ const FaccaoCadastro = () => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
+
+        if (name === "cep" || name == "telefone") {
+            const apenasNumeros = value.replace(/\D/g, "");
+            setFormData((prev) => ({ ...prev, [name]: apenasNumeros }));
+            return;
+        }
+
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
@@ -170,6 +177,7 @@ const FaccaoCadastro = () => {
                                     value={formData.cep}
                                     onChange={handleChange}
                                     containerClass="w-full flex-1 min-w-[150px]"
+                                    maxLength={8}
                                 />
                                 <FloatingInput
                                     label="Rua"
