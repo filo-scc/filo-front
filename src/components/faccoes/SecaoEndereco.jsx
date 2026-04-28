@@ -18,7 +18,7 @@ export default function SecaoEndereco({ endereco }) {
             <div className="flex flex-wrap gap-y-8 gap-x-20">
                 <div className="min-w-[120px]">
                     <Label>CEP</Label>
-                    <Valor>00000-000</Valor>
+                    <Valor>{endereco.cep}</Valor>
                 </div>
                 <div className="min-w-[150px]">
                     <Label>Rua</Label>
