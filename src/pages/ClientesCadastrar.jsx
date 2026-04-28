@@ -28,8 +28,6 @@ export default function ClientesCadastrar() {
   const [produtosAssociados, setProdutosAssociados] = useState([]);
   const [modalReferenciasAberto, setModalReferenciasAberto] = useState(false);
   const [salvando, setSalvando] = useState(false);
-  const [erroCadastro, setErroCadastro] = useState("");
-  const [payloadEnviado, setPayloadEnviado] = useState(null);
 
   const handleChange = (campo) => (e) => {
     setForm((prev) => ({ ...prev, [campo]: e.target.value }));
@@ -77,7 +75,7 @@ export default function ClientesCadastrar() {
   };
 
   const handleChangeNumeroEndereco = (e) => {
-    setForm((prev) => ({ ...prev, numero: apenasNumeros(e.target.value) }));
+    setForm((prev) => ({ ...prev, numero: e.target.value }));
   };
 
   const handleAdicionarProdutos = (produtosSelecionados) => {
@@ -133,29 +131,14 @@ export default function ClientesCadastrar() {
     usuarioLogado?.usuario?.faccao_id,
   );
 
-  const formatarErroApi = (error) => {
-    const data = error?.response?.data;
-    const message = data?.message;
-
-    if (Array.isArray(message)) return message.join(" ");
-    if (typeof message === "string" && message.trim()) return message;
-    if (typeof data?.error === "string" && data.error.trim()) return data.error;
-    if (typeof error?.message === "string" && error.message.trim()) return error.message;
-    return "Nao foi possivel cadastrar o cliente.";
-  };
-
   const handleCadastrar = async () => {
-    setErroCadastro("");
-
     const nome = valorOuUndefined(form.nomeEmpresa);
     if (!nome) {
-      setErroCadastro("Informe o nome da empresa.");
       return;
     }
 
     const fabricoIdNumerico = numeroOuUndefined(fabricoId);
     if (!fabricoIdNumerico) {
-      setErroCadastro("Nao foi possivel identificar a fabrica do usuario.");
       return;
     }
 
@@ -163,27 +146,24 @@ export default function ClientesCadastrar() {
     const telefoneNumerico = valorOuUndefined(apenasNumeros(form.telefone));
 
     if (cnpjNumerico && cnpjNumerico.length !== 14) {
-      setErroCadastro("CNPJ invalido. Informe 14 digitos.");
       return;
     }
     if (
       telefoneNumerico &&
       (telefoneNumerico.length < 9 || telefoneNumerico.length > 11)
     ) {
-      setErroCadastro("Telefone invalido. Informe entre 9 e 11 digitos.");
       return;
     }
 
     const cepNumerico = valorOuUndefined(apenasNumeros(form.cep));
     if (cepNumerico && cepNumerico.length !== 8) {
-      setErroCadastro("CEP invalido. Informe 8 digitos.");
       return;
     }
 
     const endereco = {
       cep: cepNumerico,
       rua: valorOuUndefined(form.rua),
-      numero: valorOuUndefined(apenasNumeros(form.numero)),
+      numero: valorOuUndefined(form.numero),
       bairro: valorOuUndefined(form.bairro),
       complemento: valorOuUndefined(form.complemento),
       cidade: valorOuUndefined(form.cidade),
@@ -205,14 +185,11 @@ export default function ClientesCadastrar() {
 
     try {
       setSalvando(true);
-      setPayloadEnviado(payload);
       await cadastrarCliente(payload);
       navigate("/clientes", {
         replace: true,
         state: { success: "Cliente cadastrado com sucesso." },
       });
-    } catch (error) {
-      setErroCadastro(formatarErroApi(error));
     } finally {
       setSalvando(false);
     }
@@ -280,7 +257,6 @@ export default function ClientesCadastrar() {
                 label="Nº"
                 value={form.numero}
                 onChange={handleChangeNumeroEndereco}
-                inputMode="numeric"
                 autoComplete="off"
               />
             </div>

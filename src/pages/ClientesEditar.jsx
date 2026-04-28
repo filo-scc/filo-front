@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import TabelaReferencias from "../components/clientes/TabelaReferencias";
 import FloatingLabelInput from "../components/FloatingLabelInput";
 import ModalReferencias from "../components/clientes/ModalReferencias";
@@ -12,48 +12,74 @@ import {
 const sectionTitleClass =
   "text-[20px] font-light text-[#404040] mb-4 font-['Outfit',_sans-serif]";
 
-/** Só usado com `?mock=1` na URL (desenvolvimento / preview do layout). */
-const mockClienteEditarExemplo = {
-  form: {
-    nomeEmpresa: "Moda Azul Ltda",
-    cnpj: "12.345.678/0001-90",
-    proprietario: "Ana Souza",
-    telefone: "(81) 99999-0000",
-    cep: "50050-100",
-    rua: "Av. Boa Viagem",
-    numero: "1200",
-    bairro: "Boa Viagem",
-    complemento: "Sala 302",
-    cidade: "Recife",
-    estado: "PE",
-  },
-  produtos: [
-    {
-      produto: {
-        foto: "/imagem-login.png",
-        nome: "Breeze",
-      },
-      nome_para_cliente: "Celine",
-      preco_padrao: 0,
-    },
-    {
-      produto: {
-        foto: "/imagem-login.png",
-        nome: "Aurora",
-      },
-      nome_para_cliente: "Linha verão",
-      preco_padrao: 149.9,
-    },
-  ],
+const apenasNumeros = (valor) => String(valor || "").replace(/\D/g, "");
+
+const formatarCnpj = (valor) => {
+  const digitos = apenasNumeros(valor).slice(0, 14);
+  return digitos
+    .replace(/^(\d{2})(\d)/, "$1.$2")
+    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d)/, ".$1/$2")
+    .replace(/(\d{4})(\d)/, "$1-$2");
+};
+
+const formatarTelefone = (valor) => {
+  const digitos = apenasNumeros(valor).slice(0, 11);
+  if (!digitos) return "";
+  if (digitos.length <= 2) return `(${digitos}`;
+  if (digitos.length <= 6) return `(${digitos.slice(0, 2)}) ${digitos.slice(2)}`;
+  if (digitos.length <= 10) {
+    return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 6)}-${digitos.slice(6)}`;
+  }
+  return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 7)}-${digitos.slice(7)}`;
+};
+
+const formatarCep = (valor) => {
+  const digitos = apenasNumeros(valor).slice(0, 8);
+  if (digitos.length <= 5) return digitos;
+  return `${digitos.slice(0, 5)}-${digitos.slice(5)}`;
+};
+
+const valorOuUndefined = (valor) => {
+  const limpo = String(valor || "").trim();
+  return limpo.length > 0 ? limpo : undefined;
+};
+
+const textoEnderecoOuVazio = (valor) => {
+  if (valor === null || valor === undefined) return "";
+  return String(valor).trim();
+};
+
+const numeroOuUndefined = (valor) => {
+  if (valor === null || valor === undefined) return undefined;
+  const texto = String(valor).trim();
+  if (!texto) return undefined;
+  const numero = Number(texto);
+  return Number.isFinite(numero) ? numero : undefined;
+};
+
+const primeiroNumeroValido = (...valores) => {
+  for (const valor of valores) {
+    const numero = numeroOuUndefined(valor);
+    if (numero !== undefined) return numero;
+  }
+  return undefined;
+};
+
+const formatarErroApi = (error) => {
+  const data = error?.response?.data;
+  const message = data?.message;
+  if (Array.isArray(message)) return message.join(" ");
+  if (typeof message === "string" && message.trim()) return message;
+  if (typeof data?.error === "string" && data.error.trim()) return data.error;
+  if (typeof error?.message === "string" && error.message.trim()) return error.message;
+  return "Não foi possível salvar as alterações.";
 };
 
 export default function ClientesEditar() {
   const { id } = useParams();
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const usuarioLogado = JSON.parse(localStorage.getItem("user") || "{}");
-
-  const usarMock = searchParams.get("mock") === "1";
 
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
@@ -76,55 +102,6 @@ export default function ClientesEditar() {
   const [produtosAssociados, setProdutosAssociados] = useState([]);
   const [modalReferenciasAberto, setModalReferenciasAberto] = useState(false);
 
-  const apenasNumeros = (valor) => String(valor || "").replace(/\D/g, "");
-
-  const formatarCnpj = (valor) => {
-    const digitos = apenasNumeros(valor).slice(0, 14);
-    return digitos
-      .replace(/^(\d{2})(\d)/, "$1.$2")
-      .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
-      .replace(/\.(\d{3})(\d)/, ".$1/$2")
-      .replace(/(\d{4})(\d)/, "$1-$2");
-  };
-
-  const formatarTelefone = (valor) => {
-    const digitos = apenasNumeros(valor).slice(0, 11);
-    if (!digitos) return "";
-    if (digitos.length <= 2) return `(${digitos}`;
-    if (digitos.length <= 6) return `(${digitos.slice(0, 2)}) ${digitos.slice(2)}`;
-    if (digitos.length <= 10) {
-      return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 6)}-${digitos.slice(6)}`;
-    }
-    return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 7)}-${digitos.slice(7)}`;
-  };
-
-  const formatarCep = (valor) => {
-    const digitos = apenasNumeros(valor).slice(0, 8);
-    if (digitos.length <= 5) return digitos;
-    return `${digitos.slice(0, 5)}-${digitos.slice(5)}`;
-  };
-
-  const valorOuUndefined = (valor) => {
-    const limpo = String(valor || "").trim();
-    return limpo.length > 0 ? limpo : undefined;
-  };
-
-  const numeroOuUndefined = (valor) => {
-    if (valor === null || valor === undefined) return undefined;
-    const texto = String(valor).trim();
-    if (!texto) return undefined;
-    const numero = Number(texto);
-    return Number.isFinite(numero) ? numero : undefined;
-  };
-
-  const primeiroNumeroValido = (...valores) => {
-    for (const valor of valores) {
-      const numero = numeroOuUndefined(valor);
-      if (numero !== undefined) return numero;
-    }
-    return undefined;
-  };
-
   const fabricoId = primeiroNumeroValido(
     usuarioLogado?.fabrico_id,
     usuarioLogado?.fabricoId,
@@ -140,16 +117,6 @@ export default function ClientesEditar() {
     usuarioLogado?.faccao?.[0]?.faccao_id,
     usuarioLogado?.usuario?.faccao_id,
   );
-
-  const formatarErroApi = (error) => {
-    const data = error?.response?.data;
-    const message = data?.message;
-    if (Array.isArray(message)) return message.join(" ");
-    if (typeof message === "string" && message.trim()) return message;
-    if (typeof data?.error === "string" && data.error.trim()) return data.error;
-    if (typeof error?.message === "string" && error.message.trim()) return error.message;
-    return "Não foi possível salvar as alterações.";
-  };
 
   const handleChange = (campo) => (e) => {
     setForm((prev) => ({ ...prev, [campo]: e.target.value }));
@@ -168,11 +135,11 @@ export default function ClientesEditar() {
   };
 
   const handleChangeNumeroEndereco = (e) => {
-    setForm((prev) => ({ ...prev, numero: apenasNumeros(e.target.value) }));
+    setForm((prev) => ({ ...prev, numero: e.target.value }));
   };
 
   const recarregarProdutos = async () => {
-    if (!id || usarMock) return;
+    if (!id) return;
     try {
       const dados = await getProdutosDoCliente(id);
       setProdutosAssociados(dados);
@@ -184,15 +151,6 @@ export default function ClientesEditar() {
   useEffect(() => {
     async function carregar() {
       const usuario = JSON.parse(localStorage.getItem("user") || "{}");
-
-      if (usarMock) {
-        setLoading(true);
-        setForm(mockClienteEditarExemplo.form);
-        setProdutosAssociados(mockClienteEditarExemplo.produtos);
-        setStatusCliente(true);
-        setLoading(false);
-        return;
-      }
 
       if (!id) {
         navigate("/clientes", {
@@ -245,10 +203,7 @@ export default function ClientesEditar() {
             : "",
           cep: end.cep ? formatarCep(String(end.cep)) : "",
           rua: end.rua ?? "",
-          numero:
-            end.numero != null && String(end.numero).trim() !== ""
-              ? apenasNumeros(String(end.numero))
-              : "",
+          numero: textoEnderecoOuVazio(end.numero),
           bairro: end.bairro ?? "",
           complemento: end.complemento ?? "",
           cidade: end.cidade ?? "",
@@ -266,15 +221,10 @@ export default function ClientesEditar() {
       }
     }
     carregar();
-  }, [id, navigate, usarMock]);
+  }, [id, navigate]);
 
   const handleFinalizar = async () => {
     setErro("");
-
-    if (usarMock) {
-      navigate("/clientes");
-      return;
-    }
 
     if (!id) return;
 
@@ -314,7 +264,7 @@ export default function ClientesEditar() {
     const endereco = {
       cep: cepNumerico,
       rua: valorOuUndefined(form.rua),
-      numero: valorOuUndefined(apenasNumeros(form.numero)),
+      numero: valorOuUndefined(form.numero),
       bairro: valorOuUndefined(form.bairro),
       complemento: valorOuUndefined(form.complemento),
       cidade: valorOuUndefined(form.cidade),
@@ -416,7 +366,6 @@ export default function ClientesEditar() {
                     label="Nº"
                     value={form.numero}
                     onChange={handleChangeNumeroEndereco}
-                    inputMode="numeric"
                     autoComplete="off"
                   />
                 </div>
@@ -465,9 +414,7 @@ export default function ClientesEditar() {
             <div className="flex flex-wrap justify-end gap-4 pt-2">
               <button
                 type="button"
-                onClick={() =>
-                  navigate(usarMock ? "/clientes" : `/clientes/${id}`)
-                }
+                onClick={() => navigate(`/clientes/${id}`)}
                 className="bg-[#F3F4FA] hover:bg-[#E8EBF2] text-[#4696ad] border border-[#4696ad] h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[160px]"
               >
                 Voltar
@@ -488,11 +435,11 @@ export default function ClientesEditar() {
         )}
       </div>
 
-      {!loading && (usarMock || id) ? (
+      {!loading && id ? (
         <ModalReferencias
           isOpen={modalReferenciasAberto}
           onClose={() => setModalReferenciasAberto(false)}
-          clienteId={usarMock ? null : id}
+          clienteId={id}
           fabricoId={fabricoId}
           produtosExistentes={produtosAssociados}
           onSuccess={recarregarProdutos}
