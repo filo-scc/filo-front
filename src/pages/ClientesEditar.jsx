@@ -7,6 +7,7 @@ import {
   getClienteById,
   getProdutosDoCliente,
   atualizarCliente,
+  desvincularProdutoDoCliente,
 } from "../services/clientesService";
 
 const sectionTitleClass =
@@ -298,8 +299,28 @@ export default function ClientesEditar() {
     }
   };
 
-  const removerLinha = (index) => {
-    setProdutosAssociados((prev) => prev.filter((_, i) => i !== index));
+  const removerLinha = async (item, index) => {
+    if (!id) return;
+
+    const produtoId = primeiroNumeroValido(
+      item?.produto?.id,
+      item?.produto_id,
+      item?.id_produto,
+    );
+
+    if (!produtoId) {
+      setErro("Não foi possível identificar a referência para exclusão.");
+      return;
+    }
+
+    try {
+      setErro("");
+      await desvincularProdutoDoCliente(id, produtoId);
+      setProdutosAssociados((prev) => prev.filter((_, i) => i !== index));
+    } catch (e) {
+      setErro("Não foi possível excluir a referência.");
+      console.error("Erro ao excluir referência", e);
+    }
   };
 
   return (

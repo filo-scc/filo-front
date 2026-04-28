@@ -44,6 +44,11 @@ export const vincularProdutoAoCliente = async (clienteId, produtoId, body) => {
     return response.data;
 };
 
+export const desvincularProdutoDoCliente = async (clienteId, produtoId) => {
+    const response = await api.delete(`/clientes-produtos/${clienteId}/${produtoId}`);
+    return response.data;
+};
+
 export const getUnassociatedProductsForClient = async (clienteId, fabricoId, body) => {
     const response = await api.get(
         `/produtos/cliente/${clienteId}/produtos-nao-associados/${fabricoId}`,

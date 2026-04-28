@@ -124,7 +124,7 @@ export default function TabelaReferencias({
                                 <div className="w-12 sm:w-14 shrink-0 flex items-center justify-center">
                                     <button
                                         type="button"
-                                        onClick={() => onRemoverLinha(idx)}
+                                        onClick={() => onRemoverLinha(item, idx)}
                                         className="flex h-9 w-9 items-center justify-center rounded-lg text-[#D75757] transition-colors hover:bg-red-50"
                                         aria-label="Remover referência"
                                     >
