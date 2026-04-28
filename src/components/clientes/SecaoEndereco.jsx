@@ -8,6 +8,15 @@ const Valor = ({ children }) => (
     </p>
 );
 
+const apenasNumeros = (valor) => String(valor || "").replace(/\D/g, "");
+
+const formatarCep = (valor) => {
+    const digitos = apenasNumeros(valor).slice(0, 8);
+    if (!digitos) return "";
+    if (digitos.length <= 5) return digitos;
+    return `${digitos.slice(0, 5)}-${digitos.slice(5)}`;
+};
+
 export default function SecaoEndereco({ endereco }) {
     if (!endereco) return null;
 
@@ -19,7 +28,7 @@ export default function SecaoEndereco({ endereco }) {
             <div className="flex flex-wrap gap-y-8 gap-x-20">
                 <div className="min-w-[120px]">
                     <Label>CEP</Label>
-                    <Valor>{endereco.cep}</Valor>
+                    <Valor>{formatarCep(endereco.cep)}</Valor>
                 </div>
                 <div className="min-w-[150px]">
                     <Label>Rua</Label>
