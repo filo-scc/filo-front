@@ -9,6 +9,7 @@ import ClienteDetalhes from "../pages/ClienteDetalhes";
 import ClientesCadastrar from "../pages/ClientesCadastrar";
 import ClientesEditar from "../pages/ClientesEditar";
 import FaccaoDetalhes from "../pages/FaccaoDetalhes";
+import FaccaoEditar from "../pages/FaccaoEditar";
 import ProdutoDetalhes from "../pages/ProdutoDetalhes";
 import FaccaoCadastro from "../pages/FaccaoCadastro";
 
@@ -99,7 +100,6 @@ function AppRoutes() {
                         </PrivateRoute>
                     }
                 />
-
                 <Route
                     path="/faccoes/novo"
                     element={
@@ -111,7 +111,19 @@ function AppRoutes() {
                     }
                 />
 
-                {/* Telas provisórias com a header + sidebar por enquanto que não são implementadas */}
+                {/* Rota de Edição de Facção */}
+                <Route
+                    path="/faccoes/editar/:id"
+                    element={
+                        <PrivateRoute>
+                            <Layout>
+                                <FaccaoEditar />
+                            </Layout>
+                        </PrivateRoute>
+                    }
+                />
+
+                {/* Telas provisórias */}
                 <Route
                     path="/pedidos"
                     element={
