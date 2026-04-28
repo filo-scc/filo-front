@@ -200,7 +200,7 @@ export default function ClientesCadastrar() {
       <div className="bg-white p-8 sm:p-10 rounded-[32px] shadow-[0_8px_40px_rgba(70,150,173,0.08)] border border-[#F0F4F6] w-full">
         <div className="flex items-center gap-3 mb-10">
           <img
-            src="/add-star.png"
+            src="/add-star-preto.png"
             alt=""
             className="h-8 w-8 shrink-0 object-contain brightness-0 opacity-[0.85]"
           />
