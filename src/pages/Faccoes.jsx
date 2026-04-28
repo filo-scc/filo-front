@@ -50,7 +50,7 @@ const Faccoes = () => {
 
     // Funções de Ação do Menu
     const handleEdit = (id) => {
-        navigate(`/editar-faccao/${id}`);
+        navigate(`/faccoes/editar/${id}`);
     };
 
     const abrirModalExclusao = (faccao) => {
