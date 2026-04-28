@@ -49,16 +49,32 @@ const FaccaoCadastro = () => {
         conta: "",
     });
 
+    const maskTelefone = (value) => {
+        return value
+            .replace(/\D/g, "")
+            .slice(0, 11)
+            .replace(/^(\d{2})(\d)/, "($1) $2")
+            .replace(/(\d{5})(\d{1,4})$/, "$1-$2");
+    };
+
+    const maskCep = (value) => {
+        return value
+            .replace(/\D/g, "")
+            .slice(0, 8)
+            .replace(/(\d{5})(\d{1,3})$/, "$1-$2");
+    };
+
     const handleChange = (e) => {
         const { name, value } = e.target;
+        let masked = value;
 
-        if (name === "cep" || name == "telefone") {
-            const apenasNumeros = value.replace(/\D/g, "");
-            setFormData((prev) => ({ ...prev, [name]: apenasNumeros }));
-            return;
+        if (name === "telefone") {
+            masked = maskTelefone(value);
+        } else if (name === "cep") {
+            masked = maskCep(value);
         }
 
-        setFormData((prev) => ({ ...prev, [name]: value }));
+        setFormData((prev) => ({ ...prev, [name]: masked }));
     };
 
     const handleSubmit = async (e) => {
@@ -76,7 +92,7 @@ const FaccaoCadastro = () => {
                 fabrico_id: Number(fabricoId),
             };
 
-            if (formData.telefone) payload.telefone = formData.telefone;
+            if (formData.telefone) payload.telefone = formData.telefone.replace(/\D/g, "");
             if (formData.responsavel) payload.responsavel = formData.responsavel;
 
             const endereco = {};
@@ -86,7 +102,7 @@ const FaccaoCadastro = () => {
             if (formData.complemento) endereco.complemento = formData.complemento;
             if (formData.cidade) endereco.cidade = formData.cidade;
             if (formData.estado) endereco.estado = formData.estado;
-            if (formData.cep) endereco.cep = formData.cep;
+            if (formData.cep) endereco.cep = formData.cep.replace(/D/g, "");
 
             if (Object.keys(endereco).length > 0) {
                 payload.endereco = endereco;
@@ -120,7 +136,6 @@ const FaccaoCadastro = () => {
 
     return (
         <div className="w-full flex justify-center px-6">
-            {/* AQUI: lg:px-32 aumenta as laterais internas, lg:py-8 diminui a parte superior/inferior */}
             <div className="bg-white p-14 lg:px-19 lg:py-8 rounded-[24px] shadow-sm w-full max-w-[1400px] mx-auto">
                 {/* Título */}
                 <div className="flex items-center gap-3 mb-10 text-gray-800">
@@ -160,7 +175,7 @@ const FaccaoCadastro = () => {
                                 value={formData.telefone}
                                 onChange={handleChange}
                                 containerClass="w-full flex-1 min-w-[200px]"
-                                maxLength={11}
+                                maxLength={15}
                             />
                         </div>
                     </div>
@@ -177,7 +192,7 @@ const FaccaoCadastro = () => {
                                     value={formData.cep}
                                     onChange={handleChange}
                                     containerClass="w-full flex-1 min-w-[150px]"
-                                    maxLength={8}
+                                    maxLength={9}
                                 />
                                 <FloatingInput
                                     label="Rua"
