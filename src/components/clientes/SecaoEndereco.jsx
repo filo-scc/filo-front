@@ -15,7 +15,6 @@ export default function SecaoEndereco({ endereco }) {
         <section>
             <h3 className="text-[20px] font-Outfit font-light text-[#404040] mb-4">Endereço</h3>
 
-            {/* Ajuste: max-w-4xl para não espalhar demais e grid com colunas menores */}
             <div className="flex flex-wrap gap-y-8 gap-x-20">
                 <div className="min-w-[120px]">
                     <Label>CEP</Label>

@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Layout } from "../components/Layout";
 import { getClientes, excluirCliente } from "../services/clientesService";
-import MenuOpcoes from "../components/geral/MenuOpcoes"; // Ajuste o caminho conforme necessário
-import ModalExclusao from "../components/geral/ModalExclusao"; // Ajuste o caminho conforme necessário
+import MenuOpcoes from "../components/geral/MenuOpcoes";
+import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 
 export default function Clientes() {
@@ -98,7 +98,7 @@ export default function Clientes() {
                                     <input
                                         type="text"
                                         placeholder="Buscar"
-                                        className="pl-4 pr-10 border border-[#D3D3D3] rounded-[16px] text-sm focus:outline-none focus:border-cyan-400 w-[196px] h-[39px]"
+                                        className="pl-4 pr-10 border border-[#D3D3D3] rounded-[16px] text-sm focus:outline-none w-[196px] h-[39px]"
                                     />
                                     <svg
                                         className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2"
