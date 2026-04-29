@@ -135,7 +135,10 @@ const FaccaoDetalhes = () => {
                             Excluir cadastro
                         </button>
 
-                        <button className="w-[189px] h-[39px] rounded-[18.9px] bg-[#a9e2f2] text-[#4696ad] font-Outfit text-[16px] transition-colors hover:bg-[#A2DCED]">
+                        <button
+                            onClick={() => navigate(`/faccoes/editar/${id}`)}
+                            className="w-[189px] h-[39px] rounded-[18.9px] bg-[#a9e2f2] text-[#4696ad] font-Outfit text-[16px] transition-colors hover:bg-[#A2DCED]"
+                        >
                             Editar cadastro
                         </button>
                     </div>
