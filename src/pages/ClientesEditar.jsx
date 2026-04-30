@@ -433,13 +433,13 @@ export default function ClientesEditar() {
             </div>
 
             <div className="flex flex-wrap justify-end gap-4 pt-2">
-              <button
+              {/* <button
                 type="button"
                 onClick={() => navigate(`/clientes/${id}`)}
                 className="bg-[#F3F4FA] hover:bg-[#E8EBF2] text-[#4696ad] border border-[#4696ad] h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[160px]"
               >
                 Voltar
-              </button>
+              </button> */}
               <button
                 type="button"
                 onClick={handleFinalizar}
