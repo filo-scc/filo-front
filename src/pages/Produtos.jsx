@@ -44,22 +44,20 @@ const ProdutoCard = ({ id, nome, tipo, data, foto }) => {
 };
 
 export default function Produtos() {
+
+    const userString = localStorage.getItem("user");
+
     const [produtos, setProdutos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
-    const [user] = useState(null);
-
-    if (!user) {
-        // Limpa o localStorage e redireciona para a página de login
-        localStorage.clear();
-        redirect("/login");
-    }
+    
+    const fabricoId = userString ? JSON.parse(userString).fabrico_id : null;
 
     useEffect(() => {
         const fetchProdutos = async () => {
             setLoading(true);
             try {
-                const dados = await getProdutosByFabrico(user.fabrico_id);
+                const dados = await getProdutosByFabrico(fabricoId);
                 setProdutos(Array.isArray(dados) ? dados : []);
             } catch (error) {
                 console.error("Erro ao carregar produtos:", error);
