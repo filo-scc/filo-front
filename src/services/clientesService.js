@@ -2,10 +2,8 @@ import api from "./api";
 
 const limparUndefined = (obj) => {
     if (!obj || typeof obj !== "object") return obj;
-    return Object.fromEntries(
-      Object.entries(obj).filter(([, valor]) => valor !== undefined),
-    );
-  };
+    return Object.fromEntries(Object.entries(obj).filter(([, valor]) => valor !== undefined));
+};
 
 export const getClientes = async (fabricoId) => {
     try {
@@ -69,52 +67,52 @@ export const excluirCliente = async (clienteId) => {
 // Cadastrar cliente (DTO compatível com backend)
 export const cadastrarCliente = async (data) => {
     try {
-      const endereco = limparUndefined(data?.endereco);
-      const payloadBase = limparUndefined({
-        nome: data?.nome,
-        cnpj: data?.cnpj,
-        telefone: data?.telefone,
-        status: data?.status,
-        responsavel: data?.responsavel,
-        fabrico_id: data?.fabrico_id,
-      });
-  
-      const payload =
-        endereco && Object.keys(endereco).length > 0
-          ? { ...payloadBase, endereco }
-          : payloadBase;
-  
-      console.log("[clientesService] payload POST /clientes:", payload);
-  
-      const response = await api.post("/clientes", payload);
-      return response.data;
+        const endereco = limparUndefined(data?.endereco);
+        const payloadBase = limparUndefined({
+            nome: data?.nome,
+            cnpj: data?.cnpj,
+            telefone: data?.telefone,
+            status: data?.status,
+            responsavel: data?.responsavel,
+            fabrico_id: data?.fabrico_id,
+        });
+
+        const payload =
+            endereco && Object.keys(endereco).length > 0
+                ? { ...payloadBase, endereco }
+                : payloadBase;
+
+        console.log("[clientesService] payload POST /clientes:", payload);
+
+        const response = await api.post("/clientes", payload);
+        return response.data;
     } catch (error) {
-      console.error("Erro ao criar cliente:", error);
-      throw error;
+        console.error("Erro ao criar cliente:", error);
+        throw error;
     }
-  };
-  
-  export const atualizarCliente = async (id, data) => {
+};
+
+export const atualizarCliente = async (id, data) => {
     try {
-      const endereco = limparUndefined(data?.endereco);
-      const payloadBase = limparUndefined({
-        nome: data?.nome,
-        cnpj: data?.cnpj,
-        telefone: data?.telefone,
-        status: data?.status,
-        responsavel: data?.responsavel,
-        fabrico_id: data?.fabrico_id,
-      });
-  
-      const payload =
-        endereco && Object.keys(endereco).length > 0
-          ? { ...payloadBase, endereco }
-          : payloadBase;
-  
-      const response = await api.put(`/clientes/${id}`, payload);
-      return response.data;
+        const endereco = limparUndefined(data?.endereco);
+        const payloadBase = limparUndefined({
+            nome: data?.nome,
+            cnpj: data?.cnpj,
+            telefone: data?.telefone,
+            status: data?.status,
+            responsavel: data?.responsavel,
+            fabrico_id: data?.fabrico_id,
+        });
+
+        const payload =
+            endereco && Object.keys(endereco).length > 0
+                ? { ...payloadBase, endereco }
+                : payloadBase;
+
+        const response = await api.put(`/clientes/${id}`, payload);
+        return response.data;
     } catch (error) {
-      console.error("Erro ao atualizar cliente:", error);
-      throw error;
+        console.error("Erro ao atualizar cliente:", error);
+        throw error;
     }
-  };
+};

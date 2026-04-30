@@ -59,7 +59,7 @@ function AppRoutes() {
                         </PrivateRoute>
                     }
                 />
-                
+
                 <Route
                     path="/clientes/:id"
                     element={
