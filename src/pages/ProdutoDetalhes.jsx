@@ -5,7 +5,9 @@ import { getProdutoById, getClientesDoProduto, excluirProduto } from "../service
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
 import SecaoDadosProduto from "../components/produtos/SecaoDadosProduto";
 import TabelaClientesDoProduto from "../components/produtos/TabelaClientesDoProduto";
+import ProdutoDetalhesSkeleton from "../components/produtos/ProdutoDetalhesSkeleton"; 
 import ModalExclusao from "../components/geral/ModalExclusao";
+import ModalAtencao from "../components/geral/ModalAtencao";
 
 export default function ProdutoDetalhes() {
     const { id } = useParams();
@@ -15,6 +17,7 @@ export default function ProdutoDetalhes() {
     const [produto, setProduto] = useState(null);
     const [clientesAssociados, setClientesAssociados] = useState([]);
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
+    const [ModalAtencao, setModalAtencao] = useState(false);
 
     useEffect(() => {
         async function fetchData() {
@@ -29,12 +32,9 @@ export default function ProdutoDetalhes() {
                     getClientesDoProduto(id),
                 ]);
 
-                // Validação de segurança: fabrico_id
                 if (usuarioLogado && dadosProduto.fabrico_id !== usuarioLogado.fabrico_id) {
-                    navigate("/produtos", {
-                        replace: true,
-                        state: { error: "Acesso negado." },
-                    });
+                    setModalAtencao(true);
+                    setLoading(false);
                     return;
                 }
 
@@ -42,7 +42,7 @@ export default function ProdutoDetalhes() {
                 setClientesAssociados(dadosClientes);
             } catch (error) {
                 console.error("Erro ao carregar detalhes:", error);
-                navigate("/produtos");
+                setModalAtencao(true);
             } finally {
                 setLoading(false);
             }
@@ -50,6 +50,11 @@ export default function ProdutoDetalhes() {
 
         fetchData();
     }, [id, navigate]);
+
+    const handleAcessoNegadoConfirm = () => {
+        setModalAtencao(false);
+        navigate("/produtos", { replace: true });
+    };
 
     const handleConfirmarExclusao = async () => {
         try {
@@ -75,13 +80,20 @@ export default function ProdutoDetalhes() {
                 <ProdutoDetalhesHeader title="Detalhes de produto" />
 
                 <div className="mt-8 space-y-8">
-                    <SecaoDadosProduto produto={produto} />
-                    <TabelaClientesDoProduto
-                        clientes={clientesAssociados}
-                        referenciaInterna={produto.nome}
-                    />
+                    {/* 👇 Guard: só renderiza se produto foi carregado */}
+                    {/* depois */}
+                    {produto ? (
+                        <>
+                            <SecaoDadosProduto produto={produto} />
+                            <TabelaClientesDoProduto
+                                clientes={clientesAssociados}
+                                referenciaInterna={produto.nome}
+                            />
+                        </>
+                    ) : (
+                        <ProdutoDetalhesSkeleton />
+                    )}
 
-                    {/* Botões de Ação */}
                     <div className="flex justify-between items-center mt-14 py-4 w-full">
                         <button
                             onClick={() => navigate("/produtos")}
@@ -92,7 +104,7 @@ export default function ProdutoDetalhes() {
 
                         <div className="flex gap-4">
                             <button
-                                onClick={() => setModalExclusaoAberto(true)} // <-- Abre o modal
+                                onClick={() => setModalExclusaoAberto(true)}
                                 className="w-[189px] h-[39px] rounded-[18.9px] bg-[#D75757] text-white font-Outfit text-[16px] transition-colors hover:bg-[#d74646]"
                             >
                                 Excluir produto
@@ -114,6 +126,11 @@ export default function ProdutoDetalhes() {
                 onConfirm={handleConfirmarExclusao}
                 nomeItem={produto?.nome}
                 tipoItem="o produto"
+            />
+
+            <ModalAtencao
+                isOpen={ModalAtencao}
+                onConfirm={handleAcessoNegadoConfirm}
             />
         </div>
     );

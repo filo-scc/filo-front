@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function ModalAcessoNegado({ isOpen, onConfirm }) {
+export default function ModalAtencao({ isOpen, onConfirm }) {
     if (!isOpen) return null;
 
     return (
