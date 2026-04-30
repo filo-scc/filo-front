@@ -1,28 +1,25 @@
 function SkeletonBox({ className }) {
-    return (
-        <div className={`bg-[#E8E9F0] rounded-[12px] animate-pulse ${className}`} />
-    );
+    return <div className={`bg-[#E8E9F0] rounded-[12px] animate-pulse ${className}`} />;
 }
 
 export default function ProdutoDetalhesSkeleton() {
     return (
         <div className="mt-8 space-y-8">
-
             {/* Espelho de SecaoDadosProduto */}
             <section className="flex flex-col md:flex-row gap-10 pr-4 md:pr-[15%]">
-
                 {/* Bloco da Imagem — w-[260px] h-[170px] igual ao original */}
                 <div className="flex flex-col shrink-0">
-                    <SkeletonBox className="h-[28px] w-24 mb-4 rounded-[8px]" /> {/* título "Imagem" */}
+                    <SkeletonBox className="h-[28px] w-24 mb-4 rounded-[8px]" />{" "}
+                    {/* título "Imagem" */}
                     <SkeletonBox className="w-[260px] h-[170px] rounded-[10px]" />
                 </div>
 
                 {/* Bloco de Dados */}
                 <div className="flex flex-col gap-8 w-full max-w-[600px]">
-
                     {/* Subseção Geral */}
                     <div>
-                        <SkeletonBox className="h-[28px] w-16 mb-4 rounded-[8px]" /> {/* título "Geral" */}
+                        <SkeletonBox className="h-[28px] w-16 mb-4 rounded-[8px]" />{" "}
+                        {/* título "Geral" */}
                         <div className="grid grid-cols-[220px_220px] gap-x-12">
                             <div className="space-y-2">
                                 <SkeletonBox className="h-[20px] w-36" /> {/* label */}
@@ -37,7 +34,8 @@ export default function ProdutoDetalhesSkeleton() {
 
                     {/* Subseção Detalhes do produto */}
                     <div>
-                        <SkeletonBox className="h-[28px] w-48 mb-4 rounded-[8px]" /> {/* título "Detalhes do produto" */}
+                        <SkeletonBox className="h-[28px] w-48 mb-4 rounded-[8px]" />{" "}
+                        {/* título "Detalhes do produto" */}
                         <div className="grid grid-cols-[220px_220px] gap-x-12">
                             <div className="space-y-2">
                                 <SkeletonBox className="h-[20px] w-24" />
@@ -49,7 +47,6 @@ export default function ProdutoDetalhesSkeleton() {
                             </div>
                         </div>
                     </div>
-
                 </div>
             </section>
 
@@ -69,7 +66,6 @@ export default function ProdutoDetalhesSkeleton() {
                     ))}
                 </div>
             </section>
-
         </div>
     );
 }

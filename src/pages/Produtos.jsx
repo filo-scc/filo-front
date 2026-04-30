@@ -44,13 +44,12 @@ const ProdutoCard = ({ id, nome, tipo, data, foto }) => {
 };
 
 export default function Produtos() {
-
     const userString = localStorage.getItem("user");
 
     const [produtos, setProdutos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
-    
+
     const fabricoId = userString ? JSON.parse(userString).fabrico_id : null;
 
     useEffect(() => {

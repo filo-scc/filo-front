@@ -5,7 +5,7 @@ import { getProdutoById, getClientesDoProduto, excluirProduto } from "../service
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
 import SecaoDadosProduto from "../components/produtos/SecaoDadosProduto";
 import TabelaClientesDoProduto from "../components/produtos/TabelaClientesDoProduto";
-import ProdutoDetalhesSkeleton from "../components/produtos/ProdutoDetalhesSkeleton"; 
+import ProdutoDetalhesSkeleton from "../components/produtos/ProdutoDetalhesSkeleton";
 import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalAtencao from "../components/geral/ModalAtencao";
 
@@ -128,10 +128,7 @@ export default function ProdutoDetalhes() {
                 tipoItem="o produto"
             />
 
-            <ModalAtencao
-                isOpen={ModalAtencao}
-                onConfirm={handleAcessoNegadoConfirm}
-            />
+            <ModalAtencao isOpen={ModalAtencao} onConfirm={handleAcessoNegadoConfirm} />
         </div>
     );
 }
