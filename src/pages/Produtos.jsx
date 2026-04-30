@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getProdutosByFabrico } from "../services/produtoService";
-import { redirect, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 // Componente do Card
 const ProdutoCard = ({ id, nome, tipo, data, foto }) => {
@@ -66,7 +66,7 @@ export default function Produtos() {
         };
 
         fetchProdutos();
-    }, []);
+    }, [fabricoId]);
 
     return (
         <div className="p-6 pt-0 font-['Outfit',_sans-serif]">
