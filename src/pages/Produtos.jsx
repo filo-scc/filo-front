@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getProdutosByFabrico } from "../services/produtoService";
-import { useNavigate } from "react-router-dom";
+import { redirect, useNavigate } from "react-router-dom";
 
 // Componente do Card
 const ProdutoCard = ({ id, nome, tipo, data, foto }) => {
@@ -47,12 +47,19 @@ export default function Produtos() {
     const [produtos, setProdutos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const [user] = useState(null);
+
+    if (!user) {
+        // Limpa o localStorage e redireciona para a página de login
+        localStorage.clear();
+        redirect("/login");
+    }
 
     useEffect(() => {
         const fetchProdutos = async () => {
             setLoading(true);
             try {
-                const dados = await getProdutosByFabrico(1);
+                const dados = await getProdutosByFabrico(user.fabrico_id);
                 setProdutos(Array.isArray(dados) ? dados : []);
             } catch (error) {
                 console.error("Erro ao carregar produtos:", error);
