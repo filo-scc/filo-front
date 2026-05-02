@@ -6,7 +6,6 @@ export default function ModalAtencao({ isOpen, onConfirm }) {
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-sm font-Outfit">
             <div className="relative bg-[#F3F4FA] rounded-[24px] p-8 w-[90%] max-w-[420px] shadow-xl flex flex-col items-center text-center">
-
                 <p className="text-[18px] font-medium text-[#404040] mb-2">Atenção!</p>
 
                 <p className="text-[15px] font-light text-[#6B6B6B] px-4 mb-8">
