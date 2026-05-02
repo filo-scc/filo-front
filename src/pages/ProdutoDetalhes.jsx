@@ -17,7 +17,7 @@ export default function ProdutoDetalhes() {
     const [produto, setProduto] = useState(null);
     const [clientesAssociados, setClientesAssociados] = useState([]);
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
-    const [ModalAtencao, setModalAtencao] = useState(false);
+    const [modalAtencaoAberto, setModalAtencaoAberto] = useState(false);
 
     useEffect(() => {
         async function fetchData() {
@@ -33,7 +33,7 @@ export default function ProdutoDetalhes() {
                 ]);
 
                 if (usuarioLogado && dadosProduto.fabrico_id !== usuarioLogado.fabrico_id) {
-                    setModalAtencao(true);
+                    setModalAtencaoAberto(true);
                     setLoading(false);
                     return;
                 }
@@ -42,7 +42,7 @@ export default function ProdutoDetalhes() {
                 setClientesAssociados(dadosClientes);
             } catch (error) {
                 console.error("Erro ao carregar detalhes:", error);
-                setModalAtencao(true);
+                setModalAtencaoAberto(true);
             } finally {
                 setLoading(false);
             }
@@ -52,7 +52,7 @@ export default function ProdutoDetalhes() {
     }, [id, navigate]);
 
     const handleAcessoNegadoConfirm = () => {
-        setModalAtencao(false);
+        setModalAtencaoAberto(false);
         navigate("/produtos", { replace: true });
     };
 
@@ -128,7 +128,7 @@ export default function ProdutoDetalhes() {
                 tipoItem="o produto"
             />
 
-            <ModalAtencao isOpen={ModalAtencao} onConfirm={handleAcessoNegadoConfirm} />
+            <ModalAtencao isOpen={modalAtencaoAberto} onConfirm={handleAcessoNegadoConfirm} />
         </div>
     );
 }
