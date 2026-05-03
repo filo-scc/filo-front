@@ -1,0 +1,37 @@
+# =============================================================================
+# docker-compose.yml — Frontend Filo (Desenvolvimento)
+# =============================================================================
+# Pré-requisito: o backend deve estar rodando para que a rede filo-network exista.
+# =============================================================================
+services:
+
+  filo-front:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: filo-front
+    restart: unless-stopped
+    environment:
+      # Variáveis VITE_* em modo dev são lidas em runtime pelo servidor Vite,
+      # diferente do build de produção onde são embutidas no bundle.
+      # Aqui basta definir no .env — não é necessário rebuildar a imagem.
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
+    ports:
+      - "5173:5173"
+    volumes:
+      # Monta o código-fonte para hot-reload.
+      # Qualquer mudança no host é refletida instantaneamente no browser.
+      - .:/app
+      # Preserva os node_modules instalados na imagem (Alpine).
+      # Sem esta linha, o volume acima sobrescreveria com os do host,
+      # que podem ter binários incompatíveis com Linux/Alpine.
+      - /app/node_modules
+    networks:
+      - filo-network
+
+# A rede é criada pelo backend. external: true instrui o compose
+# a usá-la sem tentar criá-la, se o backend não estiver rodando,
+# o compose vai reclamar que a rede não existe.
+networks:
+  filo-network:
+    external: true
