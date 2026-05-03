@@ -99,3 +99,24 @@ export const atualizarCliente = async (id, data) => {
     throw error;
   }
 };
+
+export const getUnassociatedProductsForClient = async (
+  clienteId,
+  fabricoId,
+  body,
+) => {
+  const response = await api.get(
+    `/produtos/cliente/${clienteId}/produtos-nao-associados/${fabricoId}`,
+    body,
+  );
+  return response.data;
+};
+
+export const excluirCliente = async (clienteId) => {
+  try {
+    await api.delete(`/clientes/${clienteId}`);
+  } catch (error) {
+    console.error("Erro ao excluir cliente:", error);
+    throw error;
+  }
+};

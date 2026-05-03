@@ -7,7 +7,9 @@ import { Layout } from "@/components/Layout";
 import Faccoes from "@/pages/Faccoes";
 import ClienteDetalhes from "../pages/ClienteDetalhes";
 import FaccaoDetalhes from "../pages/FaccaoDetalhes";
+import FaccaoEditar from "../pages/FaccaoEditar";
 import ProdutoDetalhes from "../pages/ProdutoDetalhes";
+import FaccaoCadastro from "../pages/FaccaoCadastro";
 
 function AppRoutes() {
   return (
@@ -74,8 +76,30 @@ function AppRoutes() {
             </PrivateRoute>
           }
         />
+        <Route
+          path="/faccoes/novo"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <FaccaoCadastro />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
 
-        {/* Telas provisórias com a header + sidebar por enquanto que não são implementadas */}
+        {/* Rota de Edição de Facção */}
+        <Route
+          path="/faccoes/editar/:id"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <FaccaoEditar />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        {/* Telas provisórias */}
         <Route
           path="/pedidos"
           element={

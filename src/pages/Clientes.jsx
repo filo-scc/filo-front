@@ -55,7 +55,7 @@ export default function Clientes() {
 
   // Funções de Ação do Menu
   const handleEdit = (id) => {
-    navigate(`/editar-cliente/${id}`);
+    navigate(`/cliente/editar/${id}`);
   };
 
   const abrirModalExclusao = (cliente) => {
@@ -101,7 +101,7 @@ export default function Clientes() {
                   <input
                     type="text"
                     placeholder="Buscar"
-                    className="pl-4 pr-10 border border-[#D3D3D3] rounded-[16px] text-sm focus:outline-none focus:border-cyan-400 w-[196px] h-[39px]"
+                    className="pl-4 pr-10 border border-[#D3D3D3] rounded-[16px] text-sm focus:outline-none w-[196px] h-[39px]"
                   />
                   <svg
                     className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2"
