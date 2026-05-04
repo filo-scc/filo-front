@@ -9,6 +9,7 @@ import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 export default function Clientes() {
     const [clientes, setClientes] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [busca, setBusca] = useState("");
     const navigate = useNavigate();
 
     // Estados para o Modal de Exclusão
@@ -54,7 +55,7 @@ export default function Clientes() {
 
     // Funções de Ação do Menu
     const handleEdit = (id) => {
-        navigate(`/cliente/editar/${id}`);
+        navigate(`/clientes/editar/${id}`);
     };
 
     const abrirModalExclusao = (cliente) => {
@@ -98,6 +99,8 @@ export default function Clientes() {
                                     <input
                                         type="text"
                                         placeholder="Buscar"
+                                        value={busca}
+                                        onChange={(e) => setBusca(e.target.value)}
                                         className="pl-4 pr-10 border border-[#D3D3D3] rounded-[16px] text-sm focus:outline-none w-[196px] h-[39px]"
                                     />
                                     <svg
@@ -116,8 +119,9 @@ export default function Clientes() {
                                 </div>
 
                                 <button
+                                    type="button"
+                                    onClick={() => navigate("/clientes/cadastrar")}
                                     className="bg-[#A9E2F2] hover:bg-[#8acbdc] text-white w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors"
-                                    onClick={() => navigate("/cadastrar-cliente")}
                                 >
                                     <img
                                         src="/add-star.png"

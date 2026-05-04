@@ -7,6 +7,8 @@ import { Layout } from "@/components/Layout";
 import Faccoes from "@/pages/Faccoes";
 import Produtos from "@/pages/Produtos";
 import ClienteDetalhes from "../pages/ClienteDetalhes";
+import ClientesCadastrar from "../pages/ClientesCadastrar";
+import ClientesEditar from "../pages/ClientesEditar";
 import FaccaoDetalhes from "../pages/FaccaoDetalhes";
 import FaccaoEditar from "../pages/FaccaoEditar";
 import ProdutoDetalhes from "../pages/ProdutoDetalhes";
@@ -37,6 +39,28 @@ function AppRoutes() {
                         </PrivateRoute>
                     }
                 />
+                <Route
+                    path="/clientes/cadastrar"
+                    element={
+                        <PrivateRoute>
+                            <Layout>
+                                <ClientesCadastrar />
+                            </Layout>
+                        </PrivateRoute>
+                    }
+                />
+
+                <Route
+                    path="/clientes/editar/:id"
+                    element={
+                        <PrivateRoute>
+                            <Layout>
+                                <ClientesEditar />
+                            </Layout>
+                        </PrivateRoute>
+                    }
+                />
+
                 <Route
                     path="/clientes/:id"
                     element={
