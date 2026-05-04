@@ -1,3 +1,5 @@
+import { formatarCep } from "../../utils/formatters";
+
 const Label = ({ children }) => (
     <span className="text-[20px] font-Outfit font-light text-[#4696AD] block">{children}</span>
 );
@@ -7,15 +9,6 @@ const Valor = ({ children }) => (
         {children || "-"}
     </p>
 );
-
-const apenasNumeros = (valor) => String(valor || "").replace(/\D/g, "");
-
-const formatarCep = (valor) => {
-    const digitos = apenasNumeros(valor).slice(0, 8);
-    if (!digitos) return "";
-    if (digitos.length <= 5) return digitos;
-    return `${digitos.slice(0, 5)}-${digitos.slice(5)}`;
-};
 
 export default function SecaoEndereco({ endereco }) {
     if (!endereco) return null;
