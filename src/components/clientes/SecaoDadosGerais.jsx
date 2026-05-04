@@ -1,3 +1,5 @@
+import { formatarCnpj, formatarTelefone } from "../../utils/formatters";
+
 const Label = ({ children }) => (
     <span className="text-[20px] font-Outfit font-light text-[#4696AD] block">{children}</span>
 );
@@ -19,7 +21,7 @@ export default function SecaoDadosGerais({ cliente }) {
                 </div>
                 <div>
                     <Label>CNPJ</Label>
-                    <Valor>{cliente.cnpj}</Valor>
+                    <Valor>{formatarCnpj(cliente.cnpj)}</Valor>
                 </div>
                 <div>
                     <Label>Proprietário</Label>
@@ -27,7 +29,7 @@ export default function SecaoDadosGerais({ cliente }) {
                 </div>
                 <div>
                     <Label>Telefone</Label>
-                    <Valor>{cliente.telefone}</Valor>
+                    <Valor>{formatarTelefone(cliente.telefone)}</Valor>
                 </div>
             </div>
         </section>
