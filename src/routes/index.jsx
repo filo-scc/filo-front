@@ -5,6 +5,7 @@ import Cliente from "@/pages/Clientes";
 import PrivateRoute from "./PrivateRoute";
 import { Layout } from "@/components/Layout";
 import Faccoes from "@/pages/Faccoes";
+import Produtos from "@/pages/Produtos";
 import ClienteDetalhes from "../pages/ClienteDetalhes";
 import ClientesCadastrar from "../pages/ClientesCadastrar";
 import ClientesEditar from "../pages/ClientesEditar";
@@ -142,9 +143,7 @@ function AppRoutes() {
                     element={
                         <PrivateRoute>
                             <Layout>
-                                <div className="flex justify-center items-center h-full text-gray-500 text-2xl font-light">
-                                    Página de Produtos em construção...
-                                </div>
+                                <Produtos />
                             </Layout>
                         </PrivateRoute>
                     }
