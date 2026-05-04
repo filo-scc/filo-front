@@ -44,6 +44,7 @@ const ProdutoCard = ({ id, nome, tipo, data, foto }) => {
 };
 
 export default function Produtos() {
+    const navigate = useNavigate();
     const userString = localStorage.getItem("user");
 
     const [produtos, setProdutos] = useState([]);
@@ -106,7 +107,10 @@ export default function Produtos() {
                             </div>
 
                             {/* Botão Cadastrar Produto */}
-                            <button className="bg-[#A9E2F2] hover:bg-[#8acbdc] text-white w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors">
+                            <button
+                                onClick={() => navigate("/produtos/cadastar")}
+                                className="bg-[#A9E2F2] hover:bg-[#8acbdc] text-white w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors"
+                            >
                                 <img
                                     src="/adicionar-produtos.png"
                                     alt="Adicionar produto"
