@@ -1,3 +1,5 @@
+import { formatarCep } from "../../utils/formatters";
+
 const Label = ({ children }) => (
     <span className="text-[20px] font-Outfit font-light text-[#4696AD] block">{children}</span>
 );
@@ -18,7 +20,7 @@ export default function SecaoEndereco({ endereco }) {
             <div className="flex flex-wrap gap-y-8 gap-x-20">
                 <div className="min-w-[120px]">
                     <Label>CEP</Label>
-                    <Valor>{endereco.cep}</Valor>
+                    <Valor>{endereco.cep ? formatarCep(endereco.cep) : "Sem CEP"}</Valor>
                 </div>
                 <div className="min-w-[150px]">
                     <Label>Rua</Label>
