@@ -1,5 +1,7 @@
 import { useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
+import { criarProduto } from "../services/produtosService";
 
 const modelos = ["Top e short", "Top e calça", "Macaquito", "Macacão"];
 const tecidos = ["Microfibra", "Renda", "Algodão", "Suplex"];
@@ -117,10 +119,14 @@ function SelectedAviamentoTag({ label, onRemove }) {
 }
 
 export default function ProdutoCadastar() {
+    const navigate = useNavigate();
     const inputFileRef = useRef(null);
     const [imagemPreview, setImagemPreview] = useState("");
     const [openDropdown, setOpenDropdown] = useState(null);
+    const [salvando, setSalvando] = useState(false);
+    const [erroCadastro, setErroCadastro] = useState("");
     const [formData, setFormData] = useState({
+        foto: "",
         referencia: "",
         modelo: "",
         tecido: "",
@@ -155,10 +161,61 @@ export default function ProdutoCadastar() {
         if (!arquivo) return;
 
         setImagemPreview(URL.createObjectURL(arquivo));
+        setErroCadastro("");
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setFormData((prev) => ({
+                ...prev,
+                foto: typeof reader.result === "string" ? reader.result : "",
+            }));
+        };
+        reader.readAsDataURL(arquivo);
     };
 
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault();
+
+        setErroCadastro("");
+
+        const userString = localStorage.getItem("user");
+        const usuarioLogado = userString ? JSON.parse(userString) : null;
+        const fabricoId = Number(usuarioLogado?.fabrico_id);
+
+        if (!formData.referencia.trim()) {
+            setErroCadastro("Informe a referência interna do produto.");
+            return;
+        }
+
+        if (!formData.modelo) {
+            setErroCadastro("Selecione o modelo do produto.");
+            return;
+        }
+
+        if (!Number.isFinite(fabricoId)) {
+            setErroCadastro("Não foi possível identificar a fábrica do usuário.");
+            return;
+        }
+
+        const payload = {
+            foto: formData.foto || undefined,
+            nome: formData.referencia.trim(),
+            tipo: formData.modelo,
+            fabrico_id: fabricoId,
+        };
+
+        try {
+            setSalvando(true);
+            const produtoCriado = await criarProduto(payload);
+            navigate(produtoCriado?.id ? `/produtos/${produtoCriado.id}` : "/produtos");
+        } catch (error) {
+            console.error("Erro ao cadastrar produto:", error);
+            setErroCadastro(
+                error.response?.data?.message || "Erro ao cadastrar produto. Verifique os dados.",
+            );
+        } finally {
+            setSalvando(false);
+        }
     };
 
     return (
@@ -166,9 +223,16 @@ export default function ProdutoCadastar() {
             <div className="bg-white rounded-[24px] shadow-sm w-full min-h-[650px] px-8 py-7 lg:px-12 lg:py-8">
                 <ProdutoDetalhesHeader
                     title="Cadastrar produto"
-                    iconSrc="/adicionar-produtos.png"
-                    iconClassName="w-[42px] h-[42px] object-contain"
+                    iconSrc="/adicionar-produtos-preto.png"
+                    iconWrapperClassName="w-[32px] h-[32px] shrink-0 flex items-center justify-center"
+                    iconClassName="w-[32px] h-[32px] object-contain"
                 />
+
+                {erroCadastro && (
+                    <div className="mt-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-500">
+                        {erroCadastro}
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="mt-10 flex flex-col min-h-[520px]">
                     <div className="flex flex-col xl:flex-row gap-12 xl:gap-16">
@@ -283,9 +347,10 @@ export default function ProdutoCadastar() {
                     <div className="mt-auto flex justify-end pt-16">
                         <button
                             type="submit"
-                            className="w-[189px] h-[39px] rounded-[18.9px] bg-[#A9E2F2] text-[#4696AD] text-sm font-medium transition-colors hover:bg-[#8acbdc]"
+                            disabled={salvando}
+                            className="w-[189px] h-[39px] rounded-[18.9px] bg-[#A9E2F2] text-[#4696AD] text-sm font-medium transition-colors hover:bg-[#8acbdc] disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                            Finalizar cadastro
+                            {salvando ? "Salvando..." : "Finalizar cadastro"}
                         </button>
                     </div>
                 </form>

@@ -1,5 +1,10 @@
 import api from "./api";
 
+export const criarProduto = async (data) => {
+    const response = await api.post("/produtos", data);
+    return response.data;
+};
+
 export const getProdutoById = async (id) => {
     const response = await api.get(`/produtos/${id}`);
     return response.data;
