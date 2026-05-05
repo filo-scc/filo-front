@@ -1,0 +1,28 @@
+# Dependências (instaladas dentro do container)
+node_modules
+
+# Output de build (não existe em dev, mas por precaução)
+dist
+
+# Ambiente
+.env
+.env.*
+!.env.example
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+
+# Editor / OS
+.DS_Store
+.vscode
+.idea
+*.log
+
+# Documentação e infra 
+README.md
+infra-para-dockerizacao.md

@@ -1,40 +1,104 @@
-## Como Iniciar o Projeto
+# Filo Frontend
 
-Siga os passos abaixo para rodar o projeto na sua máquina local.
+O **Filo Frontend** é a interface do projeto Filo, desenvolvida para visualizar e gerenciar o fluxo de produção têxtil — Kanban de etapas, clientes, facções, produtos e fichas técnicas.
 
-### 1. Pré-requisitos
-Certifique-se de ter o **Node.js** instalado na sua máquina (recomendamos a versão 18 ou superior).
+## Tecnologias
+
+- **Framework:** [React](https://react.dev/) com [Vite](https://vitejs.dev/)
+- **Linguagem:** TypeScript
+- **Containerização:** Docker & Docker Compose
+- **Servidor de Dev:** Vite HMR (Hot Module Replacement)
 
 
-### 2. Instalação
-Clone este repositório e instale as dependências:
+## Pré-requisitos
 
+Antes de começar, você precisará ter instalado em sua máquina:
+- [Docker](https://www.docker.com/) e [Docker Compose](https://docs.docker.com/compose/) (**Recomendado**)
+- Ou [Node.js](https://nodejs.org/) (v18+) e [npm](https://www.npmjs.com/) (para execução local)
+
+> O backend deve estar rodando antes de subir o frontend — ele é quem cria a rede `filo-network` usada pelos containers.
+
+
+## Quick Start (Docker)
+
+Esta é a forma recomendada para garantir que toda a equipe trabalhe no mesmo ambiente.
+
+1. **Clone o repositório:**
+   ```bash
+   # git clone
+   git clone https://github.com/filo-scc/filo-front.git
+
+   # ou através do github cli
+   # gh repo clone filo-scc/filo-front
+
+   cd filo-front
+   ```
+
+2. **Configure as variáveis de ambiente:**
+   ```bash
+   # Linux
+   cp .env.example .env
+   ```
+
+   *O `.env` gerado já vem com os valores padrão para desenvolvimento local, normalmente não é necessário alterar nada.*
+
+3. **Certifique-se de que o backend está rodando:**
+   ```bash
+   # No repositório do backend
+   docker compose up -d
+   ```
+
+4. **Suba o frontend (primeira vez):**
+   ```bash
+   docker compose up --build
+   ```
+
+   *O `--build` é necessário apenas na primeira vez ou quando houver mudanças no `package.json`.*
+
+5. **Uso diário:**
+   ```bash
+   docker compose up
+   ```
+
+   Acesse em: **http://localhost:5173**
+
+
+## Hot-reload
+
+O container roda o servidor de desenvolvimento do Vite, não um build estático. Isso significa que qualquer alteração em arquivos `.tsx`, `.ts` ou `.css` é refletida automaticamente no browser, sem necessidade de reiniciar o container.
+
+**Quando é necessário rebuildar (`--build`):**
+
+| Situação | Rebuild necessário? |
+|---|---|
+| Alterar código `.tsx`, `.ts`, `.css` | ❌ |
+| Alterar `.env` | ❌ |
+| Instalar nova dependência | ✅ |
+| Primeira vez subindo | ✅ |
+
+**Instalando uma nova dependência:**
 ```bash
-# Clone o repositório
-git clone <url-do-seu-repositorio>
+# 1. Instale no host
+npm install nome-do-pacote
 
-# Entre na pasta do projeto
-cd <nome-da-pasta>
-
-# Instale as dependências
-npm install
+# 2. Rebuilde para instalar dentro do container também
+docker compose up --build
 ```
 
-## Como Executar projeto
 
-```bash 
+## Execução Local (sem Docker)
+
+```bash
+npm install
 npm run dev
 ```
 
-*Lembre-se*: o vite o roda na porta 5174 caso ela esteja em uso pare de rodar comunicação que esta rodando na porta
-
-## Comandos uteis 
+Acesse em: **http://localhost:5173**
 
 
-```bash 
-npm run preview \\Inicia um servidor local para você testar a versão de produção (gerada pelo build).
+---
 
-npm run lint \\Executa o ESLint para analisar o código e encontrar possíveis erros ou má formatação.
-```
+## Outros Pontos
 
-
+- **Rede:** O frontend se conecta à rede `filo-network` criada pelo backend. Se o backend não estiver rodando, o compose retorna erro de rede não encontrada.
+- **Variáveis de ambiente:** Em modo dev, o Vite lê o `.env` em runtime, alterar `VITE_API_URL` e salvar já reflete sem rebuild.
