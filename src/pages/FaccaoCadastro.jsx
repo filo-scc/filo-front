@@ -338,7 +338,7 @@ const FaccaoCadastro = () => {
                                 {/* Campo PIX */}
                                 {formData.forma_pagamento === "PIX" && (
                                     <FloatingInput
-                                        label="chave Pix"
+                                        label="Chave Pix"
                                         name="chave_pix"
                                         value={formData.chave_pix}
                                         onChange={handleChange}
