@@ -102,7 +102,7 @@ const FaccaoCadastro = () => {
             if (formData.complemento) endereco.complemento = formData.complemento;
             if (formData.cidade) endereco.cidade = formData.cidade;
             if (formData.estado) endereco.estado = formData.estado;
-            if (formData.cep) endereco.cep = formData.cep.replace(/D/g, "");
+            if (formData.cep) endereco.cep = formData.cep.replace(/\D/g, "");
 
             if (Object.keys(endereco).length > 0) {
                 payload.endereco = endereco;
@@ -293,12 +293,12 @@ const FaccaoCadastro = () => {
                                                 onClick={() => setDropdownAberto(false)}
                                             ></div>
 
-                                            <div className="absolute z-20 mt-1 py-1 w-full bg-white border border-[#D3D3D3] rounded-[10px] shadow-lg overflow-hidden">
+                                            <div className="absolute z-20 mt-1 w-full bg-white border border-[#D3D3D3] rounded-[10px] shadow-lg overflow-hidden">
                                                 <div
                                                     className={`px-4 py-2 text-sm cursor-pointer transition-colors ${
                                                         formData.forma_pagamento === "PIX"
                                                             ? "border-l-[3px] border-[#C4F042] text-gray-700 bg-white"
-                                                            : "border-l-[3px] border-transparent text-gray-600 hover:bg-gray-50"
+                                                            : "border-l-[3px] border-transparent text-gray-600 hover:bg-[#F5F5F5]"
                                                     }`}
                                                     onClick={() => {
                                                         handleChange({
@@ -313,10 +313,10 @@ const FaccaoCadastro = () => {
                                                     Pix
                                                 </div>
                                                 <div
-                                                    className={`px-4 py-2 text-sm cursor-pointer transition-colors bg-[#F5F5F5] ${
+                                                    className={`px-4 py-2 text-sm cursor-pointer transition-colors ${
                                                         formData.forma_pagamento === "TED"
                                                             ? "border-l-[3px] border-[#C4F042] text-gray-700"
-                                                            : "border-l-[3px] border-transparent text-gray-600 hover:bg-[#EBEBEB]"
+                                                            : "border-l-[3px] border-transparent text-gray-600 hover:bg-[#F5F5F5]"
                                                     }`}
                                                     onClick={() => {
                                                         handleChange({
@@ -338,11 +338,11 @@ const FaccaoCadastro = () => {
                                 {/* Campo PIX */}
                                 {formData.forma_pagamento === "PIX" && (
                                     <FloatingInput
-                                        label="chave Pix"
+                                        label="Chave Pix"
                                         name="chave_pix"
                                         value={formData.chave_pix}
                                         onChange={handleChange}
-                                        containerClass="w-full flex-1 min-w-[328px]"
+                                        containerClass="w-[328px]"
                                     />
                                 )}
                             </div>

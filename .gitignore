@@ -1,4 +1,23 @@
-# Logs
+# =============================================================================
+# .gitignore — Frontend Filó (React + Vite)
+# =============================================================================
+
+# ── Dependências ──────────────────────────────────────────────────────────────
+node_modules
+
+# ── Build ─────────────────────────────────────────────────────────────────────
+dist
+dist-ssr
+
+# ── Ambiente ──────────────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# Arquivos locais Vite 
+*.local
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
 logs
 *.log
 npm-debug.log*
@@ -7,18 +26,18 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
+# ── Editor ────────────────────────────────────────────────────────────────────
 .vscode/*
 !.vscode/extensions.json
 .idea
-.DS_Store
+
+# ── Sistema operacional ───────────────────────────────────────────────────────
+.DS_Store        # macOS
+Thumbs.db        # Windows
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+.env
+.env
