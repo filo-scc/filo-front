@@ -257,7 +257,9 @@ export default function ProdutoCadastar() {
                                         className="w-full h-full object-cover"
                                     />
                                 ) : (
-                                    <span className="text-[60px] font-extralight text-[#9B9B9B]">+</span>
+                                    <span className="text-[60px] font-extralight text-[#9B9B9B]">
+                                        +
+                                    </span>
                                 )}
                             </button>
                         </div>
@@ -323,8 +325,12 @@ export default function ProdutoCadastar() {
                                             options={tecidos}
                                             isOpen={openDropdown === "tecido"}
                                             onToggle={() => toggleDropdown("tecido")}
-                                            onSelect={(value) => handleDropdownSelect("tecido", value)}
-                                            isSelectedOption={(option) => formData.tecido === option}
+                                            onSelect={(value) =>
+                                                handleDropdownSelect("tecido", value)
+                                            }
+                                            isSelectedOption={(option) =>
+                                                formData.tecido === option
+                                            }
                                         />
                                     </div>
 
@@ -335,7 +341,9 @@ export default function ProdutoCadastar() {
                                             options={grades}
                                             isOpen={openDropdown === "grade"}
                                             onToggle={() => toggleDropdown("grade")}
-                                            onSelect={(value) => handleDropdownSelect("grade", value)}
+                                            onSelect={(value) =>
+                                                handleDropdownSelect("grade", value)
+                                            }
                                             isSelectedOption={(option) => formData.grade === option}
                                         />
                                     </div>
