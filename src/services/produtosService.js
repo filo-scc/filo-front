@@ -5,6 +5,11 @@ export const criarProduto = async (data) => {
     return response.data;
 };
 
+export const getGradesByFabrico = async (fabricoId) => {
+    const response = await api.get(`/fabrico-grades/fabrico/${fabricoId}`);
+    return response.data;
+};
+
 export const getProdutoById = async (id) => {
     const response = await api.get(`/produtos/${id}`);
     return response.data;

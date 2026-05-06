@@ -1,11 +1,10 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
-import { criarProduto } from "../services/produtosService";
+import { criarProduto, getGradesByFabrico } from "../services/produtosService";
 
 const modelos = ["Top e short", "Top e calça", "Macaquito", "Macacão"];
 const tecidos = ["Microfibra", "Renda", "Algodão", "Suplex"];
-const grades = ["PP ao GG", "P ao G", "36 ao 44", "Tamanho único"];
 const aviamentosDisponiveis = ["Viés", "Bojo", "Elástico", "Argola"];
 
 function FieldLabel({ children }) {
@@ -121,18 +120,69 @@ function SelectedAviamentoTag({ label, onRemove }) {
 export default function ProdutoCadastar() {
     const navigate = useNavigate();
     const inputFileRef = useRef(null);
+    const userString = localStorage.getItem("user");
+    const usuarioLogado = userString ? JSON.parse(userString) : null;
+    const fabricoId = Number(usuarioLogado?.fabrico_id);
     const [imagemPreview, setImagemPreview] = useState("");
     const [openDropdown, setOpenDropdown] = useState(null);
     const [salvando, setSalvando] = useState(false);
+    const [carregandoGrades, setCarregandoGrades] = useState(false);
     const [erroCadastro, setErroCadastro] = useState("");
+    const [gradesDisponiveis, setGradesDisponiveis] = useState([]);
     const [formData, setFormData] = useState({
         foto: "",
         referencia: "",
         modelo: "",
         tecido: "",
         grade: "",
+        grade_versao_id: undefined,
         aviamentos: [],
     });
+
+    useEffect(() => {
+        if (!Number.isFinite(fabricoId)) return;
+
+        let ignorar = false;
+
+        const carregarGrades = async () => {
+            try {
+                setCarregandoGrades(true);
+                const dados = await getGradesByFabrico(fabricoId);
+                if (ignorar) return;
+
+                const gradesMapeadas = (dados || [])
+                    .map((item) => {
+                        const nome = item?.grade?.nome;
+                        const versaoAtiva = item?.grade?.versoes?.find((versao) => versao?.ativo);
+
+                        if (!nome) return null;
+
+                        return {
+                            nome,
+                            grade_versao_id: versaoAtiva?.id,
+                        };
+                    })
+                    .filter(Boolean);
+
+                setGradesDisponiveis(gradesMapeadas);
+            } catch (error) {
+                if (!ignorar) {
+                    console.error("Erro ao buscar grades do fabrico:", error);
+                    setGradesDisponiveis([]);
+                }
+            } finally {
+                if (!ignorar) {
+                    setCarregandoGrades(false);
+                }
+            }
+        };
+
+        carregarGrades();
+
+        return () => {
+            ignorar = true;
+        };
+    }, [fabricoId]);
 
     const handleChange = (field) => (event) => {
         setFormData((prev) => ({ ...prev, [field]: event.target.value }));
@@ -153,6 +203,17 @@ export default function ProdutoCadastar() {
 
     const handleDropdownSelect = (field, value) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
+        setOpenDropdown(null);
+    };
+
+    const handleGradeSelect = (nomeGrade) => {
+        const gradeSelecionada = gradesDisponiveis.find((grade) => grade.nome === nomeGrade);
+
+        setFormData((prev) => ({
+            ...prev,
+            grade: nomeGrade,
+            grade_versao_id: gradeSelecionada?.grade_versao_id,
+        }));
         setOpenDropdown(null);
     };
 
@@ -178,10 +239,6 @@ export default function ProdutoCadastar() {
 
         setErroCadastro("");
 
-        const userString = localStorage.getItem("user");
-        const usuarioLogado = userString ? JSON.parse(userString) : null;
-        const fabricoId = Number(usuarioLogado?.fabrico_id);
-
         if (!formData.referencia.trim()) {
             setErroCadastro("Informe a referência interna do produto.");
             return;
@@ -203,6 +260,7 @@ export default function ProdutoCadastar() {
             nome: formData.referencia.trim(),
             tipo: formData.modelo,
             fabrico_id: fabricoId,
+            grade_versao_id: formData.grade_versao_id,
         };
 
         try {
@@ -338,13 +396,15 @@ export default function ProdutoCadastar() {
                                     <div>
                                         <DropdownField
                                             value={formData.grade}
-                                            placeholder="Grade de tamanho"
-                                            options={grades}
+                                            placeholder={
+                                                carregandoGrades
+                                                    ? "Carregando grades..."
+                                                    : "Grade de tamanho"
+                                            }
+                                            options={gradesDisponiveis.map((grade) => grade.nome)}
                                             isOpen={openDropdown === "grade"}
                                             onToggle={() => toggleDropdown("grade")}
-                                            onSelect={(value) =>
-                                                handleDropdownSelect("grade", value)
-                                            }
+                                            onSelect={handleGradeSelect}
                                             isSelectedOption={(option) => formData.grade === option}
                                         />
                                     </div>
