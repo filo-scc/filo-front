@@ -198,7 +198,8 @@ export default function ProdutoCadastar() {
         }
 
         const payload = {
-            foto: formData.foto || undefined,
+            // foto: formData.foto || undefined,
+            foto: "https://picsum.photos/seed/sVr6PKc/2941/886",
             nome: formData.referencia.trim(),
             tipo: formData.modelo,
             fabrico_id: fabricoId,
@@ -206,8 +207,8 @@ export default function ProdutoCadastar() {
 
         try {
             setSalvando(true);
-            const produtoCriado = await criarProduto(payload);
-            navigate(produtoCriado?.id ? `/produtos/${produtoCriado.id}` : "/produtos");
+            await criarProduto(payload);
+            navigate("/produtos");
         } catch (error) {
             console.error("Erro ao cadastrar produto:", error);
             setErroCadastro(
