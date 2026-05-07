@@ -87,10 +87,10 @@ const EditarFaccao = () => {
         let masked = value;
         if (name === "telefone") masked = maskTelefone(value);
         if (name === "cep") masked = maskCep(value);
-        if (name === "agencia" && formData.forma_pagamento === "Conta Bancária") {
+        if (name === "agencia" && formData.forma_pagamento === "TED") {
             masked = maskAgencia(value);
         }
-        if (name === "conta" && formData.forma_pagamento === "Conta Bancária") {
+        if (name === "conta" && formData.forma_pagamento === "TED") {
             masked = maskConta(value);
         }
         setFormData((prev) => ({ ...prev, [name]: masked }));
@@ -112,7 +112,10 @@ const EditarFaccao = () => {
                     complemento: data.endereco?.complemento || "",
                     cidade: data.endereco?.cidade || "",
                     estado: data.endereco?.estado || "",
-                    forma_pagamento: data.forma_pagamento || "",
+                    forma_pagamento:
+                        data.forma_pagamento === "Conta Bancária"
+                            ? "TED"
+                            : (data.forma_pagamento || ""),
                     chave_pix: data.chave_pix || "",
                     banco: data.banco || "",
                     agencia: maskAgencia(data.agencia || ""),
@@ -160,7 +163,7 @@ const EditarFaccao = () => {
                 payload.forma_pagamento = formData.forma_pagamento;
                 if (formData.forma_pagamento === "PIX" && formData.chave_pix) {
                     payload.chave_pix = formData.chave_pix;
-                } else if (formData.forma_pagamento === "Conta Bancária") {
+                } else if (formData.forma_pagamento === "TED") {
                     if (formData.banco) payload.banco = formData.banco;
                     if (formData.agencia) payload.agencia = formData.agencia;
                     if (formData.conta) payload.conta = formData.conta;
@@ -330,7 +333,10 @@ const EditarFaccao = () => {
                                                         : "text-gray-400"
                                                 }
                                             >
-                                                {formData.forma_pagamento || "Dado de pagamento"}
+                                                {formData.forma_pagamento === "TED"
+                                                    ? "Conta Bancária"
+                                                    : (formData.forma_pagamento ||
+                                                      "Dado de pagamento")}
                                             </span>
                                             <svg
                                                 className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${dropdownAberto ? "rotate-180" : ""}`}
@@ -355,7 +361,7 @@ const EditarFaccao = () => {
                                                     : "opacity-0 scale-y-95 invisible pointer-events-none"
                                             }`}
                                         >
-                                            {["PIX", "Conta Bancária"].map((opcao) => (
+                                            {["PIX", "TED"].map((opcao) => (
                                                 <button
                                                     key={opcao}
                                                     type="button"
@@ -373,9 +379,7 @@ const EditarFaccao = () => {
                                                     {formData.forma_pagamento === opcao && (
                                                         <div className="absolute left-0 top-0 w-[4px] h-full bg-[#D7FE65]" />
                                                     )}
-                                                    {opcao === "Conta Bancária"
-                                                        ? "Conta Bancária"
-                                                        : opcao}
+                                                    {opcao === "TED" ? "Conta Bancária" : opcao}
                                                 </button>
                                             ))}
                                         </div>
@@ -395,7 +399,7 @@ const EditarFaccao = () => {
                                 </div>
 
                                 {/* Campos Conta Bancária */}
-                                {formData.forma_pagamento === "Conta Bancária" && (
+                                {formData.forma_pagamento === "TED" && (
                                     <div className="flex flex-wrap gap-4">
                                         <FloatingInput
                                             label="Banco"
