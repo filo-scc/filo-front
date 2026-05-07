@@ -115,7 +115,7 @@ const EditarFaccao = () => {
                     forma_pagamento:
                         data.forma_pagamento === "Conta Bancária"
                             ? "TED"
-                            : (data.forma_pagamento || ""),
+                            : data.forma_pagamento || "",
                     chave_pix: data.chave_pix || "",
                     banco: data.banco || "",
                     agencia: maskAgencia(data.agencia || ""),
@@ -335,8 +335,8 @@ const EditarFaccao = () => {
                                             >
                                                 {formData.forma_pagamento === "TED"
                                                     ? "Conta Bancária"
-                                                    : (formData.forma_pagamento ||
-                                                      "Dado de pagamento")}
+                                                    : formData.forma_pagamento ||
+                                                      "Dado de pagamento"}
                                             </span>
                                             <svg
                                                 className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${dropdownAberto ? "rotate-180" : ""}`}
