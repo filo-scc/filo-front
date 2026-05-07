@@ -79,6 +79,43 @@ export default function Clientes() {
         }
     };
 
+    const formatarTelefone = (telefone) => {
+        const numeros = String(telefone ?? "").replace(/\D/g, "");
+
+        if (!numeros) return "-";
+        if (numeros.length === 11) {
+            return `(${numeros.slice(0, 2)}) ${numeros.slice(2, 3)} ${numeros.slice(3, 7)}-${numeros.slice(7)}`;
+        }
+        if (numeros.length === 10) {
+            return `(${numeros.slice(0, 2)}) ${numeros.slice(2, 6)}-${numeros.slice(6)}`;
+        }
+        if (numeros.length === 9) {
+            return `${numeros.slice(0, 5)}-${numeros.slice(5)}`;
+        }
+        if (numeros.length === 8) {
+            return `${numeros.slice(0, 4)}-${numeros.slice(4)}`;
+        }
+
+        return telefone;
+    };
+
+    const renderTelefonePadronizado = (telefone) => {
+        const telefoneFormatado = formatarTelefone(telefone);
+
+        return (
+            <span className="inline-flex w-[140px] justify-center whitespace-nowrap">
+                {telefoneFormatado.split("").map((char, index) => (
+                    <span
+                        key={`${telefoneFormatado}-${index}`}
+                        className="inline-block w-[8px] text-center"
+                    >
+                        {char === " " ? "\u00A0" : char}
+                    </span>
+                ))}
+            </span>
+        );
+    };
+
     return (
         <Layout>
             <div className="p-6 pt-0 w-full relative z-0">
@@ -196,7 +233,7 @@ export default function Clientes() {
                                                             title="Ver detalhes"
                                                             className="px-6 text-[14px]"
                                                         >
-                                                            {cliente.telefone}
+                                                            {renderTelefonePadronizado(cliente.telefone)}
                                                         </td>
 
                                                         <td title="Ver detalhes" className="px-6">
