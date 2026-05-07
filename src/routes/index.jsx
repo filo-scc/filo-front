@@ -13,6 +13,7 @@ import FaccaoDetalhes from "../pages/FaccaoDetalhes";
 import FaccaoEditar from "../pages/FaccaoEditar";
 import ProdutoDetalhes from "../pages/ProdutoDetalhes";
 import FaccaoCadastro from "../pages/FaccaoCadastro";
+import ProdutoCadastar from "../pages/ProdutoCadastrar";
 
 function AppRoutes() {
     return (
@@ -66,6 +67,17 @@ function AppRoutes() {
                     element={
                         <PrivateRoute>
                             <ClienteDetalhes />
+                        </PrivateRoute>
+                    }
+                />
+
+                <Route
+                    path="/produtos/cadastar"
+                    element={
+                        <PrivateRoute>
+                            <Layout>
+                                <ProdutoCadastar />
+                            </Layout>
                         </PrivateRoute>
                     }
                 />
