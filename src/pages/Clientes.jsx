@@ -205,7 +205,7 @@ export default function Clientes() {
                                                                     className={`w-[109px] h-[19px] flex items-center justify-center rounded-[10px] text-[12px] font-light ${
                                                                         cliente.status
                                                                             ? "bg-[#B4D64E] text-white"
-                                                                            : "bg-gray-200 text-[#404040]"
+                                                                            : "bg-[#D9D9D9] text-[#404040]"
                                                                     }`}
                                                                 >
                                                                     {cliente.status
