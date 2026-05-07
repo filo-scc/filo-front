@@ -233,7 +233,9 @@ export default function Clientes() {
                                                             title="Ver detalhes"
                                                             className="px-6 text-[14px]"
                                                         >
-                                                            {renderTelefonePadronizado(cliente.telefone)}
+                                                            {renderTelefonePadronizado(
+                                                                cliente.telefone,
+                                                            )}
                                                         </td>
 
                                                         <td title="Ver detalhes" className="px-6">
