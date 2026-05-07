@@ -307,7 +307,7 @@ export default function ProdutoCadastar() {
                             <button
                                 type="button"
                                 onClick={() => inputFileRef.current?.click()}
-                                className="w-[160px] h-[160px] rounded-[10px] border border-dashed border-[#D3D3D3] flex items-center justify-center overflow-hidden bg-white hover:bg-[#FAFAFA] transition-colors"
+                                className="w-[200px] h-[150px] rounded-[10px] border border-dashed border-[#D3D3D3] flex items-center justify-center overflow-hidden bg-white hover:bg-[#FAFAFA] transition-colors"
                             >
                                 {imagemPreview ? (
                                     <img
@@ -324,16 +324,36 @@ export default function ProdutoCadastar() {
                         </div>
 
                         <div className="flex-1 max-w-[980px] pr-2">
-                            <div className="grid grid-cols-1 md:grid-cols-[minmax(280px,1.2fr)_minmax(220px,1fr)] gap-x-10 gap-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_minmax(220px,1fr)_minmax(220px,1fr)] gap-x-8 gap-y-6">
                                 <div>
                                     <FieldLabel>Referência</FieldLabel>
-                                    <input
-                                        type="text"
-                                        value={formData.referencia}
-                                        onChange={handleChange("referencia")}
-                                        placeholder="Referência interna"
-                                        className="w-full h-[39px] border border-[#D3D3D3] rounded-[10px] px-3 text-sm text-[#898C8F] focus:outline-none"
-                                    />
+                                    <div className="relative w-full group">
+                                        <input
+                                            type="text"
+                                            value={formData.referencia}
+                                            onChange={handleChange("referencia")}
+                                            className="w-full h-[39px] border border-[#D3D3D3] rounded-[10px] px-3 text-sm focus:outline-none"
+                                        />
+
+                                        <label
+                                            className={`
+                                                absolute left-3 bg-white px-1
+                                                text-[#898C8F] transition-all duration-200 pointer-events-none
+                                                
+                                                ${
+                                                    formData.referencia
+                                                        ? "top-0 -translate-y-1/2 text-xs"
+                                                        : "top-1/2 -translate-y-1/2 text-sm"
+                                                }
+                                                
+                                                group-focus-within:top-0
+                                                group-focus-within:-translate-y-1/2
+                                                group-focus-within:text-xs
+                                            `}
+                                        >
+                                            Referência interna
+                                        </label>
+                                    </div>
                                 </div>
 
                                 <div>
