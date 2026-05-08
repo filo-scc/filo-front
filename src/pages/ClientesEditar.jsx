@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import TabelaReferencias from "../components/clientes/TabelaReferencias";
 import FloatingLabelInput from "../components/FloatingLabelInput";
 import ModalReferencias from "../components/clientes/ModalReferencias";
+import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import {
     getClienteById,
     getProdutosDoCliente,
@@ -101,7 +102,7 @@ export default function ClientesEditar() {
 
     const [produtosAssociados, setProdutosAssociados] = useState([]);
     const [modalReferenciasAberto, setModalReferenciasAberto] = useState(false);
-
+    const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
     const fabricoId = primeiroNumeroValido(
         usuarioLogado?.fabrico_id,
         usuarioLogado?.fabricoId,
@@ -280,10 +281,7 @@ export default function ClientesEditar() {
         try {
             setSalvando(true);
             await atualizarCliente(id, payload);
-            navigate(`/clientes/${id}`, {
-                replace: true,
-                state: { success: "Cliente atualizado com sucesso." },
-            });
+            setModalConfirmacaoAberto(true);
         } catch (e) {
             setErro(formatarErroApi(e));
         } finally {
@@ -458,6 +456,15 @@ export default function ClientesEditar() {
                     onSuccess={recarregarProdutos}
                 />
             ) : null}
+
+            <ModalConfirmacao
+                isOpen={modalConfirmacaoAberto}
+                onClose={() => {
+                    setModalConfirmacaoAberto(false);
+                    navigate("/clientes");
+                }}
+                type="atualizado"
+            />
         </div>
     );
 }
