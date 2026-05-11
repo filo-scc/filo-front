@@ -34,7 +34,6 @@ export default function ClienteDetalhes() {
         }
     };
 
-   
     const handleAcessoNegadoConfirm = () => {
         setModalAtencaoAberto(false);
         navigate("/clientes", { replace: true });
@@ -53,10 +52,9 @@ export default function ClienteDetalhes() {
                     getProdutosDoCliente(id),
                 ]);
 
-                
                 if (usuarioLogado && dadosCliente.fabrico_id !== usuarioLogado.fabrico_id) {
                     setModalAtencaoAberto(true);
-                    return; 
+                    return;
                 }
 
                 setCliente(dadosCliente);
@@ -97,7 +95,6 @@ export default function ClienteDetalhes() {
 
     return (
         <Layout>
-          
             {cliente && (
                 <div className="p-6 pt-0 w-full flex justify-center">
                     <div className="bg-white p-8 rounded-[24px] shadow-sm w-full min-h-[400px]">
@@ -140,7 +137,6 @@ export default function ClienteDetalhes() {
                 </div>
             )}
 
-           
             <ModalReferencias
                 isOpen={modalReferenciasAberto}
                 onClose={() => setModalReferenciasAberto(false)}
@@ -167,7 +163,6 @@ export default function ClienteDetalhes() {
                 type="excluído"
             />
 
-          
             <ModalAtencao
                 isOpen={modalAtencaoAberto}
                 onConfirm={handleAcessoNegadoConfirm}
