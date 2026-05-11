@@ -10,7 +10,7 @@ import TabelaReferencias from "../components/clientes/TabelaReferencias";
 import ModalReferencias from "../components/clientes/ModalReferencias";
 import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
-import ModalAtencao from "../components/geral/ModalAtencao"; // 1. Importação do Modal
+import ModalAtencao from "../components/geral/ModalAtencao";
 
 export default function ClienteDetalhes() {
     const { id } = useParams();
@@ -18,7 +18,7 @@ export default function ClienteDetalhes() {
 
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
-    const [modalAtencaoAberto, setModalAtencaoAberto] = useState(false); // 2. Estado do Modal
+    const [modalAtencaoAberto, setModalAtencaoAberto] = useState(false);
 
     const [loading, setLoading] = useState(true);
     const [cliente, setCliente] = useState(null);
