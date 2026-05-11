@@ -8,6 +8,7 @@ import TabelaClientesDoProduto from "../components/produtos/TabelaClientesDoProd
 import ProdutoDetalhesSkeleton from "../components/produtos/ProdutoDetalhesSkeleton";
 import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalAtencao from "../components/geral/ModalAtencao";
+import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 
 export default function ProdutoDetalhes() {
     const { id } = useParams();
@@ -18,6 +19,7 @@ export default function ProdutoDetalhes() {
     const [clientesAssociados, setClientesAssociados] = useState([]);
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
     const [modalAtencaoAberto, setModalAtencaoAberto] = useState(false);
+    const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
 
     useEffect(() => {
         async function fetchData() {
@@ -60,7 +62,7 @@ export default function ProdutoDetalhes() {
         try {
             await excluirProduto(id);
             setModalExclusaoAberto(false);
-            navigate("/produtos");
+            setModalConfirmacaoAberto(true);
         } catch {
             alert("Erro ao excluir produto.");
         }
@@ -128,7 +130,23 @@ export default function ProdutoDetalhes() {
                 tipoItem="o produto"
             />
 
-            <ModalAtencao isOpen={modalAtencaoAberto} onConfirm={handleAcessoNegadoConfirm} />
+            <ModalConfirmacao
+                isOpen={modalConfirmacaoAberto}
+                onClose={() => {
+                    setModalConfirmacaoAberto(false);
+                    navigate("/produtos", {
+                        replace: true,
+                        state: { success: "Produto excluído com sucesso." },
+                    });
+                }}
+                type="excluída"
+            />
+
+            <ModalAtencao
+                isOpen={modalAtencaoAberto}
+                mensagem="Este produto não pertence ou não existe no seu fabrico. Você será redirecionado para a lista de produtos."
+                onConfirm={handleAcessoNegadoConfirm}
+            />
         </div>
     );
 }
