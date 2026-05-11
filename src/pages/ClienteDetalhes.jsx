@@ -76,7 +76,7 @@ export default function ClienteDetalhes() {
             await excluirCliente(cliente.id);
             setModalExclusaoAberto(false);
             setModalConfirmacaoAberto(true);
-        } catch (error) {
+        } catch {
             alert("Erro ao excluir cliente.");
         }
     };
