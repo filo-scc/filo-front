@@ -134,6 +134,7 @@ export default function ClientesEditar() {
                 setProdutosAssociados(dadosProdutos);
             } catch (e) {
                 navigate("/clientes", { state: { error: "Erro ao carregar cliente." } });
+                throw e;
             } finally {
                 setLoading(false);
             }
@@ -169,6 +170,7 @@ export default function ClientesEditar() {
             setModalConfirmacaoAberto(true);
         } catch (e) {
             setErro("Erro ao salvar alterações.");
+            throw e;
         } finally {
             setSalvando(false);
         }
