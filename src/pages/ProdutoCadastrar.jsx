@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
-import { criarProduto, getGradesByFabrico } from "../services/produtosService";
+import {
+    criarProduto,
+    getGradesByFabrico,
+    getTecidosByFabrico,
+} from "../services/produtosService.js";
 
 const modelos = ["Top e short", "Top e calça", "Macaquito", "Macacão"];
-const tecidos = ["Microfibra", "Renda", "Algodão", "Suplex"];
 const aviamentosDisponiveis = ["Viés", "Bojo", "Elástico", "Argola"];
 
 function FieldLabel({ children }) {
@@ -36,7 +39,7 @@ function DropdownField({
     className = "",
 }) {
     return (
-        <div className={`relative ${className}`}>
+        <div className={`relative ${isOpen ? "z-50" : "z-10"} ${className}`}>
             <button
                 type="button"
                 onClick={onToggle}
@@ -129,11 +132,13 @@ export default function ProdutoCadastar() {
     const [carregandoGrades, setCarregandoGrades] = useState(false);
     const [erroCadastro, setErroCadastro] = useState("");
     const [gradesDisponiveis, setGradesDisponiveis] = useState([]);
+    const [tecidosDisponiveis, setTecidosDisponiveis] = useState([]);
     const [formData, setFormData] = useState({
         foto: "",
         referencia: "",
         modelo: "",
         tecido: "",
+        tecido_id: undefined,
         grade: "",
         grade_versao_id: undefined,
         aviamentos: [],
@@ -147,28 +152,43 @@ export default function ProdutoCadastar() {
         const carregarGrades = async () => {
             try {
                 setCarregandoGrades(true);
-                const dados = await getGradesByFabrico(fabricoId);
+
+                const [resGrades, resTecidos] = await Promise.allSettled([
+                    getGradesByFabrico(fabricoId),
+                    getTecidosByFabrico(fabricoId),
+                ]);
+
                 if (ignorar) return;
 
-                const gradesMapeadas = (dados || [])
-                    .map((item) => {
-                        const nome = item?.grade?.nome;
-                        const versaoAtiva = item?.grade?.versoes?.find((versao) => versao?.ativo);
-
-                        if (!nome) return null;
-
-                        return {
-                            nome,
-                            grade_versao_id: versaoAtiva?.id,
-                        };
-                    })
-                    .filter(Boolean);
-
-                setGradesDisponiveis(gradesMapeadas);
-            } catch (error) {
-                if (!ignorar) {
-                    console.error("Erro ao buscar grades do fabrico:", error);
+                if (resGrades.status === "fulfilled") {
+                    const dadosGrades = resGrades.value;
+                    const gradesMapeadas = (dadosGrades || [])
+                        .map((item) => {
+                            const nome = item?.grade?.nome;
+                            const versaoAtiva = item?.grade?.versoes?.find(
+                                (versao) => versao?.ativo,
+                            );
+                            if (!nome) return null;
+                            return { nome, grade_versao_id: versaoAtiva?.id };
+                        })
+                        .filter(Boolean);
+                    setGradesDisponiveis(gradesMapeadas);
+                } else {
+                    console.error("Erro ao carregar grades:", resGrades.reason);
                     setGradesDisponiveis([]);
+                }
+
+                if (resTecidos.status === "fulfilled") {
+                    const dadosTecidos = resTecidos.value;
+
+                    const tecidosTratados = (dadosTecidos || []).map((t) => ({
+                        id: t?.id || t?.tecido?.id,
+                        nome: t?.nome || t?.tecido?.nome || "Sem nome na API",
+                    }));
+                    setTecidosDisponiveis(tecidosTratados);
+                } else {
+                    console.error("Erro ao carregar tecidos:", resTecidos.reason);
+                    setTecidosDisponiveis([]);
                 }
             } finally {
                 if (!ignorar) {
@@ -217,6 +237,17 @@ export default function ProdutoCadastar() {
         setOpenDropdown(null);
     };
 
+    const handleTecidoSelect = (nomeTecido) => {
+        const tecidoSelecionado = tecidosDisponiveis.find((t) => t.nome === nomeTecido);
+
+        setFormData((prev) => ({
+            ...prev,
+            tecido: nomeTecido,
+            tecido_id: tecidoSelecionado?.id,
+        }));
+        setOpenDropdown(null);
+    };
+
     const handleImagemChange = (event) => {
         const arquivo = event.target.files?.[0];
         if (!arquivo) return;
@@ -261,6 +292,7 @@ export default function ProdutoCadastar() {
             tipo: formData.modelo,
             fabrico_id: fabricoId,
             grade_versao_id: formData.grade_versao_id,
+            tecido_id: formData.tecido_id,
         };
 
         try {
@@ -401,12 +433,10 @@ export default function ProdutoCadastar() {
                                         <DropdownField
                                             value={formData.tecido}
                                             placeholder="Tecido"
-                                            options={tecidos}
+                                            options={tecidosDisponiveis.map((t) => t.nome)}
                                             isOpen={openDropdown === "tecido"}
                                             onToggle={() => toggleDropdown("tecido")}
-                                            onSelect={(value) =>
-                                                handleDropdownSelect("tecido", value)
-                                            }
+                                            onSelect={handleTecidoSelect}
                                             isSelectedOption={(option) =>
                                                 formData.tecido === option
                                             }
