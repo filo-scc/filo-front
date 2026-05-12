@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
 import { criarProduto, getGradesByFabrico } from "../services/produtosService";
+import { upload } from "../services/utilsService";
 
 const modelos = ["Top e short", "Top e calça", "Macaquito", "Macacão"];
 const tecidos = ["Microfibra", "Renda", "Algodão", "Suplex"];
@@ -123,6 +124,8 @@ export default function ProdutoCadastar() {
     const userString = localStorage.getItem("user");
     const usuarioLogado = userString ? JSON.parse(userString) : null;
     const fabricoId = Number(usuarioLogado?.fabrico_id);
+
+    const [arquivoImagem, setArquivoImagem] = useState(null);
     const [imagemPreview, setImagemPreview] = useState("");
     const [openDropdown, setOpenDropdown] = useState(null);
     const [salvando, setSalvando] = useState(false);
@@ -130,7 +133,6 @@ export default function ProdutoCadastar() {
     const [erroCadastro, setErroCadastro] = useState("");
     const [gradesDisponiveis, setGradesDisponiveis] = useState([]);
     const [formData, setFormData] = useState({
-        foto: "",
         referencia: "",
         modelo: "",
         tecido: "",
@@ -221,17 +223,9 @@ export default function ProdutoCadastar() {
         const arquivo = event.target.files?.[0];
         if (!arquivo) return;
 
+        setArquivoImagem(arquivo);
         setImagemPreview(URL.createObjectURL(arquivo));
         setErroCadastro("");
-
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setFormData((prev) => ({
-                ...prev,
-                foto: typeof reader.result === "string" ? reader.result : "",
-            }));
-        };
-        reader.readAsDataURL(arquivo);
     };
 
     const handleSubmit = async (event) => {
@@ -254,17 +248,30 @@ export default function ProdutoCadastar() {
             return;
         }
 
-        const payload = {
-            // foto: formData.foto || undefined,
-            foto: "https://picsum.photos/seed/sVr6PKc/2941/886",
-            nome: formData.referencia.trim(),
-            tipo: formData.modelo,
-            fabrico_id: fabricoId,
-            grade_versao_id: formData.grade_versao_id,
-        };
-
         try {
             setSalvando(true);
+            let urlFoto = undefined;
+
+            // Realiza o upload caso tenha uma imagem selecionada
+            if (arquivoImagem) {
+                const uploadData = new FormData();
+                uploadData.append("file", arquivoImagem);
+
+                const responseUpload = await upload(uploadData);
+
+                if (responseUpload && responseUpload.url) {
+                    urlFoto = responseUpload.url;
+                }
+            }
+
+            const payload = {
+                foto: urlFoto,
+                nome: formData.referencia.trim(),
+                tipo: formData.modelo,
+                fabrico_id: fabricoId,
+                grade_versao_id: formData.grade_versao_id,
+            };
+
             await criarProduto(payload);
             navigate("/produtos");
         } catch (error) {
