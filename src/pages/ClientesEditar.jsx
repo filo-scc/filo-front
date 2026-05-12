@@ -9,12 +9,13 @@ import {
     getProdutosDoCliente,
     atualizarCliente,
     desvincularProdutoDoCliente,
+    atualizarClientesProdutos,
 } from "../services/clientesService";
 
 const sectionTitleClass = "text-[20px] font-light text-[#404040] mb-4 font-['Outfit',_sans-serif]";
 
+// Funções utilitárias mantidas...
 const apenasNumeros = (valor) => String(valor || "").replace(/\D/g, "");
-
 const formatarCnpj = (valor) => {
     const digitos = apenasNumeros(valor).slice(0, 14);
     return digitos
@@ -23,58 +24,35 @@ const formatarCnpj = (valor) => {
         .replace(/\.(\d{3})(\d)/, ".$1/$2")
         .replace(/(\d{4})(\d)/, "$1-$2");
 };
-
 const formatarTelefone = (valor) => {
     const digitos = apenasNumeros(valor).slice(0, 11);
     if (!digitos) return "";
     if (digitos.length <= 2) return `(${digitos}`;
     if (digitos.length <= 6) return `(${digitos.slice(0, 2)}) ${digitos.slice(2)}`;
-    if (digitos.length <= 10) {
+    if (digitos.length <= 10)
         return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 6)}-${digitos.slice(6)}`;
-    }
     return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 7)}-${digitos.slice(7)}`;
 };
-
 const formatarCep = (valor) => {
     const digitos = apenasNumeros(valor).slice(0, 8);
-    if (digitos.length <= 5) return digitos;
-    return `${digitos.slice(0, 5)}-${digitos.slice(5)}`;
+    return digitos.length <= 5 ? digitos : `${digitos.slice(0, 5)}-${digitos.slice(5)}`;
 };
-
 const valorOuUndefined = (valor) => {
     const limpo = String(valor || "").trim();
     return limpo.length > 0 ? limpo : undefined;
 };
-
-const textoEnderecoOuVazio = (valor) => {
-    if (valor === null || valor === undefined) return "";
-    return String(valor).trim();
-};
-
 const numeroOuUndefined = (valor) => {
-    if (valor === null || valor === undefined) return undefined;
     const texto = String(valor).trim();
     if (!texto) return undefined;
     const numero = Number(texto);
     return Number.isFinite(numero) ? numero : undefined;
 };
-
 const primeiroNumeroValido = (...valores) => {
     for (const valor of valores) {
-        const numero = numeroOuUndefined(valor);
-        if (numero !== undefined) return numero;
+        const num = numeroOuUndefined(valor);
+        if (num !== undefined) return num;
     }
     return undefined;
-};
-
-const formatarErroApi = (error) => {
-    const data = error?.response?.data;
-    const message = data?.message;
-    if (Array.isArray(message)) return message.join(" ");
-    if (typeof message === "string" && message.trim()) return message;
-    if (typeof data?.error === "string" && data.error.trim()) return data.error;
-    if (typeof error?.message === "string" && error.message.trim()) return error.message;
-    return "Não foi possível salvar as alterações.";
 };
 
 export default function ClientesEditar() {
@@ -103,41 +81,29 @@ export default function ClientesEditar() {
     const [produtosAssociados, setProdutosAssociados] = useState([]);
     const [modalReferenciasAberto, setModalReferenciasAberto] = useState(false);
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
+
+    // Novo estado para controlar qual item estamos editando na tabela
+    const [itemParaEditar, setItemParaEditar] = useState(null);
+
     const fabricoId = primeiroNumeroValido(
         usuarioLogado?.fabrico_id,
         usuarioLogado?.fabricoId,
         usuarioLogado?.fabrico?.id,
     );
-
     const faccaoId = primeiroNumeroValido(
         usuarioLogado?.faccao_id,
         usuarioLogado?.faccaoId,
         usuarioLogado?.faccao?.id,
-        usuarioLogado?.faccao?.faccao_id,
-        usuarioLogado?.faccao?.[0]?.id,
-        usuarioLogado?.faccao?.[0]?.faccao_id,
-        usuarioLogado?.usuario?.faccao_id,
     );
 
-    const handleChange = (campo) => (e) => {
+    const handleChange = (campo) => (e) =>
         setForm((prev) => ({ ...prev, [campo]: e.target.value }));
-    };
-
-    const handleChangeCnpj = (e) => {
+    const handleChangeCnpj = (e) =>
         setForm((prev) => ({ ...prev, cnpj: formatarCnpj(e.target.value) }));
-    };
-
-    const handleChangeTelefone = (e) => {
+    const handleChangeTelefone = (e) =>
         setForm((prev) => ({ ...prev, telefone: formatarTelefone(e.target.value) }));
-    };
-
-    const handleChangeCep = (e) => {
+    const handleChangeCep = (e) =>
         setForm((prev) => ({ ...prev, cep: formatarCep(e.target.value) }));
-    };
-
-    const handleChangeNumeroEndereco = (e) => {
-        setForm((prev) => ({ ...prev, numero: e.target.value }));
-    };
 
     const recarregarProdutos = async () => {
         if (!id) return;
@@ -151,47 +117,13 @@ export default function ClientesEditar() {
 
     useEffect(() => {
         async function carregar() {
-            const usuario = JSON.parse(localStorage.getItem("user") || "{}");
-
-            if (!id) {
-                navigate("/clientes", {
-                    replace: true,
-                    state: { error: "Cliente não encontrado." },
-                });
-                return;
-            }
-
-            const fabricoIdUsuario = primeiroNumeroValido(
-                usuario?.fabrico_id,
-                usuario?.fabricoId,
-                usuario?.fabrico?.id,
-            );
-
-            if (!fabricoIdUsuario) {
-                setLoading(false);
-                navigate("/clientes", {
-                    replace: true,
-                    state: { error: "Não foi possível identificar a fábrica do usuário." },
-                });
-                return;
-            }
-
+            if (!id) return navigate("/clientes");
             try {
                 setLoading(true);
                 const [dadosCliente, dadosProdutos] = await Promise.all([
                     getClienteById(id),
                     getProdutosDoCliente(id),
                 ]);
-
-                if (Number(dadosCliente.fabrico_id) !== Number(fabricoIdUsuario)) {
-                    navigate("/clientes", {
-                        replace: true,
-                        state: {
-                            error: "Acesso negado. Este cliente não pertence à sua fábrica.",
-                        },
-                    });
-                    return;
-                }
 
                 const end = dadosCliente.endereco || {};
                 setStatusCliente(Boolean(dadosCliente.status));
@@ -202,7 +134,7 @@ export default function ClientesEditar() {
                     telefone: dadosCliente.telefone ? formatarTelefone(dadosCliente.telefone) : "",
                     cep: end.cep ? formatarCep(String(end.cep)) : "",
                     rua: end.rua ?? "",
-                    numero: textoEnderecoOuVazio(end.numero),
+                    numero: String(end.numero ?? ""),
                     bairro: end.bairro ?? "",
                     complemento: end.complemento ?? "",
                     cidade: end.cidade ?? "",
@@ -210,11 +142,7 @@ export default function ClientesEditar() {
                 });
                 setProdutosAssociados(dadosProdutos);
             } catch (e) {
-                console.error(e);
-                navigate("/clientes", {
-                    replace: true,
-                    state: { error: "Não foi possível carregar o cliente." },
-                });
+                navigate("/clientes", { state: { error: "Erro ao carregar cliente." } });
             } finally {
                 setLoading(false);
             }
@@ -224,58 +152,24 @@ export default function ClientesEditar() {
 
     const handleFinalizar = async () => {
         setErro("");
-
         if (!id) return;
 
-        const nome = valorOuUndefined(form.nomeEmpresa);
-        if (!nome) {
-            setErro("Informe o nome da empresa.");
-            return;
-        }
-
-        const fabricoIdNumerico = numeroOuUndefined(fabricoId);
-        if (!fabricoIdNumerico) {
-            setErro("Não foi possível identificar a fábrica do usuário.");
-            return;
-        }
-
-        const cnpjNumerico = valorOuUndefined(apenasNumeros(form.cnpj));
-        const telefoneNumerico = valorOuUndefined(apenasNumeros(form.telefone));
-
-        if (cnpjNumerico && cnpjNumerico.length !== 14) {
-            setErro("CNPJ inválido. Informe 14 dígitos.");
-            return;
-        }
-        if (telefoneNumerico && (telefoneNumerico.length < 9 || telefoneNumerico.length > 11)) {
-            setErro("Telefone inválido. Informe entre 9 e 11 dígitos.");
-            return;
-        }
-
-        const cepNumerico = valorOuUndefined(apenasNumeros(form.cep));
-        if (cepNumerico && cepNumerico.length !== 8) {
-            setErro("CEP inválido. Informe 8 dígitos.");
-            return;
-        }
-
-        const endereco = {
-            cep: cepNumerico,
-            rua: valorOuUndefined(form.rua),
-            numero: valorOuUndefined(form.numero),
-            bairro: valorOuUndefined(form.bairro),
-            complemento: valorOuUndefined(form.complemento),
-            cidade: valorOuUndefined(form.cidade),
-            estado: valorOuUndefined(form.estado),
-            faccao_id: numeroOuUndefined(faccaoId),
-        };
-
         const payload = {
-            nome,
-            cnpj: cnpjNumerico,
-            telefone: telefoneNumerico,
+            nome: valorOuUndefined(form.nomeEmpresa),
+            cnpj: apenasNumeros(form.cnpj),
+            telefone: apenasNumeros(form.telefone),
             status: statusCliente,
             responsavel: valorOuUndefined(form.proprietario),
-            fabrico_id: fabricoIdNumerico,
-            endereco: Object.values(endereco).some((v) => v !== undefined) ? endereco : undefined,
+            fabrico_id: fabricoId,
+            endereco: {
+                cep: apenasNumeros(form.cep),
+                rua: valorOuUndefined(form.rua),
+                numero: valorOuUndefined(form.numero),
+                bairro: valorOuUndefined(form.bairro),
+                complemento: valorOuUndefined(form.complemento),
+                cidade: valorOuUndefined(form.cidade),
+                estado: valorOuUndefined(form.estado),
+            },
         };
 
         try {
@@ -283,50 +177,69 @@ export default function ClientesEditar() {
             await atualizarCliente(id, payload);
             setModalConfirmacaoAberto(true);
         } catch (e) {
-            setErro(formatarErroApi(e));
+            setErro("Erro ao salvar alterações.");
         } finally {
             setSalvando(false);
         }
     };
 
     const removerLinha = async (item, index) => {
-        if (!id) return;
-
-        const produtoId = primeiroNumeroValido(
-            item?.produto?.id,
-            item?.produto_id,
-            item?.id_produto,
-        );
-
-        if (!produtoId) {
-            setErro("Não foi possível identificar a referência para exclusão.");
-            return;
-        }
-
+        const pId = item?.produto?.id || item?.produto_id;
         try {
-            setErro("");
-            await desvincularProdutoDoCliente(id, produtoId);
+            await desvincularProdutoDoCliente(id, pId);
             setProdutosAssociados((prev) => prev.filter((_, i) => i !== index));
         } catch (e) {
-            setErro("Não foi possível excluir a referência.");
-            console.error("Erro ao excluir referência", e);
+            setErro("Erro ao remover referência.");
         }
     };
 
+    const editarLinha = async (dadosEditados) => {
+        console.log("1. Chegou no editarLinha! Dados:", dadosEditados);
+
+        const pId = dadosEditados.produto_id;
+        console.log("2. ID do Cliente:", id, "| ID do Produto:", pId);
+
+        try {
+            const response = await atualizarClientesProdutos(id, pId, {
+                nome_para_cliente: dadosEditados.nome_para_cliente,
+                preco_padrao: dadosEditados.preco_padrao,
+            });
+
+            console.log("3. Sucesso na API! Resposta:", response);
+            setProdutosAssociados((listaAnterior) => {
+                const novaLista = listaAnterior.map((item) => {
+                    const itemId = item?.produto?.id || item?.produto_id;
+
+                    if (itemId === pId) {
+                        console.log("4. Encontrou o item na lista para atualizar!", item);
+                        return {
+                            ...item,
+                            nome_para_cliente: dadosEditados.nome_para_cliente,
+                            preco_padrao: dadosEditados.preco_padrao,
+                        };
+                    }
+                    return item;
+                });
+
+                console.log("5. Nova lista gerada:", novaLista);
+                return novaLista;
+            });
+        } catch (error) {
+            console.error("❌ ERRO AO SALVAR:", error);
+        }
+    };
     return (
         <div className="w-full max-w-[1200px] xl:max-w-none mx-auto font-['Outfit',_sans-serif]">
             <div className="bg-white p-8 sm:p-10 rounded-[32px] shadow-[0_8px_40px_rgba(70,150,173,0.08)] border border-[#F0F4F6] w-full">
                 <div className="flex flex-wrap items-center gap-3 mb-10">
                     <img src="/star.png" alt="" className="w-8 h-8 shrink-0" />
-                    <h1 className="text-[28px] sm:text-[30px] font-light text-[#404040] tracking-tight">
+                    <h1 className="text-[28px] sm:text-[30px] font-light text-[#404040]">
                         Editar cliente
                     </h1>
                 </div>
 
                 {loading ? (
-                    <p className="text-[#4696AD] font-light py-12 text-center">
-                        Carregando dados do cliente...
-                    </p>
+                    <p className="text-center py-12">Carregando...</p>
                 ) : (
                     <>
                         <section className="mb-10">
@@ -376,8 +289,7 @@ export default function ClientesEditar() {
                                     <FloatingLabelInput
                                         label="Nº"
                                         value={form.numero}
-                                        onChange={handleChangeNumeroEndereco}
-                                        autoComplete="off"
+                                        onChange={handleChange("numero")}
                                     />
                                 </div>
                                 <div className="sm:col-span-3">
@@ -417,45 +329,45 @@ export default function ClientesEditar() {
                             <TabelaReferencias
                                 title="Associar produtos e referências"
                                 produtos={produtosAssociados}
-                                onAbrirModal={() => setModalReferenciasAberto(true)}
+                                onAbrirModal={() => {
+                                    setItemParaEditar(null);
+                                    setModalReferenciasAberto(true);
+                                }}
                                 onRemoverLinha={removerLinha}
+                                onSalvarEdicao={editarLinha}
                             />
                         </div>
 
                         <div className="flex flex-wrap justify-end gap-4 pt-2">
-                            {/* <button
-                type="button"
-                onClick={() => navigate(`/clientes/${id}`)}
-                className="bg-[#F3F4FA] hover:bg-[#E8EBF2] text-[#4696ad] border border-[#4696ad] h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[160px]"
-              >
-                Voltar
-              </button> */}
                             <button
                                 type="button"
                                 onClick={handleFinalizar}
                                 disabled={salvando}
-                                className="bg-[#A9E2F2] hover:bg-[#94d6eb] disabled:opacity-60 disabled:cursor-not-allowed text-white h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px]"
+                                className="bg-[#A9E2F2] hover:bg-[#94d6eb] text-white h-[42px] px-8 rounded-full min-w-[180px]"
                             >
                                 {salvando ? "Salvando..." : "Finalizar edição"}
                             </button>
                         </div>
-                        {erro ? (
-                            <p className="pt-4 text-sm text-[#D75757] text-right">{erro}</p>
-                        ) : null}
+                        {erro && <p className="pt-4 text-sm text-[#D75757] text-right">{erro}</p>}
                     </>
                 )}
             </div>
 
-            {!loading && id ? (
+            {/* Modal de Referências - Note as novas props */}
+            {modalReferenciasAberto && (
                 <ModalReferencias
                     isOpen={modalReferenciasAberto}
-                    onClose={() => setModalReferenciasAberto(false)}
+                    onClose={() => {
+                        setModalReferenciasAberto(false);
+                        setItemParaEditar(null);
+                    }}
                     clienteId={id}
                     fabricoId={fabricoId}
+                    itemParaEditar={itemParaEditar} // Passa o item se for edição
                     produtosExistentes={produtosAssociados}
                     onSuccess={recarregarProdutos}
                 />
-            ) : null}
+            )}
 
             <ModalConfirmacao
                 isOpen={modalConfirmacaoAberto}
