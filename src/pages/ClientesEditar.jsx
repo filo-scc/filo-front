@@ -90,7 +90,6 @@ export default function ClientesEditar() {
         usuarioLogado?.fabricoId,
         usuarioLogado?.fabrico?.id,
     );
-
     const handleChange = (campo) => (e) =>
         setForm((prev) => ({ ...prev, [campo]: e.target.value }));
     const handleChangeCnpj = (e) =>
@@ -102,12 +101,9 @@ export default function ClientesEditar() {
 
     const recarregarProdutos = async () => {
         if (!id) return;
-        try {
-            const dados = await getProdutosDoCliente(id);
-            setProdutosAssociados(dados);
-        } catch (error) {
-            console.error("Erro ao atualizar referências", error);
-        }
+
+        const dados = await getProdutosDoCliente(id);
+        setProdutosAssociados(dados);
     };
 
     useEffect(() => {
@@ -136,7 +132,7 @@ export default function ClientesEditar() {
                     estado: end.estado ?? "",
                 });
                 setProdutosAssociados(dadosProdutos);
-            } catch (error) {
+            } catch (e) {
                 navigate("/clientes", { state: { error: "Erro ao carregar cliente." } });
             } finally {
                 setLoading(false);
@@ -171,7 +167,7 @@ export default function ClientesEditar() {
             setSalvando(true);
             await atualizarCliente(id, payload);
             setModalConfirmacaoAberto(true);
-        } catch (error) {
+        } catch (e) {
             setErro("Erro ao salvar alterações.");
         } finally {
             setSalvando(false);
@@ -180,12 +176,8 @@ export default function ClientesEditar() {
 
     const removerLinha = async (item, index) => {
         const pId = item?.produto?.id || item?.produto_id;
-        try {
-            await desvincularProdutoDoCliente(id, pId);
-            setProdutosAssociados((prev) => prev.filter((_, i) => i !== index));
-        } catch (error) {
-            setErro("Erro ao remover referência.");
-        }
+        await desvincularProdutoDoCliente(id, pId);
+        setProdutosAssociados((prev) => prev.filter((_, i) => i !== index));
     };
 
     const editarLinha = async (dadosEditados) => {
