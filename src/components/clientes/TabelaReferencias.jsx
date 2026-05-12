@@ -131,7 +131,7 @@ export default function TabelaReferencias({
         setEditNome("");
         setEditPreco("");
     };
-    
+
     const handleSalvarClick = async (produto_id) => {
         console.log("👉 A. O botão foi clicado! ID do produto:", produto_id);
         console.log("👉 B. A função onSalvarEdicao chegou na tabela?", !!onSalvarEdicao);
