@@ -66,11 +66,33 @@ const EditarFaccao = () => {
             .replace(/(\d{5})(\d{1,3})$/, "$1-$2");
     };
 
+    const maskAgencia = (value) => {
+        const numeros = String(value ?? "")
+            .replace(/\D/g, "")
+            .slice(0, 5);
+        if (numeros.length <= 4) return numeros;
+        return `${numeros.slice(0, 4)}-${numeros.slice(4)}`;
+    };
+
+    const maskConta = (value) => {
+        const numeros = String(value ?? "")
+            .replace(/\D/g, "")
+            .slice(0, 13);
+        if (numeros.length <= 1) return numeros;
+        return `${numeros.slice(0, -1)}-${numeros.slice(-1)}`;
+    };
+
     const handleMaskedChange = (e) => {
         const { name, value } = e.target;
         let masked = value;
         if (name === "telefone") masked = maskTelefone(value);
         if (name === "cep") masked = maskCep(value);
+        if (name === "agencia" && formData.forma_pagamento === "TED") {
+            masked = maskAgencia(value);
+        }
+        if (name === "conta" && formData.forma_pagamento === "TED") {
+            masked = maskConta(value);
+        }
         setFormData((prev) => ({ ...prev, [name]: masked }));
     };
 
@@ -90,11 +112,14 @@ const EditarFaccao = () => {
                     complemento: data.endereco?.complemento || "",
                     cidade: data.endereco?.cidade || "",
                     estado: data.endereco?.estado || "",
-                    forma_pagamento: data.forma_pagamento || "",
+                    forma_pagamento:
+                        data.forma_pagamento === "Conta Bancária"
+                            ? "TED"
+                            : data.forma_pagamento || "",
                     chave_pix: data.chave_pix || "",
                     banco: data.banco || "",
-                    agencia: data.agencia || "",
-                    conta: data.conta || "",
+                    agencia: maskAgencia(data.agencia || ""),
+                    conta: maskConta(data.conta || ""),
                 });
             } catch (err) {
                 console.error("Erro ao carregar facção:", err);
@@ -138,7 +163,7 @@ const EditarFaccao = () => {
                 payload.forma_pagamento = formData.forma_pagamento;
                 if (formData.forma_pagamento === "PIX" && formData.chave_pix) {
                     payload.chave_pix = formData.chave_pix;
-                } else if (formData.forma_pagamento === "Conta Bancária") {
+                } else if (formData.forma_pagamento === "TED") {
                     if (formData.banco) payload.banco = formData.banco;
                     if (formData.agencia) payload.agencia = formData.agencia;
                     if (formData.conta) payload.conta = formData.conta;
@@ -308,7 +333,10 @@ const EditarFaccao = () => {
                                                         : "text-gray-400"
                                                 }
                                             >
-                                                {formData.forma_pagamento || "Dado de pagamento"}
+                                                {formData.forma_pagamento === "TED"
+                                                    ? "Conta Bancária"
+                                                    : formData.forma_pagamento ||
+                                                      "Dado de pagamento"}
                                             </span>
                                             <svg
                                                 className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${dropdownAberto ? "rotate-180" : ""}`}
@@ -333,7 +361,7 @@ const EditarFaccao = () => {
                                                     : "opacity-0 scale-y-95 invisible pointer-events-none"
                                             }`}
                                         >
-                                            {["PIX", "Conta Bancária"].map((opcao) => (
+                                            {["PIX", "TED"].map((opcao) => (
                                                 <button
                                                     key={opcao}
                                                     type="button"
@@ -351,9 +379,7 @@ const EditarFaccao = () => {
                                                     {formData.forma_pagamento === opcao && (
                                                         <div className="absolute left-0 top-0 w-[4px] h-full bg-[#D7FE65]" />
                                                     )}
-                                                    {opcao === "Conta Bancária"
-                                                        ? "Conta Bancária"
-                                                        : opcao}
+                                                    {opcao === "TED" ? "Conta Bancária" : opcao}
                                                 </button>
                                             ))}
                                         </div>
@@ -373,7 +399,7 @@ const EditarFaccao = () => {
                                 </div>
 
                                 {/* Campos Conta Bancária */}
-                                {formData.forma_pagamento === "Conta Bancária" && (
+                                {formData.forma_pagamento === "TED" && (
                                     <div className="flex flex-wrap gap-4">
                                         <FloatingInput
                                             label="Banco"
@@ -386,15 +412,17 @@ const EditarFaccao = () => {
                                             label="Agência"
                                             name="agencia"
                                             value={formData.agencia}
-                                            onChange={handleChange}
+                                            onChange={handleMaskedChange}
                                             containerClass="w-full flex-1 min-w-[200px]"
+                                            maxLength={6}
                                         />
                                         <FloatingInput
                                             label="Conta"
                                             name="conta"
                                             value={formData.conta}
-                                            onChange={handleChange}
+                                            onChange={handleMaskedChange}
                                             containerClass="w-full flex-1 min-w-[200px]"
+                                            maxLength={9}
                                         />
                                     </div>
                                 )}
