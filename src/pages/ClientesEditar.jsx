@@ -90,11 +90,6 @@ export default function ClientesEditar() {
         usuarioLogado?.fabricoId,
         usuarioLogado?.fabrico?.id,
     );
-    const faccaoId = primeiroNumeroValido(
-        usuarioLogado?.faccao_id,
-        usuarioLogado?.faccaoId,
-        usuarioLogado?.faccao?.id,
-    );
 
     const handleChange = (campo) => (e) =>
         setForm((prev) => ({ ...prev, [campo]: e.target.value }));
@@ -110,8 +105,8 @@ export default function ClientesEditar() {
         try {
             const dados = await getProdutosDoCliente(id);
             setProdutosAssociados(dados);
-        } catch (e) {
-            console.error("Erro ao atualizar referências", e);
+        } catch (error) {
+            console.error("Erro ao atualizar referências", error);
         }
     };
 
@@ -141,7 +136,7 @@ export default function ClientesEditar() {
                     estado: end.estado ?? "",
                 });
                 setProdutosAssociados(dadosProdutos);
-            } catch (e) {
+            } catch (error) {
                 navigate("/clientes", { state: { error: "Erro ao carregar cliente." } });
             } finally {
                 setLoading(false);
@@ -176,7 +171,7 @@ export default function ClientesEditar() {
             setSalvando(true);
             await atualizarCliente(id, payload);
             setModalConfirmacaoAberto(true);
-        } catch (e) {
+        } catch (error) {
             setErro("Erro ao salvar alterações.");
         } finally {
             setSalvando(false);
@@ -188,7 +183,7 @@ export default function ClientesEditar() {
         try {
             await desvincularProdutoDoCliente(id, pId);
             setProdutosAssociados((prev) => prev.filter((_, i) => i !== index));
-        } catch (e) {
+        } catch (error) {
             setErro("Erro ao remover referência.");
         }
     };
