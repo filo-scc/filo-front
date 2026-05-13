@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
-import { criarProduto, getGradesByFabrico } from "../services/produtosService";
+import {
+    criarProduto,
+    getGradesByFabrico,
+    getTecidosByFabrico,
+} from "../services/produtosService.js";
+import { upload } from "../services/utilsService";
 
 const modelos = ["Top e short", "Top e calça", "Macaquito", "Macacão"];
-const tecidos = ["Microfibra", "Renda", "Algodão", "Suplex"];
 const aviamentosDisponiveis = ["Viés", "Bojo", "Elástico", "Argola"];
 
 function FieldLabel({ children }) {
@@ -36,11 +40,11 @@ function DropdownField({
     className = "",
 }) {
     return (
-        <div className={`relative ${className}`}>
+        <div className={`relative ${isOpen ? "z-50" : "z-10"} ${className}`}>
             <button
                 type="button"
                 onClick={onToggle}
-                className="w-full h-[39px] border border-[#D3D3D3] rounded-[10px] px-3 text-sm focus:outline-none bg-white flex items-center justify-between"
+                className="w-full h-[39px] border border-[#898C8F] rounded-[10px] px-3 text-sm focus:outline-none bg-white flex items-center justify-between"
             >
                 <span className={value ? "text-[#707070] font-normal" : "text-[#898C8F]"}>
                     {value || placeholder}
@@ -68,7 +72,7 @@ function DropdownField({
                         onClick={onToggle}
                         className="fixed inset-0 z-10 cursor-default"
                     />
-                    <div className="absolute left-0 right-0 top-[calc(100%+2px)] z-20 overflow-hidden rounded-[14px] border border-[#D3D3D3] bg-white shadow-lg">
+                    <div className="absolute left-0 right-0 top-[calc(100%+2px)] z-20 overflow-hidden rounded-[14px] border border-[#898C8F] bg-white ">
                         {options.map((option) => {
                             const selected = isSelectedOption(option);
 
@@ -77,10 +81,11 @@ function DropdownField({
                                     key={option}
                                     type="button"
                                     onClick={() => onSelect(option)}
-                                    className={`flex w-full items-center border-l-[3px] px-3 py-3 text-left text-sm transition-colors ${
+                                    // Mudanças aqui: pl-[12px] em vez de 15px e border-l-[3px] global
+                                    className={`relative overflow-hidden flex w-full items-center pl-[12px] pr-3 py-3 border-l-[3px] text-left text-[16px] transition-colors first:rounded-t-[13px] last:rounded-b-[13px] ${
                                         selected
                                             ? "border-[#C4F042] text-[#707070] bg-white"
-                                            : "border-transparent text-[#707070] bg-white hover:bg-white"
+                                            : "border-transparent text-[#707070] bg-white hover:bg-[#FAFAFA]"
                                     }`}
                                 >
                                     <span className={selected ? "font-normal text-[#707070]" : ""}>
@@ -123,17 +128,20 @@ export default function ProdutoCadastar() {
     const userString = localStorage.getItem("user");
     const usuarioLogado = userString ? JSON.parse(userString) : null;
     const fabricoId = Number(usuarioLogado?.fabrico_id);
+
+    const [arquivoImagem, setArquivoImagem] = useState(null);
     const [imagemPreview, setImagemPreview] = useState("");
     const [openDropdown, setOpenDropdown] = useState(null);
     const [salvando, setSalvando] = useState(false);
     const [carregandoGrades, setCarregandoGrades] = useState(false);
     const [erroCadastro, setErroCadastro] = useState("");
     const [gradesDisponiveis, setGradesDisponiveis] = useState([]);
+    const [tecidosDisponiveis, setTecidosDisponiveis] = useState([]);
     const [formData, setFormData] = useState({
-        foto: "",
         referencia: "",
         modelo: "",
         tecido: "",
+        tecido_id: undefined,
         grade: "",
         grade_versao_id: undefined,
         aviamentos: [],
@@ -147,28 +155,43 @@ export default function ProdutoCadastar() {
         const carregarGrades = async () => {
             try {
                 setCarregandoGrades(true);
-                const dados = await getGradesByFabrico(fabricoId);
+
+                const [resGrades, resTecidos] = await Promise.allSettled([
+                    getGradesByFabrico(fabricoId),
+                    getTecidosByFabrico(fabricoId),
+                ]);
+
                 if (ignorar) return;
 
-                const gradesMapeadas = (dados || [])
-                    .map((item) => {
-                        const nome = item?.grade?.nome;
-                        const versaoAtiva = item?.grade?.versoes?.find((versao) => versao?.ativo);
-
-                        if (!nome) return null;
-
-                        return {
-                            nome,
-                            grade_versao_id: versaoAtiva?.id,
-                        };
-                    })
-                    .filter(Boolean);
-
-                setGradesDisponiveis(gradesMapeadas);
-            } catch (error) {
-                if (!ignorar) {
-                    console.error("Erro ao buscar grades do fabrico:", error);
+                if (resGrades.status === "fulfilled") {
+                    const dadosGrades = resGrades.value;
+                    const gradesMapeadas = (dadosGrades || [])
+                        .map((item) => {
+                            const nome = item?.grade?.nome;
+                            const versaoAtiva = item?.grade?.versoes?.find(
+                                (versao) => versao?.ativo,
+                            );
+                            if (!nome) return null;
+                            return { nome, grade_versao_id: versaoAtiva?.id };
+                        })
+                        .filter(Boolean);
+                    setGradesDisponiveis(gradesMapeadas);
+                } else {
+                    console.error("Erro ao carregar grades:", resGrades.reason);
                     setGradesDisponiveis([]);
+                }
+
+                if (resTecidos.status === "fulfilled") {
+                    const dadosTecidos = resTecidos.value;
+
+                    const tecidosTratados = (dadosTecidos || []).map((t) => ({
+                        id: t?.id || t?.tecido?.id,
+                        nome: t?.nome || t?.tecido?.nome || "Sem nome na API",
+                    }));
+                    setTecidosDisponiveis(tecidosTratados);
+                } else {
+                    console.error("Erro ao carregar tecidos:", resTecidos.reason);
+                    setTecidosDisponiveis([]);
                 }
             } finally {
                 if (!ignorar) {
@@ -217,21 +240,24 @@ export default function ProdutoCadastar() {
         setOpenDropdown(null);
     };
 
+    const handleTecidoSelect = (nomeTecido) => {
+        const tecidoSelecionado = tecidosDisponiveis.find((t) => t.nome === nomeTecido);
+
+        setFormData((prev) => ({
+            ...prev,
+            tecido: nomeTecido,
+            tecido_id: tecidoSelecionado?.id,
+        }));
+        setOpenDropdown(null);
+    };
+
     const handleImagemChange = (event) => {
         const arquivo = event.target.files?.[0];
         if (!arquivo) return;
 
+        setArquivoImagem(arquivo);
         setImagemPreview(URL.createObjectURL(arquivo));
         setErroCadastro("");
-
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setFormData((prev) => ({
-                ...prev,
-                foto: typeof reader.result === "string" ? reader.result : "",
-            }));
-        };
-        reader.readAsDataURL(arquivo);
     };
 
     const handleSubmit = async (event) => {
@@ -254,17 +280,31 @@ export default function ProdutoCadastar() {
             return;
         }
 
-        const payload = {
-            // foto: formData.foto || undefined,
-            foto: "https://picsum.photos/seed/sVr6PKc/2941/886",
-            nome: formData.referencia.trim(),
-            tipo: formData.modelo,
-            fabrico_id: fabricoId,
-            grade_versao_id: formData.grade_versao_id,
-        };
-
         try {
             setSalvando(true);
+            let urlFoto = undefined;
+
+            // Realiza o upload caso tenha uma imagem selecionada
+            if (arquivoImagem) {
+                const uploadData = new FormData();
+                uploadData.append("file", arquivoImagem);
+
+                const responseUpload = await upload(uploadData);
+
+                if (responseUpload && responseUpload.url) {
+                    urlFoto = responseUpload.url;
+                }
+            }
+
+            const payload = {
+                foto: urlFoto,
+                nome: formData.referencia.trim(),
+                tipo: formData.modelo,
+                fabrico_id: fabricoId,
+                tecido_id: formData.tecido_id,
+                grade_versao_id: formData.grade_versao_id,
+            };
+
             await criarProduto(payload);
             navigate("/produtos");
         } catch (error) {
@@ -279,7 +319,7 @@ export default function ProdutoCadastar() {
 
     return (
         <div className="w-full px-6 pt-0">
-            <div className="bg-white rounded-[24px] shadow-sm w-full min-h-[650px] px-8 py-7 lg:px-12 lg:py-8">
+            <div className="bg-white rounded-[24px] w-full min-h-[650px] px-8 py-7 lg:px-12 lg:py-8">
                 <ProdutoDetalhesHeader
                     title="Cadastrar produto"
                     iconSrc="/adicionar-produtos-preto.png"
@@ -307,7 +347,7 @@ export default function ProdutoCadastar() {
                             <button
                                 type="button"
                                 onClick={() => inputFileRef.current?.click()}
-                                className="w-[200px] h-[150px] rounded-[10px] border border-dashed border-[#D3D3D3] flex items-center justify-center overflow-hidden bg-white hover:bg-[#FAFAFA] transition-colors"
+                                className="w-[200px] h-[150px] rounded-[10px] border border-dashed border-[#898C8F] flex items-center justify-center overflow-hidden bg-white hover:bg-[#FAFAFA] transition-colors"
                             >
                                 {imagemPreview ? (
                                     <img
@@ -332,7 +372,7 @@ export default function ProdutoCadastar() {
                                             type="text"
                                             value={formData.referencia}
                                             onChange={handleChange("referencia")}
-                                            className="w-full h-[39px] border border-[#D3D3D3] rounded-[10px] px-3 text-sm focus:outline-none"
+                                            className="w-full h-[39px] border border-[#898C8F] rounded-[10px] px-3 text-[16px] focus:outline-none"
                                         />
 
                                         <label
@@ -343,7 +383,7 @@ export default function ProdutoCadastar() {
                                                 ${
                                                     formData.referencia
                                                         ? "top-0 -translate-y-1/2 text-xs"
-                                                        : "top-1/2 -translate-y-1/2 text-sm"
+                                                        : "top-1/2 -translate-y-1/2 text-[16px]"
                                                 }
                                                 
                                                 group-focus-within:top-0
@@ -351,7 +391,7 @@ export default function ProdutoCadastar() {
                                                 group-focus-within:text-xs
                                             `}
                                         >
-                                            Referência interna
+                                            Referência interna*
                                         </label>
                                     </div>
                                 </div>
@@ -360,7 +400,7 @@ export default function ProdutoCadastar() {
                                     <FieldLabel>Modelo</FieldLabel>
                                     <DropdownField
                                         value={formData.modelo}
-                                        placeholder="Modelo"
+                                        placeholder="Modelo*"
                                         options={modelos}
                                         isOpen={openDropdown === "modelo"}
                                         onToggle={() => toggleDropdown("modelo")}
@@ -401,12 +441,10 @@ export default function ProdutoCadastar() {
                                         <DropdownField
                                             value={formData.tecido}
                                             placeholder="Tecido"
-                                            options={tecidos}
+                                            options={tecidosDisponiveis.map((t) => t.nome)}
                                             isOpen={openDropdown === "tecido"}
                                             onToggle={() => toggleDropdown("tecido")}
-                                            onSelect={(value) =>
-                                                handleDropdownSelect("tecido", value)
-                                            }
+                                            onSelect={handleTecidoSelect}
                                             isSelectedOption={(option) =>
                                                 formData.tecido === option
                                             }
@@ -419,7 +457,7 @@ export default function ProdutoCadastar() {
                                             placeholder={
                                                 carregandoGrades
                                                     ? "Carregando grades..."
-                                                    : "Grade de tamanho"
+                                                    : "Grade de tamanho*"
                                             }
                                             options={gradesDisponiveis.map((grade) => grade.nome)}
                                             isOpen={openDropdown === "grade"}
