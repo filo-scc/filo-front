@@ -14,15 +14,12 @@ import FaccaoEditar from "../pages/FaccaoEditar";
 import ProdutoDetalhes from "../pages/ProdutoDetalhes";
 import FaccaoCadastro from "../pages/FaccaoCadastro";
 import ProdutoCadastar from "../pages/ProdutoCadastrar";
-import TestPage from "@/pages/TestPage";
 
 function AppRoutes() {
     return (
         <BrowserRouter>
             <Routes>
                 <Route path="/login" element={<Login />} />
-
-                <Route path="/teste-modal/:produtoId" element={<TestPage />} />
 
                 {/* Rotas Protegidas */}
                 <Route
