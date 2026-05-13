@@ -51,6 +51,10 @@ const FaccaoDetalhes = () => {
         navigate("/faccoes", { replace: true });
     };
 
+    const abrirModalExclusao = () => {
+        setModalExclusaoAberto(true);
+    };
+
     const handleConfirmarExclusao = async () => {
         if (!faccao) return;
         try {
@@ -92,32 +96,35 @@ const FaccaoDetalhes = () => {
                     Detalhes de facção
                 </h1>
 
+                {/* Dados gerais */}
                 <div className="mb-6">
                     <h3 className="text-[20px] font-Outfit font-light text-[#404040] mb-4">
                         Dados gerais
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                         <div>
-                            <p className="text-[20px] font-Outfit font-light text-[#4696AD]">
+                            <p className="text-[20px] font-Outfit font-light text-[#4696AD] block">
                                 Nome
                             </p>
-                            <p className="text-[16px] font-Outfit font-light text-[#898c8f]">
+                            <p className="text-[16px] font-Outfit font-light text-[#898c8f] leading-none">
                                 {faccao.nome}
                             </p>
                         </div>
+
                         <div>
-                            <p className="text-[20px] font-Outfit font-light text-[#4696AD]">
-                                Responsável
+                            <p className="text-[20px] font-Outfit font-light text-[#4696AD] block">
+                                Nome do responsável
                             </p>
-                            <p className="text-[16px] font-Outfit font-light text-[#898c8f]">
+                            <p className="text-[16px] font-Outfit font-light text-[#898c8f] leading-none">
                                 {faccao.responsavel || "Não informado"}
                             </p>
                         </div>
+
                         <div>
-                            <p className="text-[20px] font-Outfit font-light text-[#4696AD]">
+                            <p className="text-[20px] font-Outfit font-light text-[#4696AD] block">
                                 Telefone
                             </p>
-                            <p className="text-[16px] font-Outfit font-light text-[#898c8f]">
+                            <p className="text-[16px] font-Outfit font-light text-[#898c8f] leading-none">
                                 {faccao.telefone
                                     ? formatarTelefone(faccao.telefone)
                                     : "Não informado"}
@@ -196,6 +203,7 @@ const FaccaoDetalhes = () => {
                     </div>
                 </div>
             </div>
+
             <ModalExclusao
                 isOpen={modalExclusaoAberto}
                 onClose={() => setModalExclusaoAberto(false)}
@@ -207,13 +215,13 @@ const FaccaoDetalhes = () => {
             <ModalConfirmacao
                 isOpen={modalConfirmacaoAberto}
                 onClose={() => navigate("/faccoes", { replace: true })}
-                type="excluída"
+                type="excluído"
             />
 
             <ModalAtencao
                 isOpen={modalAtencaoAberto}
                 onConfirm={handleAcessoNegadoConfirm}
-                titulo="Acesso Negado"
+                titulo="Atenção!"
                 mensagem="Esta facção não pertence ou não existe no seu fabrico. Você será redirecionado para a lista de facções."
             />
         </div>
