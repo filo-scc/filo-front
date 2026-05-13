@@ -88,11 +88,6 @@ const ProdutoFaccoes = ({ isOpen, onClose, produtoId }) => {
                     background-color: #d1d5db;
                     border-radius: 10px;
                 }
-
-                /* ISSO AQUI É O CERTO */
-                .scrollbar-sutil {
-                    scrollbar-gutter: stable;
-                }
             `}
             </style>
 
@@ -145,32 +140,50 @@ const ProdutoFaccoes = ({ isOpen, onClose, produtoId }) => {
 
                             <div
                                 className={`absolute top-14 right-0 w-[180px] bg-white border border-[#D9D9D9] rounded-[12px] overflow-hidden z-[999] shadow-md origin-top transition-all duration-300
-                                ${
-                                    dropdownOpen
-                                        ? "opacity-100 scale-y-100 visible"
-                                        : "opacity-0 scale-y-95 invisible pointer-events-none"
-                                }
-                            `}
+                                    ${
+                                        dropdownOpen
+                                            ? "opacity-100 scale-y-100 visible"
+                                            : "opacity-0 scale-y-95 invisible pointer-events-none"
+                                    }
+                                `}
                             >
                                 <div
-                                    className={dropdownItemClass}
                                     onClick={() => handleSelectOrder("nome")}
+                                    className={`flex items-center border-l-[3px] px-4 py-[14px] cursor-pointer font-Outfit text-[15px] transition-colors
+                                    ${
+                                        ordenacao === "nome"
+                                            ? "border-[#C4F042] bg-white text-[#707070]"
+                                            : "border-transparent bg-white text-[#707070] hover:bg-[#F5F5F5]"
+                                    }
+                                `}
                                 >
-                                    <div className="text-[#7B7D80]">Nome (A-Z)</div>
+                                    <div>Nome (A-Z)</div>
                                 </div>
 
                                 <div
-                                    className={dropdownItemClass}
                                     onClick={() => handleSelectOrder("menor-preco")}
+                                    className={`flex items-center border-l-[3px] px-4 py-[14px] cursor-pointer font-Outfit text-[15px] transition-colors
+                                    ${
+                                        ordenacao === "menor-preco"
+                                            ? "border-[#C4F042] bg-white text-[#707070]"
+                                            : "border-transparent bg-white text-[#707070] hover:bg-[#F5F5F5]"
+                                    }
+                                `}
                                 >
-                                    <div className="text-[#7B7D80]">Menor preço</div>
+                                    <div>Menor preço</div>
                                 </div>
 
                                 <div
-                                    className={dropdownItemClass}
                                     onClick={() => handleSelectOrder("maior-preco")}
+                                    className={`flex items-center border-l-[3px] px-4 py-[14px] cursor-pointer font-Outfit text-[15px] transition-colors
+                                    ${
+                                        ordenacao === "maior-preco"
+                                            ? "border-[#C4F042] bg-white text-[#707070]"
+                                            : "border-transparent bg-white text-[#707070] hover:bg-[#F5F5F5]"
+                                    }
+                                `}
                                 >
-                                    <div className="text-[#7B7D80]">Maior preço</div>
+                                    <div>Maior preço</div>
                                 </div>
                             </div>
                         </div>
@@ -233,8 +246,5 @@ const ProdutoFaccoes = ({ isOpen, onClose, produtoId }) => {
         </>
     );
 };
-
-const dropdownItemClass =
-    "px-4 py-[14px] cursor-pointer font-Outfit text-[15px] text-[#404040] hover:bg-[#F5F5F5] transition-colors";
 
 export default ProdutoFaccoes;
