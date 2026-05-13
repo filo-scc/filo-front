@@ -297,11 +297,11 @@ export default function ProdutoCadastar() {
             }
 
             const payload = {
-                // foto: formData.foto || undefined,
-                foto: "https://picsum.photos/seed/sVr6PKc/2941/886",
+                foto: urlFoto,
                 nome: formData.referencia.trim(),
                 tipo: formData.modelo,
                 fabrico_id: fabricoId,
+                tecido_id: formData.tecido_id,
                 grade_versao_id: formData.grade_versao_id,
             };
 
