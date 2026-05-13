@@ -3,7 +3,7 @@ import React, { useState } from "react";
 // Componentes de ícone (Mantidos)
 function IconeLixeira() {
     return (
-        <div className="group relative w-6 h-6 flex items-center justify-center cursor-pointer">
+        <div className="group relative w-[24px] h-[24px] flex items-center justify-center cursor-pointer">
             <img
                 src="/excluir-cinza.png"
                 alt="Excluir"
@@ -20,7 +20,7 @@ function IconeLixeira() {
 
 function IconeEditar() {
     return (
-        <div className="group relative w-6 h-6 flex items-center justify-center cursor-pointer">
+        <div className="group relative w-[24px] h-[24px] flex items-center justify-center cursor-pointer">
             <img
                 src="/editar-cinza.png"
                 alt="Editar"
@@ -37,7 +37,7 @@ function IconeEditar() {
 
 function IconeSalvar() {
     return (
-        <div className="w-6 h-6 flex items-center justify-center cursor-pointer">
+        <div className="w-[24px] h-[24px] flex items-center justify-center cursor-pointer">
             <img
                 src="/check_azul.png"
                 alt="Salvar"
