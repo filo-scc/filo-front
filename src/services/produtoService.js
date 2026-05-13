@@ -19,3 +19,14 @@ export const getProdutosByFabrico = async (fabricoId) => {
         throw error;
     }
 };
+
+export const getFaccaoByProduto = async (produtoId) => {
+    try {
+        const response = await api.get(`/faccoes-produtos/produto/${produtoId}`);
+
+        return response.data;
+    } catch (error) {
+        console.error("Erro ao buscar facções do produto:", error);
+        throw error;
+    }
+};
