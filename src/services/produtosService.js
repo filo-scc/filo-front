@@ -24,3 +24,8 @@ export const excluirProduto = async (id) => {
     const response = await api.delete(`/produtos/${id}`);
     return response.data;
 };
+
+export const getTecidosByFabrico = async (fabricoId) => {
+    const response = await api.get(`/tecidos/fabrico/${fabricoId}`);
+    return response.data;
+};
