@@ -1,85 +1,59 @@
 import React, { useState } from "react";
 
-function IconeLixeira({ className }) {
+// Componentes de ícone (Mantidos)
+function IconeLixeira() {
     return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className={className}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            aria-hidden
-        >
-            <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+        <div className="group relative w-6 h-6 flex items-center justify-center cursor-pointer">
+            <img
+                src="/excluir-cinza.png"
+                alt="Excluir"
+                className="absolute inset-0 w-full h-full object-contain transition-opacity duration-200 group-hover:opacity-0"
             />
-        </svg>
-    );
-}
-
-function IconeEditar({ className }) {
-    return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className={className}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            aria-hidden
-        >
-            <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"
+            <img
+                src="/excluir-vermelho.png"
+                alt="Excluir"
+                className="absolute inset-0 w-full h-full object-contain opacity-0 transition-opacity duration-200 group-hover:opacity-100"
             />
-        </svg>
+        </div>
     );
 }
 
-function IconeSalvar({ className }) {
+function IconeEditar() {
     return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className={className}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            aria-hidden
-        >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-        </svg>
+        <div className="group relative w-6 h-6 flex items-center justify-center cursor-pointer">
+            <img
+                src="/editar-cinza.png"
+                alt="Editar"
+                className="absolute inset-0 w-full h-full object-contain transition-opacity duration-200 group-hover:opacity-0"
+            />
+            <img
+                src="/editar-azul.png"
+                alt="Editar"
+                className="absolute inset-0 w-full h-full object-contain opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+            />
+        </div>
     );
 }
 
-function IconeCancelar({ className }) {
+function IconeSalvar() {
     return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className={className}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            aria-hidden
-        >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
+        <div className="w-6 h-6 flex items-center justify-center cursor-pointer">
+            <img
+                src="/check_azul.png"
+                alt="Salvar"
+                className="w-full h-full object-contain transition-transform hover:scale-110"
+            />
+        </div>
     );
 }
 
-const gridColsClass =
-    "grid grid-cols-[minmax(140px,200px)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]";
+const gridColsClass = "grid grid-cols-[180px_1fr_1fr_1fr]";
 const borderColor = "#d9d9d9";
 
 export default function TabelaReferencias({
     produtos = [],
     onAbrirModal,
-    title = "Referências associadas",
+    title = "Associar produtos e referências",
     onRemoverLinha,
     onSalvarEdicao,
 }) {
@@ -95,92 +69,69 @@ export default function TabelaReferencias({
         }).format(valor);
     };
 
-    const borderStyle = { borderColor };
-    const podeRemover = Boolean(onRemoverLinha);
-    const podeEditar = Boolean(onSalvarEdicao);
-    const ultimo = produtos.length - 1;
-
-    const headerGrid = (
-        <div
-            className={`${gridColsClass} bg-[#d9d9d9] text-[#898c8f] text-[16px] font-Outfit font-light text-center`}
-        >
-            <div className="py-3 px-4" />
-            <div className="py-3 px-4 font-light border-l" style={borderStyle}>
-                Referência Interna
-            </div>
-            <div className="py-3 px-4 font-light border-l" style={borderStyle}>
-                Referência Cliente
-            </div>
-            <div className="py-3 px-4 font-light border-l" style={borderStyle}>
-                Preço
-            </div>
-        </div>
-    );
-
-    const handleIniciarEdicao = (item) => {
-        // 👇 Pega o ID de forma segura
-        const idAtual = item?.produto?.id || item?.produto_id;
-
-        setEditingId(idAtual);
-        setEditNome(item.nome_para_cliente || "");
-        setEditPreco(item.preco_padrao || 0);
+    // Máscara nativa sem imports
+    const maskMoeda = (valor) => {
+        let value = valor.replace(/\D/g, "");
+        value = (Number(value) / 100).toFixed(2) + "";
+        value = value.replace(".", ",");
+        value = value.replace(/(\d)(\d{3})(\d{3}),/g, "$1.$2.$3,");
+        value = value.replace(/(\d)(\d{3}),/g, "$1.$2,");
+        return "R$ " + value;
     };
 
-    const handleCancelarEdicao = () => {
-        setEditingId(null);
-        setEditNome("");
-        setEditPreco("");
+    const handlePrecoChange = (e) => {
+        setEditPreco(maskMoeda(e.target.value));
+    };
+
+    const handleIniciarEdicao = (item) => {
+        const idAtual = item?.produto?.id || item?.produto_id;
+        setEditingId(idAtual);
+        setEditNome(item.nome_para_cliente || "");
+        setEditPreco(maskMoeda((item.preco_padrao * 100).toString()));
     };
 
     const handleSalvarClick = async (produto_id) => {
-        console.log("👉 A. O botão foi clicado! ID do produto:", produto_id);
-        console.log("👉 B. A função onSalvarEdicao chegou na tabela?", !!onSalvarEdicao);
-
-        if (!onSalvarEdicao) {
-            console.log("❌ ERRO: onSalvarEdicao não existe aqui dentro!");
-            return;
-        }
-
+        if (!onSalvarEdicao) return;
         setLoading(true);
+        const valorNumerico = Number(editPreco.replace(/\D/g, "")) / 100;
         try {
-            console.log("👉 C. Chamando a função do pai com os dados:", {
-                produto_id,
-                nome_para_cliente: editNome,
-                preco_padrao: Number(editPreco),
-            });
-
             await onSalvarEdicao({
                 produto_id,
                 nome_para_cliente: editNome,
-                preco_padrao: Number(editPreco),
+                preco_padrao: valorNumerico,
             });
-
-            console.log("👉 D. A função do pai terminou! Fechando a edição.");
             setEditingId(null);
         } catch (error) {
-            console.error("❌ E. Deu erro ao salvar na tabela:", error);
+            console.error(error);
         } finally {
             setLoading(false);
         }
     };
 
+    const borderStyle = { borderColor };
+    const podeRemover = Boolean(onRemoverLinha);
+    const podeEditar = Boolean(onSalvarEdicao);
+    const ultimo = produtos.length - 1;
+
     const celulasLinha = (item, isEditing) => (
         <>
-            <div className="py-4 px-4 flex justify-center items-center">
+            {/* COLUNA FOTO - Sem borda à direita */}
+            <div className="flex justify-center items-center h-full">
                 <img
                     src={item.produto?.foto}
                     alt={item.produto?.nome}
-                    className="w-48 h-32 rounded-[10px] object-cover max-w-full"
+                    className="w-[158px] h-[115px] rounded-[10px] object-cover"
                 />
             </div>
-            <div
-                className="py-3 px-4 font-light border-l flex items-center justify-center text-[#404040] text-[16px] font-Outfit text-center"
-                style={borderStyle}
-            >
+
+            {/* COLUNA NOME INTERNO - Removi o border-l aqui */}
+            <div className="font-light flex items-center justify-center text-center text-[#404040] text-[16px] font-Outfit h-full px-4">
                 {item.produto?.nome}
             </div>
+
+            {/* COLUNA NOME CLIENTE - Mantém border-l */}
             <div
-                className="py-3 px-4 font-light border-l flex items-center justify-center text-[#404040] text-[16px] font-Outfit text-center"
+                className="font-light border-l flex items-center justify-center text-center text-[#898C8F] text-[16px] font-Outfit h-full px-4"
                 style={borderStyle}
             >
                 {isEditing ? (
@@ -188,25 +139,25 @@ export default function TabelaReferencias({
                         type="text"
                         value={editNome}
                         onChange={(e) => setEditNome(e.target.value)}
-                        disabled={loading}
-                        className="w-full text-center px-2 py-1.5 text-[15px] border border-[#4A90E2] rounded-[6px] outline-none focus:ring-2 focus:ring-[#4A90E2]/30 transition-all"
+                        className="w-full text-center bg-transparent border-none outline-none focus:ring-0 font-Outfit"
+                        autoFocus
                     />
                 ) : (
-                    item.nome_para_cliente
+                    item.nome_para_cliente || "-"
                 )}
             </div>
+
+            {/* COLUNA PREÇO - Mantém border-l */}
             <div
-                className="py-3 px-4 font-light border-l flex items-center justify-center text-[#404040] text-[16px] font-Outfit text-center"
+                className="font-light border-l flex items-center justify-center text-center text-[#898C8F] text-[16px] font-Outfit h-full px-4"
                 style={borderStyle}
             >
                 {isEditing ? (
                     <input
-                        type="number"
-                        step="0.01"
+                        type="text"
                         value={editPreco}
-                        onChange={(e) => setEditPreco(e.target.value)}
-                        disabled={loading}
-                        className="w-full max-w-[120px] text-center px-2 py-1.5 text-[15px] border border-[#4A90E2] rounded-[6px] outline-none focus:ring-2 focus:ring-[#4A90E2]/30 transition-all"
+                        onChange={handlePrecoChange}
+                        className="w-full text-center bg-transparent border-none outline-none focus:ring-0 font-Outfit"
                     />
                 ) : (
                     formatPreco(item.preco_padrao)
@@ -215,149 +166,88 @@ export default function TabelaReferencias({
         </>
     );
 
-    if (podeRemover || podeEditar) {
-        return (
-            <section>
-                <h3 className="text-[20px] font-Outfit font-light text-[#404040] mb-4">{title}</h3>
-
-                {produtos.length > 0 ? (
-                    <div className="flex flex-col gap-0">
-                        {/* Cabeçalho */}
-                        <div className="flex flex-row items-stretch gap-3 sm:gap-4 min-w-0">
-                            <div
-                                className="min-w-0 flex-1 rounded-t-[10px] border overflow-hidden"
-                                style={borderStyle}
-                            >
-                                {headerGrid}
-                            </div>
-                            <div className="w-12 sm:w-[84px] shrink-0" aria-hidden />
-                        </div>
-
-                        {/* Linhas */}
-                        {produtos.map((item, idx) => {
-                            const idAtual = item?.produto?.id || item?.produto_id;
-                            const isEditing = editingId === idAtual;
-
-                            return (
-                                <div
-                                    key={idAtual || idx}
-                                    className="flex flex-row items-center gap-3 sm:gap-4 min-w-0"
-                                >
-                                    <div
-                                        className={`min-w-0 flex-1 border-l border-r border-b overflow-hidden ${idx === ultimo ? "rounded-b-[10px]" : ""}`}
-                                        style={borderStyle}
-                                    >
-                                        <div className={`${gridColsClass} w-full`}>
-                                            {celulasLinha(item, isEditing)}
-                                        </div>
-                                    </div>
-
-                                    {/* Ações (Direita) */}
-                                    <div className="w-12 sm:w-[84px] shrink-0 flex items-center justify-start gap-1">
-                                        {isEditing ? (
-                                            <>
-                                                <button
-                                                    type="button"
-                                                    // 👇 Passando o idAtual na hora de salvar
-                                                    onClick={() => handleSalvarClick(idAtual)}
-                                                    disabled={loading}
-                                                    className="flex h-9 w-9 items-center justify-center rounded-lg text-[#28A745] transition-colors hover:bg-green-50 disabled:opacity-50"
-                                                    title="Salvar"
-                                                >
-                                                    <IconeSalvar className="h-5 w-5" />
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={handleCancelarEdicao}
-                                                    disabled={loading}
-                                                    className="flex h-9 w-9 items-center justify-center rounded-lg text-[#D75757] transition-colors hover:bg-red-50 disabled:opacity-50"
-                                                    title="Cancelar"
-                                                >
-                                                    <IconeCancelar className="h-5 w-5" />
-                                                </button>
-                                            </>
-                                        ) : (
-                                            <>
-                                                {podeEditar && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleIniciarEdicao(item)}
-                                                        className="flex h-9 w-9 items-center justify-center rounded-lg text-[#4A90E2] transition-colors hover:bg-blue-50"
-                                                        title="Editar"
-                                                    >
-                                                        <IconeEditar className="h-5 w-5" />
-                                                    </button>
-                                                )}
-                                                {podeRemover && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => onRemoverLinha(item, idx)}
-                                                        className="flex h-9 w-9 items-center justify-center rounded-lg text-[#D75757] transition-colors hover:bg-red-50"
-                                                        title="Remover"
-                                                    >
-                                                        <IconeLixeira className="h-5 w-5" />
-                                                    </button>
-                                                )}
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                ) : (
+    return (
+        <section className="w-full">
+            <h3 className="text-[18px] font-Outfit font-normal text-[#404040] mb-4">{title}</h3>
+            <div className="flex flex-col w-full">
+                {/* Header */}
+                <div className="flex flex-row items-stretch gap-4 w-full">
                     <div
-                        className="rounded-[10px] border py-10 text-[#898c8f] font-Outfit font-light text-center"
+                        className="flex-1 rounded-t-[10px] border overflow-hidden"
                         style={borderStyle}
                     >
-                        Esse cliente ainda não possui referências associadas.
-                    </div>
-                )}
-
-                <button
-                    type="button"
-                    onClick={onAbrirModal}
-                    className="w-full mt-2 flex justify-center items-center h-[45px] bg-[#f4f4f4] rounded-[10px] hover:bg-gray-200 transition-colors"
-                >
-                    <img src="/mais_cinza.png" alt="Adicionar" className="w-6 h-6 object-contain" />
-                </button>
-            </section>
-        );
-    }
-
-    // Retorno de fallback
-    return (
-        <section>
-            <h3 className="text-[20px] font-Outfit font-light text-[#404040] mb-4">{title}</h3>
-            <div className="rounded-[10px] overflow-hidden border" style={borderStyle}>
-                <div className="border-b" style={borderStyle}>
-                    {headerGrid}
-                </div>
-                {produtos.length > 0 ? (
-                    produtos.map((item, idx) => {
-                        const idAtual = item?.produto?.id || item?.produto_id;
-                        return (
+                        <div
+                            className={`${gridColsClass} bg-[#d9d9d9] text-[#898c8f] text-[16px] font-Outfit font-light text-center h-[52px] items-center`}
+                        >
+                            {/* Espaço da foto e nome interno sem divisória no header também */}
+                            <div className="col-span-2 flex items-center justify-center h-full">
+                                Referência Interna
+                            </div>
                             <div
-                                key={idAtual || idx}
-                                className={`${gridColsClass} w-full border-b last:border-b-0`}
+                                className="border-l h-full flex items-center justify-center"
                                 style={borderStyle}
                             >
-                                {celulasLinha(item, false)}
+                                Referência Cliente
                             </div>
-                        );
-                    })
-                ) : (
-                    <div className="py-10 text-[#898c8f] font-Outfit font-light text-center">
-                        Esse cliente ainda não possui referências associadas.
+                            <div
+                                className="border-l h-full flex items-center justify-center"
+                                style={borderStyle}
+                            >
+                                Preço
+                            </div>
+                        </div>
                     </div>
-                )}
+                    <div className="w-[30px] shrink-0" />
+                </div>
+
+                {/* Rows */}
+                {produtos.map((item, idx) => {
+                    const idAtual = item?.produto?.id || item?.produto_id;
+                    const isEditing = editingId === idAtual;
+                    return (
+                        <div
+                            key={idAtual || idx}
+                            className="flex flex-row items-center gap-4 w-full group/row"
+                        >
+                            <div
+                                className={`flex-1 border-l border-r border-b overflow-hidden h-[152px] ${idx === ultimo ? "rounded-b-[10px]" : ""}`}
+                                style={borderStyle}
+                            >
+                                <div className={`${gridColsClass} w-full h-full items-center`}>
+                                    {celulasLinha(item, isEditing)}
+                                </div>
+                            </div>
+                            <div className="w-[30px] shrink-0 flex flex-col items-center gap-3">
+                                {isEditing ? (
+                                    <button
+                                        onClick={() => handleSalvarClick(idAtual)}
+                                        disabled={loading}
+                                    >
+                                        <IconeSalvar />
+                                    </button>
+                                ) : (
+                                    podeEditar && (
+                                        <button onClick={() => handleIniciarEdicao(item)}>
+                                            <IconeEditar />
+                                        </button>
+                                    )
+                                )}
+                                {podeRemover && (
+                                    <button onClick={() => onRemoverLinha(item, idx)}>
+                                        <IconeLixeira />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
             <button
                 type="button"
                 onClick={onAbrirModal}
-                className="w-full mt-2 flex justify-center items-center h-[45px] bg-[#f4f4f4] rounded-[10px] hover:bg-gray-200 transition-colors"
+                className="w-full mt-3 flex justify-center items-center h-[48px] bg-[#f8f8f8] rounded-[10px] border border-[#e0e0e0] hover:bg-gray-100 transition-colors"
             >
-                <img src="/mais_cinza.png" alt="Adicionar" className="w-6 h-6 object-contain" />
+                <span className="text-[24px] text-gray-400 font-light">+</span>
             </button>
         </section>
     );
