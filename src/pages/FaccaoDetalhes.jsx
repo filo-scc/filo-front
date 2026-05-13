@@ -82,51 +82,51 @@ const FaccaoDetalhes = () => {
 
     return (
         <div className="p-6 pt-0 w-full">
-                <div className="bg-white p-8 rounded-[24px] shadow-sm w-full mx-auto">
-                    <h1 className="flex items-center gap-3 text-[28px] font-light mb-6">
-                        <img
-                            src="/maquina-costura-preta.png"
-                            alt="Ícone"
-                            className="w-[30px] h-[30px]"
-                        />
-                        Detalhes de facção
-                    </h1>
+            <div className="bg-white p-8 rounded-[24px] shadow-sm w-full mx-auto">
+                <h1 className="flex items-center gap-3 text-[28px] font-light mb-6">
+                    <img
+                        src="/maquina-costura-preta.png"
+                        alt="Ícone"
+                        className="w-[30px] h-[30px]"
+                    />
+                    Detalhes de facção
+                </h1>
 
-                    <div className="mb-6">
-                        <h3 className="text-[20px] font-Outfit font-light text-[#404040] mb-4">
-                            Dados gerais
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                            <div>
-                                <p className="text-[20px] font-Outfit font-light text-[#4696AD]">
-                                    Nome
-                                </p>
-                                <p className="text-[16px] font-Outfit font-light text-[#898c8f]">
-                                    {faccao.nome}
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-[20px] font-Outfit font-light text-[#4696AD]">
-                                    Responsável
-                                </p>
-                                <p className="text-[16px] font-Outfit font-light text-[#898c8f]">
-                                    {faccao.responsavel || "Não informado"}
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-[20px] font-Outfit font-light text-[#4696AD]">
-                                    Telefone
-                                </p>
-                                <p className="text-[16px] font-Outfit font-light text-[#898c8f]">
-                                    {faccao.telefone
-                                        ? formatarTelefone(faccao.telefone)
-                                        : "Não informado"}
-                                </p>
-                            </div>
+                <div className="mb-6">
+                    <h3 className="text-[20px] font-Outfit font-light text-[#404040] mb-4">
+                        Dados gerais
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div>
+                            <p className="text-[20px] font-Outfit font-light text-[#4696AD]">
+                                Nome
+                            </p>
+                            <p className="text-[16px] font-Outfit font-light text-[#898c8f]">
+                                {faccao.nome}
+                            </p>
+                        </div>
+                        <div>
+                            <p className="text-[20px] font-Outfit font-light text-[#4696AD]">
+                                Responsável
+                            </p>
+                            <p className="text-[16px] font-Outfit font-light text-[#898c8f]">
+                                {faccao.responsavel || "Não informado"}
+                            </p>
+                        </div>
+                        <div>
+                            <p className="text-[20px] font-Outfit font-light text-[#4696AD]">
+                                Telefone
+                            </p>
+                            <p className="text-[16px] font-Outfit font-light text-[#898c8f]">
+                                {faccao.telefone
+                                    ? formatarTelefone(faccao.telefone)
+                                    : "Não informado"}
+                            </p>
                         </div>
                     </div>
+                </div>
 
-                    <SecaoEndereco endereco={faccao.endereco} />
+                <SecaoEndereco endereco={faccao.endereco} />
 
                 {/* financeiro */}
                 <div className="mt-7 mb-6">
