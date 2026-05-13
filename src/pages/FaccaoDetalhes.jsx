@@ -50,7 +50,7 @@ const FaccaoDetalhes = () => {
         setModalAtencaoAberto(false);
         navigate("/faccoes", { replace: true });
     };
-    
+
     const abrirModalExclusao = () => {
         setModalExclusaoAberto(true);
     };
