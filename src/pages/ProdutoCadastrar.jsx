@@ -43,7 +43,7 @@ function DropdownField({
             <button
                 type="button"
                 onClick={onToggle}
-                className="w-full h-[39px] border border-[#D3D3D3] rounded-[10px] px-3 text-sm focus:outline-none bg-white flex items-center justify-between"
+                className="w-full h-[39px] border border-[#898C8F] rounded-[10px] px-3 text-sm focus:outline-none bg-white flex items-center justify-between"
             >
                 <span className={value ? "text-[#707070] font-normal" : "text-[#898C8F]"}>
                     {value || placeholder}
@@ -71,7 +71,7 @@ function DropdownField({
                         onClick={onToggle}
                         className="fixed inset-0 z-10 cursor-default"
                     />
-                    <div className="absolute left-0 right-0 top-[calc(100%+2px)] z-20 overflow-hidden rounded-[14px] border border-[#D3D3D3] bg-white shadow-lg">
+                    <div className="absolute left-0 right-0 top-[calc(100%+2px)] z-20 overflow-hidden rounded-[14px] border border-[#898C8F] bg-white ">
                         {options.map((option) => {
                             const selected = isSelectedOption(option);
 
@@ -80,10 +80,11 @@ function DropdownField({
                                     key={option}
                                     type="button"
                                     onClick={() => onSelect(option)}
-                                    className={`flex w-full items-center border-l-[3px] px-3 py-3 text-left text-sm transition-colors ${
+                                    // Mudanças aqui: pl-[12px] em vez de 15px e border-l-[3px] global
+                                    className={`relative overflow-hidden flex w-full items-center pl-[12px] pr-3 py-3 border-l-[3px] text-left text-[16px] transition-colors first:rounded-t-[13px] last:rounded-b-[13px] ${
                                         selected
                                             ? "border-[#C4F042] text-[#707070] bg-white"
-                                            : "border-transparent text-[#707070] bg-white hover:bg-white"
+                                            : "border-transparent text-[#707070] bg-white hover:bg-[#FAFAFA]"
                                     }`}
                                 >
                                     <span className={selected ? "font-normal text-[#707070]" : ""}>
@@ -311,7 +312,7 @@ export default function ProdutoCadastar() {
 
     return (
         <div className="w-full px-6 pt-0">
-            <div className="bg-white rounded-[24px] shadow-sm w-full min-h-[650px] px-8 py-7 lg:px-12 lg:py-8">
+            <div className="bg-white rounded-[24px] w-full min-h-[650px] px-8 py-7 lg:px-12 lg:py-8">
                 <ProdutoDetalhesHeader
                     title="Cadastrar produto"
                     iconSrc="/adicionar-produtos-preto.png"
@@ -339,7 +340,7 @@ export default function ProdutoCadastar() {
                             <button
                                 type="button"
                                 onClick={() => inputFileRef.current?.click()}
-                                className="w-[200px] h-[150px] rounded-[10px] border border-dashed border-[#D3D3D3] flex items-center justify-center overflow-hidden bg-white hover:bg-[#FAFAFA] transition-colors"
+                                className="w-[200px] h-[150px] rounded-[10px] border border-dashed border-[#898C8F] flex items-center justify-center overflow-hidden bg-white hover:bg-[#FAFAFA] transition-colors"
                             >
                                 {imagemPreview ? (
                                     <img
@@ -364,7 +365,7 @@ export default function ProdutoCadastar() {
                                             type="text"
                                             value={formData.referencia}
                                             onChange={handleChange("referencia")}
-                                            className="w-full h-[39px] border border-[#D3D3D3] rounded-[10px] px-3 text-sm focus:outline-none"
+                                            className="w-full h-[39px] border border-[#898C8F] rounded-[10px] px-3 text-[16px] focus:outline-none"
                                         />
 
                                         <label
@@ -375,7 +376,7 @@ export default function ProdutoCadastar() {
                                                 ${
                                                     formData.referencia
                                                         ? "top-0 -translate-y-1/2 text-xs"
-                                                        : "top-1/2 -translate-y-1/2 text-sm"
+                                                        : "top-1/2 -translate-y-1/2 text-[16px]"
                                                 }
                                                 
                                                 group-focus-within:top-0
@@ -383,7 +384,7 @@ export default function ProdutoCadastar() {
                                                 group-focus-within:text-xs
                                             `}
                                         >
-                                            Referência interna
+                                            Referência interna*
                                         </label>
                                     </div>
                                 </div>
@@ -392,7 +393,7 @@ export default function ProdutoCadastar() {
                                     <FieldLabel>Modelo</FieldLabel>
                                     <DropdownField
                                         value={formData.modelo}
-                                        placeholder="Modelo"
+                                        placeholder="Modelo*"
                                         options={modelos}
                                         isOpen={openDropdown === "modelo"}
                                         onToggle={() => toggleDropdown("modelo")}
@@ -449,7 +450,7 @@ export default function ProdutoCadastar() {
                                             placeholder={
                                                 carregandoGrades
                                                     ? "Carregando grades..."
-                                                    : "Grade de tamanho"
+                                                    : "Grade de tamanho*"
                                             }
                                             options={gradesDisponiveis.map((grade) => grade.nome)}
                                             isOpen={openDropdown === "grade"}
