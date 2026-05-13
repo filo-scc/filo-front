@@ -5,7 +5,7 @@ function IconeLixeira() {
     return (
         <div className="group relative w-[24px] h-[24px] flex items-center justify-center cursor-pointer">
             <img
-                src="/excluir-cinza.png"
+                src="/excluir-branco.png"
                 alt="Excluir"
                 className="absolute inset-0 w-full h-full object-contain transition-opacity duration-200 group-hover:opacity-0"
             />
@@ -22,7 +22,7 @@ function IconeEditar() {
     return (
         <div className="group relative w-[24px] h-[24px] flex items-center justify-center cursor-pointer">
             <img
-                src="/editar-cinza.png"
+                src="/editar-branco.png"
                 alt="Editar"
                 className="absolute inset-0 w-full h-full object-contain transition-opacity duration-200 group-hover:opacity-0"
             />
