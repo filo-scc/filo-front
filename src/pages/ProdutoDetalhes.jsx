@@ -139,7 +139,7 @@ export default function ProdutoDetalhes() {
                         state: { success: "Produto excluído com sucesso." },
                     });
                 }}
-                type="excluída"
+                type="excluído"
             />
 
             <ModalAtencao

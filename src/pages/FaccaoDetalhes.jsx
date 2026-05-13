@@ -165,13 +165,13 @@ const FaccaoDetalhes = () => {
             <ModalConfirmacao
                 isOpen={modalConfirmacaoAberto}
                 onClose={() => navigate("/faccoes", { replace: true })}
-                type="excluída"
+                type="excluído"
             />
 
             <ModalAtencao
                 isOpen={modalAtencaoAberto}
                 onConfirm={handleAcessoNegadoConfirm}
-                titulo="Acesso Negado"
+                titulo="Atenção!"
                 mensagem="Esta facção não pertence ou não existe no seu fabrico. Você será redirecionado para a lista de facções."
             />
         </div>
