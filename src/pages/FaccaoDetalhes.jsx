@@ -50,6 +50,10 @@ const FaccaoDetalhes = () => {
         setModalAtencaoAberto(false);
         navigate("/faccoes", { replace: true });
     };
+    
+    const abrirModalExclusao = () => {
+        setModalExclusaoAberto(true);
+    };
 
     const handleConfirmarExclusao = async () => {
         if (!faccao) return;
