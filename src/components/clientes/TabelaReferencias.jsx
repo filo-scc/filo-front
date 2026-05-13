@@ -69,7 +69,6 @@ export default function TabelaReferencias({
         }).format(valor);
     };
 
-    // Máscara nativa sem imports
     const maskMoeda = (valor) => {
         let value = valor.replace(/\D/g, "");
         value = (Number(value) / 100).toFixed(2) + "";
@@ -115,7 +114,7 @@ export default function TabelaReferencias({
 
     const celulasLinha = (item, isEditing) => (
         <>
-            {/* COLUNA FOTO - Sem borda à direita */}
+            {/* COLUNA 1: FOTO (180px) */}
             <div className="flex justify-center items-center h-full">
                 <img
                     src={item.produto?.foto}
@@ -124,12 +123,12 @@ export default function TabelaReferencias({
                 />
             </div>
 
-            {/* COLUNA NOME INTERNO - Removi o border-l aqui */}
+            {/* COLUNA 2: NOME INTERNO (1fr) - Centralizado no meio de sua própria célula */}
             <div className="font-light flex items-center justify-center text-center text-[#404040] text-[16px] font-Outfit h-full px-4">
                 {item.produto?.nome}
             </div>
 
-            {/* COLUNA NOME CLIENTE - Mantém border-l */}
+            {/* COLUNA 3: NOME CLIENTE (1fr) */}
             <div
                 className="font-light border-l flex items-center justify-center text-center text-[#898C8F] text-[16px] font-Outfit h-full px-4"
                 style={borderStyle}
@@ -147,7 +146,7 @@ export default function TabelaReferencias({
                 )}
             </div>
 
-            {/* COLUNA PREÇO - Mantém border-l */}
+            {/* COLUNA 4: PREÇO (1fr) */}
             <div
                 className="font-light border-l flex items-center justify-center text-center text-[#898C8F] text-[16px] font-Outfit h-full px-4"
                 style={borderStyle}
@@ -177,20 +176,23 @@ export default function TabelaReferencias({
                         style={borderStyle}
                     >
                         <div
-                            className={`${gridColsClass} bg-[#d9d9d9] text-[#898c8f] text-[16px] font-Outfit font-light text-center h-[52px] items-center`}
+                            className={`${gridColsClass} bg-[#d9d9d9] text-[#898c8f] text-[16px] font-Outfit font-light h-[64px] items-center`}
                         >
-                            {/* Espaço da foto e nome interno sem divisória no header também */}
-                            <div className="col-span-2 flex items-center justify-center h-full">
+                            <div />
+
+                            <div className="h-full flex items-center justify-center text-center px-4">
                                 Referência Interna
                             </div>
+
                             <div
-                                className="border-l h-full flex items-center justify-center"
+                                className="border-l h-full flex items-center justify-center text-center px-4"
                                 style={borderStyle}
                             >
                                 Referência Cliente
                             </div>
+
                             <div
-                                className="border-l h-full flex items-center justify-center"
+                                className="border-l h-full flex items-center justify-center text-center px-4"
                                 style={borderStyle}
                             >
                                 Preço
@@ -242,6 +244,8 @@ export default function TabelaReferencias({
                     );
                 })}
             </div>
+
+            {/* Botão Adicionar */}
             <button
                 type="button"
                 onClick={onAbrirModal}
