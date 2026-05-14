@@ -7,6 +7,7 @@ import { formatarTelefone } from "../utils/formatters";
 import SecaoEndereco from "../components/faccoes/SecaoEndereco";
 import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
+import ModalAtencao from "../components/geral/ModalAtencao";
 
 const FaccaoDetalhes = () => {
     const { id } = useParams();
@@ -16,6 +17,39 @@ const FaccaoDetalhes = () => {
     const [loading, setLoading] = useState(true);
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
+    const [modalAtencaoAberto, setModalAtencaoAberto] = useState(false);
+
+    useEffect(() => {
+        const fetchFaccao = async () => {
+            try {
+                setLoading(true);
+                const userString = localStorage.getItem("user");
+                const usuarioLogado = userString ? JSON.parse(userString) : null;
+
+                const data = await getFaccaoById(id);
+
+                // Verifica se a facção pertence ao fabrico do usuário
+                if (usuarioLogado && data.fabrico_id !== usuarioLogado.fabrico_id) {
+                    setModalAtencaoAberto(true);
+                    return; // Interrompe para não setar a facção no estado
+                }
+
+                setFaccao(data);
+            } catch (error) {
+                console.error("Erro ao buscar facção", error);
+                setModalAtencaoAberto(true);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchFaccao();
+    }, [id]);
+
+    const handleAcessoNegadoConfirm = () => {
+        setModalAtencaoAberto(false);
+        navigate("/faccoes", { replace: true });
+    };
 
     const abrirModalExclusao = () => {
         setModalExclusaoAberto(true);
@@ -23,10 +57,8 @@ const FaccaoDetalhes = () => {
 
     const handleConfirmarExclusao = async () => {
         if (!faccao) return;
-
         try {
             await excluirFaccao(faccao.id);
-
             setModalExclusaoAberto(false);
             setModalConfirmacaoAberto(true);
         } catch (error) {
@@ -35,37 +67,22 @@ const FaccaoDetalhes = () => {
         }
     };
 
-    useEffect(() => {
-        const fetchFaccao = async () => {
-            try {
-                const userString = localStorage.getItem("user");
-                const usuarioLogado = JSON.parse(userString);
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <p className="text-[#4696AD] font-Outfit">Carregando detalhes...</p>
+            </div>
+        );
+    }
 
-                const data = await getFaccaoById(id);
-
-                if (data.fabrico_id !== usuarioLogado.fabrico_id) {
-                    navigate("/faccoes", {
-                        replace: true,
-                        state: {
-                            error: "Acesso negado. Esta facção não pertence à sua fábrica.",
-                        },
-                    });
-                    return;
-                }
-
-                setFaccao(data);
-            } catch (error) {
-                console.error("Erro ao buscar facção", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchFaccao();
-    }, [id, navigate]);
-
-    if (loading) return <p>Carregando...</p>;
-    if (!faccao) return <p>Facção não encontrada</p>;
+    if (!faccao && !modalAtencaoAberto) {
+        return (
+            <div className="p-6">
+                <p>Facção não encontrada.</p>
+                <button onClick={() => navigate("/faccoes")}>Voltar</button>
+            </div>
+        );
+    }
 
     return (
         <div className="p-6 pt-0 w-full">
@@ -186,6 +203,7 @@ const FaccaoDetalhes = () => {
                     </div>
                 </div>
             </div>
+
             <ModalExclusao
                 isOpen={modalExclusaoAberto}
                 onClose={() => setModalExclusaoAberto(false)}
@@ -196,14 +214,15 @@ const FaccaoDetalhes = () => {
 
             <ModalConfirmacao
                 isOpen={modalConfirmacaoAberto}
-                onClose={() => {
-                    setModalConfirmacaoAberto(false);
-                    navigate("/faccoes", {
-                        replace: true,
-                        state: { success: "Facção excluída com sucesso." },
-                    });
-                }}
-                type="excluída"
+                onClose={() => navigate("/faccoes", { replace: true })}
+                type="excluído"
+            />
+
+            <ModalAtencao
+                isOpen={modalAtencaoAberto}
+                onConfirm={handleAcessoNegadoConfirm}
+                titulo="Atenção!"
+                mensagem="Esta facção não pertence ou não existe no seu fabrico. Você será redirecionado para a lista de facções."
             />
         </div>
     );
