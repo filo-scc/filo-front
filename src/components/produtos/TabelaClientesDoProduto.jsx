@@ -37,14 +37,11 @@ function IconeEditar() {
 function IconeSalvar() {
     return (
         <div className="w-[24px] h-[24px] flex items-center justify-center cursor-pointer">
-            <svg
-                className="w-[18px] h-[18px] text-[#4696AD]"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-            >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12l5 5L19 8" />
-            </svg>
+            <img
+                src="/check_azul.png"
+                alt="Salvar"
+                className="w-full h-full object-contain transition-transform hover:scale-110"
+            />
         </div>
     );
 }
@@ -56,6 +53,11 @@ const maskMoeda = (valor) => {
     value = value.replace(/(\d)(\d{3})(\d{3}),/g, "$1.$2.$3,");
     value = value.replace(/(\d)(\d{3}),/g, "$1.$2,");
     return `R$ ${value}`;
+};
+
+const normalizarId = (valor) => {
+    if (valor === null || valor === undefined) return "";
+    return String(valor);
 };
 
 export default function TabelaClientesDoProduto({
@@ -77,16 +79,26 @@ export default function TabelaClientesDoProduto({
         }).format(Number(valor || 0));
     };
 
-    const getClienteId = (item) => item?.cliente?.id || item?.cliente_id;
+    const getClienteId = (item) =>
+        normalizarId(
+            item?.cliente?.id ||
+                item?.cliente?.cliente_id ||
+                item?.cliente?.clienteId ||
+                item?.cliente?.id_cliente ||
+                item?.cliente_id ||
+                item?.clienteId ||
+                item?.id_cliente,
+        );
 
-    const handleIniciarEdicao = (item) => {
-        const clienteId = getClienteId(item);
-        setEditingId(clienteId);
+    const getLinhaId = (item, idx) => getClienteId(item) || `linha-${idx}`;
+
+    const handleIniciarEdicao = (item, linhaId) => {
+        setEditingId(linhaId);
         setEditNome(item.nome_para_cliente || "");
         setEditPreco(maskMoeda(String(Number(item.preco_padrao || 0) * 100)));
     };
 
-    const handleSalvarClick = async (item) => {
+    const handleSalvarClick = async (item, linhaId) => {
         if (!onSalvarEdicao) return;
 
         const clienteId = getClienteId(item);
@@ -95,6 +107,7 @@ export default function TabelaClientesDoProduto({
         try {
             await onSalvarEdicao({
                 cliente_id: clienteId,
+                linha_id: linhaId,
                 nome_para_cliente: editNome,
                 preco_padrao: Number(editPreco.replace(/\D/g, "")) / 100,
             });
@@ -120,7 +133,7 @@ export default function TabelaClientesDoProduto({
                 type="text"
                 value={editNome}
                 onChange={(event) => setEditNome(event.target.value)}
-                className="w-full text-center bg-transparent outline-none font-Outfit text-[#707070]"
+                className="w-full text-center bg-transparent border-none outline-none focus:ring-0 font-Outfit"
                 autoFocus
             />
         );
@@ -134,7 +147,7 @@ export default function TabelaClientesDoProduto({
                 type="text"
                 value={editPreco}
                 onChange={(event) => setEditPreco(maskMoeda(event.target.value))}
-                className="w-full text-center bg-transparent outline-none font-Outfit text-[#707070]"
+                className="w-full text-center bg-transparent border-none outline-none focus:ring-0 font-Outfit"
             />
         );
     };
@@ -193,12 +206,12 @@ export default function TabelaClientesDoProduto({
 
                                 <div className="col-span-3 border-l" style={borderStyle}>
                                     {linhas.map((item, idx) => {
-                                        const clienteId = getClienteId(item);
-                                        const isEditing = editingId === clienteId;
+                                        const linhaId = getLinhaId(item, idx);
+                                        const isEditing = editingId === linhaId;
 
                                         return (
                                             <div
-                                                key={clienteId || idx}
+                                                key={linhaId}
                                                 className={`grid grid-cols-3 min-h-[64px] items-stretch ${
                                                     idx % 2 === 0 ? "bg-white" : "bg-[#F4F4F4]"
                                                 } ${idx !== ultimo ? "border-b" : ""}`}
@@ -229,18 +242,18 @@ export default function TabelaClientesDoProduto({
                         {mostraAcoes && (
                             <div className="w-[56px] shrink-0">
                                 {linhas.map((item, idx) => {
-                                    const clienteId = getClienteId(item);
-                                    const isEditing = editingId === clienteId;
+                                    const linhaId = getLinhaId(item, idx);
+                                    const isEditing = editingId === linhaId;
 
                                     return (
                                         <div
-                                            key={clienteId || idx}
+                                            key={linhaId}
                                             className="min-h-[64px] flex items-center justify-center gap-2"
                                         >
                                             {isEditing ? (
                                                 <button
                                                     type="button"
-                                                    onClick={() => handleSalvarClick(item)}
+                                                    onClick={() => handleSalvarClick(item, linhaId)}
                                                     disabled={salvando}
                                                     aria-label="Salvar referência"
                                                 >
@@ -250,7 +263,9 @@ export default function TabelaClientesDoProduto({
                                                 podeEditar && (
                                                     <button
                                                         type="button"
-                                                        onClick={() => handleIniciarEdicao(item)}
+                                                        onClick={() =>
+                                                            handleIniciarEdicao(item, linhaId)
+                                                        }
                                                         aria-label="Editar referência"
                                                     >
                                                         <IconeEditar />

@@ -153,6 +153,33 @@ function getGradeNome(produto) {
     );
 }
 
+function normalizarId(valor) {
+    if (valor === null || valor === undefined) return "";
+    return String(valor);
+}
+
+function normalizarTexto(valor) {
+    return String(valor || "")
+        .trim()
+        .toLowerCase();
+}
+
+function getClienteAssociadoId(item) {
+    return normalizarId(
+        item?.cliente?.id ||
+            item?.cliente?.cliente_id ||
+            item?.cliente?.clienteId ||
+            item?.cliente?.id_cliente ||
+            item?.cliente_id ||
+            item?.clienteId ||
+            item?.id_cliente,
+    );
+}
+
+function getClienteAssociadoNome(item) {
+    return normalizarTexto(item?.cliente?.nome || item?.cliente_nome || item?.nome_cliente);
+}
+
 function ModalClientesDoProduto({
     isOpen,
     onClose,
@@ -168,9 +195,34 @@ function ModalClientesDoProduto({
     const [salvando, setSalvando] = useState(false);
 
     const idsAssociados = useMemo(
-        () => new Set((clientesAssociados || []).map((item) => item?.cliente?.id || item?.cliente_id)),
+        () =>
+            new Set(
+                (clientesAssociados || [])
+                    .map((item) => getClienteAssociadoId(item))
+                    .filter(Boolean),
+            ),
         [clientesAssociados],
     );
+
+    const nomesAssociados = useMemo(
+        () =>
+            new Set(
+                (clientesAssociados || [])
+                    .map((item) => getClienteAssociadoNome(item))
+                    .filter(Boolean),
+            ),
+        [clientesAssociados],
+    );
+
+    const clienteJaAssociado = (cliente) => {
+        const clienteId = normalizarId(cliente?.id);
+        const clienteNome = normalizarTexto(cliente?.nome);
+
+        return (
+            (clienteId && idsAssociados.has(clienteId)) ||
+            (clienteNome && nomesAssociados.has(clienteNome))
+        );
+    };
 
     useEffect(() => {
         if (!isOpen || !fabricoId) return;
@@ -182,7 +234,7 @@ function ModalClientesDoProduto({
                 setLoading(true);
                 const dados = await getClientes(fabricoId);
                 if (ignorar) return;
-                setClientes(Array.isArray(dados) ? dados.filter((cliente) => !idsAssociados.has(cliente.id)) : []);
+                setClientes(Array.isArray(dados) ? dados : []);
             } catch (error) {
                 console.error("Erro ao carregar clientes:", error);
                 setClientes([]);
@@ -196,12 +248,12 @@ function ModalClientesDoProduto({
         return () => {
             ignorar = true;
         };
-    }, [fabricoId, idsAssociados, isOpen]);
+    }, [fabricoId, isOpen]);
 
-    const clientesFiltrados = clientes.filter((cliente) =>
-        String(cliente.nome || "")
-            .toLowerCase()
-            .includes(busca.toLowerCase()),
+    const clientesDisponiveis = clientes.filter((cliente) => !clienteJaAssociado(cliente));
+
+    const clientesFiltrados = clientesDisponiveis.filter((cliente) =>
+        normalizarTexto(cliente.nome).includes(normalizarTexto(busca)),
     );
 
     const handleClose = () => {
@@ -211,20 +263,30 @@ function ModalClientesDoProduto({
     };
 
     const toggleSelecionado = (clienteId) => {
+        const idNormalizado = normalizarId(clienteId);
+
         setSelecionados((prev) =>
-            prev.includes(clienteId)
-                ? prev.filter((item) => item !== clienteId)
-                : [...prev, clienteId],
+            prev.includes(idNormalizado)
+                ? prev.filter((item) => item !== idNormalizado)
+                : [...prev, idNormalizado],
         );
     };
 
     const handleAdicionar = async () => {
-        if (!selecionados.length) return;
+        const selecionadosNaoAssociados = selecionados.filter((clienteId) => {
+            const cliente = clientes.find(
+                (item) => normalizarId(item.id) === normalizarId(clienteId),
+            );
+
+            return cliente && !clienteJaAssociado(cliente);
+        });
+
+        if (!selecionadosNaoAssociados.length) return;
 
         try {
             setSalvando(true);
             await Promise.all(
-                selecionados.map((clienteId) =>
+                selecionadosNaoAssociados.map((clienteId) =>
                     vincularProdutoAoCliente(clienteId, produtoId, {
                         nome_para_cliente: "-",
                         preco_padrao: 0,
@@ -274,12 +336,14 @@ function ModalClientesDoProduto({
                     ) : (
                         <div className="grid grid-cols-2 gap-3">
                             {clientesFiltrados.map((cliente) => {
-                                const selecionado = selecionados.includes(cliente.id);
+                                const clienteId = normalizarId(cliente.id);
+                                const selecionado = selecionados.includes(clienteId);
+
                                 return (
                                     <button
                                         key={cliente.id}
                                         type="button"
-                                        onClick={() => toggleSelecionado(cliente.id)}
+                                        onClick={() => toggleSelecionado(clienteId)}
                                         className={`h-[54px] rounded-[14px] px-4 text-left transition-colors ${
                                             selecionado
                                                 ? "bg-[#A9E2F2] text-[#4696AD]"
@@ -325,6 +389,7 @@ export default function ProdutoEditar() {
     const [erro, setErro] = useState("");
     const [produto, setProduto] = useState(null);
     const [clientesAssociados, setClientesAssociados] = useState([]);
+    const [referenciasEditadas, setReferenciasEditadas] = useState({});
     const [arquivoImagem, setArquivoImagem] = useState(null);
     const [imagemPreview, setImagemPreview] = useState("");
     const [openDropdown, setOpenDropdown] = useState(null);
@@ -391,6 +456,7 @@ export default function ProdutoEditar() {
 
                 setProduto(dadosProduto);
                 setClientesAssociados(Array.isArray(dadosClientes) ? dadosClientes : []);
+                setReferenciasEditadas({});
                 setGradesDisponiveis(gradesMapeadas);
                 setTecidosDisponiveis(tecidosMapeados);
                 setImagemPreview(dadosProduto.foto || "");
@@ -511,6 +577,20 @@ export default function ProdutoEditar() {
                 aviamentos: formData.aviamentos,
             });
 
+            const referenciasParaSalvar = Object.values(referenciasEditadas);
+
+            if (referenciasParaSalvar.length > 0) {
+                await Promise.all(
+                    referenciasParaSalvar.map((referencia) =>
+                        atualizarClientesProdutos(referencia.cliente_id, id, {
+                            nome_para_cliente: referencia.nome_para_cliente,
+                            preco_padrao: referencia.preco_padrao,
+                        }),
+                    ),
+                );
+                setReferenciasEditadas({});
+            }
+
             setModalConfirmacaoAberto(true);
         } catch (error) {
             console.error("Erro ao editar produto:", error);
@@ -521,15 +601,26 @@ export default function ProdutoEditar() {
     };
 
     const handleSalvarReferencia = async (dadosEditados) => {
-        await atualizarClientesProdutos(dadosEditados.cliente_id, id, {
-            nome_para_cliente: dadosEditados.nome_para_cliente,
-            preco_padrao: dadosEditados.preco_padrao,
-        });
+        const clienteId = normalizarId(dadosEditados.cliente_id);
+        const linhaId = normalizarId(dadosEditados.linha_id);
+        const chaveEdicao = clienteId || linhaId;
+
+        setReferenciasEditadas((prev) => ({
+            ...prev,
+            [chaveEdicao]: {
+                cliente_id: clienteId,
+                linha_id: linhaId,
+                nome_para_cliente: dadosEditados.nome_para_cliente,
+                preco_padrao: dadosEditados.preco_padrao,
+            },
+        }));
 
         setClientesAssociados((prev) =>
-            prev.map((item) => {
-                const clienteId = item?.cliente?.id || item?.cliente_id;
-                if (clienteId !== dadosEditados.cliente_id) return item;
+            prev.map((item, index) => {
+                const clienteId = getClienteAssociadoId(item);
+                const itemLinhaId = clienteId || `linha-${index}`;
+
+                if (itemLinhaId !== chaveEdicao) return item;
 
                 return {
                     ...item,
@@ -541,11 +632,16 @@ export default function ProdutoEditar() {
     };
 
     const handleRemoverReferencia = async (item) => {
-        const clienteId = item?.cliente?.id || item?.cliente_id;
+        const clienteId = getClienteAssociadoId(item);
         await desvincularProdutoDoCliente(clienteId, id);
+        setReferenciasEditadas((prev) => {
+            const next = { ...prev };
+            delete next[clienteId];
+            return next;
+        });
         setClientesAssociados((prev) =>
             prev.filter((clienteProduto) => {
-                const itemClienteId = clienteProduto?.cliente?.id || clienteProduto?.cliente_id;
+                const itemClienteId = getClienteAssociadoId(clienteProduto);
                 return itemClienteId !== clienteId;
             }),
         );
