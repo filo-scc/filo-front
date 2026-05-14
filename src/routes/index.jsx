@@ -12,8 +12,10 @@ import ClientesEditar from "../pages/ClientesEditar";
 import FaccaoDetalhes from "../pages/FaccaoDetalhes";
 import FaccaoEditar from "../pages/FaccaoEditar";
 import ProdutoDetalhes from "../pages/ProdutoDetalhes";
+import ProdutoEditar from "../pages/ProdutoEditar";
 import FaccaoCadastro from "../pages/FaccaoCadastro";
 import ProdutoCadastar from "../pages/ProdutoCadastrar";
+
 
 function AppRoutes() {
     return (
@@ -77,6 +79,17 @@ function AppRoutes() {
                         <PrivateRoute>
                             <Layout>
                                 <ProdutoCadastar />
+                            </Layout>
+                        </PrivateRoute>
+                    }
+                />
+
+                <Route
+                    path="/produtos/editar/:id"
+                    element={
+                        <PrivateRoute>
+                            <Layout>
+                                <ProdutoEditar />
                             </Layout>
                         </PrivateRoute>
                     }
