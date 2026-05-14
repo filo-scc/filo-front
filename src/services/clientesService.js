@@ -92,6 +92,22 @@ export const cadastrarCliente = async (data) => {
     }
 };
 
+export const atualizarClientesProdutos = async (clienteId, produtoId, data) => {
+    try {
+        const payload = {
+            nome_para_cliente: data?.nome_para_cliente,
+            preco_padrao: data?.preco_padrao,
+        };
+        const limpo = limparUndefined(payload);
+
+        const response = await api.put(`/clientes-produtos/${clienteId}/${produtoId}`, limpo);
+        return response.data;
+    } catch (error) {
+        console.error("Erro ao atualizar produtos do cliente:", error);
+        throw error;
+    }
+};
+
 export const atualizarCliente = async (id, data) => {
     try {
         const endereco = limparUndefined(data?.endereco);
