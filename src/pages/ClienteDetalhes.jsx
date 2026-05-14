@@ -166,8 +166,8 @@ export default function ClienteDetalhes() {
             <ModalAtencao
                 isOpen={modalAtencaoAberto}
                 onConfirm={handleAcessoNegadoConfirm}
-                titulo="Acesso Negado"
-                mensagem="Este cliente não pertence ao seu fabrico ou não foi encontrado. Você será redirecionado para a lista de clientes."
+                titulo="Atenção"
+                mensagem="Este cliente não pertence ou não existe no seu fabrico. Você será redirecionado para a lista de clientes."
             />
         </Layout>
     );
