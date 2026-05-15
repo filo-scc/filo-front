@@ -15,7 +15,6 @@ import {
     getTecidosByFabrico,
 } from "../services/produtosService";
 import {
-    atualizarClientesProdutos,
     desvincularProdutoDoCliente,
     getClientes,
     vincularProdutoAoCliente,
@@ -166,18 +165,60 @@ function normalizarTexto(valor) {
 
 function getClienteAssociadoId(item) {
     return normalizarId(
-        item?.cliente?.id ||
-            item?.cliente?.cliente_id ||
-            item?.cliente?.clienteId ||
-            item?.cliente?.id_cliente ||
-            item?.cliente_id ||
-            item?.clienteId ||
-            item?.id_cliente,
+        item?.cliente?.id ??
+            item?.cliente?.cliente_id ??
+            item?.cliente?.clienteId ??
+            item?.cliente?.clienteID ??
+            item?.cliente?.id_cliente ??
+            item?.cliente_id ??
+            item?.clienteId ??
+            item?.clienteID ??
+            item?.id_cliente ??
+            item?.fk_cliente_id ??
+            item?.cliente_produto?.cliente_id ??
+            item?.clienteProduto?.cliente_id,
     );
 }
 
 function getClienteAssociadoNome(item) {
-    return normalizarTexto(item?.cliente?.nome || item?.cliente_nome || item?.nome_cliente);
+    return normalizarTexto(
+        (typeof item?.cliente === "string" ? item.cliente : item?.cliente?.nome) ||
+            item?.cliente_nome ||
+            item?.nome_cliente,
+    );
+}
+
+function enriquecerClientesAssociados(clientesAssociados, clientesDoFabrico) {
+    const clientesPorNome = new Map(
+        (clientesDoFabrico || [])
+            .map((cliente) => [normalizarTexto(cliente?.nome), cliente])
+            .filter(([nome, cliente]) => nome && cliente?.id),
+    );
+
+    return (clientesAssociados || []).map((item) => {
+        if (getClienteAssociadoId(item)) return item;
+
+        const nomeAssociado = getClienteAssociadoNome(item);
+        const clienteEncontrado = clientesPorNome.get(nomeAssociado);
+
+        if (!clienteEncontrado?.id) return item;
+
+        return {
+            ...item,
+            cliente_id: clienteEncontrado.id,
+            cliente:
+                item?.cliente && typeof item.cliente === "object"
+                    ? { ...item.cliente, id: clienteEncontrado.id }
+                    : {
+                          id: clienteEncontrado.id,
+                          nome:
+                              item?.cliente?.nome ||
+                              item?.cliente_nome ||
+                              item?.nome_cliente ||
+                              clienteEncontrado.nome,
+                      },
+        };
+    });
 }
 
 function ModalClientesDoProduto({
@@ -389,7 +430,6 @@ export default function ProdutoEditar() {
     const [erro, setErro] = useState("");
     const [produto, setProduto] = useState(null);
     const [clientesAssociados, setClientesAssociados] = useState([]);
-    const [referenciasEditadas, setReferenciasEditadas] = useState({});
     const [arquivoImagem, setArquivoImagem] = useState(null);
     const [imagemPreview, setImagemPreview] = useState("");
     const [openDropdown, setOpenDropdown] = useState(null);
@@ -411,8 +451,17 @@ export default function ProdutoEditar() {
     });
 
     const carregarClientesDoProduto = async () => {
-        const dadosClientes = await getClientesDoProduto(id);
-        setClientesAssociados(Array.isArray(dadosClientes) ? dadosClientes : []);
+        const [dadosClientes, clientesDoFabrico] = await Promise.all([
+            getClientesDoProduto(id),
+            Number.isFinite(fabricoId) ? getClientes(fabricoId) : Promise.resolve([]),
+        ]);
+
+        setClientesAssociados(
+            enriquecerClientesAssociados(
+                Array.isArray(dadosClientes) ? dadosClientes : [],
+                Array.isArray(clientesDoFabrico) ? clientesDoFabrico : [],
+            ),
+        );
     };
 
     useEffect(() => {
@@ -422,12 +471,18 @@ export default function ProdutoEditar() {
             try {
                 setLoading(true);
 
-                const [dadosProduto, dadosClientes, resGrades, resTecidos] = await Promise.all([
-                    getProdutoById(id),
-                    getClientesDoProduto(id),
-                    Number.isFinite(fabricoId) ? getGradesByFabrico(fabricoId) : Promise.resolve([]),
-                    Number.isFinite(fabricoId) ? getTecidosByFabrico(fabricoId) : Promise.resolve([]),
-                ]);
+                const [dadosProduto, dadosClientes, clientesDoFabrico, resGrades, resTecidos] =
+                    await Promise.all([
+                        getProdutoById(id),
+                        getClientesDoProduto(id),
+                        Number.isFinite(fabricoId) ? getClientes(fabricoId) : Promise.resolve([]),
+                        Number.isFinite(fabricoId)
+                            ? getGradesByFabrico(fabricoId)
+                            : Promise.resolve([]),
+                        Number.isFinite(fabricoId)
+                            ? getTecidosByFabrico(fabricoId)
+                            : Promise.resolve([]),
+                    ]);
 
                 if (ignorar) return;
 
@@ -455,8 +510,12 @@ export default function ProdutoEditar() {
                 }));
 
                 setProduto(dadosProduto);
-                setClientesAssociados(Array.isArray(dadosClientes) ? dadosClientes : []);
-                setReferenciasEditadas({});
+                setClientesAssociados(
+                    enriquecerClientesAssociados(
+                        Array.isArray(dadosClientes) ? dadosClientes : [],
+                        Array.isArray(clientesDoFabrico) ? clientesDoFabrico : [],
+                    ),
+                );
                 setGradesDisponiveis(gradesMapeadas);
                 setTecidosDisponiveis(tecidosMapeados);
                 setImagemPreview(dadosProduto.foto || "");
@@ -577,20 +636,6 @@ export default function ProdutoEditar() {
                 aviamentos: formData.aviamentos,
             });
 
-            const referenciasParaSalvar = Object.values(referenciasEditadas);
-
-            if (referenciasParaSalvar.length > 0) {
-                await Promise.all(
-                    referenciasParaSalvar.map((referencia) =>
-                        atualizarClientesProdutos(referencia.cliente_id, id, {
-                            nome_para_cliente: referencia.nome_para_cliente,
-                            preco_padrao: referencia.preco_padrao,
-                        }),
-                    ),
-                );
-                setReferenciasEditadas({});
-            }
-
             setModalConfirmacaoAberto(true);
         } catch (error) {
             console.error("Erro ao editar produto:", error);
@@ -604,16 +649,6 @@ export default function ProdutoEditar() {
         const clienteId = normalizarId(dadosEditados.cliente_id);
         const linhaId = normalizarId(dadosEditados.linha_id);
         const chaveEdicao = clienteId || linhaId;
-
-        setReferenciasEditadas((prev) => ({
-            ...prev,
-            [chaveEdicao]: {
-                cliente_id: clienteId,
-                linha_id: linhaId,
-                nome_para_cliente: dadosEditados.nome_para_cliente,
-                preco_padrao: dadosEditados.preco_padrao,
-            },
-        }));
 
         setClientesAssociados((prev) =>
             prev.map((item, index) => {
@@ -634,11 +669,6 @@ export default function ProdutoEditar() {
     const handleRemoverReferencia = async (item) => {
         const clienteId = getClienteAssociadoId(item);
         await desvincularProdutoDoCliente(clienteId, id);
-        setReferenciasEditadas((prev) => {
-            const next = { ...prev };
-            delete next[clienteId];
-            return next;
-        });
         setClientesAssociados((prev) =>
             prev.filter((clienteProduto) => {
                 const itemClienteId = getClienteAssociadoId(clienteProduto);
@@ -803,6 +833,7 @@ export default function ProdutoEditar() {
                         <TabelaClientesDoProduto
                             clientes={clientesAssociados}
                             referenciaInterna={formData.referencia}
+                            produtoId={id}
                             onAbrirModal={() => setModalClientesAberto(true)}
                             onRemoverLinha={handleRemoverReferencia}
                             onSalvarEdicao={handleSalvarReferencia}

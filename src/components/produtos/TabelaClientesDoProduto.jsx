@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { atualizarClientesProdutos } from "../../services/clientesService";
 
 function IconeLixeira() {
     return (
@@ -63,6 +64,7 @@ const normalizarId = (valor) => {
 export default function TabelaClientesDoProduto({
     clientes,
     referenciaInterna,
+    produtoId,
     onAbrirModal,
     onRemoverLinha,
     onSalvarEdicao,
@@ -71,6 +73,7 @@ export default function TabelaClientesDoProduto({
     const [editNome, setEditNome] = useState("");
     const [editPreco, setEditPreco] = useState("");
     const [salvando, setSalvando] = useState(false);
+    const [erroEdicao, setErroEdicao] = useState("");
 
     const formatPreco = (valor) => {
         return new Intl.NumberFormat("pt-BR", {
@@ -79,39 +82,76 @@ export default function TabelaClientesDoProduto({
         }).format(Number(valor || 0));
     };
 
-    const getClienteId = (item) =>
-        normalizarId(
-            item?.cliente?.id ||
-                item?.cliente?.cliente_id ||
-                item?.cliente?.clienteId ||
-                item?.cliente?.id_cliente ||
-                item?.cliente_id ||
-                item?.clienteId ||
-                item?.id_cliente,
+    const getClienteId = (item) => {
+        if (typeof item?.cliente === "number") {
+            return normalizarId(item.cliente);
+        }
+
+        if (typeof item?.cliente === "string" && /^\d+$/.test(item.cliente)) {
+            return normalizarId(item.cliente);
+        }
+
+        return normalizarId(
+            item?.cliente?.id ??
+                item?.cliente?.cliente_id ??
+                item?.cliente?.clienteId ??
+                item?.cliente?.clienteID ??
+                item?.cliente?.id_cliente ??
+                item?.cliente_id ??
+                item?.clienteId ??
+                item?.clienteID ??
+                item?.id_cliente ??
+                item?.fk_cliente_id ??
+                item?.cliente_produto?.cliente_id ??
+                item?.clienteProduto?.cliente_id,
         );
+    };
+
+    const getClienteNome = (item) =>
+        (typeof item?.cliente === "string" ? item.cliente : item?.cliente?.nome) ||
+        item.cliente_nome ||
+        "-";
 
     const getLinhaId = (item, idx) => getClienteId(item) || `linha-${idx}`;
 
     const handleIniciarEdicao = (item, linhaId) => {
+        setErroEdicao("");
         setEditingId(linhaId);
         setEditNome(item.nome_para_cliente || "");
         setEditPreco(maskMoeda(String(Number(item.preco_padrao || 0) * 100)));
     };
 
     const handleSalvarClick = async (item, linhaId) => {
-        if (!onSalvarEdicao) return;
-
         const clienteId = getClienteId(item);
+        if (!clienteId || !produtoId) {
+            setErroEdicao("Não foi possível identificar o cliente ou o produto para salvar.");
+            return;
+        }
+
+        const dadosEditados = {
+            cliente_id: clienteId,
+            linha_id: linhaId,
+            nome_para_cliente: editNome,
+            preco_padrao: Number(editPreco.replace(/\D/g, "")) / 100,
+        };
+
         setSalvando(true);
+        setErroEdicao("");
 
         try {
-            await onSalvarEdicao({
-                cliente_id: clienteId,
-                linha_id: linhaId,
-                nome_para_cliente: editNome,
-                preco_padrao: Number(editPreco.replace(/\D/g, "")) / 100,
+            await atualizarClientesProdutos(clienteId, produtoId, {
+                nome_para_cliente: dadosEditados.nome_para_cliente,
+                preco_padrao: dadosEditados.preco_padrao,
             });
+
+            if (onSalvarEdicao) {
+                onSalvarEdicao(dadosEditados);
+            }
+
             setEditingId(null);
+        } catch (error) {
+            console.error("Erro ao salvar referência do cliente:", error);
+            setErroEdicao("Erro ao salvar referência do cliente.");
         } finally {
             setSalvando(false);
         }
@@ -157,6 +197,7 @@ export default function TabelaClientesDoProduto({
             <h3 className="text-[20px] font-Outfit font-light text-[#404040] mb-4">
                 Referências associadas a clientes
             </h3>
+            {erroEdicao && <p className="mb-3 text-sm text-[#D75757]">{erroEdicao}</p>}
 
             <div className="flex flex-col w-full">
                 <div className="flex flex-row items-stretch gap-4 w-full">
@@ -218,7 +259,7 @@ export default function TabelaClientesDoProduto({
                                                 style={idx !== ultimo ? borderStyle : undefined}
                                             >
                                                 <div className="font-light flex items-center justify-center text-center h-full px-4">
-                                                    {item.cliente?.nome || item.cliente_nome || "-"}
+                                                    {getClienteNome(item)}
                                                 </div>
                                                 <div
                                                     className="font-light border-l flex items-center justify-center text-center h-full px-4"
