@@ -15,6 +15,7 @@ import ProdutoDetalhes from "../pages/ProdutoDetalhes";
 import ProdutoEditar from "../pages/ProdutoEditar";
 import FaccaoCadastro from "../pages/FaccaoCadastro";
 import ProdutoCadastar from "../pages/ProdutoCadastrar";
+import PedidosCadastar from "../pages/PedidosCadastrar";
 
 
 function AppRoutes() {
@@ -148,8 +149,7 @@ function AppRoutes() {
                         </PrivateRoute>
                     }
                 />
-
-                {/* Telas provisórias */}
+                
                 <Route
                     path="/pedidos"
                     element={
@@ -161,7 +161,20 @@ function AppRoutes() {
                             </Layout>
                         </PrivateRoute>
                     }
-                />
+                />   
+
+                <Route
+                    path="/pedidos/cadastrar"
+                    element={
+                        <PrivateRoute>
+                            <Layout>
+                                <PedidosCadastar />
+                            </Layout>
+                        </PrivateRoute>
+                    }
+                />   
+
+                {/* Telas provisórias */}
 
                 <Route
                     path="/produtos"
