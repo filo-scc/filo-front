@@ -26,7 +26,9 @@ const aviamentosDisponiveis = ["Viés", "Bojo", "Elástico", "Argola"];
 
 function FieldLabel({ children, className = "" }) {
     return (
-        <label className={`block text-[20px] font-Outfit font-light text-[#404040] mb-3 ${className}`}>
+        <label
+            className={`block text-[20px] font-Outfit font-light text-[#404040] mb-3 ${className}`}
+        >
             {children}
         </label>
     );
@@ -734,7 +736,9 @@ export default function ProdutoEditar() {
                                         className="w-full h-full object-cover"
                                     />
                                 ) : (
-                                    <span className="text-[54px] font-extralight text-[#9B9B9B]">+</span>
+                                    <span className="text-[54px] font-extralight text-[#9B9B9B]">
+                                        +
+                                    </span>
                                 )}
                             </button>
                         </div>
@@ -802,11 +806,15 @@ export default function ProdutoEditar() {
                                         <DropdownField
                                             value={formData.tecido}
                                             placeholder="Tecido"
-                                            options={tecidosDisponiveis.map((tecido) => tecido.nome)}
+                                            options={tecidosDisponiveis.map(
+                                                (tecido) => tecido.nome,
+                                            )}
                                             isOpen={openDropdown === "tecido"}
                                             onToggle={() => toggleDropdown("tecido")}
                                             onSelect={handleTecidoSelect}
-                                            isSelectedOption={(option) => formData.tecido === option}
+                                            isSelectedOption={(option) =>
+                                                formData.tecido === option
+                                            }
                                         />
                                     </div>
 
