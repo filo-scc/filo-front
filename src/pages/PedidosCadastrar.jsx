@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import TabelaFichaTecnica from "../components/pedidos/TabelaReferenciaFichaTecnica";
-import { getClientes, getProdutosDoCliente } from "../services/clientesService";
+import {
+    getClientes,
+    getProdutosDoCliente,
+    getProdutosPorFabrico,
+} from "../services/clientesService";
 import { getFaccoesByFabrico } from "../services/faccaoService";
 
 const sectionTitleClass = "text-[20px] font-light text-[#404040] mb-4 font-['Outfit',_sans-serif]";
@@ -118,7 +122,7 @@ export default function PedidosCadastrar() {
     const [openDropdown, setOpenDropdown] = useState(null);
     const [clientes, setClientes] = useState([]);
     const [faccoes, setFaccoes] = useState([]);
-    const [referenciasCliente, setReferenciasCliente] = useState([]);
+    const [referenciasDisponiveis, setReferenciasDisponiveis] = useState([]);
     const [carregandoClientes, setCarregandoClientes] = useState(true);
     const [carregandoReferencias, setCarregandoReferencias] = useState(false);
 
@@ -173,8 +177,8 @@ export default function PedidosCadastrar() {
     }, [fabricoId]);
 
     useEffect(() => {
-        if (!clienteSelecionado?.id) {
-            setReferenciasCliente([]);
+        if (!clienteSelecionado?.id || !fabricoId) {
+            setReferenciasDisponiveis([]);
             setReferenciaSelecionada(null);
             return;
         }
@@ -184,23 +188,50 @@ export default function PedidosCadastrar() {
         const carregarReferencias = async () => {
             setCarregandoReferencias(true);
             try {
-                const produtos = await getProdutosDoCliente(clienteSelecionado.id);
+                const [todosProdutos, produtosDoCliente] = await Promise.all([
+                    getProdutosPorFabrico(fabricoId),
+                    getProdutosDoCliente(clienteSelecionado.id),
+                ]);
+
                 if (ignorar) return;
 
-                const idsJaAdicionados = new Set(
-                    fichas
-                        .filter((f) => String(f.clienteId) === String(clienteSelecionado.id))
-                        .map((f) => String(f.produtoId)),
+                const mapaAssociados = new Map(
+                    (produtosDoCliente || []).map((item) => [String(getProdutoId(item)), item]),
                 );
 
-                setReferenciasCliente(
-                    (produtos || []).filter((item) => !idsJaAdicionados.has(String(getProdutoId(item)))),
-                );
+                const idsJaAdicionados = new Set(fichas.map((f) => String(f.produtoId)));
+
+                const referenciasOrdenadas = (todosProdutos || [])
+                    .filter((produto) => !idsJaAdicionados.has(String(produto.id)))
+                    .map((produto) => {
+                        const associado = mapaAssociados.get(String(produto.id));
+
+                        if (associado) {
+                            return { ...associado, associadoAoCliente: true };
+                        }
+
+                        return {
+                            produto,
+                            produto_id: produto.id,
+                            associadoAoCliente: false,
+                        };
+                    })
+                    .sort((a, b) => {
+                        if (a.associadoAoCliente !== b.associadoAoCliente) {
+                            return a.associadoAoCliente ? -1 : 1;
+                        }
+
+                        return getReferenciaInterna(a).localeCompare(getReferenciaInterna(b), "pt-BR", {
+                            sensitivity: "base",
+                        });
+                    });
+
+                setReferenciasDisponiveis(referenciasOrdenadas);
             } catch (error) {
-                console.error("Erro ao carregar referências do cliente:", error);
+                console.error("Erro ao carregar referências:", error);
                 if (!ignorar) {
-                    setReferenciasCliente([]);
-                    setErro("Não foi possível carregar as referências do cliente.");
+                    setReferenciasDisponiveis([]);
+                    setErro("Não foi possível carregar as referências.");
                 }
             } finally {
                 if (!ignorar) setCarregandoReferencias(false);
@@ -212,7 +243,7 @@ export default function PedidosCadastrar() {
         return () => {
             ignorar = true;
         };
-    }, [clienteSelecionado, fichas]);
+    }, [clienteSelecionado, fabricoId, fichas]);
 
     const opcoesClientes = clientes.map((cliente) => ({
         value: String(cliente.id),
@@ -220,13 +251,12 @@ export default function PedidosCadastrar() {
         raw: cliente,
     }));
 
-    const opcoesReferencias = referenciasCliente.map((item) => {
+    const opcoesReferencias = referenciasDisponiveis.map((item) => {
         const produtoId = getProdutoId(item);
-        const label = getReferenciaCliente(item) || getReferenciaInterna(item);
 
         return {
             value: String(produtoId),
-            label,
+            label: getReferenciaInterna(item),
             raw: item,
         };
     });
