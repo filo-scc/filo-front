@@ -33,7 +33,9 @@ export default function TabelaFichaTecnica({
 
     return (
         <section className="w-full">
-            <h3 className="text-[20px] font-Outfit font-light text-[#404040] mb-4">Fichas técnicas</h3>
+            <h3 className="text-[20px] font-Outfit font-light text-[#404040] mb-4">
+                Fichas técnicas
+            </h3>
 
             <div className="flex flex-col w-full">
                 <div className="flex flex-row items-stretch w-full">

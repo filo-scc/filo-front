@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import TabelaFichaTecnica from "../components/pedidos/TabelaReferenciaFichaTecnica";
+import ModalFichaTecnica from "../components/pedidos/ModalFichaTecnica";
 import {
     getClientes,
     getProdutosDoCliente,
@@ -108,8 +109,6 @@ const getProdutoId = (item) =>
 const getReferenciaInterna = (item) =>
     item?.produto?.nome ?? item?.produto?.referencia ?? item?.nome ?? "-";
 
-const getReferenciaCliente = (item) => item?.nome_para_cliente ?? item?.referencia_cliente ?? "-";
-
 export default function PedidosCadastrar() {
     const navigate = useNavigate();
     const usuarioLogado = JSON.parse(localStorage.getItem("user") || "{}");
@@ -128,6 +127,8 @@ export default function PedidosCadastrar() {
 
     const [clienteSelecionado, setClienteSelecionado] = useState(null);
     const [referenciaSelecionada, setReferenciaSelecionada] = useState(null);
+    const [modalFichaAberto, setModalFichaAberto] = useState(false);
+    const [referenciaParaModal, setReferenciaParaModal] = useState(null);
     const [fichas, setFichas] = useState([]);
     const [erro, setErro] = useState("");
 
@@ -221,9 +222,13 @@ export default function PedidosCadastrar() {
                             return a.associadoAoCliente ? -1 : 1;
                         }
 
-                        return getReferenciaInterna(a).localeCompare(getReferenciaInterna(b), "pt-BR", {
-                            sensitivity: "base",
-                        });
+                        return getReferenciaInterna(a).localeCompare(
+                            getReferenciaInterna(b),
+                            "pt-BR",
+                            {
+                                sensitivity: "base",
+                            },
+                        );
                     });
 
                 setReferenciasDisponiveis(referenciasOrdenadas);
@@ -278,26 +283,16 @@ export default function PedidosCadastrar() {
             return;
         }
 
-        const item = opcao.raw;
-        const produtoId = getProdutoId(item);
-
-        const novaFicha = {
-            id: `${clienteSelecionado.id}-${produtoId}-${Date.now()}`,
-            clienteId: clienteSelecionado.id,
-            produtoId,
-            referenciaInterna: getReferenciaInterna(item),
-            referenciaCliente: getReferenciaCliente(item),
-            cores: item?.produto?.cores ?? item?.cores ?? "-",
-            foto: item?.produto?.foto ?? item?.foto ?? "",
-            quantidade: "",
-            faccaoId: "",
-            faccaoNome: "",
-        };
-
-        setFichas((prev) => [...prev, novaFicha]);
+        setReferenciaParaModal(opcao.raw);
+        setModalFichaAberto(true);
         setReferenciaSelecionada(null);
         setOpenDropdown(null);
         setErro("");
+    };
+
+    const fecharModalFicha = () => {
+        setModalFichaAberto(false);
+        setReferenciaParaModal(null);
     };
 
     const handleChangeQuantidade = (fichaId, valor) => {
@@ -351,7 +346,9 @@ export default function PedidosCadastrar() {
                             Novo Pedido
                         </h1>
                     </div>
-                    <p className="mt-2 ml-11 text-[18px] font-light text-[#898C8F]">Nº {numeroPedido}</p>
+                    <p className="mt-2 ml-11 text-[18px] font-light text-[#898C8F]">
+                        Nº {numeroPedido}
+                    </p>
                 </div>
 
                 <section className="mb-10">
@@ -361,7 +358,9 @@ export default function PedidosCadastrar() {
                             <DropdownField
                                 value={clienteSelecionado?.nome || ""}
                                 placeholder={
-                                    carregandoClientes ? "Carregando clientes..." : "Selecionar cliente"
+                                    carregandoClientes
+                                        ? "Carregando clientes..."
+                                        : "Selecionar cliente"
                                 }
                                 options={opcoesClientes}
                                 isOpen={openDropdown === "cliente"}
@@ -424,6 +423,12 @@ export default function PedidosCadastrar() {
 
                 {erro ? <p className="pt-4 text-sm text-[#D75757] text-right">{erro}</p> : null}
             </div>
+
+            <ModalFichaTecnica
+                isOpen={modalFichaAberto}
+                onClose={fecharModalFicha}
+                referencia={referenciaParaModal}
+            />
         </div>
     );
 }

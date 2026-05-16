@@ -17,7 +17,6 @@ import FaccaoCadastro from "../pages/FaccaoCadastro";
 import ProdutoCadastar from "../pages/ProdutoCadastrar";
 import PedidosCadastar from "../pages/PedidosCadastrar";
 
-
 function AppRoutes() {
     return (
         <BrowserRouter>
@@ -149,7 +148,7 @@ function AppRoutes() {
                         </PrivateRoute>
                     }
                 />
-                
+
                 <Route
                     path="/pedidos"
                     element={
@@ -161,7 +160,7 @@ function AppRoutes() {
                             </Layout>
                         </PrivateRoute>
                     }
-                />   
+                />
 
                 <Route
                     path="/pedidos/cadastrar"
@@ -172,7 +171,7 @@ function AppRoutes() {
                             </Layout>
                         </PrivateRoute>
                     }
-                />   
+                />
 
                 {/* Telas provisórias */}
 
