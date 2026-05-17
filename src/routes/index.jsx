@@ -12,8 +12,10 @@ import ClientesEditar from "../pages/ClientesEditar";
 import FaccaoDetalhes from "../pages/FaccaoDetalhes";
 import FaccaoEditar from "../pages/FaccaoEditar";
 import ProdutoDetalhes from "../pages/ProdutoDetalhes";
+import ProdutoEditar from "../pages/ProdutoEditar";
 import FaccaoCadastro from "../pages/FaccaoCadastro";
 import ProdutoCadastar from "../pages/ProdutoCadastrar";
+import PedidosCadastar from "../pages/PedidosCadastrar";
 
 function AppRoutes() {
     return (
@@ -83,6 +85,17 @@ function AppRoutes() {
                 />
 
                 <Route
+                    path="/produtos/editar/:id"
+                    element={
+                        <PrivateRoute>
+                            <Layout>
+                                <ProdutoEditar />
+                            </Layout>
+                        </PrivateRoute>
+                    }
+                />
+
+                <Route
                     path="/produtos/:id"
                     element={
                         <PrivateRoute>
@@ -136,7 +149,6 @@ function AppRoutes() {
                     }
                 />
 
-                {/* Telas provisórias */}
                 <Route
                     path="/pedidos"
                     element={
@@ -149,6 +161,19 @@ function AppRoutes() {
                         </PrivateRoute>
                     }
                 />
+
+                <Route
+                    path="/pedidos/cadastrar"
+                    element={
+                        <PrivateRoute>
+                            <Layout>
+                                <PedidosCadastar />
+                            </Layout>
+                        </PrivateRoute>
+                    }
+                />
+
+                {/* Telas provisórias */}
 
                 <Route
                     path="/produtos"
