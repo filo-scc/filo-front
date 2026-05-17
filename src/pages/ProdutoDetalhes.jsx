@@ -112,7 +112,7 @@ export default function ProdutoDetalhes() {
                                 Excluir produto
                             </button>
                             <button
-                                onClick={() => navigate("/editar-produto/" + id)}
+                                onClick={() => navigate("/produtos/editar/" + id)}
                                 className="w-[189px] h-[39px] rounded-[18.9px] bg-[#a9e2f2] text-[#4696ad] font-Outfit text-[16px] transition-colors hover:bg-[#A2DCED]"
                             >
                                 Editar produto
