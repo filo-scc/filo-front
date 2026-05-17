@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { excluirFaccao, getFaccoesByFabrico } from "../services/faccaoService";
+
 import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import MenuOpcoes from "../components/geral/MenuOpcoes";
+import FichaTecnicaModal from "../components/fichas-tecnicas/FichaTecnicaModal";
 
 const Faccoes = () => {
     const userString = localStorage.getItem("user");
@@ -11,19 +13,38 @@ const Faccoes = () => {
     const [faccoes, setFaccoes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [dropdownOpenId, setDropdownOpenId] = useState(null);
-    const navigate = useNavigate();
 
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
     const [faccaoSelecionada, setFaccaoSelecionada] = useState(null);
 
-    // Estado para o Modal de Confirmação de Exclusão
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
+
+    // Modal de teste da ficha técnica
+    const [modalFichaAberto, setModalFichaAberto] = useState(false);
+
+    const navigate = useNavigate();
 
     const fabricoId = userString ? JSON.parse(userString).fabrico_id : null;
 
+    /**
+     * Produto mockado apenas para testar o modal
+     * depois você substitui isso pelo fluxo real
+     */
+    const produtoTesteFicha = {
+        id: 1,
+        foto: "/camiseta-placeholder.png", // troque depois
+        referenciaInterna: "CSM-001",
+        tecido: "Algodão Premium",
+        gradeVersaoId: 1,
+        gradeLabel: "Camisa Social Masculina (1 ao 4)",
+
+        // só aparece se o fabrico for sob demanda
+        clienteNome: "Cliente Exemplo",
+        referenciaCliente: "SOCIAL-MASC-001",
+    };
+
     useEffect(() => {
         const fetchFaccoes = async () => {
-            // Se não tiver fabricoId, não faz a requisição
             if (!fabricoId) {
                 setLoading(false);
                 return;
@@ -31,6 +52,7 @@ const Faccoes = () => {
 
             try {
                 setLoading(true);
+
                 const data = await getFaccoesByFabrico(fabricoId);
                 setFaccoes(data);
             } catch (error) {
@@ -39,16 +61,20 @@ const Faccoes = () => {
                 setLoading(false);
             }
         };
+
         fetchFaccoes();
     }, [fabricoId]);
 
     useEffect(() => {
         const handleClickOutside = () => setDropdownOpenId(null);
+
         document.addEventListener("click", handleClickOutside);
-        return () => document.removeEventListener("click", handleClickOutside);
+
+        return () => {
+            document.removeEventListener("click", handleClickOutside);
+        };
     }, []);
 
-    // Funções de Ação do Menu
     const handleEdit = (id) => {
         navigate(`/faccoes/editar/${id}`);
     };
@@ -64,7 +90,8 @@ const Faccoes = () => {
         try {
             await excluirFaccao(faccaoSelecionada.id);
 
-            setFaccoes(faccoes.filter((c) => c.id !== faccaoSelecionada.id));
+            setFaccoes((prev) => prev.filter((c) => c.id !== faccaoSelecionada.id));
+
             setModalExclusaoAberto(false);
             setFaccaoSelecionada(null);
             setModalConfirmacaoAberto(true);
@@ -78,15 +105,19 @@ const Faccoes = () => {
         const numeros = String(telefone ?? "").replace(/\D/g, "");
 
         if (!numeros) return "-";
+
         if (numeros.length === 11) {
             return `(${numeros.slice(0, 2)}) ${numeros.slice(2, 3)} ${numeros.slice(3, 7)}-${numeros.slice(7)}`;
         }
+
         if (numeros.length === 10) {
             return `(${numeros.slice(0, 2)}) ${numeros.slice(2, 6)}-${numeros.slice(6)}`;
         }
+
         if (numeros.length === 9) {
             return `${numeros.slice(0, 5)}-${numeros.slice(5)}`;
         }
+
         if (numeros.length === 8) {
             return `${numeros.slice(0, 4)}-${numeros.slice(4)}`;
         }
@@ -113,30 +144,32 @@ const Faccoes = () => {
 
     return (
         <div className="p-6 pt-0 w-full">
-            {/* Card Branco Principal - 1157px cravados */}
+            {/* Card Branco Principal */}
             <div className="bg-white p-8 rounded-[24px] shadow-sm w-full mx-auto">
-                {/* CONTAINER DA TABELA - 1112px cravados */}
                 <div className="w-full">
-                    {/* CABEÇALHO CENTRALIZADO: Mudamos de w-full para w-[950px] e adicionamos mx-auto */}
+                    {/* Header */}
                     <div className="w-full flex items-center justify-between mb-8 pl-6 font-['Outfit',_sans-serif]">
-                        {/* ESQUERDA - Título */}
+                        {/* Título */}
                         <div className="flex items-center gap-3">
                             <img
                                 src="/maquina-costura-preta.png"
                                 alt="Ícone de máquina de costura"
                                 className="w-[30px] h-[30px]"
                             />
+
                             <h1 className="text-[30px] font-light text-gray-800">Facções</h1>
                         </div>
 
-                        {/* DIREITA - Ações */}
+                        {/* Ações */}
                         <div className="flex items-center gap-4">
+                            {/* Busca */}
                             <div className="relative">
                                 <input
                                     type="text"
                                     placeholder="Buscar"
                                     className="pl-4 pr-10 border border-[#D3D3D3] rounded-[16px] text-sm focus:outline-none w-[196px] h-[39px]"
                                 />
+
                                 <svg
                                     className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2"
                                     fill="none"
@@ -152,6 +185,15 @@ const Faccoes = () => {
                                 </svg>
                             </div>
 
+                            {/* TESTE DO MODAL */}
+                            <button
+                                onClick={() => setModalFichaAberto(true)}
+                                className="bg-[#C4F042] hover:bg-[#b4df35] text-[#404040] w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors"
+                            >
+                                Testar ficha técnica
+                            </button>
+
+                            {/* Cadastro de facção */}
                             <button
                                 onClick={() => navigate("/faccoes/novo")}
                                 className="bg-[#A9E2F2] hover:bg-[#8acbdc] text-white w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors"
@@ -166,7 +208,7 @@ const Faccoes = () => {
                         </div>
                     </div>
 
-                    {/* Container da Tabela - Adicionado pb-16 e overflow-visible para o menu não cortar */}
+                    {/* Tabela */}
                     <div className="w-full overflow-visible pb-16">
                         <div className="w-full border border-gray-200 rounded-xl bg-white">
                             <table className="w-full text-[16px] font-['Outfit',_sans-serif] font-light text-center">
@@ -175,9 +217,13 @@ const Faccoes = () => {
                                         <th className="px-6 font-light first:rounded-tl-xl">
                                             Facção
                                         </th>
+
                                         <th className="px-6 font-light">Possui pedido</th>
+
                                         <th className="px-6 font-light">Consultar endereço</th>
+
                                         <th className="px-6 font-light">Contato</th>
+
                                         <th className="px-6 font-light last:rounded-tr-xl">
                                             Opções
                                         </th>
@@ -199,27 +245,32 @@ const Faccoes = () => {
                                         </tr>
                                     ) : (
                                         faccoes.map((faccao, index) => {
-                                            // Definimos se a linha é par (branca) ou ímpar (cinza)
                                             const isPar = index % 2 === 0;
+
                                             const isMenuOpen = dropdownOpenId === faccao.id;
+
                                             const isLast = index === faccoes.length - 1;
 
                                             return (
                                                 <tr
                                                     key={faccao.id}
-                                                    // Aqui aplicamos a mesma lógica de hover de clientes
                                                     onClick={() =>
                                                         navigate(`/faccoes/${faccao.id}`)
                                                     }
                                                     className={`
                                                         h-[64px] transition-colors cursor-pointer border-b last:border-0
                                                         ${isMenuOpen ? "relative z-50" : ""}
-                                                        ${isPar ? "bg-white hover:bg-[#FBFBFB] hover:text-[#4696ad]" : "bg-[#F4F4F4] hover:bg-[#ededed] hover:text-[#4696ad]"}
+                                                        ${
+                                                            isPar
+                                                                ? "bg-white hover:bg-[#FBFBFB] hover:text-[#4696ad]"
+                                                                : "bg-[#F4F4F4] hover:bg-[#ededed] hover:text-[#4696ad]"
+                                                        }
                                                     `}
                                                 >
                                                     <td className="px-6 text-[14px]">
                                                         {faccao.nome}
                                                     </td>
+
                                                     <td className="px-6 text-[14px]">
                                                         <div className="flex justify-center">
                                                             <span className="bg-gray-200 text-[#404040] w-[109px] h-[19px] flex items-center justify-center rounded-[10px] text-[12px] font-light">
@@ -229,18 +280,21 @@ const Faccoes = () => {
                                                             </span>
                                                         </div>
                                                     </td>
+
                                                     <td className="px-6 text-[14px] hover:font-normal">
                                                         Endereço
                                                     </td>
+
                                                     <td className="px-6 text-[14px]">
                                                         {renderTelefonePadronizado(faccao.telefone)}
                                                     </td>
+
                                                     <td
-                                                        className={`px-6 ${isLast ? "rounded-br-xl" : ""}`}
+                                                        className={`px-6 ${
+                                                            isLast ? "rounded-br-xl" : ""
+                                                        }`}
                                                     >
-                                                        {/* stopPropagation impede que o clique no menu acione a navegação da linha inteira */}
                                                         <div onClick={(e) => e.stopPropagation()}>
-                                                            {/* Implementação do Menu Componentizado */}
                                                             <MenuOpcoes
                                                                 onEdit={() => handleEdit(faccao.id)}
                                                                 onDelete={() =>
@@ -259,6 +313,8 @@ const Faccoes = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Modal Exclusão */}
             <ModalExclusao
                 isOpen={modalExclusaoAberto}
                 onClose={() => setModalExclusaoAberto(false)}
@@ -267,10 +323,26 @@ const Faccoes = () => {
                 tipoItem="a facção"
             />
 
+            {/* Modal confirmação */}
             <ModalConfirmacao
                 isOpen={modalConfirmacaoAberto}
                 onClose={() => setModalConfirmacaoAberto(false)}
                 type="excluído"
+            />
+
+            {/* Modal de teste da ficha técnica */}
+            <FichaTecnicaModal
+                isOpen={modalFichaAberto}
+                onClose={() => setModalFichaAberto(false)}
+                fabricoId={fabricoId}
+                produto={produtoTesteFicha}
+                etapaAtualId={1}
+                onFichaCreated={() => {
+                    setModalFichaAberto(false);
+                }}
+                onRequestCreateColor={() => {
+                    console.log("Abrir modal de criar cor");
+                }}
             />
         </div>
     );
