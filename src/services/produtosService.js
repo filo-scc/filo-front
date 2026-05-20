@@ -34,3 +34,23 @@ export const getTecidosByFabrico = async (fabricoId) => {
     const response = await api.get(`/tecidos/fabrico/${fabricoId}`);
     return response.data;
 };
+
+export const getAviamentosByFabrico = async (fabricoId) => {
+    const response = await api.get(`/aviamentos/fabrico/${fabricoId}`);
+    return response.data;
+};
+
+export const vincularProdutoAviamento = async (data) => {
+    const response = await api.post("/produto-aviamento", data);
+    return response.data;
+};
+
+export const getAviamentosDoProduto = async (produtoId) => {
+    try {
+        const response = await api.get(`/produto-aviamento/produto/${produtoId}`);
+        return response.data;
+    } catch (error) {
+        console.error("Erro ao buscar aviamentos do produto:", error);
+        return [];
+    }
+};

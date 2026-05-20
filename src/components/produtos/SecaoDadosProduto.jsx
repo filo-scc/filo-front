@@ -10,7 +10,17 @@ const Valor = ({ children }) => (
     </p>
 );
 
-export default function SecaoDadosProduto({ produto }) {
+export default function SecaoDadosProduto({ produto, aviamentos = [] }) {
+    const nomesAviamentos =
+        aviamentos.length > 0
+            ? aviamentos
+                  .map((a) => a.aviamento?.nome)
+                  .filter(Boolean)
+                  .join(", ")
+            : null;
+
+    const nomeTecido = produto?.tecido?.nome;
+
     return (
         <section className="flex flex-col md:flex-row gap-10 pr-4 md:pr-[15%]">
             {/* Bloco da Imagem */}
@@ -54,15 +64,11 @@ export default function SecaoDadosProduto({ produto }) {
                         {/* Aviamentos agora pode crescer para baixo naturalmente */}
                         <div className="overflow-hidden">
                             <Label>Aviamentos</Label>
-                            <Valor>
-                                {Array.isArray(produto.aviamentos)
-                                    ? produto.aviamentos.join(", ")
-                                    : produto.aviamentos}
-                            </Valor>
+                            <Valor>{nomesAviamentos}</Valor>
                         </div>
                         <div className="overflow-hidden">
                             <Label>Tecido</Label>
-                            <Valor>{produto.tecido}</Valor>
+                            <Valor>{nomeTecido}</Valor>
                         </div>
                     </div>
                 </div>
