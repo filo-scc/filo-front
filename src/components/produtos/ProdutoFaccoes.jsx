@@ -1,35 +1,91 @@
-import React, { useEffect, useMemo, useState } from "react";
+/* eslint-disable react-hooks/set-state-in-effect */
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getFaccaoByProduto } from "../../services/produtoService";
 
-const ProdutoFaccoes = ({ isOpen, onClose, produtoId }) => {
+function normalizePreco(preco) {
+    if (preco === null || preco === undefined || preco === "") return null;
+    const parsed = Number(preco);
+    return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeFaccao(item) {
+    if (!item) return null;
+
+    if (item.faccao) {
+        return {
+            id: item.faccao.id,
+            nome: item.faccao.nome,
+            preco: normalizePreco(item.preco),
+            possuiPedido: Boolean(item.possuiPedido ?? item.faccao.possuiPedido ?? false),
+        };
+    }
+
+    return {
+        id: item.id,
+        nome: item.nome,
+        preco: normalizePreco(item.preco),
+        possuiPedido: Boolean(item.possuiPedido ?? false),
+    };
+}
+
+const ProdutoFaccoes = ({
+    isOpen,
+    onClose,
+    produtoId,
+    faccoes: faccoesProp = [],
+    selectedFaccaoIds = [],
+    onSelectFaccao,
+}) => {
     const [faccoes, setFaccoes] = useState([]);
     const [dropdownOpen, setDropdownOpen] = useState(false);
-
     const [ordenacao, setOrdenacao] = useState("nome");
+
+    const selectedIdsSet = useMemo(
+        () => new Set((selectedFaccaoIds || []).map((id) => String(id))),
+        [selectedFaccaoIds],
+    );
+
+    const filterSelected = useCallback(
+        (list = []) =>
+            list
+                .map(normalizeFaccao)
+                .filter(Boolean)
+                .filter((item) => !selectedIdsSet.has(String(item.id))),
+        [selectedIdsSet],
+    );
 
     useEffect(() => {
         if (!isOpen) return;
+
+        const fromProp = Array.isArray(faccoesProp) ? filterSelected(faccoesProp) : [];
+
+        if (Array.isArray(faccoesProp) && faccoesProp.length > 0) {
+            setFaccoes(fromProp);
+            return;
+        }
 
         const fetchData = async () => {
             try {
                 const response = await getFaccaoByProduto(produtoId);
 
-                const faccoesFormatadas = response.map((item) => ({
-                    id: item.faccao.id,
-                    nome: item.faccao.nome,
-                    preco: item.preco,
-                    possuiPedido: false,
-                }));
+                const rawList = Array.isArray(response)
+                    ? response
+                    : Array.isArray(response?.data)
+                      ? response.data
+                      : Array.isArray(response?.faccoes)
+                        ? response.faccoes
+                        : [];
 
-                setFaccoes(faccoesFormatadas);
+                setFaccoes(filterSelected(rawList));
             } catch (error) {
                 console.error("Erro ao buscar facções:", error);
+                setFaccoes([]);
             }
         };
 
         fetchData();
-    }, [isOpen, produtoId]);
+    }, [isOpen, produtoId, faccoesProp, filterSelected]);
 
     const faccoesOrdenadas = useMemo(() => {
         return [...faccoes].sort((a, b) => {
@@ -58,13 +114,10 @@ const ProdutoFaccoes = ({ isOpen, onClose, produtoId }) => {
         switch (ordenacao) {
             case "nome":
                 return "Nome (A-Z)";
-
             case "menor-preco":
                 return "Menor preço";
-
             case "maior-preco":
                 return "Maior preço";
-
             default:
                 return "Ordenar por";
         }
@@ -139,49 +192,41 @@ const ProdutoFaccoes = ({ isOpen, onClose, produtoId }) => {
                             </button>
 
                             <div
-                                className={`absolute top-14 right-0 w-[180px] bg-white border border-[#D9D9D9] rounded-[12px] overflow-hidden z-[999] shadow-md origin-top transition-all duration-300
-                                    ${
-                                        dropdownOpen
-                                            ? "opacity-100 scale-y-100 visible"
-                                            : "opacity-0 scale-y-95 invisible pointer-events-none"
-                                    }
-                                `}
+                                className={`absolute top-14 right-0 w-[180px] bg-white border border-[#D9D9D9] rounded-[12px] overflow-hidden z-[999] shadow-md origin-top transition-all duration-300 ${
+                                    dropdownOpen
+                                        ? "opacity-100 scale-y-100 visible"
+                                        : "opacity-0 scale-y-95 invisible pointer-events-none"
+                                }`}
                             >
                                 <div
                                     onClick={() => handleSelectOrder("nome")}
-                                    className={`flex items-center border-l-[3px] px-4 py-[14px] cursor-pointer font-Outfit text-[15px] transition-colors
-                                    ${
+                                    className={`flex items-center border-l-[3px] px-4 py-[14px] cursor-pointer font-Outfit text-[15px] transition-colors ${
                                         ordenacao === "nome"
                                             ? "border-[#C4F042] bg-white text-[#707070]"
                                             : "border-transparent bg-white text-[#707070] hover:bg-[#F5F5F5]"
-                                    }
-                                `}
+                                    }`}
                                 >
                                     <div>Nome (A-Z)</div>
                                 </div>
 
                                 <div
                                     onClick={() => handleSelectOrder("menor-preco")}
-                                    className={`flex items-center border-l-[3px] px-4 py-[14px] cursor-pointer font-Outfit text-[15px] transition-colors
-                                    ${
+                                    className={`flex items-center border-l-[3px] px-4 py-[14px] cursor-pointer font-Outfit text-[15px] transition-colors ${
                                         ordenacao === "menor-preco"
                                             ? "border-[#C4F042] bg-white text-[#707070]"
                                             : "border-transparent bg-white text-[#707070] hover:bg-[#F5F5F5]"
-                                    }
-                                `}
+                                    }`}
                                 >
                                     <div>Menor preço</div>
                                 </div>
 
                                 <div
                                     onClick={() => handleSelectOrder("maior-preco")}
-                                    className={`flex items-center border-l-[3px] px-4 py-[14px] cursor-pointer font-Outfit text-[15px] transition-colors
-                                    ${
+                                    className={`flex items-center border-l-[3px] px-4 py-[14px] cursor-pointer font-Outfit text-[15px] transition-colors ${
                                         ordenacao === "maior-preco"
                                             ? "border-[#C4F042] bg-white text-[#707070]"
                                             : "border-transparent bg-white text-[#707070] hover:bg-[#F5F5F5]"
-                                    }
-                                `}
+                                    }`}
                                 >
                                     <div>Maior preço</div>
                                 </div>
@@ -207,16 +252,25 @@ const ProdutoFaccoes = ({ isOpen, onClose, produtoId }) => {
                         </div>
 
                         {/* ROWS */}
-
-                        <div className="max-h-[360px] overflow-y-auto scrollbar-sutil">
+                        <div className="max-h-[360px] overflow-y-auto overflow-x-hidden scrollbar-sutil">
                             {faccoesOrdenadas.map((faccao, index) => (
                                 <div
                                     key={faccao.id}
+                                    onClick={() => {
+                                        onSelectFaccao?.(faccao);
+                                        onClose?.();
+                                    }}
                                     className={`
-                                            grid grid-cols-[1fr_1fr_1fr_12px] px-6 py-5 items-center
-                                            ${index % 2 === 0 ? "bg-white" : "bg-[#FAFAFA]"}
-                                            ${index !== faccoesOrdenadas.length - 1 ? "border-b border-[#FAFAFA]" : ""}
-                                        `}
+                                        cursor-pointer
+                                        grid grid-cols-3 px-6 py-5 items-center
+                                        hover:bg-[#EEF9FF] transition-colors
+                                        ${index % 2 === 0 ? "bg-white" : "bg-[#FAFAFA]"}
+                                        ${
+                                            index !== faccoesOrdenadas.length - 1
+                                                ? "border-b border-[#FAFAFA]"
+                                                : ""
+                                        }
+                                    `}
                                 >
                                     <div className="flex justify-center items-center text-center font-Outfit text-[16px] font-light text-[#404040] px-2">
                                         <span className="max-w-[180px] break-words">
@@ -235,8 +289,6 @@ const ProdutoFaccoes = ({ isOpen, onClose, produtoId }) => {
                                             {faccao.possuiPedido ? "Sim" : "Não"}
                                         </span>
                                     </div>
-
-                                    <div />
                                 </div>
                             ))}
                         </div>

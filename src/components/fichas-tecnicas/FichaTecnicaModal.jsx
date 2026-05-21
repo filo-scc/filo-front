@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable no-unused-vars */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -8,10 +8,7 @@ import { getCoresByFabricoId, createCor } from "../../services/corService";
 import { getFaccoesByFabrico } from "../../services/faccaoService";
 import { getGradesLiberadasByFabricoId } from "../../services/gradeService";
 import { atualizarProduto } from "../../services/produtosService";
-import {
-    createFichaTecnica,
-    // getFichaTecnicaById, // deixei disponível caso você queira buscar depois de salvar
-} from "../../services/fichaTecnicaService";
+import { createFichaTecnica } from "../../services/fichaTecnicaService";
 import {
     syncFichaTecnicaCores,
     saveFichaTecnicaItens,
@@ -19,151 +16,56 @@ import {
     updateFaccaoProdutoPrice,
 } from "../../services/fichaTecnicaItemService";
 
-/**
- * Modal de seleção de facções.
- *
- * - singleSelect = true  -> substitui uma facção específica
- * - singleSelect = false -> adiciona várias facções ao mesmo tempo
- */
-function FaccaoSelectionModal({
-    isOpen,
-    title = "Selecionar facções",
-    confirmLabel = "Adicionar",
-    faccoes = [],
-    initialSelectedIds = [],
-    singleSelect = false,
-    onClose,
-    onConfirm,
-}) {
-    const [search, setSearch] = useState("");
-    const [selectedIds, setSelectedIds] = useState(() => initialSelectedIds);
+import ProdutoFaccoes from "../produtos/ProdutoFaccoes";
 
-    const filteredFaccoes = useMemo(() => {
-        const term = search.trim().toLowerCase();
-        if (!term) return faccoes;
-        return faccoes.filter((item) => item?.nome?.toLowerCase().includes(term));
-    }, [faccoes, search]);
-
-    const toggle = (id) => {
-        if (singleSelect) {
-            setSelectedIds([id]);
-            return;
-        }
-
-        setSelectedIds((prev) =>
-            prev.includes(id) ? prev.filter((current) => current !== id) : [...prev, id],
-        );
-    };
-
-    if (!isOpen) return null;
-
+function FloatingInput({ label, value, readOnly, onChange, placeholder }) {
     return (
-        <div className="fixed inset-0 z-[1001] flex items-center justify-center bg-black/35 px-4 py-6 backdrop-blur-sm">
-            <div
-                className="w-full max-w-[720px] rounded-[24px] bg-white px-6 py-6 shadow-2xl"
-                onClick={(e) => e.stopPropagation()}
+        <div className="relative w-full">
+            <input
+                readOnly={readOnly}
+                value={value || ""}
+                onChange={onChange}
+                placeholder={placeholder || " "}
+                className="peer w-full h-[39px] rounded-[10px] border border-[#898C8F] bg-white px-4 text-[14px] outline-none transition !text-[#898C8F] placeholder:!text-[#898C8F] pointer-events-none [cursor:not-allowed_!important]"
+            />
+
+            <label
+                className={`
+                    pointer-events-none absolute left-3 z-10 bg-white px-1 font-light text-[#898C8F]
+                    transition-all duration-200
+                    ${value ? "-top-[8px] text-[11px]" : "top-1/2 -translate-y-1/2 text-[14px]"}
+                `}
             >
-                <div className="mb-5 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        {/* TODO: troque o asset abaixo pelo ícone correto da sua pasta /public */}
-                        <img
-                            src="/icons/faccao.png"
-                            alt="Facções"
-                            className="h-7 w-7 object-contain"
-                        />
-                        <h3 className="text-[22px] font-light text-[#404040]">{title}</h3>
-                    </div>
-
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="rounded-full p-2 text-[22px] leading-none text-[#8C8C8C] transition hover:bg-black/5 hover:text-black"
-                        aria-label="Fechar"
-                    >
-                        ×
-                    </button>
-                </div>
-
-                <div className="mb-4">
-                    <input
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Buscar facção..."
-                        className="w-full rounded-[14px] border border-[#D8D8D8] px-4 py-3 text-[14px] outline-none transition focus:border-[#8FD0E6]"
-                    />
-                </div>
-
-                <div className="max-h-[360px] overflow-y-auto pr-1">
-                    <div className="space-y-2">
-                        {filteredFaccoes.map((faccao) => {
-                            const checked = selectedIds.includes(faccao.id);
-                            return (
-                                <button
-                                    type="button"
-                                    key={faccao.id}
-                                    onClick={() => toggle(faccao.id)}
-                                    className={`flex w-full items-center justify-between rounded-[14px] border px-4 py-3 text-left transition ${checked ? "border-[#C4F042] bg-[#FAFFEE]" : "border-[#E8E8E8] bg-white hover:bg-[#FAFAFA]"}`}
-                                >
-                                    <div>
-                                        <div className="text-[15px] font-medium text-[#404040]">
-                                            {faccao.nome}
-                                        </div>
-                                        {faccao.telefone ? (
-                                            <div className="text-[12px] text-[#888]">
-                                                {faccao.telefone}
-                                            </div>
-                                        ) : null}
-                                    </div>
-
-                                    <div className="text-[18px] text-[#6D6D6D]">
-                                        {checked ? "✓" : "+"}
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                <div className="mt-5 flex justify-end gap-3">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="rounded-full border border-[#E5E5E5] px-5 py-3 text-[14px] text-[#555] transition hover:bg-[#FAFAFA]"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => onConfirm(selectedIds)}
-                        className="rounded-full bg-[#8FD0E6] px-5 py-3 text-[14px] font-medium text-white transition hover:opacity-90"
-                    >
-                        {confirmLabel}
-                    </button>
-                </div>
-            </div>
+                {label}
+            </label>
         </div>
     );
 }
 
-/**
- * Célula editável da matriz cor x tamanho.
- * Quando o valor é 0, a UI mostra "-" para ficar visualmente limpa.
- */
+const calcularMDC = (a, b) => {
+    a = Math.abs(Math.round(a));
+    b = Math.abs(Math.round(b));
+    return b === 0 ? a : calcularMDC(b, a % b);
+};
+
+const calcularProporcao = (totaisPorTamanho) => {
+    const valoresValidos = totaisPorTamanho.map(Number).filter((t) => t > 0);
+    if (valoresValidos.length === 0) return totaisPorTamanho.map(() => 0);
+    const divisor = valoresValidos.reduce((acc, val) => calcularMDC(acc, val));
+    return totaisPorTamanho.map((t) => (t > 0 ? Math.round(t / divisor) : 0));
+};
+
 function QuantityCell({ value, onCommit }) {
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState(value > 0 ? String(value) : "");
     const inputRef = useRef(null);
 
     useEffect(() => {
-        if (!editing) {
-            setDraft(value > 0 ? String(value) : "");
-        }
+        if (!editing) setDraft(value > 0 ? String(value) : "");
     }, [value, editing]);
 
     useEffect(() => {
-        if (editing && inputRef.current) {
-            inputRef.current.focus();
-        }
+        if (editing && inputRef.current) inputRef.current.focus();
     }, [editing]);
 
     const commit = useCallback(() => {
@@ -177,7 +79,9 @@ function QuantityCell({ value, onCommit }) {
             <button
                 type="button"
                 onClick={() => setEditing(true)}
-                className={`flex h-[42px] w-full items-center justify-center rounded-[10px] border border-transparent text-[14px] transition hover:border-[#D4EEF7] ${value > 0 ? "text-[#484848]" : "text-[#B3B3B3]"}`}
+                className={`flex h-[40px] w-full items-center justify-center rounded-[6px] border border-transparent text-[14px] transition ${
+                    value > 0 ? "text-[#898C8F]" : "text-[#D7D7D7]"
+                }`}
             >
                 {value > 0 ? value : "-"}
             </button>
@@ -197,7 +101,7 @@ function QuantityCell({ value, onCommit }) {
                 if (e.key === "Enter") commit();
                 if (e.key === "Escape") setEditing(false);
             }}
-            className="h-[42px] w-full rounded-[10px] border border-[#8FD0E6] text-center text-[14px] outline-none"
+            className="h-[40px] w-full bg-transparent text-center text-[14px] outline-none text-[#898C8F] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0"
         />
     );
 }
@@ -209,7 +113,7 @@ function normalizeGradeOptions(fabricoGrades = []) {
             if (!grade) return null;
 
             const activeVersion =
-                grade?.versoes?.find((versao) => versao?.ativo) || grade?.versoes?.[0] || null;
+                grade?.versoes?.find((v) => v?.ativo) || grade?.versoes?.[0] || null;
 
             const versionItems = activeVersion?.itens?.length
                 ? activeVersion.itens
@@ -226,40 +130,47 @@ function normalizeGradeOptions(fabricoGrades = []) {
 
             return {
                 gradeId: grade.id,
-                gradeNome: grade.nome,
-                gradeAtiva: grade.ativo,
                 gradeVersaoId: activeVersion?.id ?? null,
-                versao: activeVersion?.versao ?? null,
                 sizeItems,
-                label: `${grade.nome}${sizeItems.length ? ` (${sizeItems.map((item) => item.codigo).join(" - ")})` : ""}`,
+                label: `${grade.nome}${
+                    sizeItems.length ? ` (${sizeItems.map((item) => item.codigo).join(" - ")})` : ""
+                }`,
             };
         })
         .filter(Boolean);
 }
 
-function buildEmptyMatrix(selectedColorIds, sizeItems) {
-    const next = {};
-    selectedColorIds.forEach((corId) => {
-        next[corId] = {};
-        sizeItems.forEach((sizeItem) => {
-            next[corId][sizeItem.tamanhoId] = 0;
-        });
-    });
-    return next;
-}
-
 function syncMatrix(prevMatrix, selectedColorIds, sizeItems) {
     const next = {};
-
     selectedColorIds.forEach((corId) => {
         next[corId] = {};
         sizeItems.forEach((sizeItem) => {
             next[corId][sizeItem.tamanhoId] = prevMatrix?.[corId]?.[sizeItem.tamanhoId] ?? 0;
         });
     });
-
     return next;
 }
+
+const BORDER_DARK_05 = {
+    borderWidth: "0.5px",
+    borderStyle: "solid",
+    borderColor: "#7B7D80",
+};
+
+const BORDER_LIGHT_05 = {
+    borderWidth: "0.5px",
+    borderStyle: "solid",
+    borderColor: "#E0E0E0",
+};
+
+const BORDER_SHELL_05 = {
+    borderWidth: "0.5px",
+    borderStyle: "solid",
+    borderColor: "#D9D9D9",
+};
+
+const FACCAO_ROW_HEIGHT = 40;
+const FACCAO_HEADER_HEIGHT = 0;
 
 export default function FichaTecnicaModal({
     isOpen,
@@ -279,77 +190,83 @@ export default function FichaTecnicaModal({
     const [availableFaccoes, setAvailableFaccoes] = useState([]);
     const [gradeOptions, setGradeOptions] = useState([]);
 
-    const [selectedGradeVersionId, setSelectedGradeVersionId] = useState(
-        produto?.gradeVersaoId || produto?.grade_versao_id || null,
-    );
+    const [selectedGradeVersionId, setSelectedGradeVersionId] = useState(null);
     const [selectedColorIds, setSelectedColorIds] = useState([]);
     const [matrix, setMatrix] = useState({});
     const [faccaoRows, setFaccaoRows] = useState([]);
-    const [observacoes, setObservacoes] = useState("");
 
     const [colorDropdownOpen, setColorDropdownOpen] = useState(false);
+    const [gradeDropdownOpen, setGradeDropdownOpen] = useState(false);
     const [faccaoModalOpen, setFaccaoModalOpen] = useState(false);
-    const [replaceFaccaoIndex, setReplaceFaccaoIndex] = useState(null);
 
-    const colorDropdownRef = useRef(null);
+    const [hoveredFaccaoIndex, setHoveredFaccaoIndex] = useState(null);
+    const [faccaoScrollTop, setFaccaoScrollTop] = useState(0);
 
-    const producaoSobDemanda = Boolean(
-        fabricoInfo?.produz_sob_demanda ??
-        fabricoInfo?.sob_demanda ??
-        fabricoInfo?.producao_sob_demanda ??
-        fabricoInfo?.producaoSobDemanda,
-    );
+    const faccaoScrollRef = useRef(null);
 
-    const hasClienteReferencia = Boolean(
-        producaoSobDemanda && produto?.clienteNome && produto?.referenciaCliente,
-    );
+    const producaoSobDemanda = useMemo(() => {
+        return Boolean(fabricoInfo?.fabricacao_sob_demanda);
+    }, [fabricoInfo]);
 
-    const infoGridClass = hasClienteReferencia
-        ? "grid grid-cols-1 gap-4 md:grid-cols-2"
-        : "grid grid-cols-1 gap-4 md:grid-cols-3";
-
-    const currentGradeOption = useMemo(() => {
-        return (
-            gradeOptions.find((grade) => grade.gradeVersaoId === selectedGradeVersionId) ||
+    const currentGradeOption = useMemo(
+        () =>
+            gradeOptions.find((g) => g.gradeVersaoId === selectedGradeVersionId) ||
             gradeOptions[0] ||
-            null
-        );
-    }, [gradeOptions, selectedGradeVersionId]);
+            null,
+        [gradeOptions, selectedGradeVersionId],
+    );
 
     const currentSizeItems = currentGradeOption?.sizeItems || [];
-
     const effectiveGradeVersionId = currentGradeOption?.gradeVersaoId || null;
 
     const selectedColors = useMemo(
         () =>
-            selectedColorIds
-                .map((id) => availableColors.find((color) => color.id === id))
-                .filter(Boolean),
+            selectedColorIds.map((id) => availableColors.find((c) => c.id === id)).filter(Boolean),
         [availableColors, selectedColorIds],
     );
 
-    const totalsBySize = useMemo(() => {
-        return currentSizeItems.map((sizeItem) =>
-            selectedColorIds.reduce(
-                (sum, corId) => sum + Number(matrix?.[corId]?.[sizeItem.tamanhoId] || 0),
-                0,
-            ),
-        );
-    }, [currentSizeItems, selectedColorIds, matrix]);
+    const selectedFaccaoIds = useMemo(
+        () => faccaoRows.map((row) => row.faccaoId).filter(Boolean),
+        [faccaoRows],
+    );
 
-    /**
-     * Carrega os dados externos necessários para montar o modal.
-     * Não usamos storage: ao fechar, o estado fica com o ciclo natural do React.
-     */
+    const totalsBySize = useMemo(
+        () =>
+            currentSizeItems.map((size) =>
+                selectedColorIds.reduce(
+                    (sum, corId) => sum + Number(matrix?.[corId]?.[size.tamanhoId] || 0),
+                    0,
+                ),
+            ),
+        [currentSizeItems, selectedColorIds, matrix],
+    );
+
+    const proporcoes = useMemo(() => calcularProporcao(totalsBySize), [totalsBySize]);
+
+    // Limpa integralmente todos os estados de digitação
+    const resetStates = useCallback(() => {
+        setSelectedColorIds([]);
+        setMatrix({});
+        setFaccaoRows([]);
+        setError("");
+        setColorDropdownOpen(false);
+        setGradeDropdownOpen(false);
+        setFaccaoModalOpen(false);
+        setHoveredFaccaoIndex(null);
+        setFaccaoScrollTop(0);
+    }, []);
+
+    const handleForceClose = useCallback(() => {
+        resetStates();
+        onClose?.();
+    }, [onClose, resetStates]);
+
     useEffect(() => {
         if (!isOpen || !fabricoId || !produto?.id) return;
-
         let alive = true;
 
         const bootstrap = async () => {
             setLoading(true);
-            setError("");
-
             try {
                 const [fabricoResponse, colorsResponse, faccoesResponse, gradesResponse] =
                     await Promise.all([
@@ -364,6 +281,7 @@ export default function FichaTecnicaModal({
                 setFabricoInfo(fabricoResponse);
                 setAvailableColors(Array.isArray(colorsResponse) ? colorsResponse : []);
                 setAvailableFaccoes(Array.isArray(faccoesResponse) ? faccoesResponse : []);
+
                 const normalizedGrades = normalizeGradeOptions(
                     Array.isArray(gradesResponse) ? gradesResponse : [],
                 );
@@ -374,163 +292,74 @@ export default function FichaTecnicaModal({
                     produto?.grade_versao_id ||
                     normalizedGrades[0]?.gradeVersaoId ||
                     null;
-                setSelectedGradeVersionId(fallbackGrade);
 
-                // Se não houver cores ainda, deixamos a matriz vazia.
-                setMatrix((prev) =>
-                    currentSizeItems.length
-                        ? syncMatrix(prev, selectedColorIds, currentSizeItems)
-                        : prev,
-                );
+                setSelectedGradeVersionId(fallbackGrade);
             } catch (err) {
-                if (!alive) return;
-                setError(err?.message || "Falha ao carregar os dados da ficha técnica.");
+                if (alive) setError(err?.message || "Falha ao carregar dados.");
             } finally {
                 if (alive) setLoading(false);
             }
         };
 
         bootstrap();
-
         return () => {
             alive = false;
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, fabricoId, produto?.id]);
 
-    /**
-     * Sempre que a grade ou as cores mudam, a matriz acompanha a estrutura.
-     * Isso preserva valores que continuem válidos e zera o que não existir mais.
-     */
     useEffect(() => {
         if (!currentGradeOption) return;
-
         setMatrix((prev) => syncMatrix(prev, selectedColorIds, currentGradeOption.sizeItems));
     }, [currentGradeOption?.gradeVersaoId, selectedColorIds]);
 
-    const handleToggleColor = (colorId) => {
+    const handleToggleColor = (colorId) =>
         setSelectedColorIds((prev) =>
             prev.includes(colorId) ? prev.filter((id) => id !== colorId) : [...prev, colorId],
         );
-    };
 
-    const handleRequestNewColor = async () => {
-        setColorDropdownOpen(false);
-
-        if (onRequestCreateColor) {
-            await Promise.resolve(onRequestCreateColor({ fabricoId }));
-        }
-
-        const colorsResponse = await getCoresByFabricoId(fabricoId);
-        setAvailableColors(Array.isArray(colorsResponse) ? colorsResponse : []);
-    };
-
-    const handleQuantityChange = (corId, tamanhoId, quantity) => {
-        setMatrix((prev) => ({
-            ...prev,
-            [corId]: {
-                ...(prev?.[corId] || {}),
-                [tamanhoId]: quantity,
-            },
-        }));
-    };
-
-    const openFaccaoModal = (replaceIndex = null) => {
-        setReplaceFaccaoIndex(replaceIndex);
-        setFaccaoModalOpen(true);
-    };
-
-    const handleConfirmFaccoes = (selectedIds) => {
-        const selectedObjects = selectedIds
-            .map((id) => availableFaccoes.find((faccao) => faccao.id === id))
-            .filter(Boolean);
-
-        if (selectedObjects.length === 0) {
-            setFaccaoModalOpen(false);
-            setReplaceFaccaoIndex(null);
-            return;
-        }
+    // Injeta a facção marcando o isDirty como falso inicialmente
+    const handleSelectFaccaoFromModal = (faccao) => {
+        if (!faccao) return;
 
         setFaccaoRows((prev) => {
-            const next = [...prev];
-            const existingIds = new Set(next.map((row) => row.faccaoId));
+            if (prev.some((row) => row.faccaoId === faccao.id)) return prev;
 
-            if (replaceFaccaoIndex !== null && next[replaceFaccaoIndex]) {
-                const replacement = selectedObjects[0];
+            const precoFormatado =
+                faccao.preco !== null && faccao.preco !== undefined
+                    ? String(faccao.preco).replace(".", ",")
+                    : "";
 
-                if (
-                    next.some(
-                        (row, index) =>
-                            index !== replaceFaccaoIndex && row.faccaoId === replacement.id,
-                    )
-                ) {
-                    setError("Essa facção já está atribuída em outra linha.");
-                    return prev;
-                }
-
-                next[replaceFaccaoIndex] = {
-                    ...next[replaceFaccaoIndex],
-                    faccaoId: replacement.id,
-                    faccaoNome: replacement.nome,
-                };
-                return next;
-            }
-
-            selectedObjects.forEach((faccao) => {
-                if (existingIds.has(faccao.id)) return;
-                next.push({
+            return [
+                ...prev,
+                {
                     faccaoId: faccao.id,
                     faccaoNome: faccao.nome,
                     operacao: "",
-                    preco: "",
-                });
-            });
-
-            return next;
+                    preco: precoFormatado,
+                    isDirty: false,
+                },
+            ];
         });
-
-        setFaccaoModalOpen(false);
-        setReplaceFaccaoIndex(null);
-    };
-
-    const removeFaccaoRow = (index) => {
-        setFaccaoRows((prev) => prev.filter((_, rowIndex) => rowIndex !== index));
-    };
-
-    const updateFaccaoRow = (index, field, value) => {
-        setFaccaoRows((prev) =>
-            prev.map((row, rowIndex) => (rowIndex === index ? { ...row, [field]: value } : row)),
-        );
     };
 
     const handleSave = async () => {
-        if (!produto?.id || !fabricoId) {
-            setError("Produto ou fabrico inválido para criar a ficha técnica.");
-            return;
-        }
-
         if (!effectiveGradeVersionId) {
-            setError("Selecione uma grade válida para continuar.");
+            setError("Selecione uma grade válida.");
             return;
         }
 
         if (faccaoRows.some((row) => !row.operacao?.trim())) {
-            setError("Preencha a operação de todas as facções antes de salvar.");
+            setError("Preencha a operação das facções.");
             return;
         }
 
         setSaving(true);
-        setError("");
-
         try {
-            // Se o usuário trocou a grade do produto, atualizamos o produto antes de criar a ficha.
             if ((produto?.gradeVersaoId || produto?.grade_versao_id) !== effectiveGradeVersionId) {
                 await atualizarProduto(produto.id, { grade_versao_id: effectiveGradeVersionId });
             }
 
-            // 1) cria a ficha técnica
             const fichaCreated = await createFichaTecnica({
-                observacoes: observacoes?.trim() || null,
                 concluida: false,
                 fabrico_id: fabricoId,
                 produto_id: produto.id,
@@ -538,21 +367,16 @@ export default function FichaTecnicaModal({
             });
 
             const fichaId = fichaCreated?.id || fichaCreated?.data?.id;
-            if (!fichaId) {
-                throw new Error("Não foi possível identificar a ficha técnica criada.");
-            }
 
-            // 2) sincroniza as cores da ficha (cria a base da matriz)
             if (selectedColorIds.length > 0) {
                 await syncFichaTecnicaCores(fichaId, selectedColorIds);
             }
 
-            // 3) salva a matriz cor x tamanho
             const itensPayload = selectedColorIds.flatMap((corId) =>
-                currentSizeItems.map((sizeItem) => ({
+                currentSizeItems.map((s) => ({
                     cor_id: corId,
-                    grade_versao_item_id: sizeItem.gradeVersaoItemId,
-                    quantidade: Number(matrix?.[corId]?.[sizeItem.tamanhoId] || 0),
+                    grade_versao_item_id: s.gradeVersaoItemId,
+                    quantidade: Number(matrix?.[corId]?.[s.tamanhoId] || 0),
                 })),
             );
 
@@ -560,35 +384,35 @@ export default function FichaTecnicaModal({
                 await saveFichaTecnicaItens(fichaId, itensPayload);
             }
 
-            // 4) sincroniza as facções atribuídas à ficha
             if (faccaoRows.length > 0) {
                 await syncFichaTecnicaFaccoes(
                     fichaId,
-                    faccaoRows.map((row) => ({
-                        faccao_id: row.faccaoId,
-                        operacao: row.operacao.trim(),
-                        ...(row.preco !== ""
-                            ? { preco: Number(String(row.preco).replace(",", ".")) }
+                    faccaoRows.map((r) => ({
+                        faccao_id: r.faccaoId,
+                        operacao: r.operacao.trim(),
+                        ...(r.preco !== ""
+                            ? { preco: Number(String(r.preco).replace(",", ".")) }
                             : {}),
                     })),
                 );
 
-                // 5) atualiza preço da relação facção-produto apenas se o usuário digitou um valor.
                 await Promise.all(
-                    faccaoRows.map(async (row) => {
-                        if (row.preco === "" || row.preco === null || row.preco === undefined)
-                            return;
-                        const parsed = Number(String(row.preco).replace(",", "."));
-                        if (Number.isNaN(parsed)) return;
-                        await updateFaccaoProdutoPrice(produto.id, row.faccaoId, parsed);
+                    faccaoRows.map(async (r) => {
+                        if (!r.isDirty) return;
+                        if (r.preco === "" || r.preco === null) return;
+
+                        const parsed = Number(String(r.preco).replace(",", "."));
+                        if (!Number.isNaN(parsed)) {
+                            await updateFaccaoProdutoPrice(produto.id, r.faccaoId, parsed);
+                        }
                     }),
                 );
             }
 
             onFichaCreated?.(fichaCreated);
-            onClose?.();
+            handleForceClose();
         } catch (err) {
-            setError(err?.message || "Não foi possível salvar a ficha técnica.");
+            setError(err?.message || "Não foi possível salvar.");
         } finally {
             setSaving(false);
         }
@@ -599,571 +423,687 @@ export default function FichaTecnicaModal({
     return (
         <>
             <style>{`
-                .scrollbar-sutil::-webkit-scrollbar { width: 4px; height: 4px; }
+                .scrollbar-sutil::-webkit-scrollbar { width: 4px; height: 4px; } 
                 .scrollbar-sutil::-webkit-scrollbar-thumb { background-color: #d6d6d6; border-radius: 999px; }
-                .scrollbar-sutil::-webkit-scrollbar-track { background: transparent; }
             `}</style>
 
             <div
-                className="fixed inset-0 z-[999] flex items-center justify-center bg-black/35 px-4 py-6 backdrop-blur-sm"
-                onClick={onClose}
+                className="fixed inset-0 z-[999] flex items-center justify-center bg-black/35 px-4 py-6 backdrop-blur-sm font-['Outfit',_sans-serif]"
+                onClick={handleForceClose}
             >
                 <div
-                    className="flex max-h-[92vh] w-full max-w-[1260px] flex-col rounded-[28px] bg-white px-8 py-7 shadow-2xl"
+                    className="flex max-h-[95vh] w-full max-w-[1160px] flex-col rounded-[28px] bg-white py-8 shadow-2xl overflow-x-hidden"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    {/* HEADER */}
-                    <div className="mb-6 flex items-center justify-between gap-4">
+                    {/* Header Modal */}
+                    <div className="mb-6 flex items-center justify-between px-4 mx-[30px]">
                         <div className="flex items-center gap-3">
-                            {/* TODO: troque o asset abaixo pelo ícone correto da sua pasta /public */}
                             <img
-                                src="/icons/ficha-tecnica.png"
+                                src="/etiqueta_cinza.png"
                                 alt="Ficha técnica"
                                 className="h-8 w-8 object-contain"
                             />
                             <h2 className="text-[26px] font-light text-[#404040]">Ficha Técnica</h2>
                         </div>
-
                         <button
                             type="button"
-                            onClick={onClose}
-                            className="rounded-full p-2 text-[22px] leading-none text-[#8C8C8C] transition hover:bg-black/5 hover:text-black"
-                            aria-label="Fechar modal"
+                            onClick={handleForceClose}
+                            className="text-[28px] leading-none text-[#8C8C8C] transition hover:text-black"
                         >
-                            ×
+                            &times;
                         </button>
                     </div>
 
                     {error ? (
-                        <div className="mb-4 rounded-[16px] border border-red-200 bg-red-50 px-4 py-3 text-[14px] text-red-700">
+                        <div className="mb-4 rounded-[12px] border border-red-200 bg-red-50 px-4 py-3 text-[14px] text-red-700">
                             {error}
                         </div>
                     ) : null}
 
                     {loading ? (
-                        <div className="flex min-h-[420px] items-center justify-center rounded-[20px] border border-dashed border-[#EAEAEA] text-[14px] text-[#777]">
-                            Carregando dados da ficha técnica...
+                        <div className="flex min-h-[400px] items-center justify-center text-[14px] text-[#777]">
+                            Carregando...
                         </div>
                     ) : (
-                        <>
-                            {/* BLOCO SUPERIOR */}
-                            <div className="grid grid-cols-1 gap-6 xl:grid-cols-[250px_1fr]">
-                                <div className="flex flex-col gap-3">
-                                    <div className="flex h-[210px] items-center justify-center overflow-hidden rounded-[14px] border border-dashed border-[#DADADA] bg-[#FAFAFA]">
+                        <div className="!max-w-full w-full flex-1 overflow-y-auto px-4 pt-3 scrollbar-sutil">
+                            {/* Inputs Superiores */}
+                            <div className="flex flex-col gap-6 md:flex-row mx-[30px]">
+                                <div className="w-full md:w-[260px] shrink-0 flex flex-col gap-4">
+                                    <div className="h-[150px] w-full rounded-[10px] border border-dashed border-[#DADADA] bg-[#FAFAFA] flex items-center justify-center overflow-hidden">
                                         {produto?.foto ? (
                                             <img
                                                 src={produto.foto}
-                                                alt={produto?.nome || "Produto"}
+                                                alt="Produto"
                                                 className="h-full w-full object-cover"
                                             />
                                         ) : (
-                                            <div className="text-center text-[13px] text-[#9B9B9B]">
-                                                Sem imagem do produto
-                                            </div>
+                                            <span className="text-[12px] text-[#9B9B9B]">
+                                                Sem imagem
+                                            </span>
                                         )}
                                     </div>
 
-                                    <div>
-                                        <label className="mb-1 block text-[13px] font-light text-[#7B7B7B]">
-                                            Observações
-                                        </label>
-                                        <textarea
-                                            value={observacoes}
-                                            onChange={(e) => setObservacoes(e.target.value)}
-                                            placeholder="Observações da ficha técnica"
-                                            rows={4}
-                                            className="w-full resize-none rounded-[14px] border border-[#D8D8D8] px-4 py-3 text-[14px] outline-none transition focus:border-[#8FD0E6]"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-col gap-5">
-                                    <div className={infoGridClass}>
-                                        <div>
-                                            <label className="mb-1 block text-[13px] font-light text-[#7B7B7B]">
-                                                Referência Interna
-                                            </label>
-                                            <input
-                                                readOnly
-                                                value={produto?.referenciaInterna || "-"}
-                                                className="w-full rounded-[14px] border border-[#D8D8D8] bg-white px-4 py-3 text-[14px] outline-none"
-                                            />
-                                        </div>
-
-                                        {hasClienteReferencia ? (
-                                            <div>
-                                                <label className="mb-1 block text-[13px] font-light text-[#7B7B7B]">
-                                                    Referência da {produto?.clienteNome}
-                                                </label>
-                                                <input
-                                                    readOnly
-                                                    value={produto?.referenciaCliente || "-"}
-                                                    className="w-full rounded-[14px] border border-[#D8D8D8] bg-white px-4 py-3 text-[14px] outline-none"
-                                                />
-                                            </div>
-                                        ) : null}
-
-                                        <div>
-                                            <label className="mb-1 block text-[13px] font-light text-[#7B7B7B]">
-                                                Tecido
-                                            </label>
-                                            <input
-                                                readOnly
-                                                value={produto?.tecido || "-"}
-                                                className="w-full rounded-[14px] border border-[#D8D8D8] bg-white px-4 py-3 text-[14px] outline-none"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="mb-1 block text-[13px] font-light text-[#7B7B7B]">
-                                                Grade
-                                            </label>
-                                            <select
-                                                value={effectiveGradeVersionId || ""}
-                                                onChange={(e) =>
-                                                    setSelectedGradeVersionId(
-                                                        Number(e.target.value),
-                                                    )
-                                                }
-                                                className="w-full rounded-[14px] border border-[#D8D8D8] bg-white px-4 py-3 text-[14px] outline-none transition focus:border-[#8FD0E6]"
-                                            >
-                                                {gradeOptions.length === 0 ? (
-                                                    <option value="">
-                                                        Nenhuma grade disponível
-                                                    </option>
-                                                ) : null}
-                                                {gradeOptions.map((grade) => (
-                                                    <option
-                                                        key={grade.gradeVersaoId}
-                                                        value={grade.gradeVersaoId}
-                                                    >
-                                                        {grade.label}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    {/* SELETOR DE CORES */}
-                                    <div
-                                        ref={colorDropdownRef}
-                                        className="relative w-full max-w-[320px]"
-                                    >
-                                        <label className="mb-1 block text-[13px] font-light text-[#7B7B7B]">
-                                            Selecionar cores
-                                        </label>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => setColorDropdownOpen((prev) => !prev)}
-                                            className="flex w-full items-center justify-between rounded-[14px] border border-[#D8D8D8] bg-white px-4 py-3 text-left text-[14px] text-[#555]"
-                                        >
-                                            <span>
-                                                {selectedColorIds.length > 0
-                                                    ? `${selectedColorIds.length} cor(es) selecionada(s)`
-                                                    : "Selecionar cores"}
-                                            </span>
-                                            <span
-                                                className={`transition ${colorDropdownOpen ? "rotate-180" : ""}`}
-                                            >
-                                                ⌄
-                                            </span>
-                                        </button>
-
-                                        <div
-                                            className={`absolute z-[30] mt-2 w-full overflow-hidden rounded-[14px] border border-[#E6E6E6] bg-white shadow-lg transition-all ${colorDropdownOpen ? "visible opacity-100" : "pointer-events-none invisible opacity-0"}`}
-                                        >
-                                            <div className="max-h-[240px] overflow-y-auto scrollbar-sutil">
-                                                {availableColors.map((color) => {
-                                                    const selected = selectedColorIds.includes(
-                                                        color.id,
-                                                    );
-                                                    return (
-                                                        <button
-                                                            type="button"
-                                                            key={color.id}
-                                                            onClick={() =>
-                                                                handleToggleColor(color.id)
-                                                            }
-                                                            className={`flex w-full items-center justify-between border-l-[3px] px-4 py-3 text-left text-[14px] transition ${selected ? "border-l-[#C4F042] bg-[#FAFFEE] text-[#555]" : "border-l-transparent hover:bg-[#FAFAFA]"}`}
-                                                        >
-                                                            <div className="flex items-center gap-3">
-                                                                <span
-                                                                    className="h-4 w-4 rounded-[4px] border border-black/10"
-                                                                    style={{
-                                                                        backgroundColor:
-                                                                            color.codigo_hex ||
-                                                                            "#D9D9D9",
-                                                                    }}
-                                                                />
-                                                                <span>{color.nome}</span>
-                                                            </div>
-                                                            <span className="text-[16px] text-[#7A7A7A]">
-                                                                {selected ? "✓" : "+"}
-                                                            </span>
-                                                        </button>
-                                                    );
-                                                })}
-
-                                                {/* A opção sempre precisa ser a última. */}
-                                                <button
-                                                    type="button"
-                                                    onClick={handleRequestNewColor}
-                                                    className="flex w-full items-center justify-between border-t border-[#F0F0F0] px-4 py-3 text-left text-[14px] font-medium text-[#558AA4] transition hover:bg-[#F7FCFF]"
-                                                >
-                                                    <span>Adicionar nova cor</span>
-                                                    <span>+</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* CHIPS DAS CORES SELECIONADAS */}
-                                    {selectedColors.length > 0 ? (
+                                    {selectedColors.length > 0 && (
                                         <div className="flex flex-wrap gap-2">
-                                            {selectedColors.map((color) => (
+                                            {selectedColors.map((c) => (
                                                 <button
-                                                    key={color.id}
-                                                    type="button"
-                                                    onClick={() => handleToggleColor(color.id)}
-                                                    className="inline-flex items-center gap-2 rounded-full bg-[#9DD7EF] px-3 py-1.5 text-[13px] text-[#2C6278] transition hover:opacity-90"
+                                                    key={c.id}
+                                                    onClick={() => handleToggleColor(c.id)}
+                                                    className="inline-flex items-center gap-2 rounded-[16px] bg-[#A9E2F2] pr-[6px] pl-3 py-1 text-[12px] text-[#404040]"
                                                 >
-                                                    <span>{color.nome}</span>
-                                                    <span className="rounded-full bg-[#7EB9D1] px-1 text-[11px] text-white">
+                                                    <span>{c.nome}</span>
+
+                                                    <span className="flex h-[14px] w-[14px] shrink-0 items-center justify-center rounded-full bg-[#4696AD] text-[13px] font-bold leading-none text-white">
                                                         ×
                                                     </span>
                                                 </button>
                                             ))}
                                         </div>
-                                    ) : null}
+                                    )}
+                                </div>
+
+                                <div className="flex-1 grid grid-cols-2 gap-4 content-start overflow-visible">
+                                    <FloatingInput
+                                        label="Referência Interna"
+                                        value={produto?.referenciaInterna || produto?.nome}
+                                        readOnly
+                                    />
+
+                                    {producaoSobDemanda && (
+                                        <FloatingInput
+                                            label={
+                                                produto?.clienteNome
+                                                    ? `Referência da ${produto.clienteNome}`
+                                                    : "Referência do Cliente"
+                                            }
+                                            value={produto?.referenciaCliente || ""}
+                                            readOnly
+                                        />
+                                    )}
+
+                                    <FloatingInput
+                                        label="Tecido"
+                                        value={produto?.tecido}
+                                        readOnly
+                                    />
+
+                                    {/* Select Personalizado de Grade */}
+                                    <div className="relative">
+                                        <button
+                                            type="button"
+                                            onClick={() => setGradeDropdownOpen(!gradeDropdownOpen)}
+                                            className="flex w-full h-[39px] items-center justify-between rounded-[10px] border border-[#898C8F] bg-white px-4 text-[14px] text-[#7B7D80]"
+                                        >
+                                            <span className="truncate">
+                                                {currentGradeOption?.label || "Selecionar Grade"}
+                                            </span>
+                                            {gradeDropdownOpen ? (
+                                                <img
+                                                    src="/arrow-up.png"
+                                                    alt="Selecionar Grade"
+                                                    className="w-[11px] h-[6px]"
+                                                />
+                                            ) : (
+                                                <img
+                                                    src="/arrow-down.png"
+                                                    alt="Selecionar Grade"
+                                                    className="w-[11px] h-[6px]"
+                                                />
+                                            )}
+                                        </button>
+
+                                        {gradeDropdownOpen && (
+                                            <div className="absolute z-[40] mt-1 w-full rounded-[10px] border border-[#898C8F] bg-white shadow-lg overflow-hidden">
+                                                <div className="max-h-[200px] overflow-y-auto scrollbar-sutil">
+                                                    {gradeOptions.map((g) => (
+                                                        <button
+                                                            key={g.gradeVersaoId}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setSelectedGradeVersionId(
+                                                                    g.gradeVersaoId,
+                                                                );
+                                                                setGradeDropdownOpen(false);
+                                                            }}
+                                                            className={`flex w-full items-center px-4 py-2.5 text-left text-[14px] transition text-[#7B7D80] ${
+                                                                g.gradeVersaoId ===
+                                                                effectiveGradeVersionId
+                                                                    ? "border-l-[3px] border-l-[#C4F042]"
+                                                                    : "border-l-transparent"
+                                                            }`}
+                                                        >
+                                                            {g.label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Select de Cores Customizado */}
+                                    <div className="relative">
+                                        <button
+                                            type="button"
+                                            onClick={() => setColorDropdownOpen(!colorDropdownOpen)}
+                                            className="flex w-full h-[39px] items-center justify-between rounded-[10px] border border-[#898C8F] bg-white px-4 text-[14px] text-[#7B7D80]"
+                                        >
+                                            <span>Selecionar cores</span>
+                                            {colorDropdownOpen ? (
+                                                <img
+                                                    src="/arrow-up.png"
+                                                    alt="Selecionar Grade"
+                                                    className="w-[11px] h-[6px]"
+                                                />
+                                            ) : (
+                                                <img
+                                                    src="/arrow-down.png"
+                                                    alt="Selecionar Grade"
+                                                    className="w-[11px] h-[6px]"
+                                                />
+                                            )}
+                                        </button>
+
+                                        {colorDropdownOpen && (
+                                            <div className="absolute z-[30] mt-1 w-full rounded-[10px] border border-[#898C8F] bg-white shadow-lg overflow-hidden">
+                                                <div className="max-h-[200px] overflow-y-auto scrollbar-sutil">
+                                                    {availableColors.map((color) => {
+                                                        const checked = selectedColorIds.includes(
+                                                            color.id,
+                                                        );
+                                                        return (
+                                                            <button
+                                                                key={color.id}
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    handleToggleColor(color.id)
+                                                                }
+                                                                className={`flex w-full items-center justify-between border-l-[4px] px-4 py-2.5 text-left text-[14px] transition bg-white text-[#7B7D80] ${
+                                                                    checked
+                                                                        ? "border-l-[3px] border-l-[#C4F042]"
+                                                                        : "border-l-transparent"
+                                                                }`}
+                                                            >
+                                                                <span className="font-light text-[#7B7D80]">
+                                                                    {color.nome}
+                                                                </span>
+                                                                {checked ? (
+                                                                    <img
+                                                                        src="/check_cinza.png"
+                                                                        className="w-[12px] h-[8px]"
+                                                                    />
+                                                                ) : (
+                                                                    <img
+                                                                        src="/mais_cinza.png"
+                                                                        className="w-[12px] h-[12px]"
+                                                                    />
+                                                                )}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setColorDropdownOpen(false);
+                                                            if (onRequestCreateColor)
+                                                                onRequestCreateColor();
+                                                        }}
+                                                        className="flex w-full items-center gap-2 border-t border-[#EAEAEA] px-4 py-2.5 text-left text-[14px] text-[#4696AD] font-medium bg-white hover:bg-[#FAFAFA]"
+                                                    >
+                                                        <span>+ Adicionar nova cor</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* MATRIZ COR X TAMANHO */}
-                            <div className="mt-10">
-                                <div className="mb-3 text-center text-[18px] font-light text-[#737373]">
+                            {/* GRADE DE QUANTIDADES */}
+                            <div className="mt-4 mx-[30px]">
+                                <div className="mb-2 text-center text-[16px] font-light text-[#737373]">
                                     Grade
                                 </div>
 
-                                <div className="overflow-hidden rounded-[18px] border border-[#E8E8E8]">
-                                    {/* Totais por tamanho */}
-                                    <div
-                                        className="grid"
-                                        style={{
-                                            gridTemplateColumns: `180px repeat(${currentSizeItems.length || 1}, minmax(86px, 1fr))`,
-                                        }}
-                                    >
-                                        <div className="border-r border-[#E8E8E8] bg-[#DFF5FF] px-4 py-3 text-center text-[14px] font-light text-[#4696AD]">
-                                            Cores
-                                        </div>
+                                <div className="w-full">
+                                    {/* Linha das proporções */}
+                                    <div className="flex w-full items-stretch min-h-[30px]">
+                                        <div className="w-[160px] shrink-0" />
+                                        <div className="flex flex-1 min-w-0">
+                                            {currentSizeItems.map((s, i) => {
+                                                const isLast = i === currentSizeItems.length - 1;
+                                                const isFirst = i === 0;
 
-                                        {currentSizeItems.length > 0 ? (
-                                            currentSizeItems.map((sizeItem, index) => {
-                                                const total = totalsBySize[index] || 0;
                                                 return (
                                                     <div
-                                                        key={sizeItem.gradeVersaoItemId}
-                                                        className={`border-r border-[#E8E8E8] bg-white px-2 py-2 text-center text-[13px] text-[#B0B0B0] ${total === 0 ? "opacity-60" : "opacity-100"}`}
+                                                        key={`prop-${s.gradeVersaoItemId}`}
+                                                        className={`bg-[#F4F4F4] flex-1 min-w-0 text-center text-[14px] font-light flex items-center justify-center ${
+                                                            isLast ? "" : ""
+                                                        }`}
+                                                        style={{
+                                                            borderColor: "#7B7D80",
+                                                            borderLeftWidth: "0.5px",
+                                                            borderRightWidth: isLast
+                                                                ? "0.5px"
+                                                                : "0px",
+                                                            borderTopWidth: "0.5px",
+                                                            borderBottomWidth: "0.5px",
+                                                            borderTopLeftRadius: isFirst
+                                                                ? "10px"
+                                                                : "0px",
+                                                            borderTopRightRadius: isLast
+                                                                ? "10px"
+                                                                : "0px",
+                                                            color:
+                                                                totalsBySize[i] > 0
+                                                                    ? "#898C8F"
+                                                                    : "#D7D7D7",
+                                                        }}
                                                     >
-                                                        {total}
+                                                        {proporcoes[i]}
                                                     </div>
                                                 );
-                                            })
-                                        ) : (
-                                            <div className="bg-white px-4 py-3 text-center text-[13px] text-[#BBB]">
-                                                -
-                                            </div>
-                                        )}
+                                            })}
+                                        </div>
                                     </div>
 
-                                    {/* Cabeçalho dos tamanhos */}
-                                    <div
-                                        className="grid"
-                                        style={{
-                                            gridTemplateColumns: `180px repeat(${currentSizeItems.length || 1}, minmax(86px, 1fr))`,
-                                        }}
-                                    >
-                                        <div className="border-r border-[#E8E8E8] bg-[#DFF5FF] px-4 py-4 text-center text-[14px] font-light text-[#4696AD]">
+                                    {/* Cabeçalho da grade */}
+                                    <div className="flex h-[40px] items-stretch">
+                                        <div className="w-[160px] shrink-0 rounded-tl-[10px] font-normal bg-[#C9EAF6] px-4 text-[#4696AD] flex items-center justify-center overflow-hidden">
                                             Cores
                                         </div>
+                                        <div className="flex flex-1 min-w-0">
+                                            {currentSizeItems.map((s, idx) => {
+                                                const isLast = idx === currentSizeItems.length - 1;
+                                                const isFirst = idx === 0;
 
-                                        {currentSizeItems.length > 0 ? (
-                                            currentSizeItems.map((sizeItem, index) => {
-                                                const total = totalsBySize[index] || 0;
                                                 return (
                                                     <div
-                                                        key={sizeItem.gradeVersaoItemId}
-                                                        className={`border-r border-[#E8E8E8] bg-[#DFF5FF] px-2 py-3 text-center text-[14px] font-light text-[#4696AD] ${total === 0 ? "opacity-65" : "opacity-100"}`}
+                                                        key={s.gradeVersaoItemId}
+                                                        className="flex-1 min-w-0 text-center font-normal text-[#4696AD] flex items-center justify-center bg-[#C9EAF6]"
+                                                        style={{
+                                                            borderLeftWidth: isFirst
+                                                                ? "0.5px"
+                                                                : "0px",
+                                                            borderRightWidth: "0.5px",
+                                                            borderBottomWidth: "0px",
+                                                            borderTopWidth: "0px",
+                                                            borderColor: "#7B7D80",
+                                                            borderRightColor: isLast
+                                                                ? "#C9EAF6"
+                                                                : "#7B7D80",
+                                                        }}
                                                     >
-                                                        {sizeItem.codigo}
+                                                        {s.codigo}
                                                     </div>
                                                 );
-                                            })
-                                        ) : (
-                                            <div className="bg-[#DFF5FF] px-4 py-4 text-center text-[13px] text-[#4696AD]">
-                                                Sem tamanhos
-                                            </div>
-                                        )}
+                                            })}
+                                        </div>
                                     </div>
 
-                                    {/* Linhas */}
-                                    <div className="max-h-[290px] overflow-y-auto scrollbar-sutil">
-                                        {selectedColors.length > 0 ? (
-                                            selectedColors.map((color, rowIndex) => (
-                                                <div
-                                                    key={color.id}
-                                                    className={`group grid items-stretch ${rowIndex % 2 === 0 ? "bg-white" : "bg-[#FAFAFA]"}`}
-                                                    style={{
-                                                        gridTemplateColumns: `180px repeat(${currentSizeItems.length || 1}, minmax(86px, 1fr))`,
-                                                    }}
-                                                >
-                                                    <div className="flex items-center gap-3 border-r border-[#E8E8E8] px-4 py-3">
-                                                        <span
-                                                            className="h-5 w-5 rounded-[5px] border border-black/10"
-                                                            style={{
-                                                                backgroundColor:
-                                                                    color.codigo_hex || "#D9D9D9",
-                                                            }}
-                                                        />
-                                                        <span className="max-w-[120px] truncate text-[14px] font-light text-[#404040]">
-                                                            {color.nome}
-                                                        </span>
-                                                    </div>
-
-                                                    {currentSizeItems.length > 0 ? (
-                                                        currentSizeItems.map((sizeItem, index) => {
-                                                            const total = totalsBySize[index] || 0;
-                                                            const faded = total === 0;
-                                                            const value = Number(
-                                                                matrix?.[color.id]?.[
-                                                                    sizeItem.tamanhoId
-                                                                ] || 0,
-                                                            );
-
-                                                            return (
-                                                                <div
-                                                                    key={sizeItem.gradeVersaoItemId}
-                                                                    className={`border-r border-[#E8E8E8] px-2 py-2 ${faded ? "bg-white/60" : "bg-inherit"}`}
-                                                                >
-                                                                    <QuantityCell
-                                                                        value={value}
-                                                                        onCommit={(nextValue) =>
-                                                                            handleQuantityChange(
-                                                                                color.id,
-                                                                                sizeItem.tamanhoId,
-                                                                                nextValue,
-                                                                            )
-                                                                        }
-                                                                    />
-                                                                </div>
-                                                            );
-                                                        })
-                                                    ) : (
-                                                        <div className="flex items-center justify-center px-4 py-4 text-[13px] text-[#BBB]">
-                                                            -
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <div
-                                                className="grid items-stretch bg-white"
-                                                style={{
-                                                    gridTemplateColumns: `180px repeat(${currentSizeItems.length || 1}, minmax(86px, 1fr))`,
-                                                }}
-                                            >
-                                                <div className="border-r border-[#E8E8E8] px-4 py-4 text-[14px] text-[#7D7D7D]">
-                                                    Nenhuma cor selecionada
-                                                </div>
-                                                {currentSizeItems.length > 0 ? (
-                                                    currentSizeItems.map((sizeItem) => (
+                                    {/* Corpo da grade */}
+                                    <div
+                                        className="rounded-b-[10px] overflow-hidden bg-white"
+                                        style={BORDER_SHELL_05}
+                                    >
+                                        <div className="max-h-[220px] overflow-y-auto scrollbar-sutil flex flex-col">
+                                            {selectedColors.length > 0 ? (
+                                                selectedColors.map((color, index) => {
+                                                    const isEvenRow = index % 2 === 1;
+                                                    return (
                                                         <div
-                                                            key={sizeItem.gradeVersaoItemId}
-                                                            className="border-r border-[#E8E8E8] px-2 py-2"
+                                                            key={color.id}
+                                                            className={`flex w-full min-h-[40px] items-stretch ${
+                                                                isEvenRow
+                                                                    ? "bg-[#F4F4F4]"
+                                                                    : "bg-[#FFFFFF]"
+                                                            }`}
                                                         >
-                                                            <QuantityCell
-                                                                value={0}
-                                                                onCommit={() => {}}
-                                                            />
+                                                            <div
+                                                                className="w-[160px] shrink-0 pl-2 pr-4 flex items-center"
+                                                                style={{
+                                                                    ...BORDER_DARK_05,
+                                                                    borderTopWidth: "0px",
+                                                                    borderLeftWidth: "0px",
+                                                                    borderBottomWidth: "0px",
+                                                                    borderRightWidth: "0.5px",
+                                                                }}
+                                                            >
+                                                                <span
+                                                                    className="w-[20px] h-[20px] rounded-[6px] shrink-0 border border-[#D9D9D9]"
+                                                                    style={{
+                                                                        backgroundColor:
+                                                                            color.codigo_hex ||
+                                                                            "#E5E5E5",
+                                                                    }}
+                                                                />
+
+                                                                <span className="flex-1 text-center text-[14px] font-light text-[#898C8F] truncate leading-none">
+                                                                    {color.nome}
+                                                                </span>
+                                                            </div>
+
+                                                            {currentSizeItems.map(
+                                                                (s, sizeIndex) => (
+                                                                    <div
+                                                                        key={s.gradeVersaoItemId}
+                                                                        className="flex-1 min-w-0 px-2 flex items-center justify-center"
+                                                                        style={{
+                                                                            ...BORDER_DARK_05,
+                                                                            borderTopWidth: "0px",
+                                                                            borderBottomWidth:
+                                                                                "0px",
+                                                                            borderLeftWidth: "0px",
+                                                                            borderRightWidth:
+                                                                                sizeIndex !==
+                                                                                currentSizeItems.length -
+                                                                                    1
+                                                                                    ? "0.5px"
+                                                                                    : "0px",
+                                                                        }}
+                                                                    >
+                                                                        <QuantityCell
+                                                                            value={
+                                                                                matrix?.[
+                                                                                    color.id
+                                                                                ]?.[s.tamanhoId] ||
+                                                                                0
+                                                                            }
+                                                                            onCommit={(v) =>
+                                                                                setMatrix((p) => ({
+                                                                                    ...p,
+                                                                                    [color.id]: {
+                                                                                        ...(p[
+                                                                                            color.id
+                                                                                        ] || {}),
+                                                                                        [s.tamanhoId]:
+                                                                                            v,
+                                                                                    },
+                                                                                }))
+                                                                            }
+                                                                        />
+                                                                    </div>
+                                                                ),
+                                                            )}
                                                         </div>
-                                                    ))
-                                                ) : (
-                                                    <div className="px-4 py-4 text-center text-[13px] text-[#BBB]">
-                                                        -
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
+                                                    );
+                                                })
+                                            ) : (
+                                                <div className="px-4 py-4 text-[13px] text-center text-[#888] bg-white w-full rounded-b-[10px]">
+                                                    Nenhuma cor selecionada.
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* FACÇÕES */}
-                            <div className="mt-6">
-                                <div className="mb-3 text-center text-[18px] font-light text-[#737373]">
-                                    Facção
-                                </div>
-
-                                <div className="overflow-hidden rounded-[18px] border border-[#E8E8E8]">
-                                    <div className="grid grid-cols-[1.5fr_1fr_120px_56px] bg-[#DFF5FF]">
-                                        <div className="px-4 py-3 text-center text-[14px] font-light text-[#4696AD]">
+                            {/* TABELA DE HISTÓRICO DE FACÇÕES */}
+                            <div className="mt-8 mx-[30px]">
+                                <div className="w-full">
+                                    {/* Cabeçalho */}
+                                    <div className="grid grid-cols-3 items-center h-10 font-normal text-center text-[#4696AD]">
+                                        <div className="bg-[#C9EAF6] px-4 py-2.5 border-r-[0.5px] rounded-tl-[10px] border-[#7B7D80] h-10">
                                             Facção
                                         </div>
-                                        <div className="px-4 py-3 text-center text-[14px] font-light text-[#4696AD]">
+                                        <div className="bg-[#C9EAF6] px-4 py-2.5 border-[#7B7D80] border-r-[0.5px] h-10">
                                             Operação
                                         </div>
-                                        <div className="px-4 py-3 text-center text-[14px] font-light text-[#4696AD]">
+                                        <div className="bg-[#C9EAF6] rounded-tr-[10px] px-4 py-2.5 h-10">
                                             Preço
-                                        </div>
-                                        <div className="px-4 py-3 text-center text-[14px] font-light text-[#4696AD]">
-                                            &nbsp;
                                         </div>
                                     </div>
 
-                                    <div className="max-h-[220px] overflow-y-auto scrollbar-sutil">
-                                        {faccaoRows.length > 0 ? (
-                                            faccaoRows.map((row, index) => (
+                                    {/* Área com Scroll-Y */}
+                                    <div className="relative">
+                                        <div
+                                            ref={faccaoScrollRef}
+                                            className="max-h-[180px] overflow-y-auto overflow-x-hidden scrollbar-sutil"
+                                            onScroll={(e) =>
+                                                setFaccaoScrollTop(e.currentTarget.scrollTop)
+                                            }
+                                        >
+                                            {faccaoRows.length > 0 ? (
+                                                faccaoRows.map((row, index) => {
+                                                    const isEvenRow = index % 2 === 1;
+                                                    const isLastRow =
+                                                        index === faccaoRows.length - 1;
+
+                                                    return (
+                                                        <div
+                                                            key={`${row.faccaoId}-${index}`}
+                                                            className="grid grid-cols-3 items-stretch min-h-[40px] h-[40px]"
+                                                            onMouseEnter={() =>
+                                                                setHoveredFaccaoIndex(index)
+                                                            }
+                                                            onMouseLeave={() =>
+                                                                setHoveredFaccaoIndex(null)
+                                                            }
+                                                        >
+                                                            <div
+                                                                className={`min-w-0 flex items-center justify-center px-4 ${
+                                                                    isEvenRow
+                                                                        ? "bg-[#F4F4F4]"
+                                                                        : "bg-[#FFFFFF]"
+                                                                }`}
+                                                                style={{
+                                                                    borderTopWidth: "0px",
+                                                                    borderLeftWidth: "0.5px",
+                                                                    borderRightWidth: "0.5px",
+                                                                    borderBottomWidth: "0.5px",
+                                                                    borderColor: "#D9D9D9",
+                                                                    borderBottomLeftRadius:
+                                                                        isLastRow ? "10px" : "0px",
+                                                                    borderRightColor: "#7B7D80",
+                                                                }}
+                                                            >
+                                                                <span className="text-[14px] font-light text-[#898C8F] truncate">
+                                                                    {row.faccaoNome}
+                                                                </span>
+                                                            </div>
+
+                                                            <div
+                                                                className={`min-w-0 flex items-center justify-center px-2 ${
+                                                                    isEvenRow
+                                                                        ? "bg-[#F4F4F4]"
+                                                                        : "bg-[#FFFFFF]"
+                                                                }`}
+                                                                style={{
+                                                                    borderTopWidth: "0px",
+                                                                    borderLeftWidth: "0px",
+                                                                    borderRightWidth: "0.5px",
+                                                                    borderBottomWidth: "0.5px",
+                                                                    borderColor: "#D9D9D9",
+                                                                    borderRightColor: "#7B7D80",
+                                                                }}
+                                                            >
+                                                                <input
+                                                                    value={row.operacao}
+                                                                    onChange={(e) =>
+                                                                        setFaccaoRows((p) =>
+                                                                            p.map((r, i) =>
+                                                                                i === index
+                                                                                    ? {
+                                                                                          ...r,
+                                                                                          operacao:
+                                                                                              e
+                                                                                                  .target
+                                                                                                  .value,
+                                                                                      }
+                                                                                    : r,
+                                                                            ),
+                                                                        )
+                                                                    }
+                                                                    placeholder="-"
+                                                                    className="w-full h-[32px] border-0 bg-transparent text-center text-[14px] outline-none focus:ring-0 text-[#898C8F] font-light"
+                                                                />
+                                                            </div>
+
+                                                            <div
+                                                                className={`min-w-0 flex items-center justify-center px-2 ${
+                                                                    isEvenRow
+                                                                        ? "bg-[#F4F4F4]"
+                                                                        : "bg-[#FFFFFF]"
+                                                                } ${index === faccaoRows.length - 1 ? "rounded-br-[14px]" : ""}`}
+                                                                style={{
+                                                                    borderTopWidth: "0px",
+                                                                    borderLeftWidth: "0px",
+                                                                    borderRightWidth: "0.5px",
+                                                                    borderBottomWidth: "0.5px",
+                                                                    borderColor: "#D9D9D9",
+                                                                    borderBottomRightRadius:
+                                                                        isLastRow ? "10px" : "0px",
+                                                                }}
+                                                            >
+                                                                <input
+                                                                    value={row.preco}
+                                                                    onChange={(e) => {
+                                                                        const onlyNumbers =
+                                                                            e.target.value.replace(
+                                                                                /\D/g,
+                                                                                "",
+                                                                            );
+
+                                                                        const valorFormatado =
+                                                                            new Intl.NumberFormat(
+                                                                                "pt-BR",
+                                                                                {
+                                                                                    style: "currency",
+                                                                                    currency: "BRL",
+                                                                                },
+                                                                            ).format(
+                                                                                Number(
+                                                                                    onlyNumbers,
+                                                                                ) / 100,
+                                                                            );
+
+                                                                        setFaccaoRows((p) =>
+                                                                            p.map((r, i) =>
+                                                                                i === index
+                                                                                    ? {
+                                                                                          ...r,
+                                                                                          preco: onlyNumbers
+                                                                                              ? valorFormatado
+                                                                                              : "",
+                                                                                          isDirty: true,
+                                                                                      }
+                                                                                    : r,
+                                                                            ),
+                                                                        );
+                                                                    }}
+                                                                    placeholder="R$ -"
+                                                                    inputMode="numeric"
+                                                                    className="w-full h-[32px] border-0 bg-transparent text-center text-[14px] outline-none focus:ring-0 text-[#898C8F] font-light"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })
+                                            ) : (
                                                 <div
-                                                    key={`${row.faccaoId}-${index}`}
-                                                    className="group grid grid-cols-[1.5fr_1fr_120px_56px] items-center border-t border-[#ECECEC] bg-white"
+                                                    className="px-4 py-5 text-center text-[13px] text-[#888] bg-white rounded-b-[10px]"
+                                                    style={BORDER_LIGHT_05}
                                                 >
-                                                    <div className="relative border-r border-[#E8E8E8] px-4 py-3">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => openFaccaoModal(index)}
-                                                            className="group/faccao relative w-full text-left text-[14px] font-light text-[#404040]"
-                                                        >
-                                                            <span className="inline-block max-w-[250px] truncate">
-                                                                {row.faccaoNome}
-                                                            </span>
-                                                            <span className="pointer-events-none absolute left-0 top-full mt-1 rounded-full bg-[#DFF5FF] px-3 py-1 text-[11px] text-[#4696AD] opacity-0 transition group-hover/faccao:opacity-100">
-                                                                substituir facção
-                                                            </span>
-                                                        </button>
-                                                    </div>
-
-                                                    <div className="border-r border-[#E8E8E8] px-3 py-3">
-                                                        <input
-                                                            value={row.operacao}
-                                                            onChange={(e) =>
-                                                                updateFaccaoRow(
-                                                                    index,
-                                                                    "operacao",
-                                                                    e.target.value,
-                                                                )
-                                                            }
-                                                            placeholder="Ex: Costura"
-                                                            className="w-full rounded-[12px] border border-[#D8D8D8] px-3 py-2 text-[14px] outline-none transition focus:border-[#8FD0E6]"
-                                                        />
-                                                    </div>
-
-                                                    <div className="border-r border-[#E8E8E8] px-3 py-3">
-                                                        <input
-                                                            value={row.preco}
-                                                            onChange={(e) =>
-                                                                updateFaccaoRow(
-                                                                    index,
-                                                                    "preco",
-                                                                    e.target.value,
-                                                                )
-                                                            }
-                                                            placeholder="R$ 0,00"
-                                                            inputMode="decimal"
-                                                            className="w-full rounded-[12px] border border-[#D8D8D8] px-3 py-2 text-[14px] outline-none transition focus:border-[#8FD0E6]"
-                                                        />
-                                                    </div>
-
-                                                    <div className="flex items-center justify-center px-3 py-3">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => removeFaccaoRow(index)}
-                                                            className="opacity-0 transition group-hover:opacity-100"
-                                                            aria-label="Excluir facção"
-                                                        >
-                                                            {/* TODO: troque o asset abaixo pelo ícone correto da sua pasta /public */}
-                                                            <img
-                                                                src="/icons/trash.png"
-                                                                alt="Excluir"
-                                                                className="h-5 w-5 object-contain"
-                                                            />
-                                                        </button>
-                                                    </div>
+                                                    Nenhuma facção atribuída ainda.
                                                 </div>
-                                            ))
-                                        ) : (
-                                            <div className="border-t border-[#ECECEC] px-4 py-5 text-center text-[13px] text-[#8A8A8A]">
-                                                Nenhuma facção atribuída ainda.
-                                            </div>
-                                        )}
+                                            )}
+                                        </div>
+
+                                        {/* Lixeira flutuante, fora da largura da tabela, sem scroll horizontal */}
+                                        <div className="pointer-events-none absolute inset-y-0 right-0 w-0 overflow-visible">
+                                            {faccaoRows.map((row, index) => {
+                                                const isVisible = hoveredFaccaoIndex === index;
+
+                                                const top =
+                                                    index * FACCAO_ROW_HEIGHT +
+                                                    FACCAO_ROW_HEIGHT / 2 -
+                                                    faccaoScrollTop;
+
+                                                return (
+                                                    <button
+                                                        key={`trash-${row.faccaoId}-${index}`}
+                                                        type="button"
+                                                        onClick={() =>
+                                                            setFaccaoRows((p) =>
+                                                                p.filter((_, i) => i !== index),
+                                                            )
+                                                        }
+                                                        onMouseEnter={() =>
+                                                            setHoveredFaccaoIndex(index)
+                                                        }
+                                                        onMouseLeave={() =>
+                                                            setHoveredFaccaoIndex(null)
+                                                        }
+                                                        className={`pointer-events-auto absolute z-20 rounded p-1 transition-opacity ${
+                                                            isVisible ? "opacity-100" : "opacity-0"
+                                                        }`}
+                                                        style={{
+                                                            top,
+                                                            right: "-24px",
+                                                            transform: "translateY(-50%)",
+                                                            width: "24px",
+                                                            height: "24px",
+                                                        }}
+                                                        title="Remover facção"
+                                                    >
+                                                        <img
+                                                            src="/excluir-cinza-claro.png"
+                                                            alt="Remover facção"
+                                                            style={{
+                                                                width: "100%",
+                                                                height: "100%",
+                                                                objectFit: "contain",
+                                                                display: "block",
+                                                            }}
+                                                        />
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="mt-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => openFaccaoModal(null)}
-                                        className="w-full rounded-[16px] bg-[#F5F5F5] px-5 py-4 text-[14px] text-[#707070] transition hover:bg-[#EEEEEE]"
-                                    >
+                                <button
+                                    type="button"
+                                    onClick={() => setFaccaoModalOpen(true)}
+                                    className="mt-3 w-full h-[39px] rounded-[10px] bg-[#F4F4F4] hover:bg-[#F0F0F0] transition flex items-center justify-center gap-2 text-[14px] text-[#898C8F]"
+                                >
+                                    <img
+                                        src="/maquina-costura-add.png"
+                                        alt="Máquina Ícone"
+                                        className="h-4 w-4 object-contain"
+                                    />
+                                    <span>
                                         {faccaoRows.length > 0
                                             ? "Atribuir mais uma facção"
                                             : "Atribuir facção"}
-                                    </button>
-                                </div>
+                                    </span>
+                                </button>
                             </div>
 
-                            {/* BOTÕES */}
-                            <div className="mt-8 flex items-center justify-end gap-3">
-                                <button
-                                    type="button"
-                                    onClick={onClose}
-                                    className="rounded-full border border-[#E5E5E5] px-6 py-3 text-[14px] text-[#666] transition hover:bg-[#FAFAFA]"
-                                >
-                                    Cancelar
-                                </button>
-
+                            {/* Rodapé */}
+                            <div className="mt-8 flex justify-end pt-2 mx-[30px]">
                                 <button
                                     type="button"
                                     onClick={handleSave}
                                     disabled={saving}
-                                    className="rounded-full bg-[#8FD0E6] px-7 py-3 text-[14px] font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
+                                    className="rounded-[19px] bg-[#A9E2F2] px-10 h-[39px] text-[14px] font-medium text-[#4696AD] transition hover:bg-[#8acbdc] disabled:opacity-70"
                                 >
                                     {saving ? "Salvando..." : "Adicionar ficha"}
                                 </button>
                             </div>
-                        </>
+                        </div>
                     )}
                 </div>
             </div>
 
-            {/* Modal interno de facções */}
-            <FaccaoSelectionModal
+            <ProdutoFaccoes
                 isOpen={faccaoModalOpen}
-                title={replaceFaccaoIndex !== null ? "Substituir facção" : "Selecionar facções"}
-                confirmLabel={replaceFaccaoIndex !== null ? "Substituir" : "Adicionar"}
                 faccoes={availableFaccoes}
-                initialSelectedIds={
-                    replaceFaccaoIndex !== null && faccaoRows[replaceFaccaoIndex]
-                        ? [faccaoRows[replaceFaccaoIndex].faccaoId]
-                        : []
-                }
-                singleSelect={replaceFaccaoIndex !== null}
-                onClose={() => {
-                    setFaccaoModalOpen(false);
-                    setReplaceFaccaoIndex(null);
-                }}
-                onConfirm={handleConfirmFaccoes}
+                selectedFaccaoIds={selectedFaccaoIds}
+                produtoId={produto?.id}
+                onClose={() => setFaccaoModalOpen(false)}
+                onSelectFaccao={handleSelectFaccaoFromModal}
             />
         </>
     );
 }
-// ```
-
-// ---
-
-// ### Observações rápidas
-// - A persistência em `sessionStorage` foi removida completamente.
-// - O warning de `setSearch` desaparece porque o modal de facções não faz mais sync de estado via `useEffect`.
-// - As chamadas de API ficaram isoladas em `src/services`.
-// - O campo de referência do cliente só aparece quando existe vínculo e o fabrico é sob demanda.
-// - A opção `Adicionar nova cor` continua sendo o último item do dropdown e chama um callback externo.
-// - O path de `faccao-produto` pode precisar de ajuste se o nome real da sua rota for diferente.

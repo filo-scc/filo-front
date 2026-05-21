@@ -34,12 +34,3 @@ export const getTecidosByFabrico = async (fabricoId) => {
     const response = await api.get(`/tecidos/fabrico/${fabricoId}`);
     return response.data;
 };
-
-function unwrap(response) {
-    return response?.data?.data ?? response?.data ?? response;
-}
-
-export async function atualizarProduto(id, payload) {
-    const response = await api.put(`/produtos/${id}`, payload);
-    return unwrap(response);
-}

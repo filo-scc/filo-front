@@ -5,7 +5,6 @@ import { excluirFaccao, getFaccoesByFabrico } from "../services/faccaoService";
 import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import MenuOpcoes from "../components/geral/MenuOpcoes";
-import FichaTecnicaModal from "../components/fichas-tecnicas/FichaTecnicaModal";
 
 const Faccoes = () => {
     const userString = localStorage.getItem("user");
@@ -19,29 +18,9 @@ const Faccoes = () => {
 
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
 
-    // Modal de teste da ficha técnica
-    const [modalFichaAberto, setModalFichaAberto] = useState(false);
-
     const navigate = useNavigate();
 
     const fabricoId = userString ? JSON.parse(userString).fabrico_id : null;
-
-    /**
-     * Produto mockado apenas para testar o modal
-     * depois você substitui isso pelo fluxo real
-     */
-    const produtoTesteFicha = {
-        id: 1,
-        foto: "/camiseta-placeholder.png", // troque depois
-        referenciaInterna: "CSM-001",
-        tecido: "Algodão Premium",
-        gradeVersaoId: 1,
-        gradeLabel: "Camisa Social Masculina (1 ao 4)",
-
-        // só aparece se o fabrico for sob demanda
-        clienteNome: "Cliente Exemplo",
-        referenciaCliente: "SOCIAL-MASC-001",
-    };
 
     useEffect(() => {
         const fetchFaccoes = async () => {
@@ -185,14 +164,6 @@ const Faccoes = () => {
                                 </svg>
                             </div>
 
-                            {/* TESTE DO MODAL */}
-                            <button
-                                onClick={() => setModalFichaAberto(true)}
-                                className="bg-[#C4F042] hover:bg-[#b4df35] text-[#404040] w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors"
-                            >
-                                Testar ficha técnica
-                            </button>
-
                             {/* Cadastro de facção */}
                             <button
                                 onClick={() => navigate("/faccoes/novo")}
@@ -328,21 +299,6 @@ const Faccoes = () => {
                 isOpen={modalConfirmacaoAberto}
                 onClose={() => setModalConfirmacaoAberto(false)}
                 type="excluído"
-            />
-
-            {/* Modal de teste da ficha técnica */}
-            <FichaTecnicaModal
-                isOpen={modalFichaAberto}
-                onClose={() => setModalFichaAberto(false)}
-                fabricoId={fabricoId}
-                produto={produtoTesteFicha}
-                etapaAtualId={1}
-                onFichaCreated={() => {
-                    setModalFichaAberto(false);
-                }}
-                onRequestCreateColor={() => {
-                    console.log("Abrir modal de criar cor");
-                }}
             />
         </div>
     );

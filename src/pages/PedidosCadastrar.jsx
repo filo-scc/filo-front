@@ -1,19 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import TabelaFichaTecnica from "../components/pedidos/TabelaReferenciaFichaTecnica";
-import ModalFichaTecnica from "../components/pedidos/ModalFichaTecnica";
 import {
     getClientes,
     getProdutosDoCliente,
     getProdutosPorFabrico,
 } from "../services/clientesService";
 import { getFaccoesByFabrico } from "../services/faccaoService";
+import { getFabricoById } from "../services/fabricoService";
+import FichaTecnicaModal from "../components/fichas-tecnicas/FichaTecnicaModal";
 
 const sectionTitleClass = "text-[20px] font-light text-[#404040] mb-4 font-['Outfit',_sans-serif]";
-
-function FieldLabel({ children }) {
-    return <label className="block text-[20px] font-light text-[#404040] mb-3">{children}</label>;
-}
 
 function DropdownField({
     value,
@@ -32,7 +29,7 @@ function DropdownField({
                 type="button"
                 onClick={onToggle}
                 disabled={disabled}
-                className="w-full h-[39px] border border-[#898C8F] rounded-[10px] px-3 text-sm focus:outline-none bg-white flex items-center justify-between disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full h-[46px] border border-[#898C8F] rounded-[10px] px-3 text-sm focus:outline-none bg-white flex items-center justify-between disabled:opacity-60 disabled:cursor-not-allowed"
             >
                 <span className={value ? "text-[#707070] font-normal" : "text-[#898C8F]"}>
                     {value || placeholder}
@@ -68,7 +65,6 @@ function DropdownField({
                         ) : (
                             options.map((option) => {
                                 const selected = isSelectedOption(option);
-
                                 return (
                                     <button
                                         key={option.value}
@@ -125,6 +121,7 @@ export default function PedidosCadastrar() {
     const [carregandoClientes, setCarregandoClientes] = useState(true);
     const [carregandoReferencias, setCarregandoReferencias] = useState(false);
 
+    const [isSobDemanda, setIsSobDemanda] = useState(true);
     const [clienteSelecionado, setClienteSelecionado] = useState(null);
     const [referenciaSelecionada, setReferenciaSelecionada] = useState(null);
     const [modalFichaAberto, setModalFichaAberto] = useState(false);
@@ -142,113 +139,98 @@ export default function PedidosCadastrar() {
             setCarregandoClientes(false);
             return;
         }
-
         let ignorar = false;
-
         const carregarDados = async () => {
             setCarregandoClientes(true);
             try {
-                const [listaClientes, listaFaccoes] = await Promise.all([
+                const [fabricoInfo, listaClientes, listaFaccoes] = await Promise.all([
+                    getFabricoById(fabricoId),
                     getClientes(fabricoId),
                     getFaccoesByFabrico(fabricoId),
                 ]);
-
                 if (ignorar) return;
 
+                const produzSobDemanda = Boolean(
+                    fabricoInfo?.fabricacao_sob_demanda ??
+                    fabricoInfo?.produz_sob_demanda ??
+                    fabricoInfo?.sob_demanda ??
+                    true,
+                );
+                setIsSobDemanda(produzSobDemanda);
                 setClientes(listaClientes || []);
                 setFaccoes(
-                    (listaFaccoes || []).map((faccao) => ({
-                        id: faccao.id,
-                        nome: faccao.nome,
-                    })),
+                    (listaFaccoes || []).map((faccao) => ({ id: faccao.id, nome: faccao.nome })),
                 );
             } catch (error) {
-                console.error("Erro ao carregar dados do pedido:", error);
-                if (!ignorar) setErro("Não foi possível carregar clientes e facções.");
+                console.error("Erro ao carregar dados:", error);
+                if (!ignorar)
+                    setErro("Não foi possível carregar configurações, clientes e facções.");
             } finally {
                 if (!ignorar) setCarregandoClientes(false);
             }
         };
-
         carregarDados();
-
         return () => {
             ignorar = true;
         };
     }, [fabricoId]);
 
     useEffect(() => {
-        if (!clienteSelecionado?.id || !fabricoId) {
+        if (isSobDemanda && !clienteSelecionado?.id) {
             setReferenciasDisponiveis([]);
             setReferenciaSelecionada(null);
             return;
         }
+        if (!fabricoId) return;
 
         let ignorar = false;
-
         const carregarReferencias = async () => {
             setCarregandoReferencias(true);
             try {
-                const [todosProdutos, produtosDoCliente] = await Promise.all([
-                    getProdutosPorFabrico(fabricoId),
-                    getProdutosDoCliente(clienteSelecionado.id),
-                ]);
-
+                let listaProdutosCliente = [];
+                const promessas = [getProdutosPorFabrico(fabricoId)];
+                if (isSobDemanda && clienteSelecionado?.id) {
+                    promessas.push(getProdutosDoCliente(clienteSelecionado.id));
+                }
+                const resultados = await Promise.all(promessas);
+                const todosProdutos = resultados[0];
+                if (resultados[1]) listaProdutosCliente = resultados[1];
                 if (ignorar) return;
 
                 const mapaAssociados = new Map(
-                    (produtosDoCliente || []).map((item) => [String(getProdutoId(item)), item]),
+                    (listaProdutosCliente || []).map((item) => [String(getProdutoId(item)), item]),
                 );
-
                 const idsJaAdicionados = new Set(fichas.map((f) => String(f.produtoId)));
 
                 const referenciasOrdenadas = (todosProdutos || [])
                     .filter((produto) => !idsJaAdicionados.has(String(produto.id)))
                     .map((produto) => {
                         const associado = mapaAssociados.get(String(produto.id));
-
-                        if (associado) {
-                            return { ...associado, associadoAoCliente: true };
-                        }
-
-                        return {
-                            produto,
-                            produto_id: produto.id,
-                            associadoAoCliente: false,
-                        };
+                        if (associado) return { ...associado, produto, associadoAoCliente: true };
+                        return { produto, produto_id: produto.id, associadoAoCliente: false };
                     })
                     .sort((a, b) => {
-                        if (a.associadoAoCliente !== b.associadoAoCliente) {
+                        if (a.associadoAoCliente !== b.associadoAoCliente)
                             return a.associadoAoCliente ? -1 : 1;
-                        }
-
                         return getReferenciaInterna(a).localeCompare(
                             getReferenciaInterna(b),
                             "pt-BR",
-                            {
-                                sensitivity: "base",
-                            },
+                            { sensitivity: "base" },
                         );
                     });
-
                 setReferenciasDisponiveis(referenciasOrdenadas);
             } catch (error) {
+                if (!ignorar) setErro("Não foi possível carregar as referências.");
                 console.error("Erro ao carregar referências:", error);
-                if (!ignorar) {
-                    setReferenciasDisponiveis([]);
-                    setErro("Não foi possível carregar as referências.");
-                }
             } finally {
                 if (!ignorar) setCarregandoReferencias(false);
             }
         };
-
         carregarReferencias();
-
         return () => {
             ignorar = true;
         };
-    }, [clienteSelecionado, fabricoId, fichas]);
+    }, [clienteSelecionado, fabricoId, fichas, isSobDemanda]);
 
     const opcoesClientes = clientes.map((cliente) => ({
         value: String(cliente.id),
@@ -256,19 +238,13 @@ export default function PedidosCadastrar() {
         raw: cliente,
     }));
 
-    const opcoesReferencias = referenciasDisponiveis.map((item) => {
-        const produtoId = getProdutoId(item);
+    const opcoesReferencias = referenciasDisponiveis.map((item) => ({
+        value: String(getProdutoId(item)),
+        label: getReferenciaInterna(item),
+        raw: item, // Enviamos o objeto completo (item.produto) para o modal
+    }));
 
-        return {
-            value: String(produtoId),
-            label: getReferenciaInterna(item),
-            raw: item,
-        };
-    });
-
-    const toggleDropdown = (nome) => {
-        setOpenDropdown((atual) => (atual === nome ? null : nome));
-    };
+    const toggleDropdown = (nome) => setOpenDropdown((atual) => (atual === nome ? null : nome));
 
     const handleSelecionarCliente = (opcao) => {
         setClienteSelecionado(opcao.raw);
@@ -277,13 +253,35 @@ export default function PedidosCadastrar() {
         setErro("");
     };
 
-    const handleSelecionarReferencia = (opcao) => {
-        if (!clienteSelecionado) {
+    const handleSelecionarReferencia = async (opcao) => {
+        if (isSobDemanda && !clienteSelecionado) {
             setErro("Selecione um cliente antes de adicionar a referência.");
             return;
         }
 
-        setReferenciaParaModal(opcao.raw);
+        let referenciaCliente = "";
+
+        if (isSobDemanda && clienteSelecionado?.id) {
+            try {
+                const produtosDoCliente = await getProdutosDoCliente(clienteSelecionado.id);
+
+                const produtoClienteSelecionado = (produtosDoCliente || []).find(
+                    (item) => String(getProdutoId(item)) === String(opcao.value),
+                );
+
+                referenciaCliente = produtoClienteSelecionado?.nome_para_cliente || "";
+            } catch (error) {
+                console.error("Erro ao buscar produto do cliente:", error);
+            }
+        }
+
+        setReferenciaParaModal({
+            ...opcao.raw?.produto,
+            clienteNome: clienteSelecionado?.nome,
+            referenciaCliente,
+            id: getProdutoId(opcao.raw),
+        });
+
         setModalFichaAberto(true);
         setReferenciaSelecionada(null);
         setOpenDropdown(null);
@@ -293,43 +291,6 @@ export default function PedidosCadastrar() {
     const fecharModalFicha = () => {
         setModalFichaAberto(false);
         setReferenciaParaModal(null);
-    };
-
-    const handleChangeQuantidade = (fichaId, valor) => {
-        setFichas((prev) =>
-            prev.map((ficha) => (ficha.id === fichaId ? { ...ficha, quantidade: valor } : ficha)),
-        );
-    };
-
-    const handleChangeFaccao = (fichaId, faccaoId, faccaoNome) => {
-        setFichas((prev) =>
-            prev.map((ficha) =>
-                ficha.id === fichaId ? { ...ficha, faccaoId, faccaoNome } : ficha,
-            ),
-        );
-    };
-
-    const handleConcluirPedido = () => {
-        setErro("");
-
-        if (fichas.length === 0) {
-            setErro("Adicione ao menos uma ficha técnica ao pedido.");
-            return;
-        }
-
-        const fichaInvalida = fichas.find(
-            (f) => !f.quantidade || Number(f.quantidade) <= 0 || !f.faccaoId,
-        );
-
-        if (fichaInvalida) {
-            setErro("Preencha quantidade e facção responsável em todas as fichas.");
-            return;
-        }
-
-        navigate("/pedidos", {
-            replace: true,
-            state: { success: "Pedido criado com sucesso." },
-        });
     };
 
     return (
@@ -354,29 +315,31 @@ export default function PedidosCadastrar() {
                 <section className="mb-10">
                     <h2 className={sectionTitleClass}>Adicionar ficha técnica</h2>
                     <div className="flex flex-wrap gap-4">
-                        <div className="w-full max-w-[320px]">
-                            <DropdownField
-                                value={clienteSelecionado?.nome || ""}
-                                placeholder={
-                                    carregandoClientes
-                                        ? "Carregando clientes..."
-                                        : "Selecionar cliente"
-                                }
-                                options={opcoesClientes}
-                                isOpen={openDropdown === "cliente"}
-                                onToggle={() => toggleDropdown("cliente")}
-                                onSelect={handleSelecionarCliente}
-                                isSelectedOption={(option) =>
-                                    String(clienteSelecionado?.id) === option.value
-                                }
-                                disabled={carregandoClientes}
-                            />
-                        </div>
+                        {isSobDemanda && (
+                            <div className="w-full max-w-[320px]">
+                                <DropdownField
+                                    value={clienteSelecionado?.nome || ""}
+                                    placeholder={
+                                        carregandoClientes
+                                            ? "Carregando clientes..."
+                                            : "Selecionar cliente"
+                                    }
+                                    options={opcoesClientes}
+                                    isOpen={openDropdown === "cliente"}
+                                    onToggle={() => toggleDropdown("cliente")}
+                                    onSelect={handleSelecionarCliente}
+                                    isSelectedOption={(option) =>
+                                        String(clienteSelecionado?.id) === option.value
+                                    }
+                                    disabled={carregandoClientes}
+                                />
+                            </div>
+                        )}
                         <div className="w-full max-w-[320px]">
                             <DropdownField
                                 value={referenciaSelecionada?.label || ""}
                                 placeholder={
-                                    !clienteSelecionado
+                                    isSobDemanda && !clienteSelecionado
                                         ? "Adicionar referência*"
                                         : carregandoReferencias
                                           ? "Carregando referências..."
@@ -389,7 +352,9 @@ export default function PedidosCadastrar() {
                                 isSelectedOption={(option) =>
                                     referenciaSelecionada?.value === option.value
                                 }
-                                disabled={!clienteSelecionado || carregandoReferencias}
+                                disabled={
+                                    (isSobDemanda && !clienteSelecionado) || carregandoReferencias
+                                }
                             />
                         </div>
                     </div>
@@ -399,8 +364,18 @@ export default function PedidosCadastrar() {
                     <TabelaFichaTecnica
                         fichas={fichas}
                         faccoes={faccoes}
-                        onChangeQuantidade={handleChangeQuantidade}
-                        onChangeFaccao={handleChangeFaccao}
+                        onChangeQuantidade={(id, val) =>
+                            setFichas((p) =>
+                                p.map((f) => (f.id === id ? { ...f, quantidade: val } : f)),
+                            )
+                        }
+                        onChangeFaccao={(id, fId, fNome) =>
+                            setFichas((p) =>
+                                p.map((f) =>
+                                    f.id === id ? { ...f, faccaoId: fId, faccaoNome: fNome } : f,
+                                ),
+                            )
+                        }
                     />
                 </div>
 
@@ -414,20 +389,32 @@ export default function PedidosCadastrar() {
                     </button>
                     <button
                         type="button"
-                        onClick={handleConcluirPedido}
+                        onClick={() =>
+                            navigate("/pedidos", { state: { success: "Pedido criado!" } })
+                        }
                         className="bg-[#A9E2F2] hover:bg-[#94d6eb] text-white h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px]"
                     >
                         Concluir pedido
                     </button>
                 </div>
-
                 {erro ? <p className="pt-4 text-sm text-[#D75757] text-right">{erro}</p> : null}
             </div>
 
-            <ModalFichaTecnica
+            <FichaTecnicaModal
                 isOpen={modalFichaAberto}
                 onClose={fecharModalFicha}
-                referencia={referenciaParaModal}
+                produto={referenciaParaModal} // <-- Passando o objeto produto
+                fabricoId={fabricoId}
+                onFichaCreated={(ficha) => {
+                    setFichas((prev) => [
+                        ...prev,
+                        {
+                            ...ficha,
+                            produtoId: referenciaParaModal.id,
+                            nome: referenciaParaModal.nome || referenciaParaModal.referencia,
+                        },
+                    ]);
+                }}
             />
         </div>
     );
