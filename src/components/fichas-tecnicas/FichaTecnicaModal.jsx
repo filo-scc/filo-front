@@ -520,8 +520,17 @@ export default function FichaTecnicaModal({
 
                                     {/* Select de Cores */}
                                     <div className="relative" ref={colorDropdownRef}>
-                                        <div className="flex h-[39px] w-full items-center justify-between rounded-[10px] border border-[#898C8F] bg-white px-4 text-[14px] text-[#7B7D80]">
+                                        <div
+                                            className="flex h-[39px] w-full items-center justify-between rounded-[10px] border border-[#898C8F] bg-white px-4 text-[14px] text-[#7B7D80] cursor-text"
+                                            onClick={() => {
+                                                setColorDropdownOpen(true);
+                                                document
+                                                    .getElementById("input-busca-cores")
+                                                    ?.focus();
+                                            }}
+                                        >
                                             <input
+                                                id="input-busca-cores"
                                                 type="text"
                                                 value={colorSearch}
                                                 onChange={(e) => {
@@ -534,10 +543,11 @@ export default function FichaTecnicaModal({
                                             />
                                             <button
                                                 type="button"
-                                                onClick={() =>
-                                                    setColorDropdownOpen((prev) => !prev)
-                                                }
-                                                className="ml-2 shrink-0"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setColorDropdownOpen((prev) => !prev);
+                                                }}
+                                                className="ml-2 shrink-0 py-2"
                                             >
                                                 <img
                                                     src={
