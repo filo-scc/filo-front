@@ -471,7 +471,7 @@ export default function FichaTecnicaModal({
                                     )}
                                     <FloatingInput
                                         label="Tecido"
-                                        value={produto?.tecido}
+                                        value={produto?.tecido?.nome}
                                         readOnly
                                     />
 
