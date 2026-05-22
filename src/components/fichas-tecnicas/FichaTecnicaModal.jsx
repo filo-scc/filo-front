@@ -7,7 +7,7 @@ import { getFabricoById } from "../../services/fabricoService";
 import { getCoresByFabricoId, createCor } from "../../services/corService";
 import { getFaccoesByFabrico } from "../../services/faccaoService";
 import { getGradesLiberadasByFabricoId } from "../../services/gradeService";
-import { atualizarProduto } from "../../services/produtosService";
+import { atualizarProduto, getFaccaoByProduto } from "../../services/produtoService";
 import { createFichaTecnica } from "../../services/fichaTecnicaService";
 import {
     syncFichaTecnicaCores,
@@ -26,7 +26,7 @@ function FloatingInput({ label, value, readOnly, onChange, placeholder }) {
                 value={value || ""}
                 onChange={onChange}
                 placeholder={placeholder || " "}
-                className="peer w-full h-[39px] rounded-[10px] border border-[#898C8F] bg-white px-4 text-[14px] outline-none transition !text-[#898C8F] placeholder:!text-[#898C8F] pointer-events-none [cursor:not-allowed_!important]"
+                className="peer w-full h-[39px] rounded-[10px] border border-[#898C8F] bg-white px-4 text-[14px] outline-none transition !text-[#898C8F] placeholder:!text-[#898C8F] [cursor:not-allowed_!important]"
             />
 
             <label
@@ -42,17 +42,15 @@ function FloatingInput({ label, value, readOnly, onChange, placeholder }) {
     );
 }
 
-const calcularMDC = (a, b) => {
-    a = Math.abs(Math.round(a));
-    b = Math.abs(Math.round(b));
-    return b === 0 ? a : calcularMDC(b, a % b);
-};
-
 const calcularProporcao = (totaisPorTamanho) => {
     const valoresValidos = totaisPorTamanho.map(Number).filter((t) => t > 0);
     if (valoresValidos.length === 0) return totaisPorTamanho.map(() => 0);
-    const divisor = valoresValidos.reduce((acc, val) => calcularMDC(acc, val));
-    return totaisPorTamanho.map((t) => (t > 0 ? Math.round(t / divisor) : 0));
+
+    // Encontra o menor valor válido para ser a base (1)
+    const base = Math.min(...valoresValidos);
+
+    // Divide os outros valores pela base e arredonda para o inteiro mais próximo
+    return totaisPorTamanho.map((t) => (t > 0 ? Math.round(t / base) : 0));
 };
 
 function QuantityCell({ value, onCommit }) {
@@ -202,6 +200,8 @@ export default function FichaTecnicaModal({
     const [hoveredFaccaoIndex, setHoveredFaccaoIndex] = useState(null);
     const [faccaoScrollTop, setFaccaoScrollTop] = useState(0);
 
+    const [colorSearch, setColorSearch] = useState("");
+
     const faccaoScrollRef = useRef(null);
 
     const producaoSobDemanda = useMemo(() => {
@@ -243,6 +243,10 @@ export default function FichaTecnicaModal({
 
     const proporcoes = useMemo(() => calcularProporcao(totalsBySize), [totalsBySize]);
 
+    const filteredColors = availableColors.filter((color) =>
+        color.nome.toLowerCase().includes(colorSearch.toLowerCase()),
+    );
+
     // Limpa integralmente todos os estados de digitação
     const resetStates = useCallback(() => {
         setSelectedColorIds([]);
@@ -268,19 +272,21 @@ export default function FichaTecnicaModal({
         const bootstrap = async () => {
             setLoading(true);
             try {
-                const [fabricoResponse, colorsResponse, faccoesResponse, gradesResponse] =
+                const [fabricoResponse, colorsResponse, gradesResponse, faccoesProdutoResponse] =
                     await Promise.all([
                         getFabricoById(fabricoId),
                         getCoresByFabricoId(fabricoId),
-                        getFaccoesByFabrico(fabricoId),
                         getGradesLiberadasByFabricoId(fabricoId),
+                        getFaccaoByProduto(produto.id),
                     ]);
 
                 if (!alive) return;
 
                 setFabricoInfo(fabricoResponse);
                 setAvailableColors(Array.isArray(colorsResponse) ? colorsResponse : []);
-                setAvailableFaccoes(Array.isArray(faccoesResponse) ? faccoesResponse : []);
+                setAvailableFaccoes(
+                    Array.isArray(faccoesProdutoResponse) ? faccoesProdutoResponse : [],
+                );
 
                 const normalizedGrades = normalizeGradeOptions(
                     Array.isArray(gradesResponse) ? gradesResponse : [],
@@ -317,17 +323,22 @@ export default function FichaTecnicaModal({
             prev.includes(colorId) ? prev.filter((id) => id !== colorId) : [...prev, colorId],
         );
 
+    const formatarPreco = (valor) => {
+        if (valor === null || valor === undefined || valor === "") {
+            return "";
+        }
+
+        return `R$ ${Number(valor).toFixed(2).replace(".", ",")}`;
+    };
+
     // Injeta a facção marcando o isDirty como falso inicialmente
     const handleSelectFaccaoFromModal = (faccao) => {
         if (!faccao) return;
 
         setFaccaoRows((prev) => {
-            if (prev.some((row) => row.faccaoId === faccao.id)) return prev;
-
-            const precoFormatado =
-                faccao.preco !== null && faccao.preco !== undefined
-                    ? String(faccao.preco).replace(".", ",")
-                    : "";
+            if (prev.some((row) => row.faccaoId === faccao.id)) {
+                return prev;
+            }
 
             return [
                 ...prev,
@@ -335,7 +346,7 @@ export default function FichaTecnicaModal({
                     faccaoId: faccao.id,
                     faccaoNome: faccao.nome,
                     operacao: "",
-                    preco: precoFormatado,
+                    preco: formatarPreco(faccao.preco),
                     isDirty: false,
                 },
             ];
@@ -582,64 +593,45 @@ export default function FichaTecnicaModal({
 
                                     {/* Select de Cores Customizado */}
                                     <div className="relative">
-                                        <button
-                                            type="button"
-                                            onClick={() => setColorDropdownOpen(!colorDropdownOpen)}
-                                            className="flex w-full h-[39px] items-center justify-between rounded-[10px] border border-[#898C8F] bg-white px-4 text-[14px] text-[#7B7D80]"
-                                        >
-                                            <span>Selecionar cores</span>
-                                            {colorDropdownOpen ? (
-                                                <img
-                                                    src="/arrow-up.png"
-                                                    alt="Selecionar Grade"
-                                                    className="w-[11px] h-[6px]"
-                                                />
-                                            ) : (
-                                                <img
-                                                    src="/arrow-down.png"
-                                                    alt="Selecionar Grade"
-                                                    className="w-[11px] h-[6px]"
-                                                />
-                                            )}
-                                        </button>
+                                        <div className="flex h-[39px] w-full items-center justify-between rounded-[10px] border border-[#898C8F] bg-white px-4 text-[14px] text-[#7B7D80]">
+                                            <input
+                                                type="text"
+                                                value={colorSearch}
+                                                onChange={(e) => {
+                                                    setColorSearch(e.target.value);
+                                                    setColorDropdownOpen(true);
+                                                }}
+                                                onFocus={() => setColorDropdownOpen(true)}
+                                                placeholder="Selecionar cores/estampas"
+                                                className="w-full bg-transparent outline-none placeholder:text-[#7B7D80] text-[#7B7D80]"
+                                            />
+
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setColorDropdownOpen((prev) => !prev)
+                                                }
+                                                className="ml-2 shrink-0"
+                                            >
+                                                {colorDropdownOpen ? (
+                                                    <img
+                                                        src="/arrow-up.png"
+                                                        alt="Abrir"
+                                                        className="w-[11px] h-[6px]"
+                                                    />
+                                                ) : (
+                                                    <img
+                                                        src="/arrow-down.png"
+                                                        alt="Abrir"
+                                                        className="w-[11px] h-[6px]"
+                                                    />
+                                                )}
+                                            </button>
+                                        </div>
 
                                         {colorDropdownOpen && (
                                             <div className="absolute z-[30] mt-1 w-full rounded-[10px] border border-[#898C8F] bg-white shadow-lg overflow-hidden">
                                                 <div className="max-h-[200px] overflow-y-auto scrollbar-sutil">
-                                                    {availableColors.map((color) => {
-                                                        const checked = selectedColorIds.includes(
-                                                            color.id,
-                                                        );
-                                                        return (
-                                                            <button
-                                                                key={color.id}
-                                                                type="button"
-                                                                onClick={() =>
-                                                                    handleToggleColor(color.id)
-                                                                }
-                                                                className={`flex w-full items-center justify-between border-l-[4px] px-4 py-2.5 text-left text-[14px] transition bg-white text-[#7B7D80] ${
-                                                                    checked
-                                                                        ? "border-l-[3px] border-l-[#C4F042]"
-                                                                        : "border-l-transparent"
-                                                                }`}
-                                                            >
-                                                                <span className="font-light text-[#7B7D80]">
-                                                                    {color.nome}
-                                                                </span>
-                                                                {checked ? (
-                                                                    <img
-                                                                        src="/check_cinza.png"
-                                                                        className="w-[12px] h-[8px]"
-                                                                    />
-                                                                ) : (
-                                                                    <img
-                                                                        src="/mais_cinza.png"
-                                                                        className="w-[12px] h-[12px]"
-                                                                    />
-                                                                )}
-                                                            </button>
-                                                        );
-                                                    })}
                                                     <button
                                                         type="button"
                                                         onClick={() => {
@@ -647,10 +639,86 @@ export default function FichaTecnicaModal({
                                                             if (onRequestCreateColor)
                                                                 onRequestCreateColor();
                                                         }}
-                                                        className="flex w-full items-center gap-2 border-t border-[#EAEAEA] px-4 py-2.5 text-left text-[14px] text-[#4696AD] font-medium bg-white hover:bg-[#FAFAFA]"
+                                                        className="flex w-full items-center gap-2  px-4 py-2.5 text-left text-[14px] text-[#4696AD] font-medium bg-white hover:bg-[#FAFAFA]"
                                                     >
-                                                        <span>+ Adicionar nova cor</span>
+                                                        <span>+ Nova cor</span>
                                                     </button>
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setColorDropdownOpen(false);
+                                                            if (onRequestCreateColor)
+                                                                onRequestCreateColor();
+                                                        }}
+                                                        className="flex w-full items-center gap-2  px-4 py-2.5 text-left text-[14px] text-[#4696AD] font-medium bg-white hover:bg-[#FAFAFA]"
+                                                    >
+                                                        <span>+ Nova estampa</span>
+                                                    </button>
+
+                                                    {filteredColors.length > 0 ? (
+                                                        filteredColors.map((color) => {
+                                                            const checked =
+                                                                selectedColorIds.includes(color.id);
+
+                                                            return (
+                                                                <button
+                                                                    key={color.id}
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        handleToggleColor(color.id)
+                                                                    }
+                                                                    className={`flex w-full items-center border-l-[4px] px-4 py-2.5 transition bg-white text-[#7B7D80] ${
+                                                                        checked
+                                                                            ? "border-l-[3px] border-l-[#C4F042]"
+                                                                            : "border-l-transparent"
+                                                                    }`}
+                                                                >
+                                                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                                        {color.tipo ===
+                                                                        "estampa" ? (
+                                                                            <img
+                                                                                src={color.foto}
+                                                                                alt={color.nome}
+                                                                                className="w-[20px] h-[20px] rounded-[6px] shrink-0 border border-[#D9D9D9] object-cover"
+                                                                            />
+                                                                        ) : (
+                                                                            <span
+                                                                                className="w-[20px] h-[20px] rounded-[6px] shrink-0 border border-[#D9D9D9]"
+                                                                                style={{
+                                                                                    backgroundColor:
+                                                                                        color.codigo_hex ||
+                                                                                        "#E5E5E5",
+                                                                                }}
+                                                                            />
+                                                                        )}
+
+                                                                        <span className="font-light text-[#7B7D80] text-left truncate">
+                                                                            {color.nome}
+                                                                        </span>
+                                                                    </div>
+
+                                                                    {checked ? (
+                                                                        <img
+                                                                            src="/check_cinza.png"
+                                                                            className="w-[12px] h-[8px] shrink-0"
+                                                                            alt=""
+                                                                        />
+                                                                    ) : (
+                                                                        <img
+                                                                            src="/mais_cinza.png"
+                                                                            className="w-[12px] h-[12px] shrink-0"
+                                                                            alt=""
+                                                                        />
+                                                                    )}
+                                                                </button>
+                                                            );
+                                                        })
+                                                    ) : (
+                                                        <div className="px-4 py-3 text-[14px] text-[#898C8F]">
+                                                            Nenhuma cor encontrada
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}
@@ -955,35 +1023,34 @@ export default function FichaTecnicaModal({
                                                                 }}
                                                             >
                                                                 <input
-                                                                    value={row.preco}
+                                                                    value={row.preco || ""}
                                                                     onChange={(e) => {
-                                                                        const onlyNumbers =
+                                                                        const numeros =
                                                                             e.target.value.replace(
                                                                                 /\D/g,
                                                                                 "",
                                                                             );
 
                                                                         const valorFormatado =
-                                                                            new Intl.NumberFormat(
-                                                                                "pt-BR",
-                                                                                {
-                                                                                    style: "currency",
-                                                                                    currency: "BRL",
-                                                                                },
-                                                                            ).format(
-                                                                                Number(
-                                                                                    onlyNumbers,
-                                                                                ) / 100,
-                                                                            );
+                                                                            numeros
+                                                                                ? `R$ ${(
+                                                                                      Number(
+                                                                                          numeros,
+                                                                                      ) / 100
+                                                                                  )
+                                                                                      .toFixed(2)
+                                                                                      .replace(
+                                                                                          ".",
+                                                                                          ",",
+                                                                                      )}`
+                                                                                : "";
 
-                                                                        setFaccaoRows((p) =>
-                                                                            p.map((r, i) =>
+                                                                        setFaccaoRows((prev) =>
+                                                                            prev.map((r, i) =>
                                                                                 i === index
                                                                                     ? {
                                                                                           ...r,
-                                                                                          preco: onlyNumbers
-                                                                                              ? valorFormatado
-                                                                                              : "",
+                                                                                          preco: valorFormatado,
                                                                                           isDirty: true,
                                                                                       }
                                                                                     : r,
@@ -1038,10 +1105,10 @@ export default function FichaTecnicaModal({
                                                         }`}
                                                         style={{
                                                             top,
-                                                            right: "-24px",
+                                                            right: "-28px",
                                                             transform: "translateY(-50%)",
-                                                            width: "24px",
-                                                            height: "24px",
+                                                            width: "28px",
+                                                            height: "28px",
                                                         }}
                                                         title="Remover facção"
                                                     >

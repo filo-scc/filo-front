@@ -13,7 +13,7 @@ import {
     getGradesByFabrico,
     getProdutoById,
     getTecidosByFabrico,
-} from "../services/produtosService";
+} from "../services/produtoService";
 import {
     desvincularProdutoDoCliente,
     getClientes,

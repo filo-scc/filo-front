@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getProdutoById, getClientesDoProduto, excluirProduto } from "../services/produtosService";
+import { getProdutoById, getClientesDoProduto, excluirProduto } from "../services/produtoService";
 
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
 import SecaoDadosProduto from "../components/produtos/SecaoDadosProduto";

@@ -69,6 +69,8 @@ const ProdutoFaccoes = ({
             try {
                 const response = await getFaccaoByProduto(produtoId);
 
+                console.log("Resposta da API de facções:", response);
+
                 const rawList = Array.isArray(response)
                     ? response
                     : Array.isArray(response?.data)
@@ -170,12 +172,12 @@ const ProdutoFaccoes = ({
                         <div className="relative">
                             <button
                                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                                className="border border-[#D9D9D9] rounded-[12px] bg-white px-4 py-3 min-w-[180px] flex items-center justify-between text-[15px] font-Outfit text-[#404040]"
+                                className="border border-[#898C8F] rounded-[10px] bg-white px-4 py-3 min-w-[180px] h-[39px] flex items-center justify-between text-[15px] font-Outfit text-[#7B7D80]"
                             >
                                 <span className="text-[#7B7D80]">{getOrderLabel()}</span>
 
                                 <svg
-                                    className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${
+                                    className={`w-4 h-4 text-[#7B7D80] transition-transform duration-300 ${
                                         dropdownOpen ? "rotate-180" : ""
                                     }`}
                                     fill="none"
@@ -235,9 +237,9 @@ const ProdutoFaccoes = ({
                     </div>
 
                     {/* TABELA */}
-                    <div className="border border-[#EAEAEA] rounded-[16px] overflow-hidden">
+                    <div className="rounded-[10px] overflow-hidden">
                         {/* HEADER */}
-                        <div className="grid grid-cols-3 bg-[#DFF5FF] px-6 py-5 font-Outfit text-[#4F9DB8]">
+                        <div className="grid grid-cols-3 bg-[#C9EAF6] px-6 py-5 font-Outfit text-[#4F9DB8] !border-0">
                             <div className="flex justify-center text-[16px] font-Outfit font-light text-[#4696AD] leading-none">
                                 Facção
                             </div>
@@ -252,7 +254,7 @@ const ProdutoFaccoes = ({
                         </div>
 
                         {/* ROWS */}
-                        <div className="max-h-[360px] overflow-y-auto overflow-x-hidden scrollbar-sutil">
+                        <div className="max-h-[360px] overflow-y-auto overflow-x-hidden scrollbar-sutil rounded-b-[10px]">
                             {faccoesOrdenadas.map((faccao, index) => (
                                 <div
                                     key={faccao.id}
@@ -262,13 +264,12 @@ const ProdutoFaccoes = ({
                                     }}
                                     className={`
                                         cursor-pointer
-                                        grid grid-cols-3 px-6 py-5 items-center
-                                        hover:bg-[#EEF9FF] transition-colors
-                                        ${index % 2 === 0 ? "bg-white" : "bg-[#FAFAFA]"}
+                                        grid grid-cols-3 px-6 py-5 items-center transition-colors border-x-[0.5px] border-[#D9D9D9]
+                                        ${index % 2 === 0 ? "bg-white" : "bg-[#F4F4F4]"}
                                         ${
                                             index !== faccoesOrdenadas.length - 1
-                                                ? "border-b border-[#FAFAFA]"
-                                                : ""
+                                                ? ""
+                                                : "border-b border-[#D9D9D9] rounded-b-[10px]"
                                         }
                                     `}
                                 >
@@ -280,7 +281,7 @@ const ProdutoFaccoes = ({
 
                                     <div className="flex justify-center font-Outfit text-[16px] font-light text-[#404040]">
                                         {faccao.preco !== null
-                                            ? `R$${Number(faccao.preco).toFixed(2).replace(".", ",")}`
+                                            ? `R$ ${Number(faccao.preco).toFixed(2).replace(".", ",")}`
                                             : "-"}
                                     </div>
 
