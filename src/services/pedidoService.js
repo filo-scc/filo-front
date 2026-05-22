@@ -9,3 +9,13 @@ export const createPedido = async (pedidoData) => {
         throw error;
     }
 };
+
+export const getPedidosByFabricoId = async (fabricoId) => {
+    try {
+        const response = await api.get(`/pedidos/fabrico/${fabricoId}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching pedidos:", error);
+        throw error;
+    }
+};

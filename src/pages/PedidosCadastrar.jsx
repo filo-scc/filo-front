@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import TabelaFichaTecnica from "../components/pedidos/TabelaReferenciaFichaTecnica";
 import {
@@ -18,6 +18,7 @@ import {
     createFaccaoProduto,
 } from "../services/fichaTecnicaItemService";
 import { createPedido } from "../services/pedidoService";
+import { getPedidosByFabricoId } from "../services/pedidoService";
 
 const sectionTitleClass = "text-[20px] font-light text-[#404040] mb-4 font-['Outfit',_sans-serif]";
 
@@ -135,11 +136,43 @@ export default function PedidosCadastrar() {
 
     const [fichas, setFichas] = useState([]);
     const [erro, setErro] = useState("");
+    const [numeroPedido, setNumeroPedido] = useState("...");
 
-    const numeroPedido = useMemo(() => {
-        const base = Date.now() % 10000;
-        return String(1900 + base);
-    }, []);
+    useEffect(() => {
+        if (!fabricoId) return;
+
+        let ignorar = false;
+
+        const carregarNumeroDoPedido = async () => {
+            try {
+                const pedidos_do_fabrico = await getPedidosByFabricoId(fabricoId);
+
+                if (ignorar) return;
+
+                if (!pedidos_do_fabrico || pedidos_do_fabrico.length === 0) {
+                    setNumeroPedido("1");
+                    return;
+                }
+
+                const maiorNumero = pedidos_do_fabrico.reduce((maior, pedido) => {
+                    const numero = primeiroNumeroValido(pedido.numero);
+                    return numero > maior ? numero : maior;
+                }, 0);
+
+                setNumeroPedido(String(maiorNumero + 1));
+            } catch (error) {
+                console.error("Erro ao gerar o número do pedido:", error);
+                if (!ignorar) setNumeroPedido("-");
+            }
+        };
+
+        carregarNumeroDoPedido();
+
+        // Cleanup function para evitar memory leaks caso o componente desmonte
+        return () => {
+            ignorar = true;
+        };
+    }, [fabricoId]); // <-- Aqui resolvemos o seu warning. O React agora sabe que depende do fabricoId.
 
     useEffect(() => {
         if (!fabricoId) {
