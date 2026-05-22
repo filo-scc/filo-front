@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import TabelaFichaTecnica from "../components/pedidos/TabelaReferenciaFichaTecnica";
 import {
@@ -33,55 +33,108 @@ function DropdownField({
     disabled = false,
     className = "",
 }) {
+    const [termoBusca, setTermoBusca] = useState("");
+    const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+    const inputRef = useRef(null);
+
+    if (isOpen !== prevIsOpen) {
+        setPrevIsOpen(isOpen);
+        if (isOpen) {
+            setTermoBusca(""); // Limpa a busca na mesma renderização em que o menu abre!
+        }
+    }
+
+    useEffect(() => {
+        if (isOpen) {
+            inputRef.current?.focus();
+        }
+    }, [isOpen]);
+
+    const opcoesFiltradas = options.filter((option) =>
+        option.label.toLowerCase().includes(termoBusca.toLowerCase()),
+    );
+
     return (
         <div className={`relative ${isOpen ? "z-50" : "z-10"} ${className}`}>
-            <button
-                type="button"
-                onClick={onToggle}
-                disabled={disabled}
-                className="w-full h-[46px] border border-[#898C8F] rounded-[10px] px-3 text-sm focus:outline-none bg-white flex items-center justify-between disabled:opacity-60 disabled:cursor-not-allowed"
+            <div
+                onClick={() => {
+                    if (disabled) return;
+                    if (!isOpen) onToggle();
+                    inputRef.current?.focus();
+                }}
+                className={`w-full h-[39px] border border-[#898C8F] rounded-[10px] px-3 text-sm bg-white flex items-center justify-between transition-opacity ${
+                    disabled ? "opacity-60 cursor-not-allowed" : "cursor-text"
+                }`}
             >
-                <span className={value ? "text-[#707070] font-normal" : "text-[#898C8F]"}>
-                    {value || placeholder}
-                </span>
-                <svg
-                    className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                <input
+                    ref={inputRef}
+                    type="text"
+                    disabled={disabled}
+                    value={isOpen ? termoBusca : value || ""}
+                    onChange={(e) => {
+                        setTermoBusca(e.target.value);
+                        if (!isOpen) onToggle();
+                    }}
+                    placeholder={isOpen && value ? value : placeholder}
+                    className="w-full bg-transparent outline-none text-[#707070] placeholder:text-[#898C8F] truncate disabled:cursor-not-allowed"
+                />
+
+                <button
+                    type="button"
+                    disabled={disabled}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (!disabled) onToggle();
+                    }}
+                    className="ml-2 py-2 shrink-0 outline-none"
                 >
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M19 9l-7 7-7-7"
-                    />
-                </svg>
-            </button>
+                    <svg
+                        className={`w-4 h-4 text-[#898C8F] transition-transform duration-200 ${
+                            isOpen ? "rotate-180" : ""
+                        }`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M19 9l-7 7-7-7"
+                        />
+                    </svg>
+                </button>
+            </div>
+
             {isOpen && !disabled && (
                 <>
                     <button
                         type="button"
                         aria-label="Fechar dropdown"
                         onClick={onToggle}
-                        className="fixed inset-0 z-10 cursor-default"
+                        className="fixed inset-0 z-10 cursor-default outline-none"
                     />
-                    <div className="absolute left-0 right-0 top-[calc(100%+2px)] z-20 overflow-hidden rounded-[14px] border border-[#898C8F] bg-white max-h-[240px] overflow-y-auto">
-                        {options.length === 0 ? (
+
+                    <div className="absolute left-0 right-0 top-[calc(100%+2px)] z-20 overflow-hidden rounded-[14px] border border-[#898C8F] bg-white max-h-[240px] overflow-y-auto scrollbar-sutil">
+                        {opcoesFiltradas.length === 0 ? (
                             <p className="px-3 py-3 text-sm text-[#898C8F] font-light">
-                                Nenhuma opção disponível
+                                Nenhuma opção encontrada
                             </p>
                         ) : (
-                            options.map((option) => {
+                            opcoesFiltradas.map((option) => {
                                 const selected = isSelectedOption(option);
                                 return (
                                     <button
                                         key={option.value}
                                         type="button"
                                         onClick={() => onSelect(option)}
-                                        className={`relative overflow-hidden flex w-full items-center pl-[12px] pr-3 py-3 border-l-[3px] text-left text-[16px] transition-colors first:rounded-t-[13px] last:rounded-b-[13px] ${selected ? "border-[#C4F042] text-[#707070] bg-white" : "border-transparent text-[#707070] bg-white hover:bg-[#FAFAFA]"}`}
+                                        className={`relative overflow-hidden flex w-full items-center pl-[12px] pr-3 py-3 border-l-[3px] text-left text-[16px] transition-colors first:rounded-t-[13px] last:rounded-b-[13px] ${
+                                            selected
+                                                ? "border-[#C4F042] text-[#707070] bg-white"
+                                                : "border-transparent text-[#707070] bg-white hover:bg-[#FAFAFA]"
+                                        }`}
                                     >
-                                        <span>{option.label}</span>
+                                        <span className="truncate">{option.label}</span>
                                     </button>
                                 );
                             })
@@ -426,126 +479,146 @@ export default function PedidosCadastrar() {
     };
 
     return (
-        <div className="w-full max-w-[1200px] xl:max-w-none mx-auto font-['Outfit',_sans-serif]">
-            <div className="bg-white p-8 sm:p-10 rounded-[32px] shadow-[0_8px_40px_rgba(70,150,173,0.08)] border border-[#F0F4F6] w-full">
-                <div className="mb-10">
-                    <div className="flex items-center gap-3">
-                        <img
-                            src="/pedidos-desativado.png"
-                            alt=""
-                            className="h-8 w-8 shrink-0 object-contain brightness-0 opacity-[0.85]"
-                        />
-                        <h1 className="text-[28px] sm:text-[30px] font-light text-[#404040] tracking-tight">
-                            Novo Pedido
-                        </h1>
-                    </div>
-                    <p className="mt-2 ml-11 text-[18px] font-light text-[#898C8F]">
-                        Nº {numeroPedido}
-                    </p>
-                </div>
-
-                <section className="mb-10">
-                    <h2 className={sectionTitleClass}>Adicionar ficha técnica</h2>
-                    <div className="flex flex-wrap gap-4">
-                        {isSobDemanda && (
-                            <div className="w-full max-w-[320px]">
-                                <DropdownField
-                                    value={clienteSelecionado?.nome || ""}
-                                    placeholder={
-                                        carregandoClientes
-                                            ? "Carregando clientes..."
-                                            : "Selecionar cliente"
-                                    }
-                                    options={opcoesClientes}
-                                    isOpen={openDropdown === "cliente"}
-                                    onToggle={() => toggleDropdown("cliente")}
-                                    onSelect={handleSelecionarCliente}
-                                    isSelectedOption={(option) =>
-                                        String(clienteSelecionado?.id) === option.value
-                                    }
-                                    disabled={carregandoClientes || salvandoPedido}
-                                />
-                            </div>
-                        )}
-                        <div className="w-full max-w-[320px]">
-                            <DropdownField
-                                value={referenciaSelecionada?.label || ""}
-                                placeholder={
-                                    isSobDemanda && !clienteSelecionado
-                                        ? "Adicionar referência*"
-                                        : carregandoReferencias
-                                          ? "Carregando referências..."
-                                          : "Adicionar referência*"
-                                }
-                                options={opcoesReferencias}
-                                isOpen={openDropdown === "referencia"}
-                                onToggle={() => toggleDropdown("referencia")}
-                                onSelect={handleSelecionarReferencia}
-                                isSelectedOption={(option) =>
-                                    referenciaSelecionada?.value === option.value
-                                }
-                                disabled={
-                                    (isSobDemanda && !clienteSelecionado) ||
-                                    carregandoReferencias ||
-                                    salvandoPedido
-                                }
+        <>
+            {/* CONTAINER PRINCIPAL DA TELA */}
+            <div className="w-full max-w-[1200px] xl:max-w-none mx-auto font-['Outfit',_sans-serif]">
+                <div className="bg-white p-8 sm:p-10 rounded-[32px] shadow-[0_8px_40px_rgba(70,150,173,0.08)] border border-[#F0F4F6] w-full">
+                    {/* 1. CABEÇALHO: Título da tela e número do pedido */}
+                    <div className="mb-6">
+                        {/* items-start alinha o topo da imagem com o topo do bloco de texto */}
+                        <div className="flex items-start gap-3">
+                            {/* IMAGEM: Removido margens extras para alinhar perfeitamente no teto */}
+                            <img
+                                src="/pedidos-desativado.png"
+                                alt=""
+                                className="h-8 w-8 shrink-0 object-contain brightness-0 opacity-[0.85]"
                             />
+
+                            {/* BLOCO DE TEXTOS: gap-0 e leading-none eliminam qualquer espaço entre o título e o número */}
+                            <div className="flex flex-col gap-0 items-start">
+                                <h1 className="text-[28px] sm:text-[30px] font-light text-[#404040] tracking-tight leading-none">
+                                    Novo Pedido
+                                </h1>
+                                <p className="text-[18px] font-light text-[#898C8F] mt-0.5 leading-none">
+                                    Nº {numeroPedido}
+                                </p>
+                            </div>
                         </div>
                     </div>
-                </section>
 
-                <div className="mb-10">
-                    <TabelaFichaTecnica
-                        fichas={fichas}
-                        isSobDemanda={isSobDemanda}
-                        onRemoverFicha={handleRemoverFicha}
-                    />
+                    {/* 2. SEÇÃO DE INCLUSÃO: Dropdowns para selecionar cliente e referência (produto) */}
+                    <section className="mb-4">
+                        <h2 className={sectionTitleClass}>Adicionar ficha técnica</h2>
+                        <div className="flex flex-wrap gap-4">
+                            {/* Dropdown de Cliente: Exibido apenas se a fábrica produzir sob demanda */}
+                            {isSobDemanda && (
+                                <div className="w-full max-w-[320px]">
+                                    <DropdownField
+                                        value={clienteSelecionado?.nome || ""}
+                                        placeholder={
+                                            carregandoClientes
+                                                ? "Carregando clientes..."
+                                                : "Selecionar cliente"
+                                        }
+                                        options={opcoesClientes}
+                                        isOpen={openDropdown === "cliente"}
+                                        onToggle={() => toggleDropdown("cliente")}
+                                        onSelect={handleSelecionarCliente}
+                                        isSelectedOption={(option) =>
+                                            String(clienteSelecionado?.id) === option.value
+                                        }
+                                        disabled={carregandoClientes || salvandoPedido}
+                                    />
+                                </div>
+                            )}
+
+                            {/* Dropdown de Referência: Abre o modal da Ficha Técnica ao selecionar uma opção */}
+                            <div className="w-full max-w-[320px]">
+                                <DropdownField
+                                    value={referenciaSelecionada?.label || ""}
+                                    placeholder={
+                                        isSobDemanda && !clienteSelecionado
+                                            ? "Adicionar referência*"
+                                            : carregandoReferencias
+                                              ? "Carregando referências..."
+                                              : "Adicionar referência*"
+                                    }
+                                    options={opcoesReferencias}
+                                    isOpen={openDropdown === "referencia"}
+                                    onToggle={() => toggleDropdown("referencia")}
+                                    onSelect={handleSelecionarReferencia}
+                                    isSelectedOption={(option) =>
+                                        referenciaSelecionada?.value === option.value
+                                    }
+                                    disabled={
+                                        (isSobDemanda && !clienteSelecionado) ||
+                                        carregandoReferencias ||
+                                        salvandoPedido
+                                    }
+                                />
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* 3. TABELA DE RASCUNHOS: Lista todas as fichas técnicas adicionadas neste pedido */}
+                    <div className="mb-10">
+                        <TabelaFichaTecnica
+                            fichas={fichas}
+                            isSobDemanda={isSobDemanda}
+                            onRemoverFicha={handleRemoverFicha}
+                        />
+                    </div>
+
+                    {/* 4. RODAPÉ / AÇÕES DO PEDIDO: Botões de Cancelar e Concluir */}
+                    <div className="flex flex-wrap justify-end gap-4 pt-2">
+                        <button
+                            type="button"
+                            disabled={salvandoPedido}
+                            onClick={() => navigate("/pedidos")}
+                            className="bg-[#D75757] hover:bg-[#c94a4a] text-white h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px] disabled:opacity-50"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="button"
+                            disabled={salvandoPedido}
+                            onClick={handleConcluirPedido}
+                            className="bg-[#A9E2F2] hover:bg-[#94d6eb] text-white h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px] disabled:opacity-50 flex items-center justify-center"
+                        >
+                            {salvandoPedido ? "Salvando..." : "Concluir pedido"}
+                        </button>
+                    </div>
+
+                    {/* 5. MENSAGEM DE ERRO GERAL: Exibida caso a orquestração falhe */}
+                    {erro ? <p className="pt-4 text-sm text-[#D75757] text-right">{erro}</p> : null}
                 </div>
 
-                <div className="flex flex-wrap justify-end gap-4 pt-2">
-                    <button
-                        type="button"
-                        disabled={salvandoPedido}
-                        onClick={() => navigate("/pedidos")}
-                        className="bg-[#D75757] hover:bg-[#c94a4a] text-white h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px] disabled:opacity-50"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        type="button"
-                        disabled={salvandoPedido}
-                        onClick={handleConcluirPedido}
-                        className="bg-[#A9E2F2] hover:bg-[#94d6eb] text-white h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px] disabled:opacity-50 flex items-center justify-center"
-                    >
-                        {salvandoPedido ? "Salvando..." : "Concluir pedido"}
-                    </button>
-                </div>
-                {erro ? <p className="pt-4 text-sm text-[#D75757] text-right">{erro}</p> : null}
+                {/* 6. MODAL: Fica invisível até que o estado "modalFichaAberto" seja true */}
+                <FichaTecnicaModal
+                    isOpen={modalFichaAberto}
+                    onClose={fecharModalFicha}
+                    produto={referenciaParaModal}
+                    fabricoId={fabricoId}
+                    // Ao criar a ficha no modal, injetamos os dados complementares para a Tabela renderizar corretamente
+                    onFichaCreated={(rascunhoFicha) => {
+                        setFichas((prev) => [
+                            ...prev,
+                            {
+                                ...rascunhoFicha,
+                                foto: rascunhoFicha.foto || referenciaParaModal?.foto,
+                                referenciaInterna:
+                                    rascunhoFicha.referenciaInterna ||
+                                    referenciaParaModal?.nome ||
+                                    referenciaParaModal?.referenciaInterna,
+                                referenciaCliente:
+                                    rascunhoFicha.referenciaCliente ||
+                                    referenciaParaModal?.referenciaCliente,
+                                cores: rascunhoFicha.cores || rascunhoFicha.selectedColors || [],
+                            },
+                        ]);
+                    }}
+                />
             </div>
-
-            <FichaTecnicaModal
-                isOpen={modalFichaAberto}
-                onClose={fecharModalFicha}
-                produto={referenciaParaModal}
-                fabricoId={fabricoId}
-                onFichaCreated={(rascunhoFicha) => {
-                    setFichas((prev) => [
-                        ...prev,
-                        {
-                            ...rascunhoFicha,
-                            foto: rascunhoFicha.foto || referenciaParaModal?.foto,
-                            referenciaInterna:
-                                rascunhoFicha.referenciaInterna ||
-                                referenciaParaModal?.nome ||
-                                referenciaParaModal?.referenciaInterna,
-                            referenciaCliente:
-                                rascunhoFicha.referenciaCliente ||
-                                referenciaParaModal?.referenciaCliente,
-                            cores: rascunhoFicha.cores || rascunhoFicha.selectedColors || [],
-                        },
-                    ]);
-                }}
-            />
-        </div>
+        </>
     );
 }
