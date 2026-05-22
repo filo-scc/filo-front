@@ -7,15 +7,7 @@ import { getFabricoById } from "../../services/fabricoService";
 import { getCoresByFabricoId, createCor } from "../../services/corService";
 import { getFaccoesByFabrico } from "../../services/faccaoService";
 import { getGradesLiberadasByFabricoId } from "../../services/gradeService";
-import { atualizarProduto, getFaccaoByProduto } from "../../services/produtoService";
-import { createFichaTecnica } from "../../services/fichaTecnicaService";
-import {
-    syncFichaTecnicaCores,
-    saveFichaTecnicaItens,
-    syncFichaTecnicaFaccoes,
-    updateFaccaoProdutoPrice,
-    createFaccaoProduto,
-} from "../../services/fichaTecnicaItemService";
+import { getFaccaoByProduto } from "../../services/produtoService";
 
 import ProdutoFaccoes from "../produtos/ProdutoFaccoes";
 
@@ -29,7 +21,6 @@ function FloatingInput({ label, value, readOnly, onChange, placeholder }) {
                 placeholder={placeholder || " "}
                 className="peer w-full h-[39px] rounded-[10px] border border-[#898C8F] bg-white px-4 text-[14px] outline-none transition !text-[#898C8F] placeholder:!text-[#898C8F] [cursor:not-allowed_!important]"
             />
-
             <label
                 className={`
                     pointer-events-none absolute left-3 z-10 bg-white px-1 font-light text-[#898C8F]
@@ -46,11 +37,7 @@ function FloatingInput({ label, value, readOnly, onChange, placeholder }) {
 const calcularProporcao = (totaisPorTamanho) => {
     const valoresValidos = totaisPorTamanho.map(Number).filter((t) => t > 0);
     if (valoresValidos.length === 0) return totaisPorTamanho.map(() => 0);
-
-    // Encontra o menor valor válido para ser a base (1)
     const base = Math.min(...valoresValidos);
-
-    // Divide os outros valores pela base e arredonda para o inteiro mais próximo
     return totaisPorTamanho.map((t) => (t > 0 ? Math.round(t / base) : 0));
 };
 
@@ -110,14 +97,11 @@ function normalizeGradeOptions(fabricoGrades = []) {
         .map((link) => {
             const grade = link?.grade;
             if (!grade) return null;
-
             const activeVersion =
                 grade?.versoes?.find((v) => v?.ativo) || grade?.versoes?.[0] || null;
-
             const versionItems = activeVersion?.itens?.length
                 ? activeVersion.itens
                 : grade?.items || [];
-
             const sizeItems = versionItems
                 .map((item) => ({
                     gradeVersaoItemId: item.id,
@@ -131,9 +115,7 @@ function normalizeGradeOptions(fabricoGrades = []) {
                 gradeId: grade.id,
                 gradeVersaoId: activeVersion?.id ?? null,
                 sizeItems,
-                label: `${grade.nome}${
-                    sizeItems.length ? ` (${sizeItems.map((item) => item.codigo).join(" - ")})` : ""
-                }`,
+                label: `${grade.nome}${sizeItems.length ? ` (${sizeItems.map((item) => item.codigo).join(" - ")})` : ""}`,
             };
         })
         .filter(Boolean);
@@ -150,26 +132,10 @@ function syncMatrix(prevMatrix, selectedColorIds, sizeItems) {
     return next;
 }
 
-const BORDER_DARK_05 = {
-    borderWidth: "0.5px",
-    borderStyle: "solid",
-    borderColor: "#7B7D80",
-};
-
-const BORDER_LIGHT_05 = {
-    borderWidth: "0.5px",
-    borderStyle: "solid",
-    borderColor: "#E0E0E0",
-};
-
-const BORDER_SHELL_05 = {
-    borderWidth: "0.5px",
-    borderStyle: "solid",
-    borderColor: "#D9D9D9",
-};
-
+const BORDER_DARK_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#7B7D80" };
+const BORDER_LIGHT_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#E0E0E0" };
+const BORDER_SHELL_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#D9D9D9" };
 const FACCAO_ROW_HEIGHT = 40;
-const FACCAO_HEADER_HEIGHT = 0;
 
 export default function FichaTecnicaModal({
     isOpen,
@@ -181,7 +147,6 @@ export default function FichaTecnicaModal({
     onRequestCreateColor,
 }) {
     const [loading, setLoading] = useState(false);
-    const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
 
     const [fabricoInfo, setFabricoInfo] = useState(null);
@@ -200,18 +165,17 @@ export default function FichaTecnicaModal({
 
     const [hoveredFaccaoIndex, setHoveredFaccaoIndex] = useState(null);
     const [faccaoScrollTop, setFaccaoScrollTop] = useState(0);
-
     const [colorSearch, setColorSearch] = useState("");
-
     const [existingFaccaoIds, setExistingFaccaoIds] = useState([]);
 
     const faccaoScrollRef = useRef(null);
     const colorDropdownRef = useRef(null);
     const gradeDropdownRef = useRef(null);
 
-    const producaoSobDemanda = useMemo(() => {
-        return Boolean(fabricoInfo?.fabricacao_sob_demanda);
-    }, [fabricoInfo]);
+    const producaoSobDemanda = useMemo(
+        () => Boolean(fabricoInfo?.fabricacao_sob_demanda),
+        [fabricoInfo],
+    );
 
     const currentGradeOption = useMemo(
         () =>
@@ -247,12 +211,10 @@ export default function FichaTecnicaModal({
     );
 
     const proporcoes = useMemo(() => calcularProporcao(totalsBySize), [totalsBySize]);
-
     const filteredColors = availableColors.filter((color) =>
         color.nome.toLowerCase().includes(colorSearch.toLowerCase()),
     );
 
-    // Limpa integralmente todos os estados de digitação
     const resetStates = useCallback(() => {
         setSelectedColorIds([]);
         setMatrix({});
@@ -296,12 +258,10 @@ export default function FichaTecnicaModal({
                 setFabricoInfo(fabricoResponse);
                 setAvailableColors(Array.isArray(colorsResponse) ? colorsResponse : []);
 
-                // Lista todas as facções do fabrico, mas primeiro deve vir aquelas que existem em faccão_produto para que o preço seja carregado e editável na grade
                 const faccaoProdutoMap = {};
-
                 if (Array.isArray(faccoesProdutoResponse)) {
-                    // GUARDA OS IDs QUE JÁ EXISTEM
                     const idsExistentes = faccoesProdutoResponse.map((f) => f.faccao_id);
+
                     setExistingFaccaoIds(idsExistentes);
 
                     faccoesProdutoResponse.forEach((f) => {
@@ -319,12 +279,13 @@ export default function FichaTecnicaModal({
                     setFaccaoRows([]);
                 } else {
                     setAvailableFaccoes(Array.isArray(faccoesResponse) ? faccoesResponse : []);
-                    setExistingFaccaoIds([]); // Limpa se não houver nenhuma
+                    setExistingFaccaoIds([]);
                 }
 
                 const normalizedGrades = normalizeGradeOptions(
                     Array.isArray(gradesResponse) ? gradesResponse : [],
                 );
+
                 setGradeOptions(normalizedGrades);
 
                 const fallbackGrade =
@@ -354,20 +315,13 @@ export default function FichaTecnicaModal({
 
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (colorDropdownRef.current && !colorDropdownRef.current.contains(event.target)) {
+            if (colorDropdownRef.current && !colorDropdownRef.current.contains(event.target))
                 setColorDropdownOpen(false);
-            }
-
-            if (gradeDropdownRef.current && !gradeDropdownRef.current.contains(event.target)) {
+            if (gradeDropdownRef.current && !gradeDropdownRef.current.contains(event.target))
                 setGradeDropdownOpen(false);
-            }
         };
-
         document.addEventListener("mousedown", handleClickOutside);
-
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
     const handleToggleColor = (colorId) =>
@@ -376,25 +330,15 @@ export default function FichaTecnicaModal({
         );
 
     const formatarPreco = (valor) => {
-        if (valor === null || valor === undefined || valor === "") {
-            return "";
-        }
-
+        if (valor === null || valor === undefined || valor === "") return "";
         return `R$ ${Number(valor).toFixed(2).replace(".", ",")}`;
     };
 
-    // Injeta a facção marcando o isDirty como falso inicialmente
     const handleSelectFaccaoFromModal = (faccao) => {
         if (!faccao) return;
-
         setFaccaoRows((prev) => {
-            if (prev.some((row) => row.faccaoId === faccao.id)) {
-                return prev;
-            }
-
-            // Verifica de forma segura se a facção já existia na base de dados
+            if (prev.some((row) => row.faccaoId === faccao.id)) return prev;
             const jaExisteNoBanco = existingFaccaoIds.includes(Number(faccao.id));
-
             return [
                 ...prev,
                 {
@@ -403,112 +347,56 @@ export default function FichaTecnicaModal({
                     operacao: "",
                     preco: formatarPreco(faccao.preco),
                     isDirty: true,
-                    isNew: !jaExisteNoBanco, // Se NÃO existe, então é nova (true)
+                    isNew: !jaExisteNoBanco,
                 },
             ];
         });
     };
 
-    const handleSave = async () => {
+    const handleSave = () => {
         if (!effectiveGradeVersionId) {
             setError("Selecione uma grade válida.");
             return;
         }
 
-        setSaving(true);
-        try {
-            if ((produto?.gradeVersaoId || produto?.grade_versao_id) !== effectiveGradeVersionId) {
-                await atualizarProduto(produto.id, { grade_versao_id: effectiveGradeVersionId });
-            }
-
-            const fichaCreated = await createFichaTecnica({
-                concluida: false,
-                fabrico_id: fabricoId,
-                produto_id: produto.id,
-                etapa_atual_id: etapaAtualId,
-            });
-
-            const fichaId = fichaCreated?.id || fichaCreated?.data?.id;
-
-            if (selectedColorIds.length > 0) {
-                await syncFichaTecnicaCores(fichaId, selectedColorIds);
-            }
-
-            const itensPayload = selectedColorIds.flatMap((corId) =>
+        // Construindo o array de itens para a matriz (cores/tamanhos x quantidades)
+        const itensPayload = selectedColorIds
+            .flatMap((corId) =>
                 currentSizeItems.map((s) => ({
                     cor_id: corId,
                     grade_versao_item_id: s.gradeVersaoItemId,
                     quantidade: Number(matrix?.[corId]?.[s.tamanhoId] || 0),
                 })),
-            );
+            )
+            .filter((item) => item.quantidade > 0); // Só manda pro backend se a qtd for > 0!
 
-            if (itensPayload.length > 0) {
-                await saveFichaTecnicaItens(fichaId, itensPayload);
-            }
+        // Calculando a quantidade total para exibir na Tabela da tela de Pedidos
+        const quantidadeTotal = itensPayload.reduce((acc, curr) => acc + curr.quantidade, 0);
 
-            if (faccaoRows.length > 0) {
-                // ESSE ENDPOINT AINDA VAI SER DESENVOLVIDO NO BACKEND - NA RELAÇAO ficha_tecnica_parceiro
-                // await syncFichaTecnicaFaccoes(
-                //     fichaId,
-                //     faccaoRows.map((r) => ({
-                //         faccao_id: r.faccaoId,
-                //         operacao: r.operacao.trim(),
-                //         ...(r.preco !== ""
-                //             ? { preco: Number(String(r.preco).replace(",", ".")) }
-                //             : {}),
-                //     })),
-                // );
+        // Montamos um RASCUNHO e devolvemos pra tela pai!
+        const rascunhoFicha = {
+            id: `temp-${Date.now()}`, // ID temporário para o frontend iterar na tabela
+            isDraft: true,
+            produtoId: produto.id,
+            nome: produto?.referenciaInterna || produto?.nome,
+            etapaAtualId,
+            gradeVersaoIdOriginal: produto?.gradeVersaoId || produto?.grade_versao_id,
+            gradeVersaoIdNova: effectiveGradeVersionId,
+            selectedColorIds,
+            itensPayload,
+            faccaoRows,
+            quantidade: quantidadeTotal, // Utilizado para preencher a tabela visualmente
+        };
 
-                await Promise.all(
-                    faccaoRows.map(async (r) => {
-                        if (r.preco === "" || r.preco === null) return;
-
-                        console.log(r.preco);
-
-                        if (!r.isDirty) return;
-
-                        // r.preco ta vindo uma string assim "R$ 10,00", entao preciso limpar isso pra converter em numero
-                        const precoLimpo = String(r.preco)
-                            .replace("R$", "")
-                            .replace(".", "")
-                            .replace(",", ".")
-                            .trim();
-
-                        const parsed = Number.parseFloat(precoLimpo);
-
-                        console.log("parsed", parsed);
-
-                        const precoValido = Number.isNaN(parsed) ? 0 : parsed;
-
-                        console.log("precoValido", precoValido);
-
-                        if (r.isNew) {
-                            await createFaccaoProduto(r.faccaoId, produto.id, precoValido);
-                        } else {
-                            await updateFaccaoProdutoPrice(r.faccaoId, produto.id, precoValido);
-                        }
-                    }),
-                );
-            }
-
-            onFichaCreated?.(fichaCreated);
-            handleForceClose();
-        } catch (err) {
-            setError(err?.message || "Não foi possível salvar.");
-        } finally {
-            setSaving(false);
-        }
+        onFichaCreated?.(rascunhoFicha);
+        handleForceClose();
     };
 
     if (!isOpen) return null;
 
     return (
         <>
-            <style>{`
-                .scrollbar-sutil::-webkit-scrollbar { width: 4px; height: 4px; } 
-                .scrollbar-sutil::-webkit-scrollbar-thumb { background-color: #d6d6d6; border-radius: 999px; }
-            `}</style>
-
+            <style>{`.scrollbar-sutil::-webkit-scrollbar { width: 4px; height: 4px; } .scrollbar-sutil::-webkit-scrollbar-thumb { background-color: #d6d6d6; border-radius: 999px; }`}</style>
             <div
                 className="fixed inset-0 z-[999] flex items-center justify-center bg-black/35 px-4 py-6 backdrop-blur-sm font-['Outfit',_sans-serif]"
                 onClick={handleForceClose}
@@ -517,7 +405,6 @@ export default function FichaTecnicaModal({
                     className="flex max-h-[95vh] w-full max-w-[1160px] flex-col rounded-[28px] bg-white py-8 shadow-2xl overflow-x-hidden"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    {/* Header Modal */}
                     <div className="mb-6 flex items-center justify-between px-4 mx-[30px]">
                         <div className="flex items-center gap-3">
                             <img
@@ -536,11 +423,11 @@ export default function FichaTecnicaModal({
                         </button>
                     </div>
 
-                    {error ? (
-                        <div className="mb-4 rounded-[12px] border border-red-200 bg-red-50 px-4 py-3 text-[14px] text-red-700">
+                    {error && (
+                        <div className="mb-4 rounded-[12px] border border-red-200 bg-red-50 px-4 py-3 text-[14px] text-red-700 mx-[30px]">
                             {error}
                         </div>
-                    ) : null}
+                    )}
 
                     {loading ? (
                         <div className="flex min-h-[400px] items-center justify-center text-[14px] text-[#777]">
@@ -565,14 +452,12 @@ export default function FichaTecnicaModal({
                                         )}
                                     </div>
                                 </div>
-
                                 <div className="flex-1 grid grid-cols-2 gap-4 content-start overflow-visible">
                                     <FloatingInput
                                         label="Referência Interna"
                                         value={produto?.referenciaInterna || produto?.nome}
                                         readOnly
                                     />
-
                                     {producaoSobDemanda && (
                                         <FloatingInput
                                             label={
@@ -584,14 +469,13 @@ export default function FichaTecnicaModal({
                                             readOnly
                                         />
                                     )}
-
                                     <FloatingInput
                                         label="Tecido"
                                         value={produto?.tecido}
                                         readOnly
                                     />
 
-                                    {/* Select Personalizado de Grade */}
+                                    {/* Select de Grade */}
                                     <div className="relative" ref={gradeDropdownRef}>
                                         <button
                                             type="button"
@@ -601,21 +485,16 @@ export default function FichaTecnicaModal({
                                             <span className="truncate">
                                                 {currentGradeOption?.label || "Selecionar Grade"}
                                             </span>
-                                            {gradeDropdownOpen ? (
-                                                <img
-                                                    src="/arrow-up.png"
-                                                    alt="Selecionar Grade"
-                                                    className="w-[11px] h-[6px]"
-                                                />
-                                            ) : (
-                                                <img
-                                                    src="/arrow-down.png"
-                                                    alt="Selecionar Grade"
-                                                    className="w-[11px] h-[6px]"
-                                                />
-                                            )}
+                                            <img
+                                                src={
+                                                    gradeDropdownOpen
+                                                        ? "/arrow-up.png"
+                                                        : "/arrow-down.png"
+                                                }
+                                                alt="Seta"
+                                                className="w-[11px] h-[6px]"
+                                            />
                                         </button>
-
                                         {gradeDropdownOpen && (
                                             <div className="absolute z-[40] mt-1 w-full rounded-[10px] border border-[#898C8F] bg-white shadow-lg overflow-hidden">
                                                 <div className="max-h-[200px] overflow-y-auto scrollbar-sutil">
@@ -629,12 +508,7 @@ export default function FichaTecnicaModal({
                                                                 );
                                                                 setGradeDropdownOpen(false);
                                                             }}
-                                                            className={`flex w-full items-center px-4 py-2.5 text-left text-[14px] transition text-[#7B7D80] ${
-                                                                g.gradeVersaoId ===
-                                                                effectiveGradeVersionId
-                                                                    ? "border-l-[3px] border-l-[#C4F042]"
-                                                                    : "border-l-transparent"
-                                                            }`}
+                                                            className={`flex w-full items-center px-4 py-2.5 text-left text-[14px] transition text-[#7B7D80] ${g.gradeVersaoId === effectiveGradeVersionId ? "border-l-[3px] border-l-[#C4F042]" : "border-l-transparent"}`}
                                                         >
                                                             {g.label}
                                                         </button>
@@ -644,7 +518,7 @@ export default function FichaTecnicaModal({
                                         )}
                                     </div>
 
-                                    {/* Select de Cores Customizado */}
+                                    {/* Select de Cores */}
                                     <div className="relative" ref={colorDropdownRef}>
                                         <div className="flex h-[39px] w-full items-center justify-between rounded-[10px] border border-[#898C8F] bg-white px-4 text-[14px] text-[#7B7D80]">
                                             <input
@@ -658,7 +532,6 @@ export default function FichaTecnicaModal({
                                                 placeholder="Selecionar cores/estampas"
                                                 className="w-full bg-transparent outline-none placeholder:text-[#7B7D80] text-[#7B7D80]"
                                             />
-
                                             <button
                                                 type="button"
                                                 onClick={() =>
@@ -666,22 +539,17 @@ export default function FichaTecnicaModal({
                                                 }
                                                 className="ml-2 shrink-0"
                                             >
-                                                {colorDropdownOpen ? (
-                                                    <img
-                                                        src="/arrow-up.png"
-                                                        alt="Abrir"
-                                                        className="w-[11px] h-[6px]"
-                                                    />
-                                                ) : (
-                                                    <img
-                                                        src="/arrow-down.png"
-                                                        alt="Abrir"
-                                                        className="w-[11px] h-[6px]"
-                                                    />
-                                                )}
+                                                <img
+                                                    src={
+                                                        colorDropdownOpen
+                                                            ? "/arrow-up.png"
+                                                            : "/arrow-down.png"
+                                                    }
+                                                    alt="Abrir"
+                                                    className="w-[11px] h-[6px]"
+                                                />
                                             </button>
                                         </div>
-
                                         {colorDropdownOpen && (
                                             <div className="absolute z-[30] mt-1 w-full rounded-[10px] border border-[#898C8F] bg-white shadow-lg overflow-hidden">
                                                 <div className="max-h-[200px] overflow-y-auto scrollbar-sutil">
@@ -692,11 +560,10 @@ export default function FichaTecnicaModal({
                                                             if (onRequestCreateColor)
                                                                 onRequestCreateColor();
                                                         }}
-                                                        className="flex w-full items-center gap-2  px-4 py-2.5 text-left text-[14px] text-[#4696AD] font-medium bg-white hover:bg-[#FAFAFA]"
+                                                        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[14px] text-[#4696AD] font-medium bg-white hover:bg-[#FAFAFA]"
                                                     >
                                                         <span>+ Nova cor</span>
                                                     </button>
-
                                                     <button
                                                         type="button"
                                                         onClick={() => {
@@ -704,16 +571,14 @@ export default function FichaTecnicaModal({
                                                             if (onRequestCreateColor)
                                                                 onRequestCreateColor();
                                                         }}
-                                                        className="flex w-full items-center gap-2  px-4 py-2.5 text-left text-[14px] text-[#4696AD] font-medium bg-white hover:bg-[#FAFAFA]"
+                                                        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[14px] text-[#4696AD] font-medium bg-white hover:bg-[#FAFAFA]"
                                                     >
                                                         <span>+ Nova estampa</span>
                                                     </button>
-
                                                     {filteredColors.length > 0 ? (
                                                         filteredColors.map((color) => {
                                                             const checked =
                                                                 selectedColorIds.includes(color.id);
-
                                                             return (
                                                                 <button
                                                                     key={color.id}
@@ -721,11 +586,7 @@ export default function FichaTecnicaModal({
                                                                     onClick={() =>
                                                                         handleToggleColor(color.id)
                                                                     }
-                                                                    className={`flex w-full items-center border-l-[4px] px-4 py-2.5 transition bg-white text-[#7B7D80] ${
-                                                                        checked
-                                                                            ? "border-l-[3px] border-l-[#C4F042]"
-                                                                            : "border-l-transparent"
-                                                                    }`}
+                                                                    className={`flex w-full items-center border-l-[4px] px-4 py-2.5 transition bg-white text-[#7B7D80] ${checked ? "border-l-[3px] border-l-[#C4F042]" : "border-l-transparent"}`}
                                                                 >
                                                                     <div className="flex items-center gap-3 flex-1 min-w-0">
                                                                         {color.tipo ===
@@ -745,12 +606,10 @@ export default function FichaTecnicaModal({
                                                                                 }}
                                                                             />
                                                                         )}
-
                                                                         <span className="font-light text-[#7B7D80] text-left truncate">
                                                                             {color.nome}
                                                                         </span>
                                                                     </div>
-
                                                                     {checked ? (
                                                                         <img
                                                                             src="/check_cinza.png"
@@ -779,7 +638,7 @@ export default function FichaTecnicaModal({
                                 </div>
                             </div>
 
-                            {/* Togglezinhos */}
+                            {/* Badges de Cores */}
                             <div className="mt-3 mx-[30px]">
                                 {selectedColors.length > 0 && (
                                     <div className="flex flex-wrap gap-2">
@@ -790,7 +649,6 @@ export default function FichaTecnicaModal({
                                                 className="inline-flex items-center gap-2 rounded-[16px] bg-[#A9E2F2] pr-[6px] pl-3 py-1 text-[12px] text-[#404040]"
                                             >
                                                 <span>{c.nome}</span>
-
                                                 <span className="flex h-[14px] w-[14px] shrink-0 items-center justify-center rounded-full bg-[#4696AD] text-[13px] font-bold leading-none text-white">
                                                     ×
                                                 </span>
@@ -800,172 +658,142 @@ export default function FichaTecnicaModal({
                                 )}
                             </div>
 
-                            {/* GRADE DE QUANTIDADES */}
+                            {/* Tabela de Grade/Quantidades */}
                             <div className="mt-4 mx-[30px]">
                                 <div className="mb-2 text-center text-[16px] font-light text-[#737373]">
                                     Grade
                                 </div>
-
                                 <div className="w-full">
-                                    {/* Linha das proporções */}
                                     <div className="flex w-full items-stretch min-h-[30px]">
                                         <div className="w-[160px] shrink-0" />
                                         <div className="flex flex-1 min-w-0">
-                                            {currentSizeItems.map((s, i) => {
-                                                const isLast = i === currentSizeItems.length - 1;
-                                                const isFirst = i === 0;
-
-                                                return (
-                                                    <div
-                                                        key={`prop-${s.gradeVersaoItemId}`}
-                                                        className="bg-[#F4F4F4] flex-1 min-w-0 text-center text-[14px] font-light flex items-center justify-center"
-                                                        style={{
-                                                            borderColor: "#7B7D80",
-                                                            borderLeftWidth: "0.5px",
-                                                            borderRightWidth: isLast
+                                            {currentSizeItems.map((s, i) => (
+                                                <div
+                                                    key={`prop-${s.gradeVersaoItemId}`}
+                                                    className="bg-[#F4F4F4] flex-1 min-w-0 text-center text-[14px] font-light flex items-center justify-center"
+                                                    style={{
+                                                        borderColor: "#7B7D80",
+                                                        borderLeftWidth: "0.5px",
+                                                        borderRightWidth:
+                                                            i === currentSizeItems.length - 1
                                                                 ? "0.5px"
                                                                 : "0px",
-                                                            borderTopWidth: "0.5px",
-                                                            borderBottomWidth: "0.5px",
-                                                            borderTopLeftRadius: isFirst
+                                                        borderTopWidth: "0.5px",
+                                                        borderBottomWidth: "0.5px",
+                                                        borderTopLeftRadius:
+                                                            i === 0 ? "10px" : "0px",
+                                                        borderTopRightRadius:
+                                                            i === currentSizeItems.length - 1
                                                                 ? "10px"
                                                                 : "0px",
-                                                            borderTopRightRadius: isLast
-                                                                ? "10px"
-                                                                : "0px",
-                                                            color:
-                                                                totalsBySize[i] > 0
-                                                                    ? "#898C8F"
-                                                                    : "#D7D7D7",
-                                                        }}
-                                                    >
-                                                        {proporcoes[i]}
-                                                    </div>
-                                                );
-                                            })}
+                                                        color:
+                                                            totalsBySize[i] > 0
+                                                                ? "#898C8F"
+                                                                : "#D7D7D7",
+                                                    }}
+                                                >
+                                                    {proporcoes[i]}
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
-
-                                    {/* Cabeçalho da grade */}
                                     <div className="flex h-[40px] items-stretch">
                                         <div className="w-[160px] shrink-0 rounded-tl-[10px] font-normal bg-[#C9EAF6] px-4 text-[#4696AD] flex items-center justify-center overflow-hidden">
                                             Cores
                                         </div>
                                         <div className="flex flex-1 min-w-0">
-                                            {currentSizeItems.map((s, idx) => {
-                                                const isLast = idx === currentSizeItems.length - 1;
-                                                const isFirst = idx === 0;
-
-                                                return (
-                                                    <div
-                                                        key={s.gradeVersaoItemId}
-                                                        className="flex-1 min-w-0 text-center font-normal text-[#4696AD] flex items-center justify-center bg-[#C9EAF6]"
-                                                        style={{
-                                                            borderLeftWidth: isFirst
-                                                                ? "0.5px"
-                                                                : "0px",
-                                                            borderRightWidth: "0.5px",
-                                                            borderBottomWidth: "0px",
-                                                            borderTopWidth: "0px",
-                                                            borderColor: "#7B7D80",
-                                                            borderRightColor: isLast
+                                            {currentSizeItems.map((s, idx) => (
+                                                <div
+                                                    key={s.gradeVersaoItemId}
+                                                    className="flex-1 min-w-0 text-center font-normal text-[#4696AD] flex items-center justify-center bg-[#C9EAF6]"
+                                                    style={{
+                                                        borderLeftWidth:
+                                                            idx === 0 ? "0.5px" : "0px",
+                                                        borderRightWidth: "0.5px",
+                                                        borderBottomWidth: "0px",
+                                                        borderTopWidth: "0px",
+                                                        borderColor: "#7B7D80",
+                                                        borderRightColor:
+                                                            idx === currentSizeItems.length - 1
                                                                 ? "#C9EAF6"
                                                                 : "#7B7D80",
-                                                        }}
-                                                    >
-                                                        {s.codigo}
-                                                    </div>
-                                                );
-                                            })}
+                                                    }}
+                                                >
+                                                    {s.codigo}
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
-
-                                    {/* Corpo da grade */}
                                     <div
                                         className="rounded-b-[10px] bg-white"
                                         style={BORDER_SHELL_05}
                                     >
                                         <div className="flex flex-col w-full">
                                             {selectedColors.length > 0 ? (
-                                                selectedColors.map((color, index) => {
-                                                    const isEvenRow = index % 2 === 1;
-                                                    return (
+                                                selectedColors.map((color, index) => (
+                                                    <div
+                                                        key={color.id}
+                                                        className={`flex w-full min-h-[40px] items-stretch ${index % 2 === 1 ? "bg-[#F4F4F4]" : "bg-[#FFFFFF]"}`}
+                                                    >
                                                         <div
-                                                            key={color.id}
-                                                            className={`flex w-full min-h-[40px] items-stretch ${
-                                                                isEvenRow
-                                                                    ? "bg-[#F4F4F4]"
-                                                                    : "bg-[#FFFFFF]"
-                                                            }`}
+                                                            className="w-[160px] shrink-0 pl-2 pr-4 flex items-center"
+                                                            style={{
+                                                                ...BORDER_DARK_05,
+                                                                borderTopWidth: "0px",
+                                                                borderLeftWidth: "0px",
+                                                                borderBottomWidth: "0px",
+                                                                borderRightWidth: "0.5px",
+                                                            }}
                                                         >
+                                                            <span
+                                                                className="w-[20px] h-[20px] rounded-[6px] shrink-0 border border-[#D9D9D9]"
+                                                                style={{
+                                                                    backgroundColor:
+                                                                        color.codigo_hex ||
+                                                                        "#E5E5E5",
+                                                                }}
+                                                            />
+                                                            <span className="flex-1 text-center text-[14px] font-light text-[#898C8F] truncate leading-none">
+                                                                {color.nome}
+                                                            </span>
+                                                        </div>
+                                                        {currentSizeItems.map((s, sizeIndex) => (
                                                             <div
-                                                                className="w-[160px] shrink-0 pl-2 pr-4 flex items-center"
+                                                                key={s.gradeVersaoItemId}
+                                                                className="flex-1 min-w-0 px-2 flex items-center justify-center"
                                                                 style={{
                                                                     ...BORDER_DARK_05,
                                                                     borderTopWidth: "0px",
-                                                                    borderLeftWidth: "0px",
                                                                     borderBottomWidth: "0px",
-                                                                    borderRightWidth: "0.5px",
+                                                                    borderLeftWidth: "0px",
+                                                                    borderRightWidth:
+                                                                        sizeIndex !==
+                                                                        currentSizeItems.length - 1
+                                                                            ? "0.5px"
+                                                                            : "0px",
                                                                 }}
                                                             >
-                                                                <span
-                                                                    className="w-[20px] h-[20px] rounded-[6px] shrink-0 border border-[#D9D9D9]"
-                                                                    style={{
-                                                                        backgroundColor:
-                                                                            color.codigo_hex ||
-                                                                            "#E5E5E5",
-                                                                    }}
+                                                                <QuantityCell
+                                                                    value={
+                                                                        matrix?.[color.id]?.[
+                                                                            s.tamanhoId
+                                                                        ] || 0
+                                                                    }
+                                                                    onCommit={(v) =>
+                                                                        setMatrix((p) => ({
+                                                                            ...p,
+                                                                            [color.id]: {
+                                                                                ...(p[color.id] ||
+                                                                                    {}),
+                                                                                [s.tamanhoId]: v,
+                                                                            },
+                                                                        }))
+                                                                    }
                                                                 />
-                                                                <span className="flex-1 text-center text-[14px] font-light text-[#898C8F] truncate leading-none">
-                                                                    {color.nome}
-                                                                </span>
                                                             </div>
-
-                                                            {currentSizeItems.map(
-                                                                (s, sizeIndex) => (
-                                                                    <div
-                                                                        key={s.gradeVersaoItemId}
-                                                                        className="flex-1 min-w-0 px-2 flex items-center justify-center"
-                                                                        style={{
-                                                                            ...BORDER_DARK_05,
-                                                                            borderTopWidth: "0px",
-                                                                            borderBottomWidth:
-                                                                                "0px",
-                                                                            borderLeftWidth: "0px",
-                                                                            borderRightWidth:
-                                                                                sizeIndex !==
-                                                                                currentSizeItems.length -
-                                                                                    1
-                                                                                    ? "0.5px"
-                                                                                    : "0px",
-                                                                        }}
-                                                                    >
-                                                                        <QuantityCell
-                                                                            value={
-                                                                                matrix?.[
-                                                                                    color.id
-                                                                                ]?.[s.tamanhoId] ||
-                                                                                0
-                                                                            }
-                                                                            onCommit={(v) =>
-                                                                                setMatrix((p) => ({
-                                                                                    ...p,
-                                                                                    [color.id]: {
-                                                                                        ...(p[
-                                                                                            color.id
-                                                                                        ] || {}),
-                                                                                        [s.tamanhoId]:
-                                                                                            v,
-                                                                                    },
-                                                                                }))
-                                                                            }
-                                                                        />
-                                                                    </div>
-                                                                ),
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })
+                                                        ))}
+                                                    </div>
+                                                ))
                                             ) : (
                                                 <div className="px-4 py-4 text-[13px] text-center text-[#888] bg-white w-full rounded-b-[10px]">
                                                     Nenhuma cor selecionada.
@@ -976,10 +804,9 @@ export default function FichaTecnicaModal({
                                 </div>
                             </div>
 
-                            {/* TABELA DE HISTÓRICO DE FACÇÕES */}
+                            {/* TABELA DE FACÇÕES */}
                             <div className="mt-8 mx-[30px]">
                                 <div className="w-full">
-                                    {/* Cabeçalho */}
                                     <div className="grid grid-cols-3 items-center h-10 font-normal text-center text-[#4696AD]">
                                         <div className="bg-[#C9EAF6] px-4 py-2.5 border-r-[0.5px] rounded-tl-[10px] border-[#7B7D80] h-10">
                                             Facção
@@ -991,8 +818,6 @@ export default function FichaTecnicaModal({
                                             Preço
                                         </div>
                                     </div>
-
-                                    {/* Área com Scroll-Y */}
                                     <div className="relative">
                                         <div
                                             ref={faccaoScrollRef}
@@ -1003,10 +828,8 @@ export default function FichaTecnicaModal({
                                         >
                                             {faccaoRows.length > 0 ? (
                                                 faccaoRows.map((row, index) => {
-                                                    const isEvenRow = index % 2 === 1;
                                                     const isLastRow =
                                                         index === faccaoRows.length - 1;
-
                                                     return (
                                                         <div
                                                             key={`${row.faccaoId}-${index}`}
@@ -1019,11 +842,7 @@ export default function FichaTecnicaModal({
                                                             }
                                                         >
                                                             <div
-                                                                className={`min-w-0 flex items-center justify-center px-4 ${
-                                                                    isEvenRow
-                                                                        ? "bg-[#F4F4F4]"
-                                                                        : "bg-[#FFFFFF]"
-                                                                }`}
+                                                                className={`min-w-0 flex items-center justify-center px-4 ${index % 2 === 1 ? "bg-[#F4F4F4]" : "bg-[#FFFFFF]"}`}
                                                                 style={{
                                                                     borderTopWidth: "0px",
                                                                     borderLeftWidth: "0.5px",
@@ -1039,13 +858,8 @@ export default function FichaTecnicaModal({
                                                                     {row.faccaoNome}
                                                                 </span>
                                                             </div>
-
                                                             <div
-                                                                className={`min-w-0 flex items-center justify-center px-2 ${
-                                                                    isEvenRow
-                                                                        ? "bg-[#F4F4F4]"
-                                                                        : "bg-[#FFFFFF]"
-                                                                }`}
+                                                                className={`min-w-0 flex items-center justify-center px-2 ${index % 2 === 1 ? "bg-[#F4F4F4]" : "bg-[#FFFFFF]"}`}
                                                                 style={{
                                                                     borderTopWidth: "0px",
                                                                     borderLeftWidth: "0px",
@@ -1076,13 +890,8 @@ export default function FichaTecnicaModal({
                                                                     className="w-full h-[32px] border-0 bg-transparent text-center text-[14px] outline-none focus:ring-0 text-[#898C8F] font-light"
                                                                 />
                                                             </div>
-
                                                             <div
-                                                                className={`min-w-0 flex items-center justify-center px-2 ${
-                                                                    isEvenRow
-                                                                        ? "bg-[#F4F4F4]"
-                                                                        : "bg-[#FFFFFF]"
-                                                                } ${index === faccaoRows.length - 1 ? "rounded-br-[14px]" : ""}`}
+                                                                className={`min-w-0 flex items-center justify-center px-2 ${index % 2 === 1 ? "bg-[#F4F4F4]" : "bg-[#FFFFFF]"} ${isLastRow ? "rounded-br-[14px]" : ""}`}
                                                                 style={{
                                                                     borderTopWidth: "0px",
                                                                     borderLeftWidth: "0px",
@@ -1101,21 +910,10 @@ export default function FichaTecnicaModal({
                                                                                 /\D/g,
                                                                                 "",
                                                                             );
-
                                                                         const valorFormatado =
                                                                             numeros
-                                                                                ? `R$ ${(
-                                                                                      Number(
-                                                                                          numeros,
-                                                                                      ) / 100
-                                                                                  )
-                                                                                      .toFixed(2)
-                                                                                      .replace(
-                                                                                          ".",
-                                                                                          ",",
-                                                                                      )}`
+                                                                                ? `R$ ${(Number(numeros) / 100).toFixed(2).replace(".", ",")}`
                                                                                 : "";
-
                                                                         setFaccaoRows((prev) =>
                                                                             prev.map((r, i) =>
                                                                                 i === index
@@ -1145,17 +943,13 @@ export default function FichaTecnicaModal({
                                                 </div>
                                             )}
                                         </div>
-
-                                        {/* Lixeira flutuante, fora da largura da tabela, sem scroll horizontal */}
                                         <div className="pointer-events-none absolute inset-y-0 right-0 w-0 overflow-visible">
                                             {faccaoRows.map((row, index) => {
                                                 const isVisible = hoveredFaccaoIndex === index;
-
                                                 const top =
                                                     index * FACCAO_ROW_HEIGHT +
                                                     FACCAO_ROW_HEIGHT / 2 -
                                                     faccaoScrollTop;
-
                                                 return (
                                                     <button
                                                         key={`trash-${row.faccaoId}-${index}`}
@@ -1171,9 +965,7 @@ export default function FichaTecnicaModal({
                                                         onMouseLeave={() =>
                                                             setHoveredFaccaoIndex(null)
                                                         }
-                                                        className={`pointer-events-auto absolute z-20 rounded p-1 transition-opacity ${
-                                                            isVisible ? "opacity-100" : "opacity-0"
-                                                        }`}
+                                                        className={`pointer-events-auto absolute z-20 rounded p-1 transition-opacity ${isVisible ? "opacity-100" : "opacity-0"}`}
                                                         style={{
                                                             top,
                                                             right: "-28px",
@@ -1199,7 +991,6 @@ export default function FichaTecnicaModal({
                                         </div>
                                     </div>
                                 </div>
-
                                 <button
                                     type="button"
                                     onClick={() => setFaccaoModalOpen(true)}
@@ -1218,15 +1009,13 @@ export default function FichaTecnicaModal({
                                 </button>
                             </div>
 
-                            {/* Rodapé */}
                             <div className="mt-8 flex justify-end pt-2 mx-[30px]">
                                 <button
                                     type="button"
                                     onClick={handleSave}
-                                    disabled={saving}
-                                    className="rounded-[19px] bg-[#A9E2F2] px-10 h-[39px] text-[14px] font-medium text-[#4696AD] transition hover:bg-[#8acbdc] disabled:opacity-70"
+                                    className="rounded-[19px] bg-[#A9E2F2] px-10 h-[39px] text-[14px] font-medium text-[#4696AD] transition hover:bg-[#8acbdc]"
                                 >
-                                    {saving ? "Salvando..." : "Adicionar ficha"}
+                                    Adicionar ficha
                                 </button>
                             </div>
                         </div>
