@@ -203,6 +203,8 @@ export default function FichaTecnicaModal({
     const [colorSearch, setColorSearch] = useState("");
 
     const faccaoScrollRef = useRef(null);
+    const colorDropdownRef = useRef(null);
+    const gradeDropdownRef = useRef(null);
 
     const producaoSobDemanda = useMemo(() => {
         return Boolean(fabricoInfo?.fabricacao_sob_demanda);
@@ -317,6 +319,24 @@ export default function FichaTecnicaModal({
         if (!currentGradeOption) return;
         setMatrix((prev) => syncMatrix(prev, selectedColorIds, currentGradeOption.sizeItems));
     }, [currentGradeOption?.gradeVersaoId, selectedColorIds]);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (colorDropdownRef.current && !colorDropdownRef.current.contains(event.target)) {
+                setColorDropdownOpen(false);
+            }
+
+            if (gradeDropdownRef.current && !gradeDropdownRef.current.contains(event.target)) {
+                setGradeDropdownOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
 
     const handleToggleColor = (colorId) =>
         setSelectedColorIds((prev) =>
@@ -493,24 +513,6 @@ export default function FichaTecnicaModal({
                                             </span>
                                         )}
                                     </div>
-
-                                    {selectedColors.length > 0 && (
-                                        <div className="flex flex-wrap gap-2">
-                                            {selectedColors.map((c) => (
-                                                <button
-                                                    key={c.id}
-                                                    onClick={() => handleToggleColor(c.id)}
-                                                    className="inline-flex items-center gap-2 rounded-[16px] bg-[#A9E2F2] pr-[6px] pl-3 py-1 text-[12px] text-[#404040]"
-                                                >
-                                                    <span>{c.nome}</span>
-
-                                                    <span className="flex h-[14px] w-[14px] shrink-0 items-center justify-center rounded-full bg-[#4696AD] text-[13px] font-bold leading-none text-white">
-                                                        ×
-                                                    </span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
                                 </div>
 
                                 <div className="flex-1 grid grid-cols-2 gap-4 content-start overflow-visible">
@@ -539,7 +541,7 @@ export default function FichaTecnicaModal({
                                     />
 
                                     {/* Select Personalizado de Grade */}
-                                    <div className="relative">
+                                    <div className="relative" ref={gradeDropdownRef}>
                                         <button
                                             type="button"
                                             onClick={() => setGradeDropdownOpen(!gradeDropdownOpen)}
@@ -592,7 +594,7 @@ export default function FichaTecnicaModal({
                                     </div>
 
                                     {/* Select de Cores Customizado */}
-                                    <div className="relative">
+                                    <div className="relative" ref={colorDropdownRef}>
                                         <div className="flex h-[39px] w-full items-center justify-between rounded-[10px] border border-[#898C8F] bg-white px-4 text-[14px] text-[#7B7D80]">
                                             <input
                                                 type="text"
@@ -724,6 +726,27 @@ export default function FichaTecnicaModal({
                                         )}
                                     </div>
                                 </div>
+                            </div>
+
+                            {/* Togglezinhos */}
+                            <div className="mt-3 mx-[30px]">
+                                {selectedColors.length > 0 && (
+                                    <div className="flex flex-wrap gap-2">
+                                        {selectedColors.map((c) => (
+                                            <button
+                                                key={c.id}
+                                                onClick={() => handleToggleColor(c.id)}
+                                                className="inline-flex items-center gap-2 rounded-[16px] bg-[#A9E2F2] pr-[6px] pl-3 py-1 text-[12px] text-[#404040]"
+                                            >
+                                                <span>{c.nome}</span>
+
+                                                <span className="flex h-[14px] w-[14px] shrink-0 items-center justify-center rounded-full bg-[#4696AD] text-[13px] font-bold leading-none text-white">
+                                                    ×
+                                                </span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
                             {/* GRADE DE QUANTIDADES */}
