@@ -767,9 +767,7 @@ export default function FichaTecnicaModal({
                                                 return (
                                                     <div
                                                         key={`prop-${s.gradeVersaoItemId}`}
-                                                        className={`bg-[#F4F4F4] flex-1 min-w-0 text-center text-[14px] font-light flex items-center justify-center ${
-                                                            isLast ? "" : ""
-                                                        }`}
+                                                        className="bg-[#F4F4F4] flex-1 min-w-0 text-center text-[14px] font-light flex items-center justify-center"
                                                         style={{
                                                             borderColor: "#7B7D80",
                                                             borderLeftWidth: "0.5px",
@@ -833,10 +831,10 @@ export default function FichaTecnicaModal({
 
                                     {/* Corpo da grade */}
                                     <div
-                                        className="rounded-b-[10px] overflow-hidden bg-white"
+                                        className="rounded-b-[10px] bg-white"
                                         style={BORDER_SHELL_05}
                                     >
-                                        <div className="max-h-[220px] overflow-y-auto scrollbar-sutil flex flex-col">
+                                        <div className="flex flex-col w-full">
                                             {selectedColors.length > 0 ? (
                                                 selectedColors.map((color, index) => {
                                                     const isEvenRow = index % 2 === 1;
@@ -867,7 +865,6 @@ export default function FichaTecnicaModal({
                                                                             "#E5E5E5",
                                                                     }}
                                                                 />
-
                                                                 <span className="flex-1 text-center text-[14px] font-light text-[#898C8F] truncate leading-none">
                                                                     {color.nome}
                                                                 </span>
