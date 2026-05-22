@@ -14,6 +14,7 @@ import {
     saveFichaTecnicaItens,
     syncFichaTecnicaFaccoes,
     updateFaccaoProdutoPrice,
+    createFaccaoProduto,
 } from "../../services/fichaTecnicaItemService";
 
 import ProdutoFaccoes from "../produtos/ProdutoFaccoes";
@@ -202,6 +203,8 @@ export default function FichaTecnicaModal({
 
     const [colorSearch, setColorSearch] = useState("");
 
+    const [existingFaccaoIds, setExistingFaccaoIds] = useState([]);
+
     const faccaoScrollRef = useRef(null);
     const colorDropdownRef = useRef(null);
     const gradeDropdownRef = useRef(null);
@@ -274,21 +277,50 @@ export default function FichaTecnicaModal({
         const bootstrap = async () => {
             setLoading(true);
             try {
-                const [fabricoResponse, colorsResponse, gradesResponse, faccoesProdutoResponse] =
-                    await Promise.all([
-                        getFabricoById(fabricoId),
-                        getCoresByFabricoId(fabricoId),
-                        getGradesLiberadasByFabricoId(fabricoId),
-                        getFaccaoByProduto(produto.id),
-                    ]);
+                const [
+                    fabricoResponse,
+                    colorsResponse,
+                    gradesResponse,
+                    faccoesProdutoResponse,
+                    faccoesResponse,
+                ] = await Promise.all([
+                    getFabricoById(fabricoId),
+                    getCoresByFabricoId(fabricoId),
+                    getGradesLiberadasByFabricoId(fabricoId),
+                    getFaccaoByProduto(produto.id),
+                    getFaccoesByFabrico(fabricoId),
+                ]);
 
                 if (!alive) return;
 
                 setFabricoInfo(fabricoResponse);
                 setAvailableColors(Array.isArray(colorsResponse) ? colorsResponse : []);
-                setAvailableFaccoes(
-                    Array.isArray(faccoesProdutoResponse) ? faccoesProdutoResponse : [],
-                );
+
+                // Lista todas as facções do fabrico, mas primeiro deve vir aquelas que existem em faccão_produto para que o preço seja carregado e editável na grade
+                const faccaoProdutoMap = {};
+
+                if (Array.isArray(faccoesProdutoResponse)) {
+                    // GUARDA OS IDs QUE JÁ EXISTEM
+                    const idsExistentes = faccoesProdutoResponse.map((f) => f.faccao_id);
+                    setExistingFaccaoIds(idsExistentes);
+
+                    faccoesProdutoResponse.forEach((f) => {
+                        faccaoProdutoMap[f.faccao_id] = f;
+                    });
+
+                    const mergedFaccoes = Array.isArray(faccoesResponse)
+                        ? faccoesResponse.map((faccao) => ({
+                              ...faccao,
+                              preco: faccaoProdutoMap[faccao.id]?.preco ?? null,
+                          }))
+                        : [];
+
+                    setAvailableFaccoes(mergedFaccoes);
+                    setFaccaoRows([]);
+                } else {
+                    setAvailableFaccoes(Array.isArray(faccoesResponse) ? faccoesResponse : []);
+                    setExistingFaccaoIds([]); // Limpa se não houver nenhuma
+                }
 
                 const normalizedGrades = normalizeGradeOptions(
                     Array.isArray(gradesResponse) ? gradesResponse : [],
@@ -360,6 +392,9 @@ export default function FichaTecnicaModal({
                 return prev;
             }
 
+            // Verifica de forma segura se a facção já existia na base de dados
+            const jaExisteNoBanco = existingFaccaoIds.includes(Number(faccao.id));
+
             return [
                 ...prev,
                 {
@@ -367,7 +402,8 @@ export default function FichaTecnicaModal({
                     faccaoNome: faccao.nome,
                     operacao: "",
                     preco: formatarPreco(faccao.preco),
-                    isDirty: false,
+                    isDirty: true,
+                    isNew: !jaExisteNoBanco, // Se NÃO existe, então é nova (true)
                 },
             ];
         });
@@ -376,11 +412,6 @@ export default function FichaTecnicaModal({
     const handleSave = async () => {
         if (!effectiveGradeVersionId) {
             setError("Selecione uma grade válida.");
-            return;
-        }
-
-        if (faccaoRows.some((row) => !row.operacao?.trim())) {
-            setError("Preencha a operação das facções.");
             return;
         }
 
@@ -416,25 +447,45 @@ export default function FichaTecnicaModal({
             }
 
             if (faccaoRows.length > 0) {
-                await syncFichaTecnicaFaccoes(
-                    fichaId,
-                    faccaoRows.map((r) => ({
-                        faccao_id: r.faccaoId,
-                        operacao: r.operacao.trim(),
-                        ...(r.preco !== ""
-                            ? { preco: Number(String(r.preco).replace(",", ".")) }
-                            : {}),
-                    })),
-                );
+                // ESSE ENDPOINT AINDA VAI SER DESENVOLVIDO NO BACKEND - NA RELAÇAO ficha_tecnica_parceiro
+                // await syncFichaTecnicaFaccoes(
+                //     fichaId,
+                //     faccaoRows.map((r) => ({
+                //         faccao_id: r.faccaoId,
+                //         operacao: r.operacao.trim(),
+                //         ...(r.preco !== ""
+                //             ? { preco: Number(String(r.preco).replace(",", ".")) }
+                //             : {}),
+                //     })),
+                // );
 
                 await Promise.all(
                     faccaoRows.map(async (r) => {
-                        if (!r.isDirty) return;
                         if (r.preco === "" || r.preco === null) return;
 
-                        const parsed = Number(String(r.preco).replace(",", "."));
-                        if (!Number.isNaN(parsed)) {
-                            await updateFaccaoProdutoPrice(produto.id, r.faccaoId, parsed);
+                        console.log(r.preco);
+
+                        if (!r.isDirty) return;
+
+                        // r.preco ta vindo uma string assim "R$ 10,00", entao preciso limpar isso pra converter em numero
+                        const precoLimpo = String(r.preco)
+                            .replace("R$", "")
+                            .replace(".", "")
+                            .replace(",", ".")
+                            .trim();
+
+                        const parsed = Number.parseFloat(precoLimpo);
+
+                        console.log("parsed", parsed);
+
+                        const precoValido = Number.isNaN(parsed) ? 0 : parsed;
+
+                        console.log("precoValido", precoValido);
+
+                        if (r.isNew) {
+                            await createFaccaoProduto(r.faccaoId, produto.id, precoValido);
+                        } else {
+                            await updateFaccaoProdutoPrice(r.faccaoId, produto.id, precoValido);
                         }
                     }),
                 );

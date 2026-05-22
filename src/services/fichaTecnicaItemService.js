@@ -37,10 +37,18 @@ export async function syncFichaTecnicaFaccoes(fichaTecnicaId, faccoes) {
     return unwrap(response);
 }
 
-export async function updateFaccaoProdutoPrice(produtoId, faccaoId, preco) {
-    // TODO: ajuste o path caso o seu backend use outra rota para faccao-produto.
-    const response = await api.put(`/faccao-produtos/${produtoId}/${faccaoId}`, {
+export async function updateFaccaoProdutoPrice(faccaoId, produtoId, preco) {
+    const response = await api.put(`/faccoes-produtos/${faccaoId}/${produtoId}`, {
         preco,
     });
+
+    return unwrap(response);
+}
+
+export async function createFaccaoProduto(faccaoId, produtoId, preco) {
+    const response = await api.post(`/faccoes-produtos/${faccaoId}/${produtoId}`, {
+        preco,
+    });
+
     return unwrap(response);
 }
