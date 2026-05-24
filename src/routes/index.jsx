@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
+import RecuperarSenha from "@/pages/RecuperarSenha";
 import Cliente from "@/pages/Clientes";
 import PrivateRoute from "./PrivateRoute";
 import { Layout } from "@/components/Layout";
@@ -22,6 +23,7 @@ function AppRoutes() {
         <BrowserRouter>
             <Routes>
                 <Route path="/login" element={<Login />} />
+                <Route path="/esqueci-senha" element={<RecuperarSenha />} />
 
                 {/* Rotas Protegidas */}
                 <Route
