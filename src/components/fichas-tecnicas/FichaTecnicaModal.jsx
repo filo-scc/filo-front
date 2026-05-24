@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { getFabricoById } from "../../services/fabricoService";
 import { getCoresByFabricoId, createCor } from "../../services/corService";
+import CorModal from "./CorModal";
 import { getFaccoesByFabrico } from "../../services/faccaoService";
 import { getGradesLiberadasByFabricoId } from "../../services/gradeService";
 import { getFaccaoByProduto } from "../../services/produtoService";
@@ -160,6 +161,7 @@ export default function FichaTecnicaModal({
     const [faccaoRows, setFaccaoRows] = useState([]);
 
     const [colorDropdownOpen, setColorDropdownOpen] = useState(false);
+    const [corModalOpen, setCorModalOpen] = useState(false);
     const [gradeDropdownOpen, setGradeDropdownOpen] = useState(false);
     const [faccaoModalOpen, setFaccaoModalOpen] = useState(false);
 
@@ -221,6 +223,7 @@ export default function FichaTecnicaModal({
         setFaccaoRows([]);
         setError("");
         setColorDropdownOpen(false);
+        setCorModalOpen(false);
         setGradeDropdownOpen(false);
         setFaccaoModalOpen(false);
         setHoveredFaccaoIndex(null);
@@ -328,6 +331,23 @@ export default function FichaTecnicaModal({
         setSelectedColorIds((prev) =>
             prev.includes(colorId) ? prev.filter((id) => id !== colorId) : [...prev, colorId],
         );
+
+    const handleOpenCorModal = () => {
+        setColorDropdownOpen(false);
+        setCorModalOpen(true);
+        onRequestCreateColor?.();
+    };
+
+    const handleCorCreated = (created) => {
+        if (!created?.id) return;
+        setAvailableColors((prev) => {
+            if (prev.some((c) => c.id === created.id)) return prev;
+            return [...prev, created];
+        });
+        setSelectedColorIds((prev) =>
+            prev.includes(created.id) ? prev : [...prev, created.id],
+        );
+    };
 
     const formatarPreco = (valor) => {
         if (valor === null || valor === undefined || valor === "") return "";
@@ -567,11 +587,7 @@ export default function FichaTecnicaModal({
                                                 <div className="max-h-[200px] overflow-y-auto scrollbar-sutil">
                                                     <button
                                                         type="button"
-                                                        onClick={() => {
-                                                            setColorDropdownOpen(false);
-                                                            if (onRequestCreateColor)
-                                                                onRequestCreateColor();
-                                                        }}
+                                                        onClick={handleOpenCorModal}
                                                         className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[14px] text-[#4696AD] font-medium bg-white hover:bg-[#FAFAFA]"
                                                     >
                                                         <span>+ Nova cor</span>
@@ -1042,6 +1058,13 @@ export default function FichaTecnicaModal({
                 produtoId={produto?.id}
                 onClose={() => setFaccaoModalOpen(false)}
                 onSelectFaccao={handleSelectFaccaoFromModal}
+            />
+
+            <CorModal
+                isOpen={corModalOpen}
+                onClose={() => setCorModalOpen(false)}
+                fabricoId={fabricoId}
+                onSuccess={handleCorCreated}
             />
         </>
     );
