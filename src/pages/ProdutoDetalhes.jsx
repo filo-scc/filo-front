@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getProdutoById, getClientesDoProduto, excluirProduto } from "../services/produtoService";
+import {
+    getProdutoById,
+    getClientesDoProduto,
+    excluirProduto,
+    getAviamentosDoProduto,
+} from "../services/produtoService";
 
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
 import SecaoDadosProduto from "../components/produtos/SecaoDadosProduto";
@@ -17,6 +22,7 @@ export default function ProdutoDetalhes() {
     const [loading, setLoading] = useState(true);
     const [produto, setProduto] = useState(null);
     const [clientesAssociados, setClientesAssociados] = useState([]);
+    const [aviamentosProduto, setAviamentosProduto] = useState([]);
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
     const [modalAtencaoAberto, setModalAtencaoAberto] = useState(false);
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
@@ -29,9 +35,10 @@ export default function ProdutoDetalhes() {
                 const userString = localStorage.getItem("user");
                 const usuarioLogado = userString ? JSON.parse(userString) : null;
 
-                const [dadosProduto, dadosClientes] = await Promise.all([
+                const [dadosProduto, dadosClientes, dadosAviamentos] = await Promise.all([
                     getProdutoById(id),
                     getClientesDoProduto(id),
+                    getAviamentosDoProduto(id),
                 ]);
 
                 if (usuarioLogado && dadosProduto.fabrico_id !== usuarioLogado.fabrico_id) {
@@ -42,6 +49,7 @@ export default function ProdutoDetalhes() {
 
                 setProduto(dadosProduto);
                 setClientesAssociados(dadosClientes);
+                setAviamentosProduto(dadosAviamentos);
             } catch (error) {
                 console.error("Erro ao carregar detalhes:", error);
                 setModalAtencaoAberto(true);
@@ -86,7 +94,7 @@ export default function ProdutoDetalhes() {
                     {/* depois */}
                     {produto ? (
                         <>
-                            <SecaoDadosProduto produto={produto} />
+                            <SecaoDadosProduto produto={produto} aviamentos={aviamentosProduto} />
                             <TabelaClientesDoProduto
                                 clientes={clientesAssociados}
                                 referenciaInterna={produto.nome}
