@@ -115,7 +115,7 @@ function DropdownField({
                         className="fixed inset-0 z-10 cursor-default outline-none"
                     />
 
-                    <div className="absolute left-0 right-0 top-[calc(100%+2px)] z-20 overflow-hidden rounded-[14px] border border-[#898C8F] bg-white max-h-[240px] overflow-y-auto scrollbar-sutil">
+                    <div className="absolute left-0 right-0 top-[calc(100%+2px)] z-20 overflow-hidden rounded-[14px] border border-[#898C8F] bg-white max-h-[240px] overflow-y-auto scrollbar-sutil py-1">
                         {opcoesFiltradas.length === 0 ? (
                             <p className="px-3 py-3 text-sm text-[#898C8F] font-light">
                                 Nenhuma opção encontrada
@@ -400,6 +400,7 @@ export default function PedidosCadastrar() {
             const payloadPedido = {
                 fabrico_id: fabricoId,
                 cliente_id: clienteSelecionado?.id || null,
+                numero: numeroPedido,
                 finalizado: false,
             };
 
@@ -480,21 +481,55 @@ export default function PedidosCadastrar() {
 
     return (
         <>
-            {/* CONTAINER PRINCIPAL DA TELA */}
-            <div className="w-full max-w-[1200px] xl:max-w-none mx-auto font-['Outfit',_sans-serif]">
-                <div className="bg-white p-8 sm:p-10 rounded-[32px] shadow-[0_8px_40px_rgba(70,150,173,0.08)] border border-[#F0F4F6] w-full">
+            <style>{`
+                /* ========================================================
+                   1. SCROLLBAR DA PÁGINA GLOBAL (Aplica na tela inteira)
+                   ======================================================== */
+                ::-webkit-scrollbar {
+                    width: 6px; /* Largura sutil, mas confortável para a página */
+                    height: 6px;
+                }
+                ::-webkit-scrollbar-track {
+                    background: transparent; /* Trilho invisível para um visual limpo */
+                }
+                ::-webkit-scrollbar-thumb {
+                    background-color: #d6d6d6;
+                    border-radius: 999px;
+                }
+                ::-webkit-scrollbar-thumb:hover {
+                    background-color: #bcbcbc; /* Escurece sutilmente ao passar o mouse */
+                }
+
+                /* ========================================================
+                   2. SCROLLBAR INTERNA DOS DROPDOWNS (.scrollbar-sutil)
+                   ======================================================== */
+                .scrollbar-sutil::-webkit-scrollbar { 
+                    width: 4px; 
+                    height: 4px; 
+                } 
+                .scrollbar-sutil::-webkit-scrollbar-thumb { 
+                    background-color: #d6d6d6; 
+                    border-radius: 999px; 
+                }
+                /* Recuo para o scroll do dropdown respeitar os cantos arredondados de 14px e não vazar */
+                .scrollbar-sutil::-webkit-scrollbar-track {
+                    margin-top: 8px;
+                    margin-bottom: 8px;
+                }
+            `}</style>
+            {/* Contentor principal idêntico ao de Clientes (p-6 pt-0 w-full relative z-0) */}
+            <div className="p-6 pt-0 w-full relative z-0 font-['Outfit',_sans-serif]">
+                {/* Card de Fundo Branco com o mesmo arredondamento, sombra e comportamento responsivo de Clientes */}
+                <div className="bg-white p-10 rounded-[24px] shadow-sm w-full mx-auto">
                     {/* 1. CABEÇALHO: Título da tela e número do pedido */}
                     <div className="mb-6">
-                        {/* items-start alinha o topo da imagem com o topo do bloco de texto */}
                         <div className="flex items-start gap-3">
-                            {/* IMAGEM: Removido margens extras para alinhar perfeitamente no teto */}
                             <img
                                 src="/pedidos-desativado.png"
                                 alt=""
                                 className="h-8 w-8 shrink-0 object-contain brightness-0 opacity-[0.85]"
                             />
 
-                            {/* BLOCO DE TEXTOS: gap-0 e leading-none eliminam qualquer espaço entre o título e o número */}
                             <div className="flex flex-col gap-0 items-start">
                                 <h1 className="text-[28px] sm:text-[30px] font-light text-[#404040] tracking-tight leading-none">
                                     Novo Pedido
@@ -592,33 +627,31 @@ export default function PedidosCadastrar() {
                     {/* 5. MENSAGEM DE ERRO GERAL: Exibida caso a orquestração falhe */}
                     {erro ? <p className="pt-4 text-sm text-[#D75757] text-right">{erro}</p> : null}
                 </div>
-
-                {/* 6. MODAL: Fica invisível até que o estado "modalFichaAberto" seja true */}
-                <FichaTecnicaModal
-                    isOpen={modalFichaAberto}
-                    onClose={fecharModalFicha}
-                    produto={referenciaParaModal}
-                    fabricoId={fabricoId}
-                    // Ao criar a ficha no modal, injetamos os dados complementares para a Tabela renderizar corretamente
-                    onFichaCreated={(rascunhoFicha) => {
-                        setFichas((prev) => [
-                            ...prev,
-                            {
-                                ...rascunhoFicha,
-                                foto: rascunhoFicha.foto || referenciaParaModal?.foto,
-                                referenciaInterna:
-                                    rascunhoFicha.referenciaInterna ||
-                                    referenciaParaModal?.nome ||
-                                    referenciaParaModal?.referenciaInterna,
-                                referenciaCliente:
-                                    rascunhoFicha.referenciaCliente ||
-                                    referenciaParaModal?.referenciaCliente,
-                                cores: rascunhoFicha.cores || rascunhoFicha.selectedColors || [],
-                            },
-                        ]);
-                    }}
-                />
             </div>
+
+            <FichaTecnicaModal
+                isOpen={modalFichaAberto}
+                onClose={fecharModalFicha}
+                produto={referenciaParaModal}
+                fabricoId={fabricoId}
+                onFichaCreated={(rascunhoFicha) => {
+                    setFichas((prev) => [
+                        ...prev,
+                        {
+                            ...rascunhoFicha,
+                            foto: rascunhoFicha.foto || referenciaParaModal?.foto,
+                            referenciaInterna:
+                                rascunhoFicha.referenciaInterna ||
+                                referenciaParaModal?.nome ||
+                                referenciaParaModal?.referenciaInterna,
+                            referenciaCliente:
+                                rascunhoFicha.referenciaCliente ||
+                                referenciaParaModal?.referenciaCliente,
+                            cores: rascunhoFicha.cores || rascunhoFicha.selectedColors || [],
+                        },
+                    ]);
+                }}
+            />
         </>
     );
 }
