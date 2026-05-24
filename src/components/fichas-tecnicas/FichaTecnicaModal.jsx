@@ -379,10 +379,12 @@ export default function FichaTecnicaModal({
             isDraft: true,
             produtoId: produto.id,
             nome: produto?.referenciaInterna || produto?.nome,
+            referenciaCliente: produto.referenciaInterna || null,
             etapaAtualId,
             gradeVersaoIdOriginal: produto?.gradeVersaoId || produto?.grade_versao_id,
             gradeVersaoIdNova: effectiveGradeVersionId,
             selectedColorIds,
+            cores: selectedColors,
             itensPayload,
             faccaoRows,
             quantidade: quantidadeTotal, // Utilizado para preencher a tabela visualmente
