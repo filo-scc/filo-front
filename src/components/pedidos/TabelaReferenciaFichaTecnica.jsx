@@ -4,68 +4,49 @@ const borderColor = "#d9d9d9";
 const borderStyle = { borderColor };
 
 export default function TabelaFichaTecnica({ fichas = [], isSobDemanda = true, onRemoverFicha }) {
-    const ultimo = fichas.length - 1;
+    const gridColsClass = isSobDemanda ? "grid grid-cols-5 w-full" : "grid grid-cols-4 w-full";
 
-    // Define o grid dinamicamente: se tiver Referência Cliente, são 6 colunas. Senão, 5.
-    const gridColsClass = isSobDemanda
-        ? "grid grid-cols-[260px_1fr_1fr_1fr_120px_100px]"
-        : "grid grid-cols-[260px_1.5fr_1.5fr_120px_100px]";
+    const formatarCores = (cores) => {
+        if (!cores || cores.length === 0) return "-";
+        if (Array.isArray(cores)) {
+            return cores.map((cor) => (typeof cor === "object" ? cor.nome : cor)).join(", ");
+        }
+        return String(cores);
+    };
 
     return (
         <section className="w-full">
-            <h3 className="text-[20px] font-Outfit font-light text-[#404040] mb-4">
-                Fichas técnicas
-            </h3>
-
             <div className="flex flex-col w-full">
                 {/* CABEÇALHO DA TABELA */}
                 <div className="flex flex-row items-stretch w-full">
                     <div
-                        className="flex-1 rounded-t-[10px] border overflow-hidden"
+                        className="flex-1 rounded-t-[10px] border overflow-hidden bg-[#d9d9d9]"
                         style={borderStyle}
                     >
                         <div
-                            className={`${gridColsClass} bg-[#d9d9d9] text-[#898c8f] text-[16px] font-Outfit font-light h-[52px] items-center`}
+                            className={`${gridColsClass} text-[#898c8f] text-[14px] font-Outfit font-light min-h-[46px]`}
                         >
-                            <div className="h-full flex items-center justify-center text-center px-3">
-                                Foto
-                            </div>
-
                             <div
-                                className="border-l h-full flex items-center justify-center text-center px-3"
+                                className="border-r flex items-center justify-center px-4"
                                 style={borderStyle}
-                            >
-                                Referência interna
+                            ></div>
+
+                            <div className="flex items-center justify-center text-center px-4">
+                                Referência Interna
                             </div>
 
                             {isSobDemanda && (
-                                <div
-                                    className="border-l h-full flex items-center justify-center text-center px-3"
-                                    style={borderStyle}
-                                >
-                                    Referência cliente
+                                <div className="flex items-center justify-center text-center px-4">
+                                    Referência Cliente
                                 </div>
                             )}
 
-                            <div
-                                className="border-l h-full flex items-center justify-center text-center px-3"
-                                style={borderStyle}
-                            >
+                            <div className="flex items-center justify-center text-center px-4">
                                 Cores
                             </div>
 
-                            <div
-                                className="border-l h-full flex items-center justify-center text-center px-3"
-                                style={borderStyle}
-                            >
+                            <div className="flex items-center justify-center text-center px-4">
                                 Quantidade
-                            </div>
-
-                            <div
-                                className="border-l h-full flex items-center justify-center text-center px-3"
-                                style={borderStyle}
-                            >
-                                Ações
                             </div>
                         </div>
                     </div>
@@ -73,95 +54,78 @@ export default function TabelaFichaTecnica({ fichas = [], isSobDemanda = true, o
 
                 {/* CORPO DA TABELA */}
                 {fichas.length > 0 ? (
-                    fichas.map((ficha, idx) => (
-                        <div key={ficha.id} className="flex flex-row items-stretch w-full">
+                    fichas.map((ficha, index) => {
+                        const ultimo = index === fichas.length - 1;
+
+                        return (
                             <div
-                                className={`flex-1 border-l border-r border-b overflow-hidden h-[168px] ${idx === ultimo ? "rounded-b-[10px]" : ""}`}
-                                style={borderStyle}
+                                key={ficha.id || index}
+                                className="relative group flex flex-row items-stretch w-full"
                             >
                                 <div
-                                    className={`${gridColsClass} w-full h-full items-center text-[16px] font-Outfit text-[#898c8f] ${idx % 2 === 0 ? "bg-white" : "bg-[#F4F4F4]"}`}
+                                    className={`flex-1 border-l border-r border-b overflow-hidden bg-white transition-colors ${
+                                        ultimo ? "rounded-b-[10px]" : ""
+                                    }`}
+                                    style={borderStyle}
                                 >
-                                    {/* COLUNA FOTO */}
-                                    <div className="flex justify-center items-center h-full px-2">
-                                        {ficha.foto ? (
-                                            <img
-                                                src={ficha.foto}
-                                                alt={ficha.referenciaInterna || "Produto"}
-                                                className="w-[220px] h-[130px] rounded-[10px] object-cover border border-[#E0E0E0]"
-                                            />
-                                        ) : (
-                                            <div className="w-[220px] h-[130px] rounded-[10px] bg-[#E8E8E8] flex items-center justify-center text-[12px] text-[#9B9B9B] text-center border border-[#E0E0E0]">
-                                                Sem foto
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* COLUNA REF. INTERNA */}
-                                    <div className="font-light flex items-center justify-center text-center px-3 h-full text-[#404040]">
-                                        {ficha.referenciaInterna || "-"}
-                                    </div>
-
-                                    {/* COLUNA REF. CLIENTE (CONDICIONAL) */}
-                                    {isSobDemanda && (
-                                        <div
-                                            className="font-light border-l flex items-center justify-center text-center px-3 h-full"
-                                            style={borderStyle}
-                                        >
-                                            {ficha.referenciaCliente || "-"}
+                                    <div
+                                        className={`${gridColsClass} text-[#404040] text-[16px] font-Outfit font-light min-h-[130px]`}
+                                    >
+                                        {/* 1. Coluna da Foto (com divisória interna) */}
+                                        <div className="border-r-[0.5px] border-[#898c8f] p-3 flex items-center justify-center bg-white">
+                                            {ficha.foto ? (
+                                                <img
+                                                    src={ficha.foto}
+                                                    alt="Produto"
+                                                    className="w-full max-w-[150px] h-[106px] object-cover rounded-[10px] shadow-sm"
+                                                />
+                                            ) : (
+                                                <div className="w-full max-w-[150px] h-[106px] bg-gray-50 rounded-[10px] flex items-center justify-center text-xs text-gray-400 border border-dashed border-gray-200">
+                                                    Sem foto
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
 
-                                    {/* COLUNA CORES */}
-                                    <div
-                                        className="font-light border-l flex items-center justify-center text-center px-2 h-full"
-                                        style={borderStyle}
-                                    >
-                                        {ficha.cores && ficha.cores.length > 0 ? (
-                                            <div className="flex flex-wrap items-center justify-center gap-1.5 p-2 overflow-y-auto max-h-[140px] scrollbar-thin">
-                                                {ficha.cores.map((cor, i) => (
-                                                    <span
-                                                        key={i}
-                                                        className="inline-flex items-center rounded-full bg-[#E5F6FB] px-2.5 py-1 text-[13px] text-[#4696AD]"
-                                                    >
-                                                        {cor.nome || cor}
-                                                    </span>
-                                                ))}
+                                        {/* 2. Referência Interna (centralizada + divisória interna) */}
+                                        <div className="border-r-[0.5px] border-[#898c8f] flex items-center justify-center text-center px-4 break-words text-[#404040]">
+                                            {ficha.referenciaInterna || "-"}
+                                        </div>
+
+                                        {/* 3. Condicional: Referência Cliente (centralizada + divisória interna se ativo) */}
+                                        {isSobDemanda && (
+                                            <div className="border-r-[0.5px] border-[#898c8f] flex items-center justify-center text-center px-4 break-words text-[#404040]">
+                                                {ficha.referenciaCliente || "-"}
                                             </div>
-                                        ) : (
-                                            <span className="text-[13px] text-[#898C8F] italic">
-                                                {ficha.selectedColorIds?.length
-                                                    ? `${ficha.selectedColorIds.length} cor(es)`
-                                                    : "-"}
-                                            </span>
                                         )}
-                                    </div>
 
-                                    {/* COLUNA QUANTIDADE */}
-                                    <div
-                                        className="font-light border-l flex items-center justify-center text-center px-3 h-full text-[#404040]"
-                                        style={borderStyle}
-                                    >
-                                        {ficha.quantidade || 0}
-                                    </div>
+                                        {/* 4. Cores (centralizada + divisória interna) */}
+                                        <div className="border-r-[0.5px] border-[#898c8f] flex items-center justify-center text-center px-4 break-words text-[#404040]">
+                                            {formatarCores(ficha.cores)}
+                                        </div>
 
-                                    {/* COLUNA AÇÕES */}
-                                    <div
-                                        className="font-light border-l flex items-center justify-center text-center px-3 h-full"
-                                        style={borderStyle}
-                                    >
-                                        <button
-                                            type="button"
-                                            onClick={() => onRemoverFicha?.(ficha.id)}
-                                            className="text-[14px] text-[#D75757] hover:underline transition-all"
-                                        >
-                                            Excluir
-                                        </button>
+                                        {/* 5. Quantidade (centralizada e sem borda direita, já que é a última célula interna) */}
+                                        <div className="flex items-center justify-center text-center px-4 font-normal text-[#404040]">
+                                            {ficha.quantidade || ficha.quantidade_pecas || "0"}
+                                        </div>
                                     </div>
                                 </div>
+
+                                {/* Lixeira Externa */}
+                                <button
+                                    type="button"
+                                    onClick={() => onRemoverFicha?.(ficha.id || index)}
+                                    className="absolute -right-12 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-5 text-[#D75757] rounded-full"
+                                    title="Excluir ficha"
+                                >
+                                    <img
+                                        src="/excluir-cinza-claro.png"
+                                        alt="Remover ficha"
+                                        className="w-5 h-5"
+                                    />
+                                </button>
                             </div>
-                        </div>
-                    ))
+                        );
+                    })
                 ) : (
                     <div className="flex flex-row items-stretch w-full">
                         <div
