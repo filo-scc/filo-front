@@ -158,19 +158,28 @@ export default function EstampaModal({ isOpen, onClose, fabricoId, onSuccess }) 
                                 <img
                                     src="/add-image-icon.png"
                                     alt=""
-                                    className="h-[42px] w-[42px] object-contain opacity-70"
+                                    className="h-[22px] w-[22px] object-contain opacity-60"
                                 />
                             )}
                         </button>
                     </div>
 
-                    <div className="flex flex-col sm:col-span-3 sm:col-start-3 sm:row-start-2">
+                    <div className="flex flex-col gap-4 sm:col-span-3 sm:col-start-3 sm:row-start-2">
                         <FloatingLabelInput
                             label="Nome da estampa"
                             value={nome}
                             onChange={(e) => setNome(e.target.value)}
                             inputClassName="border-[#898C8F] text-[14px] text-[#404040]"
                         />
+
+                        <div className="invisible pointer-events-none select-none" aria-hidden="true">
+                            <label className="mb-2 block text-[14px] font-light text-[#4696AD]">
+                                Código HEX
+                            </label>
+                            <div className="relative w-full">
+                                <div className="h-[39px] w-full rounded-[10px] border border-[#898C8F]" />
+                            </div>
+                        </div>
                     </div>
                 </div>
 
