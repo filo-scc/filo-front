@@ -4,7 +4,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { getFabricoById } from "../../services/fabricoService";
-import { getCoresByFabricoId, createCor } from "../../services/corService";
+import { getCoresByFabricoId } from "../../services/corService";
+import CorModal from "./CorModal";
+import EstampaModal from "./EstampaModal";
 import { getFaccoesByFabrico } from "../../services/faccaoService";
 import { getGradesLiberadasByFabricoId } from "../../services/gradeService";
 import { getFaccaoByProduto } from "../../services/produtoService";
@@ -160,6 +162,8 @@ export default function FichaTecnicaModal({
     const [faccaoRows, setFaccaoRows] = useState([]);
 
     const [colorDropdownOpen, setColorDropdownOpen] = useState(false);
+    const [corModalOpen, setCorModalOpen] = useState(false);
+    const [estampaModalOpen, setEstampaModalOpen] = useState(false);
     const [gradeDropdownOpen, setGradeDropdownOpen] = useState(false);
     const [faccaoModalOpen, setFaccaoModalOpen] = useState(false);
 
@@ -221,6 +225,8 @@ export default function FichaTecnicaModal({
         setFaccaoRows([]);
         setError("");
         setColorDropdownOpen(false);
+        setCorModalOpen(false);
+        setEstampaModalOpen(false);
         setGradeDropdownOpen(false);
         setFaccaoModalOpen(false);
         setHoveredFaccaoIndex(null);
@@ -328,6 +334,28 @@ export default function FichaTecnicaModal({
         setSelectedColorIds((prev) =>
             prev.includes(colorId) ? prev.filter((id) => id !== colorId) : [...prev, colorId],
         );
+
+    const handleOpenCorModal = () => {
+        setColorDropdownOpen(false);
+        setCorModalOpen(true);
+        onRequestCreateColor?.();
+    };
+
+    const handleOpenEstampaModal = () => {
+        setColorDropdownOpen(false);
+        setEstampaModalOpen(true);
+    };
+
+    const handleCorCreated = (created) => {
+        if (!created?.id) return;
+        setAvailableColors((prev) => {
+            if (prev.some((c) => c.id === created.id)) return prev;
+            return [...prev, created];
+        });
+        setSelectedColorIds((prev) =>
+            prev.includes(created.id) ? prev : [...prev, created.id],
+        );
+    };
 
     const formatarPreco = (valor) => {
         if (valor === null || valor === undefined || valor === "") return "";
@@ -567,22 +595,14 @@ export default function FichaTecnicaModal({
                                                 <div className="max-h-[200px] overflow-y-auto scrollbar-sutil">
                                                     <button
                                                         type="button"
-                                                        onClick={() => {
-                                                            setColorDropdownOpen(false);
-                                                            if (onRequestCreateColor)
-                                                                onRequestCreateColor();
-                                                        }}
+                                                        onClick={handleOpenCorModal}
                                                         className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[14px] text-[#4696AD] font-medium bg-white hover:bg-[#FAFAFA]"
                                                     >
                                                         <span>+ Nova cor</span>
                                                     </button>
                                                     <button
                                                         type="button"
-                                                        onClick={() => {
-                                                            setColorDropdownOpen(false);
-                                                            if (onRequestCreateColor)
-                                                                onRequestCreateColor();
-                                                        }}
+                                                        onClick={handleOpenEstampaModal}
                                                         className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[14px] text-[#4696AD] font-medium bg-white hover:bg-[#FAFAFA]"
                                                     >
                                                         <span>+ Nova estampa</span>
@@ -601,8 +621,8 @@ export default function FichaTecnicaModal({
                                                                     className={`flex w-full items-center border-l-[4px] px-4 py-2.5 transition bg-white text-[#7B7D80] ${checked ? "border-l-[3px] border-l-[#C4F042]" : "border-l-transparent"}`}
                                                                 >
                                                                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                                        {color.tipo ===
-                                                                        "estampa" ? (
+                                                                        {String(color.tipo).toUpperCase() ===
+                                                                        "ESTAMPA" ? (
                                                                             <img
                                                                                 src={color.foto}
                                                                                 alt={color.nome}
@@ -1042,6 +1062,20 @@ export default function FichaTecnicaModal({
                 produtoId={produto?.id}
                 onClose={() => setFaccaoModalOpen(false)}
                 onSelectFaccao={handleSelectFaccaoFromModal}
+            />
+
+            <CorModal
+                isOpen={corModalOpen}
+                onClose={() => setCorModalOpen(false)}
+                fabricoId={fabricoId}
+                onSuccess={handleCorCreated}
+            />
+
+            <EstampaModal
+                isOpen={estampaModalOpen}
+                onClose={() => setEstampaModalOpen(false)}
+                fabricoId={fabricoId}
+                onSuccess={handleCorCreated}
             />
         </>
     );
