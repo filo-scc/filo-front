@@ -20,6 +20,8 @@ import {
 import { createPedido } from "../services/pedidoService";
 import { getPedidosByFabricoId } from "../services/pedidoService";
 
+import { getAllEtapasByFabricoId } from "../services/etapaService";
+
 const sectionTitleClass = "text-[20px] font-light text-[#404040] mb-4 font-['Outfit',_sans-serif]";
 
 function DropdownField({
@@ -163,6 +165,22 @@ const getProdutoId = (item) =>
 const getReferenciaInterna = (item) =>
     item?.produto?.nome ?? item?.produto?.referencia ?? item?.nome ?? "-";
 
+const PALETA_13_CORES = [
+    "#7FA9B8",
+    "#9DB7A5",
+    "#5F8F9B",
+    "#A89FBF",
+    "#8FAF7A",
+    "#6E8CA5",
+    "#B88772",
+    "#8E9CA8",
+    "#8D7FA8",
+    "#A288C7",
+    "#5F9EA0",
+    "#B86A7B",
+    "#7E8F4E",
+];
+
 export default function PedidosCadastrar() {
     const navigate = useNavigate();
     const usuarioLogado = JSON.parse(localStorage.getItem("user") || "{}");
@@ -171,6 +189,10 @@ export default function PedidosCadastrar() {
         usuarioLogado?.fabricoId,
         usuarioLogado?.fabrico?.id,
     );
+
+    const [primeiraEtapaId, setPrimeiraEtapaId] = useState(null);
+
+    const [pedidosExistentes, setPedidosExistentes] = useState([]);
 
     const [openDropdown, setOpenDropdown] = useState(null);
     const [clientes, setClientes] = useState([]);
@@ -202,6 +224,8 @@ export default function PedidosCadastrar() {
 
                 if (ignorar) return;
 
+                setPedidosExistentes(pedidos_do_fabrico || []);
+
                 if (!pedidos_do_fabrico || pedidos_do_fabrico.length === 0) {
                     setNumeroPedido("1");
                     return;
@@ -221,11 +245,42 @@ export default function PedidosCadastrar() {
 
         carregarNumeroDoPedido();
 
-        // Cleanup function para evitar memory leaks caso o componente desmonte
         return () => {
             ignorar = true;
         };
-    }, [fabricoId]); // <-- Aqui resolvemos o seu warning. O React agora sabe que depende do fabricoId.
+    }, [fabricoId]);
+
+    useEffect(() => {
+        if (!fabricoId) return;
+
+        let ignorar = false;
+
+        const carregarEtapas = async () => {
+            try {
+                const etapas = await getAllEtapasByFabricoId(fabricoId);
+
+                if (ignorar) return;
+
+                if (etapas && etapas.length > 0) {
+                    const etapaInicial = etapas
+                        .sort((a, b) => a.ordem - b.ordem)
+                        .find((etapa) => etapa.ativa === true);
+
+                    if (etapaInicial) {
+                        setPrimeiraEtapaId(etapaInicial.id);
+                    }
+                }
+            } catch (error) {
+                console.error("Erro ao buscar as etapas do fabrico:", error);
+            }
+        };
+
+        carregarEtapas();
+
+        return () => {
+            ignorar = true;
+        };
+    }, [fabricoId]);
 
     useEffect(() => {
         if (!fabricoId) {
@@ -388,92 +443,179 @@ export default function PedidosCadastrar() {
     };
 
     const handleConcluirPedido = async () => {
+        if (isSobDemanda && !clienteSelecionado) {
+            setErro("Selecione um cliente para prosseguir.");
+            return;
+        }
+
         if (fichas.length === 0) {
             setErro("Adicione pelo menos uma ficha técnica ao pedido.");
             return;
         }
 
         setSalvandoPedido(true);
-        setErro("");
+        setErro(null);
 
         try {
-            const payloadPedido = {
+            // === 1. LÓGICA DAS CORES DO PEDIDO (Paleta de 13 cores) ===
+            let corDoPedido = "#FFFFFF";
+
+            if (fichas.length > 1) {
+                const pedidosAtivos = pedidosExistentes.filter(
+                    (p) => !p.finalizado && p.cor && p.cor.toUpperCase() !== "#FFFFFF",
+                );
+                const coresEmUso = pedidosAtivos.map((p) => p.cor.toUpperCase());
+
+                // Resiliência: Usa PALETA_13_CORES
+                const paletaDisponivel = PALETA_13_CORES;
+
+                const corLivre = paletaDisponivel.find(
+                    (cor) => !coresEmUso.includes(cor.toUpperCase()),
+                );
+
+                corDoPedido = corLivre || paletaDisponivel[0] || "#FFFFFF";
+            }
+
+            // === 2. LÓGICA DA QUANTIDADE DO PEDIDO ===
+            const quantidadeTotalPedido = fichas.reduce(
+                (acc, ficha) => acc + (Number(ficha.quantidade) || 0),
+                0,
+            );
+
+            // === 3. SELEÇÃO DO NÚMERO DO PEDIDO ===
+            let numeroFinal = parseInt(numeroPedido);
+
+            if (
+                !numeroFinal &&
+                typeof pedidosExistentes !== "undefined" &&
+                pedidosExistentes?.length > 0
+            ) {
+                const maioresNumeros = pedidosExistentes
+                    .map((p) => Number(p.numero))
+                    .filter((n) => !isNaN(n));
+                numeroFinal = maioresNumeros.length > 0 ? Math.max(...maioresNumeros) + 1 : 1;
+            }
+
+            // Criar o Pedido
+            const novoPedido = await createPedido({
                 fabrico_id: fabricoId,
                 cliente_id: clienteSelecionado?.id || null,
-                numero: numeroPedido,
+                numero: numeroFinal,
                 finalizado: false,
-            };
+                data_prevista: null,
+                observacoes: null,
+                quantidade: quantidadeTotalPedido,
+                cor: corDoPedido,
+            });
 
-            const pedidoCriado = await createPedido(payloadPedido);
-            const idDoPedido = pedidoCriado?.id || pedidoCriado?.data?.id;
-
-            if (!idDoPedido) throw new Error("ID do Pedido não retornado pelo servidor.");
-
-            await Promise.all(
-                fichas.map(async (rascunhoFicha) => {
-                    if (rascunhoFicha.gradeVersaoIdOriginal !== rascunhoFicha.gradeVersaoIdNova) {
-                        await atualizarProduto(rascunhoFicha.produtoId, {
-                            grade_versao_id: rascunhoFicha.gradeVersaoIdNova,
-                        });
+            // === 4. ASSEGURAR ID DA ETAPA ATUAL ===
+            let etapaIdFallback = primeiraEtapaId;
+            console.log("Etapa ID Fallback inicial:", etapaIdFallback);
+            if (!etapaIdFallback && fabricoId) {
+                try {
+                    const etapas = await getAllEtapasByFabricoId(fabricoId);
+                    if (etapas && etapas.length > 0) {
+                        etapaIdFallback = etapas[0].id;
                     }
+                } catch (e) {
+                    console.error("Erro ao carregar etapas de segurança:", e);
+                }
+            }
+            console.log("Etapa ID Fallback final:", etapaIdFallback);
 
-                    const fichaCriadaDb = await createFichaTecnica({
-                        concluida: false,
-                        fabrico_id: fabricoId,
-                        produto_id: rascunhoFicha.produtoId,
-                        pedido_id: idDoPedido,
-                        etapa_atual_id: rascunhoFicha.etapaAtualId,
+            // === 5. CRIAR AS FICHAS TÉCNICAS E RELAÇÕES ===
+            for (const ficha of fichas) {
+                console.log("----------------------");
+                console.log(ficha);
+                console.log("----------------------");
+
+                // Atualizar o produto se a versão da grade foi alterada
+                const pId = ficha.produtoId || ficha.produto_id;
+                if (
+                    ficha.gradeVersaoIdNova &&
+                    ficha.gradeVersaoIdNova !== ficha.gradeVersaoIdOriginal &&
+                    pId
+                ) {
+                    await atualizarProduto(pId, {
+                        grade_versao_id: ficha.gradeVersaoIdNova,
                     });
+                }
 
-                    const fichaIdReal = fichaCriadaDb?.id || fichaCriadaDb?.data?.id;
+                // Criação da Ficha Técnica
+                const novaFicha = await createFichaTecnica({
+                    pedido_id: novoPedido.id,
+                    produto_id: pId,
+                    grade_versao_id: ficha.gradeVersaoIdNova || ficha.gradeVersaoIdOriginal,
+                    etapa_atual_id: ficha.etapa_atual_id || etapaIdFallback,
+                    quantidade: Number(ficha.quantidade) || 0,
+                    concluida: false,
+                    fabrico_id: fabricoId,
+                });
 
-                    if (rascunhoFicha.selectedColorIds.length > 0) {
-                        await syncFichaTecnicaCores(fichaIdReal, rascunhoFicha.selectedColorIds);
+                // Sincronizar Cores e Itens da Grade
+                if (ficha.selectedColorIds?.length > 0) {
+                    await syncFichaTecnicaCores(novaFicha.id, ficha.selectedColorIds);
+                }
+
+                if (ficha.itensPayload?.length > 0) {
+                    const itensParaSalvar = ficha.itensPayload.map((item) => ({
+                        ficha_tecnica_id: novaFicha.id,
+                        cor_id: item.cor_id,
+                        grade_versao_item_id: item.grade_versao_item_id,
+                        quantidade: item.quantidade,
+                    }));
+
+                    await saveFichaTecnicaItens(novaFicha.id, itensParaSalvar);
+                }
+
+                // Sincronizar Facções atribuídas
+                if (ficha.faccaoRows?.length > 0) {
+                    for (const faccao of ficha.faccaoRows) {
+                        try {
+                            let precoFormatado = 0;
+
+                            if (faccao.preco) {
+                                precoFormatado =
+                                    typeof faccao.preco === "string"
+                                        ? parseFloat(
+                                              faccao.preco
+                                                  .replace(",", ".")
+                                                  .replace("R$ ", "")
+                                                  .trim(),
+                                          ) || 0
+                                        : Number(faccao.preco);
+                            }
+
+                            const faccaoIdFinal = faccao.faccaoId || faccao.id;
+                            const produtoIdFinal = pId; // (Variável pId já extraída no início do seu loop de fichas)
+
+                            if (faccao.isNew === false) {
+                                await updateFaccaoProdutoPrice(
+                                    faccaoIdFinal,
+                                    produtoIdFinal,
+                                    precoFormatado,
+                                );
+                            } else {
+                                await createFaccaoProduto(
+                                    faccaoIdFinal,
+                                    produtoIdFinal,
+                                    precoFormatado,
+                                );
+                            }
+                        } catch (err) {
+                            console.error(
+                                `Erro ao processar facção ${faccao.faccaoId || faccao.id}:`,
+                                err,
+                            );
+                        }
                     }
+                }
+            }
 
-                    if (rascunhoFicha.itensPayload.length > 0) {
-                        await saveFichaTecnicaItens(fichaIdReal, rascunhoFicha.itensPayload);
-                    }
-
-                    if (rascunhoFicha.faccaoRows.length > 0) {
-                        await Promise.all(
-                            rascunhoFicha.faccaoRows.map(async (r) => {
-                                if (r.preco === "" || r.preco === null || !r.isDirty) return;
-
-                                const precoLimpo = String(r.preco)
-                                    .replace("R$", "")
-                                    .replace(".", "")
-                                    .replace(",", ".")
-                                    .trim();
-                                const parsed = Number.parseFloat(precoLimpo);
-                                const precoValido = Number.isNaN(parsed) ? 0 : parsed;
-
-                                if (r.isNew) {
-                                    await createFaccaoProduto(
-                                        r.faccaoId,
-                                        rascunhoFicha.produtoId,
-                                        precoValido,
-                                    );
-                                } else {
-                                    await updateFaccaoProdutoPrice(
-                                        r.faccaoId,
-                                        rascunhoFicha.produtoId,
-                                        precoValido,
-                                    );
-                                }
-                            }),
-                        );
-                    }
-                }),
-            );
-
-            navigate("/pedidos", { state: { success: "Pedido criado com sucesso!" } });
+            navigate("/pedidos");
         } catch (error) {
-            console.error("Erro ao salvar pedido orquestrado:", error);
-            setErro(
-                error?.message ||
-                    "Não foi possível concluir o pedido. Verifique sua conexão e tente novamente.",
-            );
+            console.error(error);
+            setErro("Falha ao salvar pedido. Verifique os dados e tente novamente.");
         } finally {
             setSalvandoPedido(false);
         }
@@ -648,6 +790,7 @@ export default function PedidosCadastrar() {
                                 rascunhoFicha.referenciaCliente ||
                                 referenciaParaModal?.referenciaCliente,
                             cores: rascunhoFicha.cores || rascunhoFicha.selectedColors || [],
+                            etapa_atual_id: primeiraEtapaId,
                         },
                     ]);
                 }}
