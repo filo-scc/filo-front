@@ -352,9 +352,7 @@ export default function FichaTecnicaModal({
             if (prev.some((c) => c.id === created.id)) return prev;
             return [...prev, created];
         });
-        setSelectedColorIds((prev) =>
-            prev.includes(created.id) ? prev : [...prev, created.id],
-        );
+        setSelectedColorIds((prev) => (prev.includes(created.id) ? prev : [...prev, created.id]));
     };
 
     const formatarPreco = (valor) => {
@@ -621,7 +619,9 @@ export default function FichaTecnicaModal({
                                                                     className={`flex w-full items-center border-l-[4px] px-4 py-2.5 transition bg-white text-[#7B7D80] ${checked ? "border-l-[3px] border-l-[#C4F042]" : "border-l-transparent"}`}
                                                                 >
                                                                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                                        {String(color.tipo).toUpperCase() ===
+                                                                        {String(
+                                                                            color.tipo,
+                                                                        ).toUpperCase() ===
                                                                         "ESTAMPA" ? (
                                                                             <img
                                                                                 src={color.foto}

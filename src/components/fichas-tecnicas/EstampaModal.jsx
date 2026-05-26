@@ -84,10 +84,7 @@ export default function EstampaModal({ isOpen, onClose, fabricoId, onSuccess }) 
         } catch (err) {
             console.error(err);
             setError(
-                getApiErrorMessage(
-                    err,
-                    "Não foi possível cadastrar a estampa. Tente novamente.",
-                ),
+                getApiErrorMessage(err, "Não foi possível cadastrar a estampa. Tente novamente."),
             );
         } finally {
             setSubmitting(false);
@@ -172,7 +169,10 @@ export default function EstampaModal({ isOpen, onClose, fabricoId, onSuccess }) 
                             inputClassName="border-[#898C8F] text-[14px] text-[#404040]"
                         />
 
-                        <div className="invisible pointer-events-none select-none" aria-hidden="true">
+                        <div
+                            className="invisible pointer-events-none select-none"
+                            aria-hidden="true"
+                        >
                             <label className="mb-2 block text-[14px] font-light text-[#4696AD]">
                                 Código HEX
                             </label>

@@ -297,12 +297,7 @@ export default function CorModal({ isOpen, onClose, fabricoId, onSuccess }) {
             handleClose();
         } catch (err) {
             console.error(err);
-            setError(
-                getApiErrorMessage(
-                    err,
-                    "Não foi possível cadastrar a cor. Tente novamente.",
-                ),
-            );
+            setError(getApiErrorMessage(err, "Não foi possível cadastrar a cor. Tente novamente."));
         } finally {
             setSubmitting(false);
         }
