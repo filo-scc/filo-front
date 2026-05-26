@@ -677,8 +677,9 @@ export default function PedidosCadastrar() {
 
                             <div className="flex flex-col gap-0 items-start">
                                 <h1 className="text-[28px] sm:text-[30px] font-light text-[#404040] tracking-tight leading-none">
-                                    Novo Pedido
+                                    {isSobDemanda ? "Novo Pedido" : "Nova Ordem de Produção"}
                                 </h1>
+
                                 <p className="text-[18px] font-light text-[#898C8F] mt-0.5 leading-none">
                                     Nº {numeroPedido}
                                 </p>
@@ -765,7 +766,11 @@ export default function PedidosCadastrar() {
                             onClick={handleConcluirPedido}
                             className="bg-[#A9E2F2] hover:bg-[#94d6eb] text-white h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px] disabled:opacity-50 flex items-center justify-center"
                         >
-                            {salvandoPedido ? "Salvando..." : "Concluir pedido"}
+                            {salvandoPedido
+                                ? "Salvando..."
+                                : isSobDemanda
+                                  ? "Concluir pedido"
+                                  : "Concluir ordem"}
                         </button>
                     </div>
 
