@@ -196,6 +196,8 @@ export default function CorModal({ isOpen, onClose, fabricoId, onSuccess }) {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
 
+    const pickerContainerRef = useRef(null);
+
     const syncFromHsv = useCallback((nextHsv, markChosen = true) => {
         const nextRgb = hsvToRgb(nextHsv.h, nextHsv.s, nextHsv.v);
         const nextHex = rgbToHex(nextRgb.r, nextRgb.g, nextRgb.b);
@@ -259,6 +261,23 @@ export default function CorModal({ isOpen, onClose, fabricoId, onSuccess }) {
     useEffect(() => {
         if (!isOpen) resetForm();
     }, [isOpen, resetForm]);
+
+    useEffect(() => {
+        function handleClickFora(event) {
+            if (
+                pickerOpen &&
+                pickerContainerRef.current &&
+                !pickerContainerRef.current.contains(event.target)
+            ) {
+                setPickerOpen(false);
+            }
+        }
+
+        document.addEventListener("mousedown", handleClickFora);
+        return () => {
+            document.removeEventListener("mousedown", handleClickFora);
+        };
+    }, [pickerOpen]);
 
     const handleSubmit = async () => {
         const nomeTrim = nome.trim();
@@ -346,7 +365,10 @@ export default function CorModal({ isOpen, onClose, fabricoId, onSuccess }) {
                         Escolher tom
                     </p>
 
-                    <div className="relative min-h-[116px] sm:col-span-2 sm:row-start-2 sm:min-h-0">
+                    <div
+                        ref={pickerContainerRef}
+                        className="relative min-h-[116px] sm:col-span-2 sm:row-start-2 sm:min-h-0"
+                    >
                         <button
                             type="button"
                             onClick={() => setPickerOpen((prev) => !prev)}
@@ -397,7 +419,7 @@ export default function CorModal({ isOpen, onClose, fabricoId, onSuccess }) {
                                     inputMode="text"
                                     autoComplete="off"
                                     spellCheck={false}
-                                    className="w-full h-[39px] border border-[#D3D3D3] rounded-[10px] pl-7 pr-3 text-[14px] font-light uppercase leading-[39px] text-[#7B7D80] focus:outline-none transition-colors bg-white border-[#898C8F] tracking-wide placeholder:normal-case placeholder:text-[#C8C8C8]"
+                                    className="w-full h-[39px] border border-[#D3D3D3] rounded-[10px] pl-7 pr-3 text-[14px] font-light uppercase leading-[39px] text-[#7B7D80] focus:outline-none transition-colors bg-white tracking-wide placeholder:normal-case placeholder:text-[#C8C8C8]"
                                 />
                             </div>
                         </div>
