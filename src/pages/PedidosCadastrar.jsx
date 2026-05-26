@@ -515,7 +515,10 @@ export default function PedidosCadastrar() {
                 try {
                     const etapas = await getAllEtapasByFabricoId(fabricoId);
                     if (etapas && etapas.length > 0) {
-                        etapaIdFallback = etapas[0].id;
+                        const etapasOrdenadas = [...etapas].sort(
+                            (a, b) => (a.ordem || 0) - (b.ordem || 0),
+                        );
+                        etapaIdFallback = etapasOrdenadas[0].id;
                     }
                 } catch (e) {
                     console.error("Erro ao carregar etapas de segurança:", e);
