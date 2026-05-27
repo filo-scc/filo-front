@@ -776,14 +776,23 @@ export default function FichaTecnicaModal({
                                                                 borderRightWidth: "0.5px",
                                                             }}
                                                         >
-                                                            <span
-                                                                className="w-[20px] h-[20px] rounded-[6px] shrink-0 border border-[#D9D9D9]"
-                                                                style={{
-                                                                    backgroundColor:
-                                                                        color.codigo_hex ||
-                                                                        "#E5E5E5",
-                                                                }}
-                                                            />
+                                                            {String(color.tipo).toUpperCase() ===
+                                                            "ESTAMPA" ? (
+                                                                <img
+                                                                    src={color.foto}
+                                                                    alt={color.nome}
+                                                                    className="w-[20px] h-[20px] rounded-[6px] shrink-0 border border-[#D9D9D9] object-cover"
+                                                                />
+                                                            ) : (
+                                                                <span
+                                                                    className="w-[20px] h-[20px] rounded-[6px] shrink-0 border border-[#D9D9D9]"
+                                                                    style={{
+                                                                        backgroundColor:
+                                                                            color.codigo_hex ||
+                                                                            "#E5E5E5",
+                                                                    }}
+                                                                />
+                                                            )}
                                                             <span className="flex-1 text-center text-[14px] font-light text-[#898C8F] truncate leading-none">
                                                                 {color.nome}
                                                             </span>
