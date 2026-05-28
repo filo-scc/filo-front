@@ -16,7 +16,6 @@ export default function Home() {
     const [mostrarErro, setMostrarErro] = useState(!!location.state?.error);
     const [quadro, setQuadro] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [usuario, setUsuario] = useState(null);
 
     const [mostrarSetaEsquerda, setMostrarSetaEsquerda] = useState(null);
     const [mostrarSetaDireita, setMostrarSetaDireita] = useState(null);
@@ -40,7 +39,6 @@ export default function Home() {
             try {
                 setLoading(true);
                 const dadosUsuario = await getMe();
-                setUsuario(dadosUsuario);
 
                 const fabricoId = dadosUsuario.fabrico_id;
                 if (!fabricoId) {
