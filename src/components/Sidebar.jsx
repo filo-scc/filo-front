@@ -1,19 +1,56 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { NavLink } from "react-router-dom";
 
-const menuItems = [
-    { name: "Início", slug: "inicio", path: "/" },
-    { name: "Pedidos", slug: "pedidos", path: "/pedidos" },
-    { name: "Facções", slug: "faccoes", path: "/faccoes" },
-    { name: "Clientes", slug: "clientes", path: "/clientes" },
-    { name: "Produtos", slug: "produtos", path: "/produtos" },
-    { name: "Estoque", slug: "estoque", path: "/estoque" },
-    { name: "Financeiro", slug: "financeiro", path: "/financeiro" },
-    { name: "Configurações", slug: "configuracoes", path: "/configuracoes" },
-];
+import { getFabricoById } from "../services/fabricoService";
 
 export function Sidebar() {
     const [hoveredPath, setHoveredPath] = useState(null);
+    const [isSobDemanda, setIsSobDemanda] = useState(true);
+
+    const usuarioLogado = JSON.parse(localStorage.getItem("user") || "{}");
+    const fabricoId = usuarioLogado?.fabrico_id;
+
+    useEffect(() => {
+        if (!fabricoId) {
+            return;
+        }
+
+        let ignorar = false;
+
+        const carregarDados = async () => {
+            try {
+                const response = await getFabricoById(fabricoId);
+
+                if (ignorar) return;
+
+                // Armazena o valor booleano vindo do banco no seu estado
+                // Se for true (produz sob demanda), vira true. Se for false, vira false.
+                setIsSobDemanda(Boolean(response?.fabricacao_sob_demanda));
+            } catch (error) {
+                console.error("Erro ao carregar dados do fabrico na Sidebar:", error);
+            }
+        };
+
+        carregarDados();
+
+        return () => {
+            ignorar = true;
+        };
+    }, [fabricoId]);
+
+    const menuItems = useMemo(() => {
+        return [
+            { name: "Início", slug: "inicio", path: "/" },
+            // Condicional: se isSobDemanda for true -> "Pedidos". Se for false -> "Produções"
+            { name: isSobDemanda ? "Pedidos" : "Produções", slug: "pedidos", path: "/pedidos" },
+            { name: "Facções", slug: "faccoes", path: "/faccoes" },
+            { name: "Clientes", slug: "clientes", path: "/clientes" },
+            { name: "Produtos", slug: "produtos", path: "/produtos" },
+            { name: "Estoque", slug: "estoque", path: "/estoque" },
+            { name: "Financeiro", slug: "financeiro", path: "/financeiro" },
+            { name: "Configurações", slug: "configuracoes", path: "/configuracoes" },
+        ];
+    }, [isSobDemanda]);
 
     return (
         <aside className="w-[219px] h-screen pl-[24px] flex flex-col items-center py-8 gap-[32px] bg-transparent overflow-y-auto">

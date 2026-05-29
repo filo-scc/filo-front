@@ -5,7 +5,7 @@ import {
     getClientesDoProduto,
     excluirProduto,
     getAviamentosDoProduto,
-} from "../services/produtosService";
+} from "../services/produtoService";
 
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
 import SecaoDadosProduto from "../components/produtos/SecaoDadosProduto";

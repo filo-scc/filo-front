@@ -33,6 +33,7 @@ lerna-debug.log*
 
 # ── Sistema operacional ───────────────────────────────────────────────────────
 .DS_Store        # macOS
+public/.DS_Store   
 Thumbs.db        # Windows
 *.suo
 *.ntvs*

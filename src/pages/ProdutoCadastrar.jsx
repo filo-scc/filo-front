@@ -7,7 +7,7 @@ import {
     getGradesByFabrico,
     getTecidosByFabrico,
     vincularProdutoAviamento,
-} from "../services/produtosService.js";
+} from "../services/produtoService.js";
 import { upload } from "../services/utilsService";
 
 const modelos = ["Top e short", "Top e calça", "Macaquito", "Macacão"];
