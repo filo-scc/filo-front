@@ -26,10 +26,8 @@ export default function Home() {
         if (mostrarErro) {
             const timer = setTimeout(() => {
                 setMostrarErro(false);
-
                 navigate(location.pathname, { replace: true, state: {} });
             }, 5000);
-
             return () => clearTimeout(timer);
         }
     }, [mostrarErro, location.pathname, navigate]);
@@ -39,7 +37,6 @@ export default function Home() {
             try {
                 setLoading(true);
                 const dadosUsuario = await getMe();
-
                 const fabricoId = dadosUsuario.fabrico_id;
                 if (!fabricoId) {
                     throw new Error("Usuário não possui um fabrico associado");
@@ -104,13 +101,10 @@ export default function Home() {
 
     const handleDragOver = (e) => {
         e.preventDefault();
-
         if (scrollRef.current) {
             const rect = scrollRef.current.getBoundingClientRect();
-
             const mouseX = e.clientX - rect.left;
             const larguraContainer = rect.width;
-
             const zonaGatilho = 100;
 
             if (mouseX > larguraContainer - zonaGatilho) {
@@ -183,7 +177,24 @@ export default function Home() {
     };
 
     return (
-        <div className="p-6 pt-0 relative flex justify-start">
+        <div className="p-6 pt-0 w-full min-w-0">
+            <style>{`
+            .custom-scrollbar::-webkit-scrollbar {
+                width: 4px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-track {
+                background: transparent;
+                margin-top: 8px;
+                margin-bottom: 8px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb {
+                background-color: #d6d6d6;
+                border-radius: 999px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                background-color: #bcbcbc;
+            }
+        `}</style>
             {mostrarErro && mensagem && (
                 <div className="fixed top-4 right-4 z-50 bg-red-500 text-white px-6 py-3 rounded-lg shadow-2xl animate-fade-in-out">
                     <div className="flex items-center gap-2">
@@ -192,8 +203,8 @@ export default function Home() {
                 </div>
             )}
 
-            <div className="bg-white p-6 rounded-[24px] shadow-sm h-[664px] w-full max-w-[1188px] flex flex-col relative">
-                <div className="flex justify-between items-center mb-6 px-2">
+            <div className="bg-white p-6 rounded-[24px] shadow-sm h-[calc(100vh-120px)] w-full flex flex-col relative overflow-hidden min-w-0">
+                <div className="flex justify-between items-center mb-6 px-2 shrink-0">
                     <h1 className="font-normal text-base text-[#404040] flex items-center gap-2">
                         <span className="flex items-center">
                             <img
@@ -229,7 +240,7 @@ export default function Home() {
                         Carregando quadro...
                     </div>
                 ) : (
-                    <div className="relative flex-1 overflow-hidden">
+                    <div className="relative flex-1 min-h-0 min-w-0 overflow-hidden">
                         {mostrarSetaEsquerda && (
                             <button
                                 onClick={rolarParaEsquerda}
@@ -242,22 +253,20 @@ export default function Home() {
                         <div
                             ref={scrollRef}
                             onScroll={handleScroll}
-                            className="flex gap-5 overflow-x-auto h-full pb-4 scroll-smooth"
-                            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                            className="flex gap-5 overflow-x-auto overflow-y-hidden h-full pb-4 px-3 scroll-smooth no-scrollbar w-full"
+                            style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}
                         >
-                            <style>{`::-webkit-scrollbar { display: none; }`}</style>
-
                             {quadro.map((coluna) => (
                                 <div
                                     key={coluna.id}
-                                    className="w-[270px] min-w-[270px] h-[566px] bg-[#F4F4F4] rounded-xl p-4 flex flex-col"
+                                    className="w-[270px] min-w-[270px] max-h-full bg-[#F4F4F4] rounded-xl p-4 flex flex-col shrink-0"
                                     onDragOver={handleDragOver}
                                     onDrop={(e) => handleDrop(e, coluna.id)}
                                 >
-                                    <div className="flex justify-between items-center mb-4 px-1">
+                                    <div className="flex justify-between items-center mb-4 px-1 shrink-0">
                                         <h2 className="font-normal text-base text-[#404040] flex items-center gap-2">
                                             <img
-                                                src={coluna.icone.link}
+                                                src={coluna.icone?.link || ""}
                                                 alt={`Ícone ${coluna.nome}`}
                                                 className="w-5 h-5 object-contain shrink-0"
                                             />
@@ -272,7 +281,7 @@ export default function Home() {
                                         </button>
                                     </div>
 
-                                    <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-3">
+                                    <div className="flex-1 overflow-y-auto pr-1 pb-2 flex flex-col gap-3 min-h-0 custom-scrollbar">
                                         {coluna.fichas.map((ficha) => {
                                             const parceirosVinculados =
                                                 ficha.produto?.parceiro_produto || [];
@@ -286,12 +295,12 @@ export default function Home() {
                                             }
 
                                             let isAtrasado = false;
-                                            if (ficha.pedido.data_prevista) {
+                                            if (ficha.pedido?.data_prevista) {
                                                 const hoje = new Date();
                                                 hoje.setHours(0, 0, 0, 0);
 
                                                 const dataFicha = new Date(
-                                                    ficha.pedido?.data_prevista,
+                                                    ficha.pedido.data_prevista,
                                                 );
                                                 dataFicha.setHours(0, 0, 0, 0);
 
@@ -308,7 +317,7 @@ export default function Home() {
                                             return (
                                                 <div
                                                     key={ficha.id}
-                                                    className="bg-white p-4 rounded-[10px] shadow-sm border border-gray-100 flex flex-col gap-1.5 relative border-l-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow"
+                                                    className="bg-white p-4 rounded-[10px] shadow-sm border border-gray-100 flex flex-col gap-1.5 relative border-l-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow shrink-0"
                                                     style={{
                                                         borderLeftColor:
                                                             ficha.pedido?.cor || "#ffffff",
@@ -319,7 +328,6 @@ export default function Home() {
                                                     }
                                                     onDragEnd={handleDragEnd}
                                                 >
-                                                    {/* Cabeçalho do Card */}
                                                     <div
                                                         className={`flex justify-between text-base font-normal ${corPrincipal}`}
                                                     >
@@ -386,39 +394,33 @@ export default function Home() {
                                                             </span>
                                                         </span>
 
-                                                        <span
-                                                            className={`flex items-center gap-1 font-light shrink-0 ${corPrincipal}`}
-                                                        >
-                                                            <img
-                                                                src={
-                                                                    isAtrasado
-                                                                        ? "/calendario-vermelho.png"
-                                                                        : "/calendario-prazo.png"
-                                                                }
-                                                                alt="calendario"
-                                                                className="w-[12px] h-[12px] shrink-0"
-                                                            />
-                                                            {ficha.pedido?.data_prevista
-                                                                ? new Date(
-                                                                      ficha.pedido.data_prevista,
-                                                                  )
-                                                                      .toLocaleDateString("pt-BR", {
-                                                                          day: "2-digit",
-                                                                          month: "2-digit",
-                                                                      })
-                                                                      .replace("/", ".")
-                                                                : "--.--"}
-                                                        </span>
+                                                        {ficha.pedido?.data_prevista && (
+                                                            <span
+                                                                className={`flex items-center gap-1 font-light shrink-0 ${corPrincipal}`}
+                                                            >
+                                                                <img
+                                                                    src={
+                                                                        isAtrasado
+                                                                            ? "/calendario-vermelho.png"
+                                                                            : "/calendario-prazo.png"
+                                                                    }
+                                                                    alt="calendario"
+                                                                    className="w-[12px] h-[12px] shrink-0"
+                                                                />
+                                                                {new Date(
+                                                                    ficha.pedido.data_prevista,
+                                                                )
+                                                                    .toLocaleDateString("pt-BR", {
+                                                                        day: "2-digit",
+                                                                        month: "2-digit",
+                                                                    })
+                                                                    .replace("/", ".")}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
                                             );
                                         })}
-
-                                        {coluna.fichas.length === 0 && (
-                                            <div className="text-center text-sm text-gray-400 mt-10">
-                                                Nenhum pedido nesta etapa.
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
                             ))}
