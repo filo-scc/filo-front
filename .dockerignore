@@ -1,28 +1,23 @@
-# Dependências (instaladas dentro do container)
+# Dependências e artefatos gerados
 node_modules
-
-# Output de build (não existe em dev, mas por precaução)
 dist
+coverage
 
-# Ambiente
+# GitHub/Git
+.git
+.github
+
+# Variáveis de ambiente locais
 .env
 .env.*
 !.env.example
 
-# Git
-.git
-.gitignore
+# Logs de gerenciadores de pacote
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-# Docker
-Dockerfile*
-docker-compose*.yml
-
-# Editor / OS
+# Sistema operacional e overrides locais
 .DS_Store
-.vscode
-.idea
-*.log
-
-# Documentação e infra 
-README.md
-infra-para-dockerizacao.md
+*.local
