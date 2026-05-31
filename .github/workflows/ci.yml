@@ -1,35 +1,147 @@
 name: CI
 
 on:
-    push:
-        branches:
-            - master
-    pull_request:
-        branches:
-            - master
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  NODE_VERSION: 22
+
+permissions:
+  contents: read
 
 jobs:
-    lint-and-build:
-        name: Lint & Build
-        runs-on: ubuntu-latest
+  validate-and-build:
+    name: Lint, Format & Build
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: Checkout código
-              uses: actions/checkout@v6
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
 
-            - name: Setup Node.js
-              uses: actions/setup-node@v6
-              with:
-                  node-version: 24
-                  cache: 'npm'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
 
-            - name: Instalar dependências
-              run: npm ci
+      - name: Instalar dependências
+        run: npm ci
 
-            - name: Lint e Formatação
-              run: |
-                  npm run format:check
-                  npm run lint
+      - name: Validar configuração de build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+        run: test -n "${VITE_API_URL}"
 
-            - name: Build
-              run: npm run build
+      - name: Verificar lint e formatação
+        run: |
+          npm run format:check
+          npm run lint
+
+      - name: Build da aplicação
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+        run: npm run build
+
+  validate-production-image:
+    name: Validate Production Image
+    runs-on: ubuntu-latest
+    needs: validate-and-build
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Validar configuração de build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+        run: test -n "${VITE_API_URL}"
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build da imagem de produção
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.prod
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: filo-front:test
+          build-args: |
+            VITE_API_URL=${{ secrets.VITE_API_URL }}
+
+      - name: Validar Nginx e fallback SPA
+        run: |
+          docker run --detach --name filo-front-test --publish 8080:80 filo-front:test
+          for i in {1..10}; do
+            curl --fail --silent --show-error http://localhost:8080/ && break
+            sleep 1
+          done
+          curl --fail --silent --show-error http://localhost:8080/clientes
+
+      - name: Exibir logs em caso de falha
+        if: failure()
+        run: docker logs filo-front-test || true
+
+      - name: Remover container de validação
+        if: always()
+        run: docker rm --force filo-front-test || true
+
+  publish-production-image:
+    name: Publish Production Image
+    runs-on: ubuntu-latest
+    needs: validate-production-image
+    permissions:
+      contents: read
+      packages: write
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Login no GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Gerar metadados da imagem
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-
+
+      - name: Build e push da imagem
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.prod
+          platforms: linux/amd64
+          push: true
+          build-args: |
+            VITE_API_URL=${{ secrets.VITE_API_URL }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  deploy-render:
+    name: Deploy on Render
+    runs-on: ubuntu-latest
+    needs: publish-production-image
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+
+    steps:
+      - name: Acionar deploy hook do Render
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: curl --fail --silent --show-error -X POST "${RENDER_DEPLOY_HOOK_URL}"
