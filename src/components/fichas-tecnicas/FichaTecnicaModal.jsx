@@ -136,7 +136,7 @@ function syncMatrix(prevMatrix, selectedColorIds, sizeItems) {
 const BORDER_DARK_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#7B7D80" };
 const BORDER_LIGHT_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#E0E0E0" };
 const BORDER_SHELL_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#D9D9D9" };
-const FACCAO_ROW_HEIGHT = 40;
+const PARCEIRO_ROW_HEIGHT = 40;
 
 export default function FichaTecnicaModal({
     isOpen,
@@ -844,12 +844,12 @@ export default function FichaTecnicaModal({
                                 </div>
                             </div>
 
-                            {/* TABELA DE FACÇÕES */}
+                            {/* TABELA DE PARCEIROS */}
                             <div className="mt-8 mx-[30px]">
                                 <div className="w-full">
                                     <div className="grid grid-cols-3 items-center h-10 font-normal text-center text-[#4696AD]">
                                         <div className="bg-[#C9EAF6] px-4 py-2.5 border-r-[0.5px] rounded-tl-[10px] border-[#7B7D80] h-10">
-                                            Facção
+                                            Parceiro
                                         </div>
                                         <div className="bg-[#C9EAF6] px-4 py-2.5 border-[#7B7D80] border-r-[0.5px] h-10">
                                             Operação
@@ -979,7 +979,7 @@ export default function FichaTecnicaModal({
                                                     className="px-4 py-5 text-center text-[13px] text-[#888] bg-white rounded-b-[10px]"
                                                     style={BORDER_LIGHT_05}
                                                 >
-                                                    Nenhuma facção atribuída ainda.
+                                                    Nenhum parceiro atribuído ainda.
                                                 </div>
                                             )}
                                         </div>
@@ -987,8 +987,8 @@ export default function FichaTecnicaModal({
                                             {parceiroRows.map((row, index) => {
                                                 const isVisible = hoveredParceiroIndex === index;
                                                 const top =
-                                                    index * FACCAO_ROW_HEIGHT +
-                                                    FACCAO_ROW_HEIGHT / 2 -
+                                                    index * PARCEIRO_ROW_HEIGHT +
+                                                    PARCEIRO_ROW_HEIGHT / 2 -
                                                     parceiroScrollTop;
                                                 return (
                                                     <button
@@ -1013,11 +1013,11 @@ export default function FichaTecnicaModal({
                                                             width: "28px",
                                                             height: "28px",
                                                         }}
-                                                        title="Remover facção"
+                                                        title="Remover parceiro"
                                                     >
                                                         <img
                                                             src="/excluir-cinza-claro.png"
-                                                            alt="Remover facção"
+                                                            alt="Remover parceiro"
                                                             style={{
                                                                 width: "100%",
                                                                 height: "100%",
@@ -1043,8 +1043,8 @@ export default function FichaTecnicaModal({
                                     />
                                     <span>
                                         {parceiroRows.length > 0
-                                            ? "Atribuir mais uma facção"
-                                            : "Atribuir facção"}
+                                            ? "Atribuir mais um parceiro"
+                                            : "Atribuir parceiro"}
                                     </span>
                                 </button>
                             </div>
