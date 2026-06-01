@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { excluirFaccao, getFaccoesByFabrico } from "../services/faccaoService";
+import { excluirParceiro, getParceirosByFabrico } from "../services/parceiroServicee";
 
 import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import MenuOpcoes from "../components/geral/MenuOpcoes";
 
-const Faccoes = () => {
+const Parceiros = () => {
     const userString = localStorage.getItem("user");
 
-    const [faccoes, setFaccoes] = useState([]);
+    const [parceiros, setParceiros] = useState([]);
     const [loading, setLoading] = useState(true);
     const [dropdownOpenId, setDropdownOpenId] = useState(null);
 
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
-    const [faccaoSelecionada, setFaccaoSelecionada] = useState(null);
+    const [parceiroSelecionado, setParceiroSelecionado] = useState(null);
 
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
 
@@ -23,7 +23,7 @@ const Faccoes = () => {
     const fabricoId = userString ? JSON.parse(userString).fabrico_id : null;
 
     useEffect(() => {
-        const fetchFaccoes = async () => {
+        const fetchParceiros = async () => {
             if (!fabricoId) {
                 setLoading(false);
                 return;
@@ -32,16 +32,16 @@ const Faccoes = () => {
             try {
                 setLoading(true);
 
-                const data = await getFaccoesByFabrico(fabricoId);
-                setFaccoes(data);
+                const data = await getParceirosByFabrico(fabricoId);
+                setParceiros(data);
             } catch (error) {
-                console.error("Erro ao carregar facções", error);
+                console.error("Erro ao carregar parceiros", error);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchFaccoes();
+        fetchParceiros();
     }, [fabricoId]);
 
     useEffect(() => {
@@ -55,28 +55,28 @@ const Faccoes = () => {
     }, []);
 
     const handleEdit = (id) => {
-        navigate(`/faccoes/editar/${id}`);
+        navigate(`/parceiros/editar/${id}`);
     };
 
-    const abrirModalExclusao = (faccao) => {
-        setFaccaoSelecionada(faccao);
+    const abrirModalExclusao = (parceiro) => {
+        setParceiroSelecionado(parceiro);
         setModalExclusaoAberto(true);
     };
 
     const handleConfirmarExclusao = async () => {
-        if (!faccaoSelecionada) return;
+        if (!parceiroSelecionado) return;
 
         try {
-            await excluirFaccao(faccaoSelecionada.id);
+            await excluirParceiro(parceiroSelecionado.id);
 
-            setFaccoes((prev) => prev.filter((c) => c.id !== faccaoSelecionada.id));
+            setParceiros((prev) => prev.filter((c) => c.id !== parceiroSelecionado.id));
 
             setModalExclusaoAberto(false);
-            setFaccaoSelecionada(null);
+            setParceiroSelecionado(null);
             setModalConfirmacaoAberto(true);
         } catch (error) {
-            console.error("Erro ao excluir facção:", error);
-            alert("Erro ao excluir facção.");
+            console.error("Erro ao excluir parceiro:", error);
+            alert("Erro ao excluir parceiro.");
         }
     };
 
@@ -136,7 +136,7 @@ const Faccoes = () => {
                                 className="w-[30px] h-[30px]"
                             />
 
-                            <h1 className="text-[30px] font-light text-gray-800">Facções</h1>
+                            <h1 className="text-[30px] font-light text-gray-800">Parceiros</h1>
                         </div>
 
                         {/* Ações */}
@@ -164,17 +164,17 @@ const Faccoes = () => {
                                 </svg>
                             </div>
 
-                            {/* Cadastro de facção */}
+                            {/* Cadastro de parceiro */}
                             <button
-                                onClick={() => navigate("/faccoes/novo")}
+                                onClick={() => navigate("/parceiros/novo")}
                                 className="bg-[#A9E2F2] hover:bg-[#8acbdc] text-white w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors"
                             >
                                 <img
                                     src="/maquina-costura-icone-branco.png"
-                                    alt="Adicionar facção"
+                                    alt="Adicionar parceiro"
                                     className="w-[20px] h-[20px]"
                                 />
-                                Cadastrar facção
+                                Cadastrar parceiro
                             </button>
                         </div>
                     </div>
@@ -186,7 +186,7 @@ const Faccoes = () => {
                                 <thead className="bg-[#D3EBF2] text-[#4696AD]">
                                     <tr className="h-[64px]">
                                         <th className="px-6 font-light first:rounded-tl-xl">
-                                            Facção
+                                            Parceiro
                                         </th>
 
                                         <th className="px-6 font-light">Possui pedido</th>
@@ -205,28 +205,28 @@ const Faccoes = () => {
                                     {loading ? (
                                         <tr className="h-[64px]">
                                             <td colSpan="5" className="text-gray-400">
-                                                Carregando facções...
+                                                Carregando parceiros...
                                             </td>
                                         </tr>
-                                    ) : faccoes.length === 0 ? (
+                                    ) : parceiros.length === 0 ? (
                                         <tr className="h-[64px]">
                                             <td colSpan="5" className="text-gray-400">
-                                                Nenhuma facção encontrada.
+                                                Nenhum parceiro encontrado.
                                             </td>
                                         </tr>
                                     ) : (
-                                        faccoes.map((faccao, index) => {
+                                        parceiros.map((parceiro, index) => {
                                             const isPar = index % 2 === 0;
 
-                                            const isMenuOpen = dropdownOpenId === faccao.id;
+                                            const isMenuOpen = dropdownOpenId === parceiro.id;
 
-                                            const isLast = index === faccoes.length - 1;
+                                            const isLast = index === parceiros.length - 1;
 
                                             return (
                                                 <tr
-                                                    key={faccao.id}
+                                                    key={parceiro.id}
                                                     onClick={() =>
-                                                        navigate(`/faccoes/${faccao.id}`)
+                                                        navigate(`/parceiros/${parceiro.id}`)
                                                     }
                                                     className={`
                                                         h-[64px] transition-colors cursor-pointer border-b last:border-0
@@ -239,13 +239,13 @@ const Faccoes = () => {
                                                     `}
                                                 >
                                                     <td className="px-6 text-[14px]">
-                                                        {faccao.nome}
+                                                        {parceiro.nome}
                                                     </td>
 
                                                     <td className="px-6 text-[14px]">
                                                         <div className="flex justify-center">
                                                             <span className="bg-gray-200 text-[#404040] w-[109px] h-[19px] flex items-center justify-center rounded-[10px] text-[12px] font-light">
-                                                                {faccao.id % 2 !== 0
+                                                                {parceiro.id % 2 !== 0
                                                                     ? "Sim"
                                                                     : "Não"}
                                                             </span>
@@ -257,7 +257,7 @@ const Faccoes = () => {
                                                     </td>
 
                                                     <td className="px-6 text-[14px]">
-                                                        {renderTelefonePadronizado(faccao.telefone)}
+                                                        {renderTelefonePadronizado(parceiro.telefone)}
                                                     </td>
 
                                                     <td
@@ -267,9 +267,9 @@ const Faccoes = () => {
                                                     >
                                                         <div onClick={(e) => e.stopPropagation()}>
                                                             <MenuOpcoes
-                                                                onEdit={() => handleEdit(faccao.id)}
+                                                                onEdit={() => handleEdit(parceiro.id)}
                                                                 onDelete={() =>
-                                                                    abrirModalExclusao(faccao)
+                                                                    abrirModalExclusao(parceiro)
                                                                 }
                                                             />
                                                         </div>
@@ -290,8 +290,8 @@ const Faccoes = () => {
                 isOpen={modalExclusaoAberto}
                 onClose={() => setModalExclusaoAberto(false)}
                 onConfirm={handleConfirmarExclusao}
-                nomeItem={faccaoSelecionada?.nome}
-                tipoItem="a facção"
+                nomeItem={parceiroSelecionado?.nome}
+                tipoItem="um parceiro"
             />
 
             {/* Modal confirmação */}
@@ -304,4 +304,4 @@ const Faccoes = () => {
     );
 };
 
-export default Faccoes;
+export default Parceiros;

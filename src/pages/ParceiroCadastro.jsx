@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createFaccao } from "../services/faccaoService";
+import { createParceiro } from "../services/parceiroService";
 
 const FloatingInput = ({ label, name, value, onChange, containerClass, ...rest }) => (
     <div className={`relative group ${containerClass}`}>
@@ -23,7 +23,7 @@ const FloatingInput = ({ label, name, value, onChange, containerClass, ...rest }
     </div>
 );
 
-const FaccaoCadastro = () => {
+const ParceiroCadastro = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -135,12 +135,12 @@ const FaccaoCadastro = () => {
                 }
             }
 
-            await createFaccao(payload);
-            navigate("/faccoes");
+            await createParceiro(payload);
+            navigate("/parceiros");
         } catch (err) {
             console.error(err);
             setError(
-                err.response?.data?.message || "Erro ao cadastrar facção. Verifique os dados.",
+                err.response?.data?.message || "Erro ao cadastrar parceiro. Verifique os dados.",
             );
         } finally {
             setLoading(false);
@@ -160,7 +160,7 @@ const FaccaoCadastro = () => {
                         alt="Ícone"
                         className="w-[30px] h-[30px]"
                     />
-                    <h1 className="text-[30px] font-light text-gray-800">Cadastrar facção</h1>
+                    <h1 className="text-[30px] font-light text-gray-800">Cadastrar parceiro</h1>
                 </div>
 
                 {error && <div className="bg-red-50 text-red-500 p-4 rounded-xl mb-6">{error}</div>}
@@ -410,4 +410,4 @@ const FaccaoCadastro = () => {
     );
 };
 
-export default FaccaoCadastro;
+export default ParceiroCadastro;
