@@ -851,7 +851,7 @@ export default function FichaTecnicaModal({
                                 <div className="w-full">
                                     <div className="grid grid-cols-3 items-center h-10 font-normal text-center text-[#4696AD]">
                                         <div className="bg-[#C9EAF6] px-4 py-2.5 border-r-[0.5px] rounded-tl-[10px] border-[#7B7D80] h-10">
-                                            Parceiro
+                                            Facção
                                         </div>
                                         <div className="bg-[#C9EAF6] px-4 py-2.5 border-[#7B7D80] border-r-[0.5px] h-10">
                                             Operação
