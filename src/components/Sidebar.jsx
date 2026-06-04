@@ -43,7 +43,7 @@ export function Sidebar() {
             { name: "Início", slug: "inicio", path: "/" },
             // Condicional: se isSobDemanda for true -> "Pedidos". Se for false -> "Produções"
             { name: isSobDemanda ? "Pedidos" : "Produções", slug: "pedidos", path: "/pedidos" },
-            { name: "Facções", slug: "faccoes", path: "/faccoes" },
+            { name: "Parceiros", slug: "faccoes", path: "/parceiros" },
             { name: "Clientes", slug: "clientes", path: "/clientes" },
             { name: "Produtos", slug: "produtos", path: "/produtos" },
             { name: "Estoque", slug: "estoque", path: "/estoque" },

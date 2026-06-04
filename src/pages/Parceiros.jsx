@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { excluirParceiro, getParceirosByFabrico } from "../services/parceiroServicee";
+import { excluirParceiro, getParceirosByFabrico } from "../services/parceiroService";
 
 import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";

@@ -9,7 +9,7 @@ import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import ModalAtencao from "../components/geral/ModalAtencao";
 
-const ParceirosDetalhes = () => {
+const ParceiroDetalhes = () => {
     const { id } = useParams();
     const navigate = useNavigate();
 
