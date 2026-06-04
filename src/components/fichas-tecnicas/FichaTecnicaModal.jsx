@@ -1045,8 +1045,8 @@ export default function FichaTecnicaModal({
                                     />
                                     <span>
                                         {parceiroRows.length > 0
-                                            ? "Atribuir mais um parceiro"
-                                            : "Atribuir parceiro"}
+                                            ? "Atribuir mais uma facção"
+                                            : "Atribuir facção"}
                                     </span>
                                 </button>
                             </div>

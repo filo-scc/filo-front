@@ -164,7 +164,7 @@ const ProdutoParceiros = ({
                             />
 
                             <h2 className="text-[26px] font-Outfit font-light text-[#404040]">
-                                Selecione o parceiro
+                                Selecione a facção
                             </h2>
                         </div>
 
@@ -241,7 +241,7 @@ const ProdutoParceiros = ({
                         {/* HEADER */}
                         <div className="grid grid-cols-3 bg-[#C9EAF6] px-6 py-5 font-Outfit text-[#4F9DB8] !border-0">
                             <div className="flex justify-center text-[16px] font-Outfit font-light text-[#4696AD] leading-none">
-                                Parceiro
+                                Facção
                             </div>
 
                             <div className="flex justify-center text-[16px] font-Outfit font-light text-[#4696AD] leading-none">
