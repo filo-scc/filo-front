@@ -249,7 +249,7 @@ const Pedidos = () => {
                 onClose={() => setModalExclusaoAberto(false)}
                 onConfirm={handleConfirmarExclusao}
                 nomeItem={pedidoSelecionado?.nome}
-                tipoItem="o cliente"
+                tipoItem="o pedido"
             />
 
             <ModalConfirmacao
