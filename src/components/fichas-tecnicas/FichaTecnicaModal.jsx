@@ -198,7 +198,7 @@ export default function FichaTecnicaModal({
     );
 
     const selectedParceiroIds = useMemo(
-        () => parceiroRows.map((row) => row.faccaoId).filter(Boolean),
+        () => parceiroRows.map((row) => row.parceiroId).filter(Boolean),
         [parceiroRows],
     );
 
@@ -265,18 +265,18 @@ export default function FichaTecnicaModal({
 
                 const parceiroProdutoMap = {};
                 if (Array.isArray(parceirosProdutoResponse)) {
-                    const idsExistentes = parceirosProdutoResponse.map((f) => f.faccao_id);
+                    const idsExistentes = parceirosProdutoResponse.map((f) => f.parceiro_id);
 
                     setExistingParceiroIds(idsExistentes);
 
                     parceirosProdutoResponse.forEach((f) => {
-                        parceiroProdutoMap[f.faccao_id] = f;
+                        parceiroProdutoMap[f.parceiro_id] = f;
                     });
 
                     const mergedParceiros = Array.isArray(parceirosResponse)
-                        ? parceirosResponse.map((faccao) => ({
-                              ...faccao,
-                              preco: parceiroProdutoMap[faccao.id]?.preco ?? null,
+                        ? parceirosResponse.map((parceiro) => ({
+                              ...parceiro,
+                              preco: parceiroProdutoMap[parceiro.id]?.preco ?? null,
                           }))
                         : [];
 
@@ -361,18 +361,18 @@ export default function FichaTecnicaModal({
         return `R$ ${Number(valor).toFixed(2).replace(".", ",")}`;
     };
 
-    const handleSelectParceiroFromModal = (faccao) => {
-        if (!faccao) return;
+    const handleSelectParceiroFromModal = (parceiro) => {
+        if (!parceiro) return;
         setParceiroRows((prev) => {
-            if (prev.some((row) => row.faccaoId === faccao.id)) return prev;
-            const jaExisteNoBanco = existingParceiroIds.includes(Number(faccao.id));
+            if (prev.some((row) => row.parceiroId === parceiro.id)) return prev;
+            const jaExisteNoBanco = existingParceiroIds.includes(Number(parceiro.id));
             return [
                 ...prev,
                 {
-                    faccaoId: faccao.id,
-                    faccaoNome: faccao.nome,
+                    parceiroId: parceiro.id,
+                    parceiroNome: parceiro.nome,
                     operacao: "",
-                    preco: formatarPreco(faccao.preco),
+                    preco: formatarPreco(parceiro.preco),
                     isDirty: true,
                     isNew: !jaExisteNoBanco,
                 },
@@ -874,7 +874,7 @@ export default function FichaTecnicaModal({
                                                         index === parceiroRows.length - 1;
                                                     return (
                                                         <div
-                                                            key={`${row.faccaoId}-${index}`}
+                                                            key={`${row.parceiroId}-${index}`}
                                                             className="grid grid-cols-3 items-stretch min-h-[40px] h-[40px]"
                                                             onMouseEnter={() =>
                                                                 setHoveredParceiroIndex(index)
@@ -897,7 +897,7 @@ export default function FichaTecnicaModal({
                                                                 }}
                                                             >
                                                                 <span className="text-[14px] font-light text-[#898C8F] truncate">
-                                                                    {row.faccaoNome}
+                                                                    {row.parceiroNome}
                                                                 </span>
                                                             </div>
                                                             <div
@@ -994,7 +994,7 @@ export default function FichaTecnicaModal({
                                                     parceiroScrollTop;
                                                 return (
                                                     <button
-                                                        key={`trash-${row.faccaoId}-${index}`}
+                                                        key={`trash-${row.parceiroId}-${index}`}
                                                         type="button"
                                                         onClick={() =>
                                                             setParceiroRows((p) =>
