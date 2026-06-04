@@ -112,14 +112,14 @@ export default function ClientesCadastrar() {
         usuarioLogado?.fabrico?.id,
     );
 
-    const faccaoId = primeiroNumeroValido(
-        usuarioLogado?.faccao_id,
-        usuarioLogado?.faccaoId,
-        usuarioLogado?.faccao?.id,
-        usuarioLogado?.faccao?.faccao_id,
-        usuarioLogado?.faccao?.[0]?.id,
-        usuarioLogado?.faccao?.[0]?.faccao_id,
-        usuarioLogado?.usuario?.faccao_id,
+    const parceiroId = primeiroNumeroValido(
+        usuarioLogado?.parceiro_id,
+        usuarioLogado?.parceiroId,
+        usuarioLogado?.parceiro?.id,
+        usuarioLogado?.parceiro?.parceiro_id,
+        usuarioLogado?.parceiro?.[0]?.id,
+        usuarioLogado?.parceiro?.[0]?.parceiro_id,
+        usuarioLogado?.usuario?.parceiro_id,
     );
 
     useEffect(() => {
@@ -227,7 +227,7 @@ export default function ClientesCadastrar() {
             complemento: valorOuUndefined(form.complemento),
             cidade: valorOuUndefined(form.cidade),
             estado: valorOuUndefined(form.estado),
-            faccao_id: numeroOuUndefined(faccaoId),
+            parceiro_id: numeroOuUndefined(parceiroId),
         };
 
         const payload = {

@@ -589,7 +589,7 @@ export default function PedidosCadastrar() {
                                         : Number(parceiro.preco);
                             }
 
-                            const parceiroIdFinal = parceiro.faccaoId || parceiro.id;
+                            const parceiroIdFinal = parceiro.parceiroId || parceiro.id;
                             const produtoIdFinal = pId; // (Variável pId já extraída no início do seu loop de fichas)
 
                             if (parceiro.isNew === false) {
@@ -607,7 +607,7 @@ export default function PedidosCadastrar() {
                             }
                         } catch (err) {
                             console.error(
-                                `Erro ao processar facção ${parceiro.faccaoId || parceiro.id}:`,
+                                `Erro ao processar parceiroo ${parceiro.parceiroId || parceiro.id}:`,
                                 err,
                             );
                         }

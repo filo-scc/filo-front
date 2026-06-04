@@ -38,7 +38,7 @@ export async function syncFichaTecnicaParceiros(fichaTecnicaId, parceiros) {
 }
 
 export async function updateParceiroProdutoPrice(parceiroId, produtoId, preco) {
-    const response = await api.put(`/faccoes-produtos/${parceiroId}/${produtoId}`, {
+    const response = await api.put(`/parceiros-produtos/${parceiroId}/${produtoId}`, {
         preco,
     });
 
@@ -46,7 +46,7 @@ export async function updateParceiroProdutoPrice(parceiroId, produtoId, preco) {
 }
 
 export async function createParceiroProduto(parceiroId, produtoId, preco) {
-    const response = await api.post(`/faccoes-produtos/${parceiroId}/${produtoId}`, {
+    const response = await api.post(`/parceiros-produtos/${parceiroId}/${produtoId}`, {
         preco,
     });
 

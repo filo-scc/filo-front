@@ -283,7 +283,9 @@ export default function FichaTecnicaModal({
                     setAvailableParceiros(mergedParceiros);
                     setParceiroRows([]);
                 } else {
-                    setAvailableParceiros(Array.isArray(parceirosResponse) ? parceirosResponse : []);
+                    setAvailableParceiros(
+                        Array.isArray(parceirosResponse) ? parceirosResponse : [],
+                    );
                     setExistingParceiroIds([]);
                 }
 

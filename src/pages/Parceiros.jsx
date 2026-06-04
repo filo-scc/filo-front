@@ -257,7 +257,9 @@ const Parceiros = () => {
                                                     </td>
 
                                                     <td className="px-6 text-[14px]">
-                                                        {renderTelefonePadronizado(parceiro.telefone)}
+                                                        {renderTelefonePadronizado(
+                                                            parceiro.telefone,
+                                                        )}
                                                     </td>
 
                                                     <td
@@ -267,7 +269,9 @@ const Parceiros = () => {
                                                     >
                                                         <div onClick={(e) => e.stopPropagation()}>
                                                             <MenuOpcoes
-                                                                onEdit={() => handleEdit(parceiro.id)}
+                                                                onEdit={() =>
+                                                                    handleEdit(parceiro.id)
+                                                                }
                                                                 onDelete={() =>
                                                                     abrirModalExclusao(parceiro)
                                                                 }
