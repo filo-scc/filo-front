@@ -571,7 +571,7 @@ export default function PedidosCadastrar() {
                     await saveFichaTecnicaItens(novaFicha.id, itensParaSalvar);
                 }
 
-                // Sincronizar Facções atribuídas
+                // Sincronizar Parceiros atribuídos
                 if (ficha.parceiroRows?.length > 0) {
                     for (const parceiro of ficha.parceiroRows) {
                         try {

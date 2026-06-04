@@ -93,7 +93,7 @@ const ParceiroDetalhes = () => {
                         alt="Ícone"
                         className="w-[30px] h-[30px]"
                     />
-                    Detalhes de facção
+                    Detalhes do parceiro
                 </h1>
 
                 {/* Dados gerais */}
