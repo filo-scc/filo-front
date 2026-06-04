@@ -180,7 +180,7 @@ const ParceiroDetalhes = () => {
                 {/* Ações */}
                 <div className="flex justify-between items-center mt-10 w-full">
                     <button
-                        onClick={() => navigate("/faccoes")}
+                        onClick={() => navigate("/parceiros")}
                         className="w-[147px] h-[39px] rounded-[18.9px] bg-[#F3F4FA] border border-[#4696ad] text-[#4696ad] font-Outfit text-[16px] transition-colors hover:bg-[#E1F1F6]"
                     >
                         Voltar
@@ -191,14 +191,14 @@ const ParceiroDetalhes = () => {
                             onClick={() => abrirModalExclusao()}
                             className="w-[189px] h-[39px] rounded-[18.9px] bg-[#D75757] text-white font-Outfit text-[16px] transition-colors hover:bg-[#d74646]"
                         >
-                            Excluir Facção
+                            Excluir Parceiro
                         </button>
 
                         <button
-                            onClick={() => navigate(`/faccoes/editar/${id}`)}
+                            onClick={() => navigate(`/parceiros/editar/${id}`)}
                             className="w-[189px] h-[39px] rounded-[18.9px] bg-[#a9e2f2] text-[#4696ad] font-Outfit text-[16px] transition-colors hover:bg-[#A2DCED]"
                         >
-                            Editar Facção
+                            Editar Parceiro
                         </button>
                     </div>
                 </div>
