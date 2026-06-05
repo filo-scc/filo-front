@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getFaccaoById, updateFaccao } from "../services/faccaoService";
+import { getParceiroById, updateParceiro } from "../services/parceiroService";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 
 const FloatingInput = ({ label, name, value, onChange, containerClass, ...rest }) => (
@@ -24,7 +24,7 @@ const FloatingInput = ({ label, name, value, onChange, containerClass, ...rest }
     </div>
 );
 
-const EditarFaccao = () => {
+const EditarParceiro = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
@@ -97,10 +97,10 @@ const EditarFaccao = () => {
     };
 
     useEffect(() => {
-        const fetchFaccao = async () => {
+        const fetchParceiro = async () => {
             try {
                 setLoading(true);
-                const data = await getFaccaoById(Number(id));
+                const data = await getParceiroById(Number(id));
                 setFormData({
                     nome: data.nome || "",
                     responsavel: data.responsavel || "",
@@ -122,14 +122,14 @@ const EditarFaccao = () => {
                     conta: maskConta(data.conta || ""),
                 });
             } catch (err) {
-                console.error("Erro ao carregar facção:", err);
-                setError("Erro ao carregar os dados da facção.");
+                console.error("Erro ao carregar parceiro:", err);
+                setError("Erro ao carregar os dados do parceiro.");
             } finally {
                 setLoading(false);
             }
         };
 
-        if (id) fetchFaccao();
+        if (id) fetchParceiro();
     }, [id]);
 
     const handleChange = (e) => {
@@ -170,7 +170,7 @@ const EditarFaccao = () => {
                 }
             }
 
-            await updateFaccao(Number(id), payload);
+            await updateParceiro(Number(id), payload);
             setModalConfirmacaoAberto(true);
         } catch (err) {
             console.error(err);
@@ -192,9 +192,9 @@ const EditarFaccao = () => {
                             alt="Ícone"
                             className="w-[30px] h-[30px]"
                         />
-                        <h1 className="text-[30px] font-light text-gray-800">Editar facção</h1>
+                        <h1 className="text-[30px] font-light text-gray-800">Editar Parceiro</h1>
                     </div>
-                    <p className="text-gray-400 text-sm">Carregando dados da facção...</p>
+                    <p className="text-gray-400 text-sm">Carregando dados do parceiro...</p>
                 </div>
             </div>
         );
@@ -211,7 +211,7 @@ const EditarFaccao = () => {
                             alt="Ícone"
                             className="w-[30px] h-[30px]"
                         />
-                        <h1 className="text-[30px] font-light text-gray-800">Editar facção</h1>
+                        <h1 className="text-[30px] font-light text-gray-800">Editar Parceiro</h1>
                     </div>
 
                     {error && (
@@ -447,7 +447,7 @@ const EditarFaccao = () => {
                 isOpen={modalConfirmacaoAberto}
                 onClose={() => {
                     setModalConfirmacaoAberto(false);
-                    navigate("/faccoes");
+                    navigate("/Parceiros");
                 }}
                 type="atualizado"
             />
@@ -455,4 +455,4 @@ const EditarFaccao = () => {
     );
 };
 
-export default EditarFaccao;
+export default EditarParceiro;

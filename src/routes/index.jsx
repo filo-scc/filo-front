@@ -4,16 +4,16 @@ import Login from "@/pages/Login";
 import Cliente from "@/pages/Clientes";
 import PrivateRoute from "./PrivateRoute";
 import { Layout } from "@/components/Layout";
-import Faccoes from "@/pages/Faccoes";
+import Parceiros from "@/pages/Parceiros";
 import Produtos from "@/pages/Produtos";
 import ClienteDetalhes from "../pages/ClienteDetalhes";
 import ClientesCadastrar from "../pages/ClientesCadastrar";
 import ClientesEditar from "../pages/ClientesEditar";
-import FaccaoDetalhes from "../pages/FaccaoDetalhes";
-import FaccaoEditar from "../pages/FaccaoEditar";
+import ParceiroDetalhes from "../pages/ParceiroDetalhes";
+import ParceiroEditar from "../pages/ParceiroEditar";
 import ProdutoDetalhes from "../pages/ProdutoDetalhes";
 import ProdutoEditar from "../pages/ProdutoEditar";
-import FaccaoCadastro from "../pages/FaccaoCadastro";
+import ParceiroCadastro from "../pages/ParceiroCadastro";
 import ProdutoCadastar from "../pages/ProdutoCadastrar";
 import PedidosCadastar from "../pages/PedidosCadastrar";
 
@@ -107,43 +107,43 @@ function AppRoutes() {
                 />
 
                 <Route
-                    path="/faccoes"
+                    path="/parceiros"
                     element={
                         <PrivateRoute>
                             <Layout>
-                                <Faccoes />
+                                <Parceiros />
                             </Layout>
                         </PrivateRoute>
                     }
                 />
                 <Route
-                    path="/faccoes/:id"
+                    path="/parceiros/:id"
                     element={
                         <PrivateRoute>
                             <Layout>
-                                <FaccaoDetalhes />
+                                <ParceiroDetalhes />
                             </Layout>
                         </PrivateRoute>
                     }
                 />
                 <Route
-                    path="/faccoes/novo"
+                    path="/parceiros/novo"
                     element={
                         <PrivateRoute>
                             <Layout>
-                                <FaccaoCadastro />
+                                <ParceiroCadastro />
                             </Layout>
                         </PrivateRoute>
                     }
                 />
 
-                {/* Rota de Edição de Facção */}
+                {/* Rota de Edição de Parceiro */}
                 <Route
-                    path="/faccoes/editar/:id"
+                    path="/parceiros/editar/:id"
                     element={
                         <PrivateRoute>
                             <Layout>
-                                <FaccaoEditar />
+                                <ParceiroEditar />
                             </Layout>
                         </PrivateRoute>
                     }
