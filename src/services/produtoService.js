@@ -20,13 +20,13 @@ export const getProdutosByFabrico = async (fabricoId) => {
     }
 };
 
-export const getFaccaoByProduto = async (produtoId) => {
+export const getParceiroByProduto = async (produtoId) => {
     try {
-        const response = await api.get(`/faccoes-produtos/produto/${produtoId}`);
+        const response = await api.get(`/parceiros-produtos/produto/${produtoId}`);
 
         return response.data;
     } catch (error) {
-        console.error("Erro ao buscar facções do produto:", error);
+        console.error("Erro ao buscar parceiros do produto:", error);
         throw error;
     }
 };

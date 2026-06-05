@@ -6,11 +6,11 @@ import { getFabricoById } from "../../services/fabricoService";
 import { getCoresByFabricoId } from "../../services/corService";
 import CorModal from "./CorModal";
 import EstampaModal from "./EstampaModal";
-import { getFaccoesByFabrico } from "../../services/faccaoService";
+import { getParceirosByFabrico } from "../../services/parceiroService";
 import { getGradesLiberadasByFabricoId } from "../../services/gradeService";
-import { getFaccaoByProduto } from "../../services/produtoService";
+import { getParceiroByProduto } from "../../services/produtoService";
 
-import ProdutoFaccoes from "../produtos/ProdutoFaccoes";
+import ProdutoParceiros from "../produtos/ProdutoParceiros";
 
 function FloatingInput({ label, value, readOnly, onChange, placeholder }) {
     return (
@@ -136,7 +136,7 @@ function syncMatrix(prevMatrix, selectedColorIds, sizeItems) {
 const BORDER_DARK_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#7B7D80" };
 const BORDER_LIGHT_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#E0E0E0" };
 const BORDER_SHELL_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#D9D9D9" };
-const FACCAO_ROW_HEIGHT = 40;
+const PARCEIRO_ROW_HEIGHT = 40;
 
 export default function FichaTecnicaModal({
     isOpen,
@@ -152,26 +152,26 @@ export default function FichaTecnicaModal({
 
     const [fabricoInfo, setFabricoInfo] = useState(null);
     const [availableColors, setAvailableColors] = useState([]);
-    const [availableFaccoes, setAvailableFaccoes] = useState([]);
+    const [availableParceiros, setAvailableParceiros] = useState([]);
     const [gradeOptions, setGradeOptions] = useState([]);
 
     const [selectedGradeVersionId, setSelectedGradeVersionId] = useState(null);
     const [selectedColorIds, setSelectedColorIds] = useState([]);
     const [matrix, setMatrix] = useState({});
-    const [faccaoRows, setFaccaoRows] = useState([]);
+    const [parceiroRows, setParceiroRows] = useState([]);
 
     const [colorDropdownOpen, setColorDropdownOpen] = useState(false);
     const [corModalOpen, setCorModalOpen] = useState(false);
     const [estampaModalOpen, setEstampaModalOpen] = useState(false);
     const [gradeDropdownOpen, setGradeDropdownOpen] = useState(false);
-    const [faccaoModalOpen, setFaccaoModalOpen] = useState(false);
+    const [parceiroModalOpen, setParceiroModalOpen] = useState(false);
 
-    const [hoveredFaccaoIndex, setHoveredFaccaoIndex] = useState(null);
-    const [faccaoScrollTop, setFaccaoScrollTop] = useState(0);
+    const [hoveredParceiroIndex, setHoveredParceiroIndex] = useState(null);
+    const [parceiroScrollTop, setParceiroScrollTop] = useState(0);
     const [colorSearch, setColorSearch] = useState("");
-    const [existingFaccaoIds, setExistingFaccaoIds] = useState([]);
+    const [existingParceiroIds, setExistingParceiroIds] = useState([]);
 
-    const faccaoScrollRef = useRef(null);
+    const parceiroScrollRef = useRef(null);
     const colorDropdownRef = useRef(null);
     const gradeDropdownRef = useRef(null);
 
@@ -197,9 +197,9 @@ export default function FichaTecnicaModal({
         [availableColors, selectedColorIds],
     );
 
-    const selectedFaccaoIds = useMemo(
-        () => faccaoRows.map((row) => row.faccaoId).filter(Boolean),
-        [faccaoRows],
+    const selectedParceiroIds = useMemo(
+        () => parceiroRows.map((row) => row.parceiroId).filter(Boolean),
+        [parceiroRows],
     );
 
     const totalsBySize = useMemo(
@@ -221,15 +221,15 @@ export default function FichaTecnicaModal({
     const resetStates = useCallback(() => {
         setSelectedColorIds([]);
         setMatrix({});
-        setFaccaoRows([]);
+        setParceiroRows([]);
         setError("");
         setColorDropdownOpen(false);
         setCorModalOpen(false);
         setEstampaModalOpen(false);
         setGradeDropdownOpen(false);
-        setFaccaoModalOpen(false);
-        setHoveredFaccaoIndex(null);
-        setFaccaoScrollTop(0);
+        setParceiroModalOpen(false);
+        setHoveredParceiroIndex(null);
+        setParceiroScrollTop(0);
     }, []);
 
     const handleForceClose = useCallback(() => {
@@ -248,14 +248,14 @@ export default function FichaTecnicaModal({
                     fabricoResponse,
                     colorsResponse,
                     gradesResponse,
-                    faccoesProdutoResponse,
-                    faccoesResponse,
+                    parceirosProdutoResponse,
+                    parceirosResponse,
                 ] = await Promise.all([
                     getFabricoById(fabricoId),
                     getCoresByFabricoId(fabricoId),
                     getGradesLiberadasByFabricoId(fabricoId),
-                    getFaccaoByProduto(produto.id),
-                    getFaccoesByFabrico(fabricoId),
+                    getParceiroByProduto(produto.id),
+                    getParceirosByFabrico(fabricoId),
                 ]);
 
                 if (!alive) return;
@@ -263,28 +263,30 @@ export default function FichaTecnicaModal({
                 setFabricoInfo(fabricoResponse);
                 setAvailableColors(Array.isArray(colorsResponse) ? colorsResponse : []);
 
-                const faccaoProdutoMap = {};
-                if (Array.isArray(faccoesProdutoResponse)) {
-                    const idsExistentes = faccoesProdutoResponse.map((f) => f.faccao_id);
+                const parceiroProdutoMap = {};
+                if (Array.isArray(parceirosProdutoResponse)) {
+                    const idsExistentes = parceirosProdutoResponse.map((f) => f.parceiro_id);
 
-                    setExistingFaccaoIds(idsExistentes);
+                    setExistingParceiroIds(idsExistentes);
 
-                    faccoesProdutoResponse.forEach((f) => {
-                        faccaoProdutoMap[f.faccao_id] = f;
+                    parceirosProdutoResponse.forEach((f) => {
+                        parceiroProdutoMap[f.parceiro_id] = f;
                     });
 
-                    const mergedFaccoes = Array.isArray(faccoesResponse)
-                        ? faccoesResponse.map((faccao) => ({
-                              ...faccao,
-                              preco: faccaoProdutoMap[faccao.id]?.preco ?? null,
+                    const mergedParceiros = Array.isArray(parceirosResponse)
+                        ? parceirosResponse.map((parceiro) => ({
+                              ...parceiro,
+                              preco: parceiroProdutoMap[parceiro.id]?.preco ?? null,
                           }))
                         : [];
 
-                    setAvailableFaccoes(mergedFaccoes);
-                    setFaccaoRows([]);
+                    setAvailableParceiros(mergedParceiros);
+                    setParceiroRows([]);
                 } else {
-                    setAvailableFaccoes(Array.isArray(faccoesResponse) ? faccoesResponse : []);
-                    setExistingFaccaoIds([]);
+                    setAvailableParceiros(
+                        Array.isArray(parceirosResponse) ? parceirosResponse : [],
+                    );
+                    setExistingParceiroIds([]);
                 }
 
                 const normalizedGrades = normalizeGradeOptions(
@@ -359,18 +361,18 @@ export default function FichaTecnicaModal({
         return `R$ ${Number(valor).toFixed(2).replace(".", ",")}`;
     };
 
-    const handleSelectFaccaoFromModal = (faccao) => {
-        if (!faccao) return;
-        setFaccaoRows((prev) => {
-            if (prev.some((row) => row.faccaoId === faccao.id)) return prev;
-            const jaExisteNoBanco = existingFaccaoIds.includes(Number(faccao.id));
+    const handleSelectParceiroFromModal = (parceiro) => {
+        if (!parceiro) return;
+        setParceiroRows((prev) => {
+            if (prev.some((row) => row.parceiroId === parceiro.id)) return prev;
+            const jaExisteNoBanco = existingParceiroIds.includes(Number(parceiro.id));
             return [
                 ...prev,
                 {
-                    faccaoId: faccao.id,
-                    faccaoNome: faccao.nome,
+                    parceiroId: parceiro.id,
+                    parceiroNome: parceiro.nome,
                     operacao: "",
-                    preco: formatarPreco(faccao.preco),
+                    preco: formatarPreco(parceiro.preco),
                     isDirty: true,
                     isNew: !jaExisteNoBanco,
                 },
@@ -411,7 +413,7 @@ export default function FichaTecnicaModal({
             selectedColorIds,
             cores: selectedColors,
             itensPayload,
-            faccaoRows,
+            parceiroRows,
             quantidade: quantidadeTotal, // Utilizado para preencher a tabela visualmente
         };
 
@@ -844,7 +846,7 @@ export default function FichaTecnicaModal({
                                 </div>
                             </div>
 
-                            {/* TABELA DE FACÇÕES */}
+                            {/* TABELA DE PARCEIROS */}
                             <div className="mt-8 mx-[30px]">
                                 <div className="w-full">
                                     <div className="grid grid-cols-3 items-center h-10 font-normal text-center text-[#4696AD]">
@@ -860,25 +862,25 @@ export default function FichaTecnicaModal({
                                     </div>
                                     <div className="relative">
                                         <div
-                                            ref={faccaoScrollRef}
+                                            ref={parceiroScrollRef}
                                             className="max-h-[180px] overflow-y-auto overflow-x-hidden scrollbar-sutil"
                                             onScroll={(e) =>
-                                                setFaccaoScrollTop(e.currentTarget.scrollTop)
+                                                setParceiroScrollTop(e.currentTarget.scrollTop)
                                             }
                                         >
-                                            {faccaoRows.length > 0 ? (
-                                                faccaoRows.map((row, index) => {
+                                            {parceiroRows.length > 0 ? (
+                                                parceiroRows.map((row, index) => {
                                                     const isLastRow =
-                                                        index === faccaoRows.length - 1;
+                                                        index === parceiroRows.length - 1;
                                                     return (
                                                         <div
-                                                            key={`${row.faccaoId}-${index}`}
+                                                            key={`${row.parceiroId}-${index}`}
                                                             className="grid grid-cols-3 items-stretch min-h-[40px] h-[40px]"
                                                             onMouseEnter={() =>
-                                                                setHoveredFaccaoIndex(index)
+                                                                setHoveredParceiroIndex(index)
                                                             }
                                                             onMouseLeave={() =>
-                                                                setHoveredFaccaoIndex(null)
+                                                                setHoveredParceiroIndex(null)
                                                             }
                                                         >
                                                             <div
@@ -895,7 +897,7 @@ export default function FichaTecnicaModal({
                                                                 }}
                                                             >
                                                                 <span className="text-[14px] font-light text-[#898C8F] truncate">
-                                                                    {row.faccaoNome}
+                                                                    {row.parceiroNome}
                                                                 </span>
                                                             </div>
                                                             <div
@@ -912,7 +914,7 @@ export default function FichaTecnicaModal({
                                                                 <input
                                                                     value={row.operacao}
                                                                     onChange={(e) =>
-                                                                        setFaccaoRows((p) =>
+                                                                        setParceiroRows((p) =>
                                                                             p.map((r, i) =>
                                                                                 i === index
                                                                                     ? {
@@ -954,7 +956,7 @@ export default function FichaTecnicaModal({
                                                                             numeros
                                                                                 ? `R$ ${(Number(numeros) / 100).toFixed(2).replace(".", ",")}`
                                                                                 : "";
-                                                                        setFaccaoRows((prev) =>
+                                                                        setParceiroRows((prev) =>
                                                                             prev.map((r, i) =>
                                                                                 i === index
                                                                                     ? {
@@ -979,31 +981,31 @@ export default function FichaTecnicaModal({
                                                     className="px-4 py-5 text-center text-[13px] text-[#888] bg-white rounded-b-[10px]"
                                                     style={BORDER_LIGHT_05}
                                                 >
-                                                    Nenhuma facção atribuída ainda.
+                                                    Nenhum parceiro atribuído ainda.
                                                 </div>
                                             )}
                                         </div>
                                         <div className="pointer-events-none absolute inset-y-0 right-0 w-0 overflow-visible">
-                                            {faccaoRows.map((row, index) => {
-                                                const isVisible = hoveredFaccaoIndex === index;
+                                            {parceiroRows.map((row, index) => {
+                                                const isVisible = hoveredParceiroIndex === index;
                                                 const top =
-                                                    index * FACCAO_ROW_HEIGHT +
-                                                    FACCAO_ROW_HEIGHT / 2 -
-                                                    faccaoScrollTop;
+                                                    index * PARCEIRO_ROW_HEIGHT +
+                                                    PARCEIRO_ROW_HEIGHT / 2 -
+                                                    parceiroScrollTop;
                                                 return (
                                                     <button
-                                                        key={`trash-${row.faccaoId}-${index}`}
+                                                        key={`trash-${row.parceiroId}-${index}`}
                                                         type="button"
                                                         onClick={() =>
-                                                            setFaccaoRows((p) =>
+                                                            setParceiroRows((p) =>
                                                                 p.filter((_, i) => i !== index),
                                                             )
                                                         }
                                                         onMouseEnter={() =>
-                                                            setHoveredFaccaoIndex(index)
+                                                            setHoveredParceiroIndex(index)
                                                         }
                                                         onMouseLeave={() =>
-                                                            setHoveredFaccaoIndex(null)
+                                                            setHoveredParceiroIndex(null)
                                                         }
                                                         className={`pointer-events-auto absolute z-20 rounded p-1 transition-opacity ${isVisible ? "opacity-100" : "opacity-0"}`}
                                                         style={{
@@ -1013,11 +1015,11 @@ export default function FichaTecnicaModal({
                                                             width: "28px",
                                                             height: "28px",
                                                         }}
-                                                        title="Remover facção"
+                                                        title="Remover parceiro"
                                                     >
                                                         <img
                                                             src="/excluir-cinza-claro.png"
-                                                            alt="Remover facção"
+                                                            alt="Remover parceiro"
                                                             style={{
                                                                 width: "100%",
                                                                 height: "100%",
@@ -1033,7 +1035,7 @@ export default function FichaTecnicaModal({
                                 </div>
                                 <button
                                     type="button"
-                                    onClick={() => setFaccaoModalOpen(true)}
+                                    onClick={() => setParceiroModalOpen(true)}
                                     className="mt-3 w-full h-[39px] rounded-[10px] bg-[#F4F4F4] hover:bg-[#F0F0F0] transition flex items-center justify-center gap-2 text-[14px] text-[#898C8F]"
                                 >
                                     <img
@@ -1042,7 +1044,7 @@ export default function FichaTecnicaModal({
                                         className="h-4 w-4 object-contain"
                                     />
                                     <span>
-                                        {faccaoRows.length > 0
+                                        {parceiroRows.length > 0
                                             ? "Atribuir mais uma facção"
                                             : "Atribuir facção"}
                                     </span>
@@ -1063,13 +1065,22 @@ export default function FichaTecnicaModal({
                 </div>
             </div>
 
-            <ProdutoFaccoes
-                isOpen={faccaoModalOpen}
-                faccoes={availableFaccoes}
-                selectedFaccaoIds={selectedFaccaoIds}
+            <ProdutoParceiros
+                isOpen={parceiroModalOpen}
+                parceiros={availableParceiros.filter((parceiro) => {
+                    if (!parceiro.categoria) return false;
+
+                    const etapaNormalizada = parceiro.categoria
+                        .normalize("NFD")
+                        .replace(/[\u0300-\u036f]/g, "")
+                        .toLowerCase();
+
+                    return etapaNormalizada === "costura" || etapaNormalizada === "faccao";
+                })}
+                selectedParceiroIds={selectedParceiroIds}
                 produtoId={produto?.id}
-                onClose={() => setFaccaoModalOpen(false)}
-                onSelectFaccao={handleSelectFaccaoFromModal}
+                onClose={() => setParceiroModalOpen(false)}
+                onSelectParceiro={handleSelectParceiroFromModal}
             />
 
             <CorModal
