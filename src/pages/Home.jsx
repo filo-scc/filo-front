@@ -53,7 +53,8 @@ export default function Home() {
                     getFichaTecnicaByFabrico(fabricoId),
                 ]);
 
-                const etapasOrdenada = etapas.sort((a, b) => a.ordem - b.ordem);
+                const etapas_ativas = etapas.filter((etapa) => etapa.ativa);
+                const etapasOrdenada = etapas_ativas.sort((a, b) => a.ordem - b.ordem);
                 const colunasAgrupadas = etapasOrdenada.map((etapa) => ({
                     ...etapa,
                     fichas: fichasTecnicas.filter((ficha) => ficha.etapa_atual_id == etapa.id),
