@@ -1067,7 +1067,16 @@ export default function FichaTecnicaModal({
 
             <ProdutoParceiros
                 isOpen={parceiroModalOpen}
-                parceiros={availableParceiros}
+                parceiros={availableParceiros.filter((parceiro) => {
+                    if (!parceiro.categoria) return false;
+
+                    const etapaNormalizada = parceiro.categoria
+                        .normalize("NFD")
+                        .replace(/[\u0300-\u036f]/g, "")
+                        .toLowerCase();
+
+                    return etapaNormalizada === "costura" || etapaNormalizada === "faccao";
+                })}
                 selectedParceiroIds={selectedParceiroIds}
                 produtoId={produto?.id}
                 onClose={() => setParceiroModalOpen(false)}
