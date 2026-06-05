@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import React, { useEffect, useRef, useState } from "react";
 import { getEtapasByFabrico } from "../services/etapasService";
+import { getFabricoById } from "../services/fabricoService";
 import {
     getFichaTecnicaByFabrico,
     updateEtapaFichaTecnica,
@@ -20,6 +21,8 @@ export default function Home() {
     const [mostrarSetaEsquerda, setMostrarSetaEsquerda] = useState(null);
     const [mostrarSetaDireita, setMostrarSetaDireita] = useState(null);
 
+    const [producaoSobDemanda, setProducaoSobDemanda] = useState(null);
+
     const mensagem = location.state?.error;
 
     useEffect(() => {
@@ -34,10 +37,13 @@ export default function Home() {
 
     useEffect(() => {
         const inicializarDados = async () => {
+            const dadosUsuario = await getMe();
+            const fabricoId = dadosUsuario.fabrico_id;
+            const fabrico = await getFabricoById(fabricoId);
+            setProducaoSobDemanda(fabrico?.fabricacao_sob_demanda === true);
             try {
                 setLoading(true);
-                const dadosUsuario = await getMe();
-                const fabricoId = dadosUsuario.fabrico_id;
+
                 if (!fabricoId) {
                     throw new Error("Usuário não possui um fabrico associado");
                 }
@@ -217,21 +223,16 @@ export default function Home() {
                     </h1>
                     <button
                         onClick={() => navigate("/pedidos/cadastrar")}
-                        className="group w-[169px] h-[39px] bg-[#D7FE65] text-[#404040] font-normal text-base rounded-full flex items-center justify-center gap-2 hover:bg-[#A9E2F2] hover:text-[#4696AD] transition-colors shrink-0"
+                        className="w-[169px] h-[39px] bg-[#A9E2F2] text-[#4696AD] font-normal text-base rounded-full flex items-center justify-center gap-2 shrink-0"
                     >
                         <span className="flex items-center w-4 h-4 relative">
                             <img
-                                src="nova-ficha-cinza.png"
-                                alt="Ícone Nova ficha"
-                                className="absolute inset-0 w-full h-full object-contain block group-hover:hidden"
-                            />
-                            <img
                                 src="nova-ficha-azul.png"
-                                alt="Ícone Nova ficha ativo"
-                                className="absolute inset-0 w-full h-full object-contain hidden group-hover:block"
+                                alt="Ícone Nova ficha"
+                                className="w-full h-full object-contain"
                             />
                         </span>
-                        Novo pedido
+                        {producaoSobDemanda ? "Novo pedido" : "Nova produção"}
                     </button>
                 </div>
 
