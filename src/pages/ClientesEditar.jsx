@@ -183,24 +183,19 @@ export default function ClientesEditar() {
     };
 
     const editarLinha = async (dadosEditados) => {
-        console.log("1. Chegou no editarLinha! Dados:", dadosEditados);
-
         const pId = dadosEditados.produto_id;
-        console.log("2. ID do Cliente:", id, "| ID do Produto:", pId);
 
         try {
-            const response = await atualizarClientesProdutos(id, pId, {
+            await atualizarClientesProdutos(id, pId, {
                 nome_para_cliente: dadosEditados.nome_para_cliente,
                 preco_padrao: dadosEditados.preco_padrao,
             });
 
-            console.log("3. Sucesso na API! Resposta:", response);
             setProdutosAssociados((listaAnterior) => {
                 const novaLista = listaAnterior.map((item) => {
                     const itemId = item?.produto?.id || item?.produto_id;
 
                     if (itemId === pId) {
-                        console.log("4. Encontrou o item na lista para atualizar!", item);
                         return {
                             ...item,
                             nome_para_cliente: dadosEditados.nome_para_cliente,
@@ -210,7 +205,6 @@ export default function ClientesEditar() {
                     return item;
                 });
 
-                console.log("5. Nova lista gerada:", novaLista);
                 return novaLista;
             });
         } catch (error) {

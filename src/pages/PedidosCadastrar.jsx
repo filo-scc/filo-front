@@ -510,7 +510,6 @@ export default function PedidosCadastrar() {
 
             // === 4. ASSEGURAR ID DA ETAPA ATUAL ===
             let etapaIdFallback = primeiraEtapaId;
-            console.log("Etapa ID Fallback inicial:", etapaIdFallback);
             if (!etapaIdFallback && fabricoId) {
                 try {
                     const etapas = await getAllEtapasByFabricoId(fabricoId);
@@ -524,14 +523,9 @@ export default function PedidosCadastrar() {
                     console.error("Erro ao carregar etapas de segurança:", e);
                 }
             }
-            console.log("Etapa ID Fallback final:", etapaIdFallback);
 
             // === 5. CRIAR AS FICHAS TÉCNICAS E RELAÇÕES ===
             for (const ficha of fichas) {
-                console.log("----------------------");
-                console.log(ficha);
-                console.log("----------------------");
-
                 // Atualizar o produto se a versão da grade foi alterada
                 const pId = ficha.produtoId || ficha.produto_id;
                 if (
