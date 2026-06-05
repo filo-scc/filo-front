@@ -69,8 +69,6 @@ const ProdutoParceiros = ({
             try {
                 const response = await getParceiroByProduto(produtoId);
 
-                console.log("Resposta da API de parceiros:", response);
-
                 const rawList = Array.isArray(response)
                     ? response
                     : Array.isArray(response?.data)
