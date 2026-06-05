@@ -30,13 +30,6 @@ export async function clearFichaTecnicaItens(fichaTecnicaId) {
     return unwrap(response);
 }
 
-export async function syncFichaTecnicaParceiros(fichaTecnicaId, parceiros) {
-    const response = await api.post(`/fichas-tecnicas/${fichaTecnicaId}/faccoes/sync`, {
-        parceiros,
-    });
-    return unwrap(response);
-}
-
 export async function updateParceiroProdutoPrice(parceiroId, produtoId, preco) {
     const response = await api.put(`/parceiros-produtos/${parceiroId}/${produtoId}`, {
         preco,
