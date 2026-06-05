@@ -255,7 +255,7 @@ export default function Home() {
                         <div
                             ref={scrollRef}
                             onScroll={handleScroll}
-                            className="flex gap-3 overflow-x-auto overflow-y-hidden h-full pb-4 scroll-smooth no-scrollbar w-full"
+                            className="flex gap-1 overflow-x-auto overflow-y-hidden h-full pb-4 scroll-smooth no-scrollbar w-full"
                             style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}
                         >
                             {quadro.map((coluna, index) => {
@@ -270,7 +270,7 @@ export default function Home() {
                                 return (
                                     <div
                                         key={coluna.id}
-                                        className={`w-[270px] min-w-[270px] max-h-full bg-[#F4F4F4] ${rounded} p-4 flex flex-col shrink-0`}
+                                        className={`w-[270px] min-w-[270px] max-h-full bg-[#F4F4F4] ${rounded} p-1 flex flex-col shrink-0`}
                                         onDragOver={handleDragOver}
                                         onDrop={(e) => handleDrop(e, coluna.id)}
                                     >
@@ -292,7 +292,7 @@ export default function Home() {
                                             </button>
                                         </div>
 
-                                        <div className="flex-1 overflow-y-auto pr-3 pb-2 flex flex-col gap-3 min-h-0 custom-scrollbar">
+                                        <div className="flex-1 overflow-y-auto pr-1 pb-2 flex flex-col gap-1 min-h-0 custom-scrollbar">
                                             {coluna.fichas.map((ficha) => {
                                                 const parceirosVinculados =
                                                     ficha.produto?.parceiro_produto || [];
