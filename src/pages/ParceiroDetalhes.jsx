@@ -96,39 +96,55 @@ const ParceiroDetalhes = () => {
                     Detalhes do parceiro
                 </h1>
 
-                {/* Dados gerais */}
+                {/* Etapa de Produção + Dados gerais */}
                 <div className="mb-6">
-                    <h3 className="text-[20px] font-Outfit font-light text-[#404040] mb-4">
-                        Dados gerais
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        <div>
+                    <div className="flex">
+                        <div className="w-[250px] shrink-0">
+                            <h3 className="text-[20px] font-Outfit font-light text-[#404040] mb-4">
+                                Etapa de Produção
+                            </h3>
                             <p className="text-[20px] font-Outfit font-light text-[#4696AD] block">
-                                Nome
+                                Etapa
                             </p>
                             <p className="text-[16px] font-Outfit font-light text-[#898c8f] leading-none">
-                                {parceiro.nome}
+                                {parceiro.categoria}
                             </p>
                         </div>
 
-                        <div>
-                            <p className="text-[20px] font-Outfit font-light text-[#4696AD] block">
-                                Nome do responsável
-                            </p>
-                            <p className="text-[16px] font-Outfit font-light text-[#898c8f] leading-none">
-                                {parceiro.responsavel || "Não informado"}
-                            </p>
-                        </div>
+                        <div className="flex-1">
+                            <h3 className="text-[20px] font-Outfit font-light text-[#404040] mb-4">
+                                Dados gerais
+                            </h3>
+                            <div className="flex gap-6">
+                                <div className="w-[200px] shrink-0">
+                                    <p className="text-[20px] font-Outfit font-light text-[#4696AD] block">
+                                        Nome
+                                    </p>
+                                    <p className="text-[16px] font-Outfit font-light text-[#898c8f] leading-none">
+                                        {parceiro.nome}
+                                    </p>
+                                </div>
 
-                        <div>
-                            <p className="text-[20px] font-Outfit font-light text-[#4696AD] block">
-                                Telefone
-                            </p>
-                            <p className="text-[16px] font-Outfit font-light text-[#898c8f] leading-none">
-                                {parceiro.telefone
-                                    ? formatarTelefone(parceiro.telefone)
-                                    : "Não informado"}
-                            </p>
+                                <div className="w-[250px] shrink-0">
+                                    <p className="text-[20px] font-Outfit font-light text-[#4696AD] block">
+                                        Nome do responsável
+                                    </p>
+                                    <p className="text-[16px] font-Outfit font-light text-[#898c8f] leading-none">
+                                        {parceiro.responsavel || "Não informado"}
+                                    </p>
+                                </div>
+
+                                <div className="ml-10">
+                                    <p className="text-[20px] font-Outfit font-light text-[#4696AD] block">
+                                        Telefone
+                                    </p>
+                                    <p className="text-[16px] font-Outfit font-light text-[#898c8f] leading-none">
+                                        {parceiro.telefone
+                                            ? formatarTelefone(parceiro.telefone)
+                                            : "Não informado"}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
