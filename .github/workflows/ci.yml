@@ -4,7 +4,7 @@ on:
   push:
     branches: [master]
   pull_request:
-    branches: [master]
+    branches: [develop, master]
 
 env:
   REGISTRY: ghcr.io
@@ -15,9 +15,32 @@ permissions:
   contents: read
 
 jobs:
+  validate-pr-flow:
+    name: Validate PR Flow
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Validar branch de destino
+        env:
+          BASE_BRANCH: ${{ github.base_ref }}
+          HEAD_BRANCH: ${{ github.head_ref }}
+        run: |
+          if [ "${BASE_BRANCH}" = "master" ] && [ "${HEAD_BRANCH}" != "develop" ]; then
+            echo "PRs para master devem sair da develop. Abra o PR ${HEAD_BRANCH} -> develop primeiro."
+            exit 1
+          fi
+
+          if [ "${BASE_BRANCH}" = "develop" ] && ! echo "${HEAD_BRANCH}" | grep -Eq '^(feature|fix|infra|chore|refactor|docs|test)/'; then
+            echo "PRs para develop devem sair de branches de trabalho versionadas por prefixo: feature/*, fix/*, infra/*, chore/*, refactor/*, docs/* ou test/*."
+            exit 1
+          fi
+
   validate-and-build:
     name: Lint, Format & Build
     runs-on: ubuntu-latest
+    needs: validate-pr-flow
+    if: always() && (needs.validate-pr-flow.result == 'success' || needs.validate-pr-flow.result == 'skipped')
 
     steps:
       - name: Checkout código
