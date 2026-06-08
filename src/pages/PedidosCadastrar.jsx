@@ -620,42 +620,6 @@ export default function PedidosCadastrar() {
 
     return (
         <>
-            <style>{`
-                /* ========================================================
-                   1. SCROLLBAR DA PÁGINA GLOBAL (Aplica na tela inteira)
-                   ======================================================== */
-                ::-webkit-scrollbar {
-                    width: 6px; /* Largura sutil, mas confortável para a página */
-                    height: 6px;
-                }
-                ::-webkit-scrollbar-track {
-                    background: transparent; /* Trilho invisível para um visual limpo */
-                }
-                ::-webkit-scrollbar-thumb {
-                    background-color: #d6d6d6;
-                    border-radius: 999px;
-                }
-                ::-webkit-scrollbar-thumb:hover {
-                    background-color: #bcbcbc; /* Escurece sutilmente ao passar o mouse */
-                }
-
-                /* ========================================================
-                   2. SCROLLBAR INTERNA DOS DROPDOWNS (.scrollbar-sutil)
-                   ======================================================== */
-                .scrollbar-sutil::-webkit-scrollbar { 
-                    width: 4px; 
-                    height: 4px; 
-                } 
-                .scrollbar-sutil::-webkit-scrollbar-thumb { 
-                    background-color: #d6d6d6; 
-                    border-radius: 999px; 
-                }
-                /* Recuo para o scroll do dropdown respeitar os cantos arredondados de 14px e não vazar */
-                .scrollbar-sutil::-webkit-scrollbar-track {
-                    margin-top: 8px;
-                    margin-bottom: 8px;
-                }
-            `}</style>
             {/* Contentor principal idêntico ao de Clientes (p-6 pt-0 w-full relative z-0) */}
             <div className="p-6 pt-0 w-full relative z-0 font-['Outfit',_sans-serif]">
                 {/* Card de Fundo Branco com o mesmo arredondamento, sombra e comportamento responsivo de Clientes */}

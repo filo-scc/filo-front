@@ -487,7 +487,7 @@ export default function ClientesCadastrar() {
                             </div>
                         </div>
 
-                        <div className="max-h-[280px] overflow-y-auto pr-2">
+                        <div className="max-h-[280px] overflow-y-auto pr-2 scrollbar-sutil">
                             {loadingReferencias ? (
                                 <div className="flex justify-center items-center h-[150px] text-[#4696AD]">
                                     Buscando produtos...

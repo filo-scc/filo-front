@@ -367,7 +367,7 @@ function ModalClientesDoProduto({
                     />
                 </div>
 
-                <div className="max-h-[280px] overflow-y-auto pr-2">
+                <div className="max-h-[280px] overflow-y-auto pr-2 scrollbar-sutil">
                     {loading ? (
                         <div className="flex justify-center py-12 text-[#4696AD]">
                             Buscando clientes...

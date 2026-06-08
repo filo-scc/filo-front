@@ -232,7 +232,7 @@ const ParceiroCadastro = () => {
                                             onClick={() => setDropdownEtapaAberto(false)}
                                         ></div>
 
-                                        <div className="absolute z-20 mt-1 w-full bg-white border border-[#D3D3D3] rounded-[10px] shadow-lg overflow-hidden max-h-60 overflow-y-auto">
+                                        <div className="absolute z-20 mt-1 w-full bg-white border border-[#D3D3D3] rounded-[10px] shadow-lg overflow-hidden max-h-60 overflow-y-auto scrollbar-sutil">
                                             {etapas.map((etapa) => (
                                                 <div
                                                     key={etapa.id}

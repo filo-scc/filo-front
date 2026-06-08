@@ -53,7 +53,7 @@ export function Sidebar() {
     }, [isSobDemanda]);
 
     return (
-        <aside className="w-[219px] h-screen pl-[24px] flex flex-col items-center py-8 gap-[32px] bg-transparent overflow-y-auto">
+        <aside className="w-[219px] h-screen pl-[24px] flex flex-col items-center py-8 gap-[32px] bg-transparent overflow-y-auto scrollbar-sutil">
             {/* Logo Filo */}
             <div className="w-full pl-[53px] flex justify-start">
                 <img src="/filo-logo.png" alt="Filo" className="h-[47px] w-auto" />

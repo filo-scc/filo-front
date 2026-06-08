@@ -211,7 +211,10 @@ export default function Clientes() {
                                                             ${isPar ? "bg-white hover:bg-[#FBFBFB] hover:text-[#4696ad]" : "bg-[#F4F4F4] hover:bg-[#ededed] hover:text-[#4696ad]"}
                                                         `}
                                                     >
-                                                        <td title="Ver detalhes" className="px-6 text-[14px]">
+                                                        <td
+                                                            title="Ver detalhes"
+                                                            className="px-6 text-[14px]"
+                                                        >
                                                             {cliente.nome}
                                                         </td>
                                                         <td
