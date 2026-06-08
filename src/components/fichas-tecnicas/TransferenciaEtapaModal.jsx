@@ -8,21 +8,10 @@ import {
     getFichaEtapaByFichaTecnica,
 } from "../../services/fichasTecnicasService";
 
-/* ========================================================================== */
-/* MOCKS TEMPORÁRIOS */
-/* Remova estas declarações e importe do service quando as funções existirem */
-/* ========================================================================== */
-const getAllParceirosByFichaTecnicaId = async () => {
-    // Simula a busca de parceiros já associados a essa FT
-    return [];
-};
-
-const upsertFichaTecnicaParceiro = async (dados) => {
-    // Simula a criação/atualização da relação FT x Parceiro
-    console.log("Mock de upsert chamado com:", dados);
-    return { success: true };
-};
-/* ========================================================================== */
+import {
+    getFichaParceiroByFicha,
+    upsertFichaTecnicaParceiro,
+} from "../../services/fichaParceiroService";
 
 export default function TransferenciaEtapaModal({
     isOpen,
@@ -87,17 +76,19 @@ export default function TransferenciaEtapaModal({
                 setParceirosDisponiveis(filtradosPorCategoria);
 
                 // 3. Buscar parceiros já associados a esta Ficha Técnica
-                const parceirosExistentes = await getAllParceirosByFichaTecnicaId(fichaTecnica.id);
+                const parceirosExistentes = await getFichaParceiroByFicha(fichaTecnica.id);
                 const jaVinculadosDestaEtapa = parceirosExistentes
                     .filter(
-                        (p) => p.categoria?.toLowerCase() === etapaConcluida.nome?.toLowerCase(),
+                        (fp) =>
+                            fp.parceiro?.categoria?.toLowerCase() ===
+                            etapaConcluida.nome?.toLowerCase(),
                     )
-                    .map((p) => ({
-                        id: p.id,
-                        nome: p.nome,
-                        operacao: p.operacao || "",
-                        quantidade: p.quantidade || fichaTecnica.quantidade,
-                        custoTotalFormatado: formatarMoedaBR(p.custo ? p.custo * 100 : 0),
+                    .map((fp) => ({
+                        id: fp.parceiro.id,
+                        nome: fp.parceiro.nome,
+                        operacao: fp.operacao || "",
+                        quantidade: fp.quantidade || fichaTecnica.quantidade,
+                        custoTotalFormatado: formatarMoedaBR(fp.custo ? Number(fp.custo) * 100 : 0),
                     }));
 
                 setLinhasTabela(jaVinculadosDestaEtapa);
@@ -176,40 +167,44 @@ export default function TransferenciaEtapaModal({
 
     // --- Submit / Processamento da Transferência ---
     const handleTransferir = async () => {
-        if (linhasTabela.length === 0 || !quantidadeValida) return;
-
+        if (!quantidadeValida) return;
         setSubmitting(true);
         try {
-            for (const linha of linhasTabela) {
-                const custoTotal = converterMoedaParaFloat(linha.custoTotalFormatado);
-                const qtdAlocada =
-                    linhasTabela.length === 1 ? fichaTecnica.quantidade : Number(linha.quantidade);
+            if (linhasTabela.length > 0) {
+                for (const linha of linhasTabela) {
+                    const custoTotal = converterMoedaParaFloat(linha.custoTotalFormatado);
+                    const qtdAlocada =
+                        linhasTabela.length === 1
+                            ? fichaTecnica.quantidade
+                            : Number(linha.quantidade);
+                    // Evita divisão por zero boba
+                    const precoUnitario = qtdAlocada > 0 ? custoTotal / qtdAlocada : 0;
 
-                // Evita divisão por zero boba
-                const precoUnitario = qtdAlocada > 0 ? custoTotal / qtdAlocada : 0;
+                    // Passos de Negócio mapeados:
+                    // 1. Atualizar preço da relação parceiro_produto
+                    await updateParceiroProdutoPrice(
+                        linha.id,
+                        fichaTecnica.produto_id,
+                        precoUnitario,
+                    );
 
-                // Passos de Negócio mapeados:
-                // 1. Atualizar preço da relação parceiro_produto
-                await updateParceiroProdutoPrice(linha.id, fichaTecnica.produto_id, precoUnitario);
-
-                // 2. Criar ou atualizar o registro de ficha_tecnica_parceiro
-                await upsertFichaTecnicaParceiro({
-                    ficha_tecnica_id: fichaTecnica.id,
-                    parceiro_id: linha.id,
-                    operacao: linha.operacao,
-                    custo: custoTotal,
-                    quantidade: qtdAlocada,
-                });
+                    // 2. Criar ou atualizar o registro de ficha_tecnica_parceiro
+                    await upsertFichaTecnicaParceiro(fichaTecnica.id, linha.id, {
+                        operacao: linha.operacao,
+                        custo: custoTotal,
+                        quantidade: qtdAlocada,
+                    });
+                }
             }
 
-            // 3. Finalizar etapa concluída (Passando a data_fim como agora)
             const fichas_etapas = await getFichaEtapaByFichaTecnica(fichaTecnica.id);
-
             const ficha_etapa_concluida = fichas_etapas.find(
                 (fe) => fe.etapa_id === etapaConcluida.id,
             );
 
-            await finalizarFichaEtapa(ficha_etapa_concluida.id);
+            if (ficha_etapa_concluida) {
+                await finalizarFichaEtapa(ficha_etapa_concluida.id);
+            }
 
             // 4. Iniciar a nova etapa do fluxo
             await iniciarFichaEtapa({
@@ -231,13 +226,9 @@ export default function TransferenciaEtapaModal({
 
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 font-['Outfit'] px-4">
-            {/* ========================================================================== */}
             {/* CONTAINER PRINCIPAL DO MODAL */}
-            {/* ========================================================================== */}
-            <div className="relative w-full max-w-4xl rounded-[24px] bg-white p-9 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
-                {/* ========================================================================== */}
+            <div className="relative w-full max-w-4xl rounded-[24px] bg-white p-8 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
                 {/* CABEÇALHO DO MODAL */}
-                {/* ========================================================================== */}
                 <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-2">
                         <img
@@ -260,9 +251,7 @@ export default function TransferenciaEtapaModal({
                     </div>
                 ) : (
                     <>
-                        {/* ========================================================================== */}
                         {/* BARRA DE PROGRESSÃO (ETAPAS) */}
-                        {/* ========================================================================== */}
                         <div className="w-full overflow-x-auto pb-8 mb-4 scrollbar-thin">
                             <div className="flex items-center justify-center min-w-max px-2">
                                 {etapas.map((etapa, idx) => {
@@ -326,7 +315,7 @@ export default function TransferenciaEtapaModal({
 
                                                     return (
                                                         <div
-                                                            className="h-[2px] w-[50px] mx-1 transition-all z-0"
+                                                            className="h-[2px] w-[60px] mx-1 transition-all z-0"
                                                             style={estiloLinha}
                                                         />
                                                     );
@@ -337,15 +326,13 @@ export default function TransferenciaEtapaModal({
                             </div>
                         </div>
 
-                        {/* ========================================================================== */}
                         {/* SELETOR (INPUT DE BUSCA COM DROPDOWN) */}
-                        {/* ========================================================================== */}
-                        <div className="mb-6 relative flex flex-col items-start" ref={dropdownRef}>
+                        <div className="mb-6 flex flex-col items-start">
                             <label className="block text-[16px] font-light text-[#7B7D80] mb-2">
                                 Registrar custo do(a) {etapaConcluida.nome}
                             </label>
 
-                            <div className="relative w-[45%] max-w-[320px]">
+                            <div className="relative w-[45%] max-w-[320px]" ref={dropdownRef}>
                                 <input
                                     type="text"
                                     value={buscaParceiro}
@@ -370,7 +357,7 @@ export default function TransferenciaEtapaModal({
                                 </span>
 
                                 {dropdownAberto && (
-                                    <ul className="absolute left-0 right-0 top-[45px] z-50 max-h-[200px] overflow-y-auto rounded-[10px] border border-[#D9D9D9] bg-white shadow-lg ">
+                                    <ul className="absolute left-0 right-0 top-[45px] z-50 max-h-[200px] overflow-y-auto rounded-[10px] border border-[#D9D9D9] bg-white shadow-lg">
                                         {parceirosFiltrados.length === 0 ? (
                                             <li className="px-4 py-3 text-[14px] text-[#898C8F] font-light">
                                                 Nenhum colaborador disponível para esta categoria
@@ -393,9 +380,7 @@ export default function TransferenciaEtapaModal({
                             </div>
                         </div>
 
-                        {/* ========================================================================== */}
                         {/* TABELA DE CUSTOS (VISUAL REFATORADO AO PADRÃO DA FICHA TECNICA) */}
-                        {/* ========================================================================== */}
                         <div className="mb-6 w-full">
                             <div
                                 className={`grid ${linhasTabela.length > 1 ? "grid-cols-4" : "grid-cols-3"} items-center h-10 font-normal text-center text-[#4696AD]`}
@@ -597,10 +582,8 @@ export default function TransferenciaEtapaModal({
                             </div>
                         </div>
 
-                        {/* ========================================================================== */}
                         {/* MENSAGEM DE VALIDAÇÃO (SE QUANTIDADE NÃO BATER E > 1 COLABORADOR) */}
-                        {/* ========================================================================== */}
-                        {!quantidadeValida && (
+                        {!quantidadeValida && linhasTabela.length > 0 && (
                             <div className="mb-6 bg-amber-50 text-amber-800 p-4 rounded-[10px] text-[14px] font-light border border-amber-200">
                                 <span className="font-medium">Atenção:</span> A soma das peças (
                                 {somaQuantidades}) não corresponde ao total da Ficha (
@@ -608,18 +591,14 @@ export default function TransferenciaEtapaModal({
                             </div>
                         )}
 
-                        {/* ========================================================================== */}
                         {/* FOOTER / AÇÕES FINAIS DO MODAL */}
-                        {/* ========================================================================== */}
                         <div className="flex justify-end pt-4">
                             <button
                                 type="button"
                                 onClick={handleTransferir}
-                                disabled={
-                                    submitting || linhasTabela.length === 0 || !quantidadeValida
-                                }
+                                disabled={submitting || !quantidadeValida}
                                 className={`px-10 h-[39px] w-[200px] rounded-full font-normal transition-all text-[15px] ${
-                                    linhasTabela.length === 0 || !quantidadeValida
+                                    !quantidadeValida
                                         ? "bg-[#F5F5F5] text-[#898C8F] cursor-not-allowed border border-[#D9D9D9]"
                                         : "bg-[#A9E2F2] text-[#4696AD] hover:bg-[#A2DCED] active:scale-95"
                                 }`}
