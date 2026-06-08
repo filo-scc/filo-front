@@ -4,14 +4,15 @@ import { getParceirosByFabrico } from "../../services/parceiroService";
 import { updateParceiroProdutoPrice } from "../../services/fichaTecnicaItemService";
 import {
     finalizarFichaEtapa,
-    iniciarFichaEtapa,
     getFichaEtapaByFichaTecnica,
+    updateEtapaFichaTecnica,
 } from "../../services/fichasTecnicasService";
 
 import {
     getFichaParceiroByFicha,
     upsertFichaTecnicaParceiro,
 } from "../../services/fichaParceiroService";
+import { createFichaEtapa } from "../../services/fichaEtapaService";
 
 export default function TransferenciaEtapaModal({
     isOpen,
@@ -207,11 +208,14 @@ export default function TransferenciaEtapaModal({
             }
 
             // 4. Iniciar a nova etapa do fluxo
-            await iniciarFichaEtapa({
+            await createFichaEtapa({
                 ficha_tecnica_id: fichaTecnica.id,
                 etapa_id: proximaEtapa.id,
                 data_inicio: new Date().toISOString(),
             });
+
+            // 5. Atualizar etapa_atual_id da ficha técnica para refletir a nova etapa
+            await updateEtapaFichaTecnica(fichaTecnica.id, proximaEtapa.id);
 
             if (onSuccess) onSuccess();
             onClose();
