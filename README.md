@@ -96,6 +96,11 @@ npm run dev
 Acesse em: **http://localhost:5173**
 
 
+## CI e GHCR
+
+- O CI valida PRs para `develop` e `master`, seguindo o fluxo `feature/*` → `develop` → `master`. A publicação da imagem no GHCR e o deploy em produção continuam restritos a pushes na `master`.
+
+
 ---
 
 ## Outros Pontos
