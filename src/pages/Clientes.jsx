@@ -170,25 +170,20 @@ export default function Clientes() {
                             </div>
                         </div>
 
-                        <div className="w-full overflow-visible">
-                            {" "}
-                            <div className="w-full border border-gray-200 rounded-xl">
-                                <table className="w-full text-[16px] font-['Outfit',_sans-serif] font-light text-center relative z-10">
+                        <div className="w-full">
+                            <div className="w-full border border-gray-200 rounded-xl overflow-hidden bg-[#D3EBF2]">
+                                <table className="w-full border-separate border-spacing-0 text-[16px] font-['Outfit',_sans-serif] font-light text-center relative z-10">
                                     <thead className="bg-[#D3EBF2] text-[#4696AD]">
                                         <tr className="h-[64px]">
-                                            <th className="px-6 font-light rounded-tl-xl">
-                                                Cliente
-                                            </th>
+                                            <th className="px-6 font-light">Cliente</th>
                                             <th className="px-6 font-light">Responsável</th>
                                             <th className="px-6 font-light">Contato</th>
                                             <th className="px-6 font-light">Status</th>
-                                            <th className="px-6 font-light rounded-tr-xl">
-                                                Opções
-                                            </th>
+                                            <th className="px-6 font-light">Opções</th>
                                         </tr>
                                     </thead>
 
-                                    <tbody className="text-[#404040]">
+                                    <tbody className="bg-white text-[#404040]">
                                         {loading ? (
                                             <tr className="h-[64px]">
                                                 <td colSpan="5" className="text-gray-400">
@@ -204,7 +199,6 @@ export default function Clientes() {
                                         ) : (
                                             clientes.map((cliente, index) => {
                                                 const isPar = index % 2 === 0;
-                                                const isLast = index === clientes.length - 1;
 
                                                 return (
                                                     <tr
@@ -217,10 +211,7 @@ export default function Clientes() {
                                                             ${isPar ? "bg-white hover:bg-[#FBFBFB] hover:text-[#4696ad]" : "bg-[#F4F4F4] hover:bg-[#ededed] hover:text-[#4696ad]"}
                                                         `}
                                                     >
-                                                        <td
-                                                            title="Ver detalhes"
-                                                            className={`px-6 text-[14px] ${isLast ? "rounded-bl-xl" : ""}`}
-                                                        >
+                                                        <td title="Ver detalhes" className="px-6 text-[14px]">
                                                             {cliente.nome}
                                                         </td>
                                                         <td
@@ -253,9 +244,7 @@ export default function Clientes() {
                                                                 </span>
                                                             </div>
                                                         </td>
-                                                        <td
-                                                            className={`px-6 ${isLast ? "rounded-br-xl" : ""}`}
-                                                        >
+                                                        <td className="px-6">
                                                             {/* Implementação do Menu Componentizado */}
                                                             <MenuOpcoes
                                                                 onEdit={() =>
