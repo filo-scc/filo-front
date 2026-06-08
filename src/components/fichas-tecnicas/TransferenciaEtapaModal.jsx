@@ -3,21 +3,35 @@ import { getAllEtapasByFabricoId } from "../../services/etapaService";
 import { getParceirosByFabrico } from "../../services/parceiroService";
 import { updateParceiroProdutoPrice } from "../../services/fichaTecnicaItemService";
 import {
-    getAllParceirosByFichaTecnicaId,
-    upsertFichaTecnicaParceiro,
     finalizarFichaEtapa,
     iniciarFichaEtapa,
     getFichaEtapaByFichaTecnica,
 } from "../../services/fichasTecnicasService";
 
+/* ========================================================================== */
+/* MOCKS TEMPORÁRIOS */
+/* Remova estas declarações e importe do service quando as funções existirem */
+/* ========================================================================== */
+const getAllParceirosByFichaTecnicaId = async () => {
+    // Simula a busca de parceiros já associados a essa FT
+    return [];
+};
+
+const upsertFichaTecnicaParceiro = async (dados) => {
+    // Simula a criação/atualização da relação FT x Parceiro
+    console.log("Mock de upsert chamado com:", dados);
+    return { success: true };
+};
+/* ========================================================================== */
+
 export default function TransferenciaEtapaModal({
     isOpen,
     onClose,
-    fichaTecnica, // { id, quantidade, produto_id, ... }
+    fichaTecnica,
     fabricoId,
-    etapaConcluida, // { id, nome, ... } (Etapa que a FT estava)
-    proximaEtapa, // { id, nome, ... } (Etapa para onde a FT vai)
-    onSuccess, // Callback para recarregar o Kanban após transferir
+    etapaConcluida,
+    proximaEtapa,
+    onSuccess,
 }) {
     // --- Estados ---
     const [etapas, setEtapas] = useState([]);
@@ -29,8 +43,13 @@ export default function TransferenciaEtapaModal({
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
-    // Refs para controle de clique fora do dropdown
+    // Estados para o comportamento visual da nova tabela
+    const [hoveredParceiroIndex, setHoveredParceiroIndex] = useState(null);
+    const [tabelaScrollTop, setTabelaScrollTop] = useState(0);
+
+    // Refs
     const dropdownRef = useRef(null);
+    const tabelaScrollRef = useRef(null);
 
     // --- Máscaras e Utilitários de Formatação ---
     const formatarMoedaBR = (valor) => {
@@ -130,7 +149,7 @@ export default function TransferenciaEtapaModal({
     };
 
     const removerParceiroDaTabela = (id) => {
-        setLinhasTabela(linhasTabela.filter((linha) => linha.id !== id));
+        setLinhasTabela((prev) => prev.filter((linha) => linha.id !== id));
     };
 
     const atualizarCampoLinha = (id, campo, valor) => {
@@ -154,8 +173,6 @@ export default function TransferenciaEtapaModal({
         if (linhasTabela.length <= 1) return true;
         return somaQuantidades === fichaTecnica.quantidade;
     }, [linhasTabela, somaQuantidades, fichaTecnica]);
-
-    if (!isOpen) return null;
 
     // --- Submit / Processamento da Transferência ---
     const handleTransferir = async () => {
@@ -210,60 +227,61 @@ export default function TransferenciaEtapaModal({
         }
     };
 
+    if (!isOpen) return null;
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 font-['Outfit']">
-            {/* Modal Container */}
-            <div className="relative w-full max-w-4xl rounded-[24px] bg-white p-8 shadow-2xl transition-all max-h-[90vh] overflow-y-auto">
-                {/* Header */}
-                <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-6">
-                    <div className="flex items-center gap-3">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 font-['Outfit'] px-4">
+            {/* ========================================================================== */}
+            {/* CONTAINER PRINCIPAL DO MODAL */}
+            {/* ========================================================================== */}
+            <div className="relative w-full max-w-4xl rounded-[24px] bg-white p-9 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+                {/* ========================================================================== */}
+                {/* CABEÇALHO DO MODAL */}
+                {/* ========================================================================== */}
+                <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-2">
                         <img
-                            src="/icons/transfer-header-icon.png"
+                            src="/transferencia.png"
                             alt="Ícone"
                             className="w-6 h-6 object-contain"
                         />
-                        <h2 className="text-[22px] font-medium text-[#2E3133]">
-                            Transferência de Etapa da Produção
+                        <h2 className="text-[22px] font-light text-[#404040]">
+                            Transferência para {proximaEtapa.nome}
                         </h2>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="rounded-full p-2 hover:bg-gray-100 transition-colors"
-                    >
-                        <img src="/icons/x.png" alt="Fechar" className="w-4 h-4" />
+                    <button onClick={onClose} className="rounded-full p-2 transition-colors">
+                        <img src="/fechar-cinza.png" alt="Fechar" className="w-3 h-3 opacity-50" />
                     </button>
                 </div>
 
                 {loading ? (
-                    <div className="flex h-64 items-center justify-center text-gray-400">
+                    <div className="flex h-64 items-center justify-center text-[#898C8F] font-light">
                         Carregando informações da etapa...
                     </div>
                 ) : (
                     <>
-                        {/* ---------------- BARRA DE PROGRESSÃO DINÂMICA ---------------- */}
-                        <div className="w-full overflow-x-auto pb-6 mb-8 scrollbar-thin">
-                            <div className="flex items-center min-w-max px-2">
+                        {/* ========================================================================== */}
+                        {/* BARRA DE PROGRESSÃO (ETAPAS) */}
+                        {/* ========================================================================== */}
+                        <div className="w-full overflow-x-auto pb-8 mb-4 scrollbar-thin">
+                            <div className="flex items-center justify-center min-w-max px-2">
                                 {etapas.map((etapa, idx) => {
-                                    // Definição de index das etapas de controle do fluxo
                                     const idxProxima = etapas.findIndex(
                                         (e) => e.id === proximaEtapa.id,
                                     );
                                     const isConcluida = idx < idxProxima;
 
-                                    // Lógica dos Ícones informada por você
                                     const linkIcone = isConcluida
                                         ? etapa.icone_verde?.link
                                         : etapa.icone?.link;
 
-                                    // Lógica de Estilização das caixas (83px X 83px, radius 30px)
                                     const estiloCaixa = isConcluida
                                         ? "bg-[#FBFFF0] border-[#B4D64E] text-[#B4D64E]"
-                                        : "bg-white border-[#D9D9D9] text-[#898C8F]";
+                                        : "bg-[#F5F5F5] border-[#D9D9D9] text-[#D9D9D9]";
 
                                     return (
                                         <React.Fragment key={etapa.id}>
-                                            {/* Caixa da Etapa */}
-                                            <div className="flex flex-col items-center gap-2">
+                                            <div className="flex flex-col items-center gap-3 relative z-10 bg-white">
                                                 <div
                                                     className={`w-[83px] h-[83px] rounded-[30px] border flex items-center justify-center transition-all ${estiloCaixa}`}
                                                     title={etapa.descricao}
@@ -271,19 +289,17 @@ export default function TransferenciaEtapaModal({
                                                     {linkIcone && (
                                                         <img
                                                             src={linkIcone}
-                                                            alt={etapa.nome}
-                                                            className="w-10 h-10 object-contain"
+                                                            className="w-9 h-9 object-contain"
                                                         />
                                                     )}
                                                 </div>
                                                 <span
-                                                    className={`text-[16px] font-normal tracking-wide ${isConcluida ? "text-[#B4D64E]" : "text-[#898C8F]"}`}
+                                                    className={`text-[16px] font-normal tracking-wide absolute -bottom-7 whitespace-nowrap ${isConcluida ? "text-[#B4D64E]" : "text-[#D9D9D9]"}`}
                                                 >
                                                     {etapa.nome}
                                                 </span>
                                             </div>
 
-                                            {/* Linha Conectora (Se não for a última etapa) */}
                                             {idx < etapas.length - 1 &&
                                                 (() => {
                                                     const proxEtapaLista = etapas[idx + 1];
@@ -302,7 +318,6 @@ export default function TransferenciaEtapaModal({
                                                         etapa.id === etapaConcluida.id &&
                                                         proxEtapaLista.id === proximaEtapa.id
                                                     ) {
-                                                        // Caso Especial: Gradiente Linear entre Concluída e Próxima
                                                         estiloLinha = {
                                                             backgroundImage:
                                                                 "linear-gradient(90deg, #B4D64E 0%, #D9D9D9 100%)",
@@ -311,7 +326,7 @@ export default function TransferenciaEtapaModal({
 
                                                     return (
                                                         <div
-                                                            className="h-[2px] w-16 -mt-6 mx-2 transition-all"
+                                                            className="h-[2px] w-[50px] mx-1 transition-all z-0"
                                                             style={estiloLinha}
                                                         />
                                                     );
@@ -322,212 +337,295 @@ export default function TransferenciaEtapaModal({
                             </div>
                         </div>
 
-                        {/* ---------------- DROPDOWN SELETOR DE PARCEIROS ---------------- */}
-                        <div className="mb-6 relative" ref={dropdownRef}>
-                            <label className="block text-[16px] font-light text-[#7b7d80] mb-2">
+                        {/* ========================================================================== */}
+                        {/* SELETOR (INPUT DE BUSCA COM DROPDOWN) */}
+                        {/* ========================================================================== */}
+                        <div className="mb-6 relative flex flex-col items-start" ref={dropdownRef}>
+                            <label className="block text-[16px] font-light text-[#7B7D80] mb-2">
                                 Registrar custo do(a) {etapaConcluida.nome}
                             </label>
 
-                            {/* Input container baseado no FichaTecnicaModal */}
-                            <div className="relative w-full">
+                            <div className="relative w-[45%] max-w-[320px]">
                                 <input
                                     type="text"
                                     value={buscaParceiro}
                                     onFocus={() => setDropdownAberto(true)}
                                     onChange={(e) => setBuscaParceiro(e.target.value)}
-                                    placeholder="Digite para buscar e filtrar colaboradores..."
-                                    className="w-full h-[45px] rounded-[10px] border border-[#898C8F] bg-white px-4 text-[14px] outline-none placeholder:text-gray-400 focus:border-[#B4D64E] transition-all"
+                                    placeholder="Colaborador"
+                                    className="w-full h-[39px] rounded-[10px] border border-[#898C8F] bg-white px-4 text-[14px] outline-none placeholder:text-[#898C8F] text-[#404040] transition-all"
                                 />
-                                <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                    ▼
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#898C8F]">
+                                    <svg
+                                        width="14"
+                                        height="14"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    >
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
                                 </span>
+
+                                {dropdownAberto && (
+                                    <ul className="absolute left-0 right-0 top-[45px] z-50 max-h-[200px] overflow-y-auto rounded-[10px] border border-[#D9D9D9] bg-white shadow-lg ">
+                                        {parceirosFiltrados.length === 0 ? (
+                                            <li className="px-4 py-3 text-[14px] text-[#898C8F] font-light">
+                                                Nenhum colaborador disponível para esta categoria
+                                            </li>
+                                        ) : (
+                                            parceirosFiltrados.map((parceiro) => (
+                                                <li
+                                                    key={parceiro.id}
+                                                    onClick={() =>
+                                                        adicionarParceiroNaTabela(parceiro)
+                                                    }
+                                                    className="px-4 py-2.5 text-[14px] text-[#404040] font-light hover:bg-[#F5F5F5] cursor-pointer transition-colors"
+                                                >
+                                                    {parceiro.nome}
+                                                </li>
+                                            ))
+                                        )}
+                                    </ul>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* ========================================================================== */}
+                        {/* TABELA DE CUSTOS (VISUAL REFATORADO AO PADRÃO DA FICHA TECNICA) */}
+                        {/* ========================================================================== */}
+                        <div className="mb-6 w-full">
+                            <div
+                                className={`grid ${linhasTabela.length > 1 ? "grid-cols-4" : "grid-cols-3"} items-center h-10 font-normal text-center text-[#4696AD]`}
+                            >
+                                <div className="bg-[#C9EAF6] px-4 py-2.5 border-r-[0.5px] rounded-tl-[10px] border-[#7B7D80] h-10">
+                                    Colaborador
+                                </div>
+                                <div className="bg-[#C9EAF6] px-4 py-2.5 border-r-[0.5px] border-[#7B7D80] h-10">
+                                    Operação
+                                </div>
+                                {linhasTabela.length > 1 && (
+                                    <div className="bg-[#C9EAF6] px-4 py-2.5 border-r-[0.5px] border-[#7B7D80] h-10">
+                                        Total de peças
+                                    </div>
+                                )}
+                                <div className="bg-[#C9EAF6] rounded-tr-[10px] px-4 py-2.5 h-10">
+                                    Custo Total
+                                </div>
                             </div>
 
-                            {/* Menu Suspenso */}
-                            {dropdownAberto && (
-                                <ul className="absolute left-0 right-0 top-[50px] z-50 max-h-[220px] overflow-y-auto rounded-[10px] border border-gray-200 bg-white shadow-xl py-1">
-                                    {parceirosFiltrados.length === 0 ? (
-                                        <li className="px-4 py-3 text-[14px] text-gray-400 italic">
-                                            Nenhum colaborador disponível para esta categoria
-                                        </li>
-                                    ) : (
-                                        parceirosFiltrados.map((parceiro) => (
-                                            <li
-                                                key={parceiro.id}
-                                                onClick={() => adicionarParceiroNaTabela(parceiro)}
-                                                className="px-4 py-2.5 text-[14px] text-gray-700 hover:bg-[#FBFFF0] hover:text-[#B4D64E] cursor-pointer transition-colors flex justify-between items-center"
-                                            >
-                                                <span className="font-medium">{parceiro.nome}</span>
-                                                <span className="text-[12px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
-                                                    {parceiro.categoria}
-                                                </span>
-                                            </li>
-                                        ))
-                                    )}
-                                </ul>
-                            )}
-                        </div>
-
-                        {/* ---------------- TABELA DE LANÇAMENTO DE CUSTOS ---------------- */}
-                        <div className="mb-6 overflow-hidden border border-gray-100 rounded-[16px]">
-                            <table className="w-full border-collapse text-left text-[14px]">
-                                <thead>
-                                    <tr className="bg-gray-50 text-gray-600 font-medium border-b border-gray-100">
-                                        <th className="p-4">Colaborador</th>
-                                        <th className="p-4">Operação</th>
-                                        {linhasTabela.length > 1 && (
-                                            <th className="p-4 w-[160px]">Total de Peças</th>
-                                        )}
-                                        <th className="p-4 w-[200px]">Custo Total</th>
-                                        <th className="p-4 w-[60px] text-center">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50 bg-white">
-                                    {linhasTabela.length === 0 ? (
-                                        <tr>
-                                            <td
-                                                colSpan={linhasTabela.length > 1 ? 5 : 4}
-                                                className="p-8 text-center text-gray-400 italic"
-                                            >
-                                                Nenhum colaborador adicionado para esta etapa ainda.
-                                                Selecione um acima.
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        linhasTabela.map((linha) => (
-                                            <tr
-                                                key={linha.id}
-                                                className="hover:bg-gray-50/50 transition-colors"
-                                            >
-                                                {/* Colaborador - Imutável */}
-                                                <td className="p-4 font-medium text-gray-700 cursor-not-allowed select-none">
-                                                    {linha.nome}
-                                                </td>
-
-                                                {/* Operação */}
-                                                <td className="p-4">
-                                                    <input
-                                                        type="text"
-                                                        value={linha.operacao}
-                                                        onChange={(e) =>
-                                                            atualizarCampoLinha(
-                                                                linha.id,
-                                                                "operacao",
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        placeholder="Ex: Pesponto de cós"
-                                                        className="w-full h-[36px] px-3 rounded-[8px] border border-gray-200 outline-none focus:border-[#B4D64E] text-[14px]"
-                                                    />
-                                                </td>
-
-                                                {/* Total de Peças (Condicional) */}
-                                                {linhasTabela.length > 1 && (
-                                                    <td className="p-4">
-                                                        <input
-                                                            type="number"
-                                                            min="0"
-                                                            value={linha.quantidade}
-                                                            onChange={(e) => {
-                                                                const val = Math.max(
-                                                                    0,
-                                                                    parseInt(e.target.value) || 0,
-                                                                );
-                                                                atualizarCampoLinha(
-                                                                    linha.id,
-                                                                    "quantidade",
-                                                                    val,
-                                                                );
-                                                            }}
-                                                            className="w-full h-[36px] px-3 rounded-[8px] border border-gray-200 outline-none focus:border-[#B4D64E] text-[14px]"
-                                                        />
-                                                    </td>
-                                                )}
-
-                                                {/* Custo Total (Com máscara R$) */}
-                                                <td className="p-4">
-                                                    <input
-                                                        type="text"
-                                                        value={linha.custoTotalFormatado}
-                                                        onChange={(e) =>
-                                                            atualizarCampoLinha(
-                                                                linha.id,
-                                                                "custoTotalFormatado",
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        className="w-full h-[36px] px-3 rounded-[8px] border border-gray-200 outline-none font-mono focus:border-[#B4D64E] text-[14px] text-right"
-                                                    />
-                                                </td>
-
-                                                {/* Ação de Remover */}
-                                                <td className="p-4 text-center">
-                                                    <button
-                                                        onClick={() =>
-                                                            removerParceiroDaTabela(linha.id)
-                                                        }
-                                                        className="text-red-400 hover:text-red-600 transition-colors text-[18px] font-bold p-1"
+                            <div className="relative">
+                                <div
+                                    ref={tabelaScrollRef}
+                                    className="max-h-[180px] overflow-y-auto overflow-x-hidden scrollbar-sutil"
+                                    onScroll={(e) => setTabelaScrollTop(e.currentTarget.scrollTop)}
+                                >
+                                    {linhasTabela.length > 0 ? (
+                                        linhasTabela.map((row, index) => {
+                                            const isLastRow = index === linhasTabela.length - 1;
+                                            return (
+                                                <div
+                                                    key={row.id}
+                                                    className={`grid ${linhasTabela.length > 1 ? "grid-cols-4" : "grid-cols-3"} items-stretch min-h-[40px] h-[40px]`}
+                                                    onMouseEnter={() =>
+                                                        setHoveredParceiroIndex(index)
+                                                    }
+                                                    onMouseLeave={() =>
+                                                        setHoveredParceiroIndex(null)
+                                                    }
+                                                >
+                                                    <div
+                                                        className={`min-w-0 flex items-center justify-center px-4 ${index % 2 === 1 ? "bg-[#F4F4F4]" : "bg-[#FFFFFF]"}`}
+                                                        style={{
+                                                            borderTopWidth: "0px",
+                                                            borderLeftWidth: "0.5px",
+                                                            borderRightWidth: "0.5px",
+                                                            borderBottomWidth: "0.5px",
+                                                            borderColor: "#D9D9D9",
+                                                            borderBottomLeftRadius: isLastRow
+                                                                ? "10px"
+                                                                : "0px",
+                                                            borderRightColor: "#7B7D80",
+                                                        }}
                                                     >
-                                                        &times;
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))
+                                                        <span className="text-[14px] font-light text-[#898C8F] truncate cursor-not-allowed select-none">
+                                                            {row.nome}
+                                                        </span>
+                                                    </div>
+
+                                                    <div
+                                                        className={`min-w-0 flex items-center justify-center px-2 ${index % 2 === 1 ? "bg-[#F4F4F4]" : "bg-[#FFFFFF]"}`}
+                                                        style={{
+                                                            borderTopWidth: "0px",
+                                                            borderLeftWidth: "0px",
+                                                            borderRightWidth: "0.5px",
+                                                            borderBottomWidth: "0.5px",
+                                                            borderColor: "#D9D9D9",
+                                                            borderRightColor: "#7B7D80",
+                                                        }}
+                                                    >
+                                                        <input
+                                                            value={row.operacao}
+                                                            onChange={(e) =>
+                                                                atualizarCampoLinha(
+                                                                    row.id,
+                                                                    "operacao",
+                                                                    e.target.value,
+                                                                )
+                                                            }
+                                                            placeholder="-"
+                                                            className="w-full h-[32px] border-0 bg-transparent text-center text-[14px] outline-none focus:ring-0 text-[#898C8F] font-light"
+                                                        />
+                                                    </div>
+
+                                                    {linhasTabela.length > 1 && (
+                                                        <div
+                                                            className={`min-w-0 flex items-center justify-center px-2 ${index % 2 === 1 ? "bg-[#F4F4F4]" : "bg-[#FFFFFF]"}`}
+                                                            style={{
+                                                                borderTopWidth: "0px",
+                                                                borderLeftWidth: "0px",
+                                                                borderRightWidth: "0.5px",
+                                                                borderBottomWidth: "0.5px",
+                                                                borderColor: "#D9D9D9",
+                                                                borderRightColor: "#7B7D80",
+                                                            }}
+                                                        >
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                value={row.quantidade}
+                                                                onChange={(e) => {
+                                                                    const val = Math.max(
+                                                                        0,
+                                                                        parseInt(e.target.value) ||
+                                                                            0,
+                                                                    );
+                                                                    atualizarCampoLinha(
+                                                                        row.id,
+                                                                        "quantidade",
+                                                                        val,
+                                                                    );
+                                                                }}
+                                                                placeholder="-"
+                                                                className="w-full h-[32px] border-0 bg-transparent text-center text-[14px] outline-none focus:ring-0 text-[#898C8F] font-light"
+                                                            />
+                                                        </div>
+                                                    )}
+
+                                                    <div
+                                                        className={`min-w-0 flex items-center justify-center px-2 ${index % 2 === 1 ? "bg-[#F4F4F4]" : "bg-[#FFFFFF]"} ${isLastRow ? "rounded-br-[10px]" : ""}`}
+                                                        style={{
+                                                            borderTopWidth: "0px",
+                                                            borderLeftWidth: "0px",
+                                                            borderRightWidth: "0.5px",
+                                                            borderBottomWidth: "0.5px",
+                                                            borderColor: "#D9D9D9",
+                                                            borderBottomRightRadius: isLastRow
+                                                                ? "10px"
+                                                                : "0px",
+                                                        }}
+                                                    >
+                                                        <input
+                                                            type="text"
+                                                            value={row.custoTotalFormatado}
+                                                            onChange={(e) =>
+                                                                atualizarCampoLinha(
+                                                                    row.id,
+                                                                    "custoTotalFormatado",
+                                                                    e.target.value,
+                                                                )
+                                                            }
+                                                            placeholder="R$ -"
+                                                            className="w-full h-[32px] border-0 bg-transparent text-center text-[14px] outline-none focus:ring-0 text-[#898C8F] font-light"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <div
+                                            className="px-4 py-5 text-center text-[13px] text-[#888] bg-white rounded-b-[10px]"
+                                            style={{
+                                                borderLeft: "0.5px solid #D9D9D9",
+                                                borderRight: "0.5px solid #D9D9D9",
+                                                borderBottom: "0.5px solid #D9D9D9",
+                                            }}
+                                        >
+                                            Nenhum custo lançado ainda.
+                                        </div>
                                     )}
-                                </tbody>
-                            </table>
+                                </div>
+
+                                {/* Lixeira Interativa Suspensa (Fora da Tabela) */}
+                                <div className="pointer-events-none absolute inset-y-0 right-0 w-0 overflow-visible">
+                                    {linhasTabela.map((row, index) => {
+                                        const isVisible = hoveredParceiroIndex === index;
+                                        const top = index * 40 + 20 - tabelaScrollTop;
+                                        return (
+                                            <button
+                                                key={`trash-${row.id}-${index}`}
+                                                type="button"
+                                                onClick={() => removerParceiroDaTabela(row.id)}
+                                                onMouseEnter={() => setHoveredParceiroIndex(index)}
+                                                onMouseLeave={() => setHoveredParceiroIndex(null)}
+                                                className={`pointer-events-auto absolute z-20 rounded p-1 transition-opacity ${isVisible ? "opacity-100" : "opacity-0"}`}
+                                                style={{
+                                                    top,
+                                                    right: "-28px",
+                                                    transform: "translateY(-50%)",
+                                                    width: "28px",
+                                                    height: "28px",
+                                                }}
+                                                title="Remover parceiro"
+                                            >
+                                                <img
+                                                    src="/excluir-cinza-claro.png"
+                                                    alt="Remover parceiro"
+                                                    style={{
+                                                        width: "100%",
+                                                        height: "100%",
+                                                        objectFit: "contain",
+                                                        display: "block",
+                                                    }}
+                                                />
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
                         </div>
 
-                        {/* ---------------- ALERTAS DE VALIDAÇÃO ESTÉTICOS ---------------- */}
+                        {/* ========================================================================== */}
+                        {/* MENSAGEM DE VALIDAÇÃO (SE QUANTIDADE NÃO BATER E > 1 COLABORADOR) */}
+                        {/* ========================================================================== */}
                         {!quantidadeValida && (
-                            <div className="mb-6 flex items-center gap-3 bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-[12px] text-[14px]">
-                                <span className="text-[18px]">⚠️</span>
-                                <div>
-                                    <p className="font-semibold">
-                                        Divergência na Quantidade de Peças
-                                    </p>
-                                    <p className="opacity-90">
-                                        A soma das peças distribuídas (
-                                        <strong>{somaQuantidades}</strong>) não bate com o total da
-                                        Ficha Técnica (<strong>{fichaTecnica.quantidade}</strong>{" "}
-                                        peças). Ajuste os valores para prosseguir.
-                                    </p>
-                                </div>
+                            <div className="mb-6 bg-amber-50 text-amber-800 p-4 rounded-[10px] text-[14px] font-light border border-amber-200">
+                                <span className="font-medium">Atenção:</span> A soma das peças (
+                                {somaQuantidades}) não corresponde ao total da Ficha (
+                                {fichaTecnica.quantidade}).
                             </div>
                         )}
 
-                        {/* ---------------- FOOTER / AÇÕES DO MODAL ---------------- */}
-                        <div className="flex justify-between items-center border-t border-gray-100 pt-6 mt-6">
-                            <div className="text-[14px] text-gray-400">
-                                Total da Ficha:{" "}
-                                <span className="font-semibold text-gray-700">
-                                    {fichaTecnica.quantidade} pçs
-                                </span>
-                            </div>
-                            <div className="flex gap-3">
-                                <button
-                                    type="button"
-                                    onClick={onClose}
-                                    disabled={submitting}
-                                    className="px-6 h-[45px] rounded-[10px] text-gray-500 border border-gray-200 font-medium hover:bg-gray-50 transition-colors text-[15px]"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleTransferir}
-                                    disabled={
-                                        submitting || linhasTabela.length === 0 || !quantidadeValida
-                                    }
-                                    className={`px-6 h-[45px] rounded-[10px] font-medium text-white transition-all text-[15px] ${
-                                        linhasTabela.length === 0 || !quantidadeValida
-                                            ? "bg-gray-300 cursor-not-allowed"
-                                            : "bg-[#B4D64E] hover:bg-[#a3c343] active:scale-95"
-                                    }`}
-                                >
-                                    {submitting ? "Processando..." : "Concluir Transferência"}
-                                </button>
-                            </div>
+                        {/* ========================================================================== */}
+                        {/* FOOTER / AÇÕES FINAIS DO MODAL */}
+                        {/* ========================================================================== */}
+                        <div className="flex justify-end pt-4">
+                            <button
+                                type="button"
+                                onClick={handleTransferir}
+                                disabled={
+                                    submitting || linhasTabela.length === 0 || !quantidadeValida
+                                }
+                                className={`px-10 h-[39px] w-[200px] rounded-full font-normal transition-all text-[15px] ${
+                                    linhasTabela.length === 0 || !quantidadeValida
+                                        ? "bg-[#F5F5F5] text-[#898C8F] cursor-not-allowed border border-[#D9D9D9]"
+                                        : "bg-[#A9E2F2] text-[#4696AD] hover:bg-[#A2DCED] active:scale-95"
+                                }`}
+                            >
+                                {submitting ? "Processando..." : "Transferir"}
+                            </button>
                         </div>
                     </>
                 )}
