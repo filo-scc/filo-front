@@ -18,10 +18,9 @@ export function Layout({ children }) {
                 </div>
 
                 {/* Área de Conteúdo */}
-                <div className="flex-1 ml-[219px] flex flex-col">
+                <div className="flex-1 ml-[219px] flex flex-col min-w-0 overflow-hidden">
                     <Header />
-
-                    <main className="flex-1 p-6">{children}</main>
+                    <main className="flex-1 overflow-hidden">{children}</main>
                 </div>
             </div>
 

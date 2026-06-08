@@ -14,8 +14,8 @@ import { createFichaTecnica } from "../services/fichaTecnicaService";
 import {
     syncFichaTecnicaCores,
     saveFichaTecnicaItens,
-    updateFaccaoProdutoPrice,
-    createFaccaoProduto,
+    updateParceiroProdutoPrice,
+    createParceiroProduto,
 } from "../services/fichaTecnicaItemService";
 import { createPedido } from "../services/pedidoService";
 import { getPedidosByFabricoId } from "../services/pedidoService";
@@ -510,7 +510,6 @@ export default function PedidosCadastrar() {
 
             // === 4. ASSEGURAR ID DA ETAPA ATUAL ===
             let etapaIdFallback = primeiraEtapaId;
-            console.log("Etapa ID Fallback inicial:", etapaIdFallback);
             if (!etapaIdFallback && fabricoId) {
                 try {
                     const etapas = await getAllEtapasByFabricoId(fabricoId);
@@ -524,14 +523,9 @@ export default function PedidosCadastrar() {
                     console.error("Erro ao carregar etapas de segurança:", e);
                 }
             }
-            console.log("Etapa ID Fallback final:", etapaIdFallback);
 
             // === 5. CRIAR AS FICHAS TÉCNICAS E RELAÇÕES ===
             for (const ficha of fichas) {
-                console.log("----------------------");
-                console.log(ficha);
-                console.log("----------------------");
-
                 // Atualizar o produto se a versão da grade foi alterada
                 const pId = ficha.produtoId || ficha.produto_id;
                 if (
@@ -571,43 +565,43 @@ export default function PedidosCadastrar() {
                     await saveFichaTecnicaItens(novaFicha.id, itensParaSalvar);
                 }
 
-                // Sincronizar Facções atribuídas
-                if (ficha.faccaoRows?.length > 0) {
-                    for (const faccao of ficha.faccaoRows) {
+                // Sincronizar Parceiros atribuídos
+                if (ficha.parceiroRows?.length > 0) {
+                    for (const parceiro of ficha.parceiroRows) {
                         try {
                             let precoFormatado = 0;
 
-                            if (faccao.preco) {
+                            if (parceiro.preco) {
                                 precoFormatado =
-                                    typeof faccao.preco === "string"
+                                    typeof parceiro.preco === "string"
                                         ? parseFloat(
-                                              faccao.preco
+                                              parceiro.preco
                                                   .replace(",", ".")
                                                   .replace("R$ ", "")
                                                   .trim(),
                                           ) || 0
-                                        : Number(faccao.preco);
+                                        : Number(parceiro.preco);
                             }
 
-                            const faccaoIdFinal = faccao.faccaoId || faccao.id;
+                            const parceiroIdFinal = parceiro.parceiroId || parceiro.id;
                             const produtoIdFinal = pId; // (Variável pId já extraída no início do seu loop de fichas)
 
-                            if (faccao.isNew === false) {
-                                await updateFaccaoProdutoPrice(
-                                    faccaoIdFinal,
+                            if (parceiro.isNew === false) {
+                                await updateParceiroProdutoPrice(
+                                    parceiroIdFinal,
                                     produtoIdFinal,
                                     precoFormatado,
                                 );
                             } else {
-                                await createFaccaoProduto(
-                                    faccaoIdFinal,
+                                await createParceiroProduto(
+                                    parceiroIdFinal,
                                     produtoIdFinal,
                                     precoFormatado,
                                 );
                             }
                         } catch (err) {
                             console.error(
-                                `Erro ao processar facção ${faccao.faccaoId || faccao.id}:`,
+                                `Erro ao processar parceiroo ${parceiro.parceiroId || parceiro.id}:`,
                                 err,
                             );
                         }

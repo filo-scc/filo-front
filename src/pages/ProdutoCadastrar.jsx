@@ -486,7 +486,6 @@ export default function ProdutoCadastar() {
                                             actionButton={{
                                                 label: "Novo aviamento",
                                                 onClick: () => {
-                                                    console.log("Implementação futura");
                                                     setOpenDropdown(null);
                                                 },
                                             }}
@@ -516,7 +515,6 @@ export default function ProdutoCadastar() {
                                             actionButton={{
                                                 label: "Novo tecido",
                                                 onClick: () => {
-                                                    console.log("Implementação futura");
                                                     setOpenDropdown(null);
                                                 },
                                             }}

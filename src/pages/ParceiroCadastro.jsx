@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { createFaccao } from "../services/faccaoService";
+import { createParceiro } from "../services/parceiroService";
+import { getAllEtapasByFabricoId } from "../services/etapaService";
 
 const FloatingInput = ({ label, name, value, onChange, containerClass, ...rest }) => (
     <div className={`relative group ${containerClass}`}>
@@ -23,13 +24,16 @@ const FloatingInput = ({ label, name, value, onChange, containerClass, ...rest }
     </div>
 );
 
-const FaccaoCadastro = () => {
+const ParceiroCadastro = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [dropdownAberto, setDropdownAberto] = useState(false);
+    const [dropdownEtapaAberto, setDropdownEtapaAberto] = useState(false);
+    const [etapas, setEtapas] = useState([]);
 
     const [formData, setFormData] = useState({
+        categoria: "",
         nome: "",
         responsavel: "",
         telefone: "",
@@ -48,6 +52,26 @@ const FaccaoCadastro = () => {
         agencia: "",
         conta: "",
     });
+
+    // Buscar as etapas de produção ao montar o componente
+    useEffect(() => {
+        const fetchEtapas = async () => {
+            try {
+                const userString = localStorage.getItem("user");
+                if (userString) {
+                    const usuarioLogado = JSON.parse(userString);
+                    const fabricoId = usuarioLogado.fabrico_id;
+                    if (fabricoId) {
+                        const dados = await getAllEtapasByFabricoId(fabricoId);
+                        setEtapas(dados || []);
+                    }
+                }
+            } catch (err) {
+                console.error("Erro ao buscar etapas de produção:", err);
+            }
+        };
+        fetchEtapas();
+    }, []);
 
     const maskTelefone = (value) => {
         return value
@@ -108,6 +132,7 @@ const FaccaoCadastro = () => {
                 fabrico_id: Number(fabricoId),
             };
 
+            if (formData.categoria) payload.categoria = formData.categoria;
             if (formData.telefone) payload.telefone = formData.telefone.replace(/\D/g, "");
             if (formData.responsavel) payload.responsavel = formData.responsavel;
 
@@ -135,12 +160,12 @@ const FaccaoCadastro = () => {
                 }
             }
 
-            await createFaccao(payload);
-            navigate("/faccoes");
+            await createParceiro(payload);
+            navigate("/parceiros");
         } catch (err) {
             console.error(err);
             setError(
-                err.response?.data?.message || "Erro ao cadastrar facção. Verifique os dados.",
+                err.response?.data?.message || "Erro ao cadastrar parceiro. Verifique os dados.",
             );
         } finally {
             setLoading(false);
@@ -160,39 +185,107 @@ const FaccaoCadastro = () => {
                         alt="Ícone"
                         className="w-[30px] h-[30px]"
                     />
-                    <h1 className="text-[30px] font-light text-gray-800">Cadastrar facção</h1>
+                    <h1 className="text-[30px] font-light text-gray-800">Cadastrar parceiro</h1>
                 </div>
 
                 {error && <div className="bg-red-50 text-red-500 p-4 rounded-xl mb-6">{error}</div>}
 
                 <form onSubmit={handleSubmit} className="space-y-8 w-full">
-                    {/* Dados gerais */}
-                    <div>
-                        <h2 className="text-[#404040] font-light mb-4">Dados gerais</h2>
-                        <div className="flex flex-wrap gap-4">
-                            <FloatingInput
-                                label="Nome"
-                                name="nome"
-                                value={formData.nome}
-                                onChange={handleChange}
-                                containerClass="w-full flex-1 min-w-[200px]"
-                                required
-                            />
-                            <FloatingInput
-                                label="Nome do responsável"
-                                name="responsavel"
-                                value={formData.responsavel}
-                                onChange={handleChange}
-                                containerClass="w-full flex-[1.5] min-w-[250px]"
-                            />
-                            <FloatingInput
-                                label="Telefone"
-                                name="telefone"
-                                value={formData.telefone}
-                                onChange={handleChange}
-                                containerClass="w-full flex-1 min-w-[200px]"
-                                maxLength={15}
-                            />
+                    {/* Linha Superior: Etapa de produção + Dados gerais */}
+                    <div className="flex flex-wrap gap-6 items-start">
+                        {/* Etapa de produção */}
+                        <div className="w-full md:w-[212px]">
+                            <h2 className="text-[#404040] font-light mb-4">Etapa de produção</h2>
+                            <div className="relative w-full">
+                                <div
+                                    className={`${inputClass} bg-white flex justify-between items-center cursor-pointer`}
+                                    onClick={() => setDropdownEtapaAberto(!dropdownEtapaAberto)}
+                                >
+                                    <span
+                                        className={
+                                            formData.categoria ? "text-gray-600" : "text-gray-400"
+                                        }
+                                    >
+                                        {formData.categoria || "Selecionar"}
+                                    </span>
+                                    <svg
+                                        className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
+                                            dropdownEtapaAberto ? "rotate-180" : ""
+                                        }`}
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth="2"
+                                            d="M19 9l-7 7-7-7"
+                                        />
+                                    </svg>
+                                </div>
+
+                                {dropdownEtapaAberto && (
+                                    <>
+                                        <div
+                                            className="fixed inset-0 z-10"
+                                            onClick={() => setDropdownEtapaAberto(false)}
+                                        ></div>
+
+                                        <div className="absolute z-20 mt-1 w-full bg-white border border-[#D3D3D3] rounded-[10px] shadow-lg overflow-hidden max-h-60 overflow-y-auto">
+                                            {etapas.map((etapa) => (
+                                                <div
+                                                    key={etapa.id}
+                                                    className={`px-4 py-2 text-sm cursor-pointer transition-colors ${
+                                                        formData.categoria === etapa.nome
+                                                            ? "border-l-[3px] border-[#C4F042] text-gray-700 bg-white"
+                                                            : "border-l-[3px] border-transparent text-gray-600 hover:bg-[#F5F5F5]"
+                                                    }`}
+                                                    onClick={() => {
+                                                        setFormData((prev) => ({
+                                                            ...prev,
+                                                            categoria: etapa.nome,
+                                                        }));
+                                                        setDropdownEtapaAberto(false);
+                                                    }}
+                                                >
+                                                    {etapa.nome}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Dados gerais */}
+                        <div className="flex-1 min-w-[300px]">
+                            <h2 className="text-[#404040] font-light mb-4">Dados gerais</h2>
+                            <div className="flex flex-wrap gap-4">
+                                <FloatingInput
+                                    label="Nome"
+                                    name="nome"
+                                    value={formData.nome}
+                                    onChange={handleChange}
+                                    containerClass="w-full flex-1 min-w-[200px]"
+                                    required
+                                />
+                                <FloatingInput
+                                    label="Nome do responsável"
+                                    name="responsavel"
+                                    value={formData.responsavel}
+                                    onChange={handleChange}
+                                    containerClass="w-full flex-[1.5] min-w-[250px]"
+                                />
+                                <FloatingInput
+                                    label="Telefone"
+                                    name="telefone"
+                                    value={formData.telefone}
+                                    onChange={handleChange}
+                                    containerClass="w-full flex-1 min-w-[200px]"
+                                    maxLength={15}
+                                />
+                            </div>
                         </div>
                     </div>
 
@@ -410,4 +503,4 @@ const FaccaoCadastro = () => {
     );
 };
 
-export default FaccaoCadastro;
+export default ParceiroCadastro;
