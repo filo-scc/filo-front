@@ -24,6 +24,12 @@ export default function Home() {
     const [producaoSobDemanda, setProducaoSobDemanda] = useState(null);
 
     const mensagem = location.state?.error;
+    const labelNovaFicha =
+        producaoSobDemanda === null
+            ? ""
+            : producaoSobDemanda
+              ? "Novo pedido"
+              : "Nova produção";
 
     useEffect(() => {
         if (mostrarErro) {
@@ -223,6 +229,8 @@ export default function Home() {
                     </h1>
                     <button
                         onClick={() => navigate("/pedidos/cadastrar")}
+                        disabled={producaoSobDemanda === null}
+                        aria-busy={producaoSobDemanda === null}
                         className="w-[169px] h-[39px] bg-[#A9E2F2] text-[#4696AD] font-normal text-base rounded-full flex items-center justify-center gap-2 shrink-0"
                     >
                         <span className="flex items-center w-4 h-4 relative">
@@ -232,7 +240,7 @@ export default function Home() {
                                 className="w-full h-full object-contain"
                             />
                         </span>
-                        {producaoSobDemanda ? "Novo pedido" : "Nova produção"}
+                        <span className="min-w-[103px]">{labelNovaFicha}</span>
                     </button>
                 </div>
 

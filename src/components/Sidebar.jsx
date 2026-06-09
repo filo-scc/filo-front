@@ -5,7 +5,7 @@ import { getFabricoById } from "../services/fabricoService";
 
 export function Sidebar() {
     const [hoveredPath, setHoveredPath] = useState(null);
-    const [isSobDemanda, setIsSobDemanda] = useState(true);
+    const [producaoSobDemanda, setProducaoSobDemanda] = useState(null);
 
     const usuarioLogado = JSON.parse(localStorage.getItem("user") || "{}");
     const fabricoId = usuarioLogado?.fabrico_id;
@@ -23,11 +23,10 @@ export function Sidebar() {
 
                 if (ignorar) return;
 
-                // Armazena o valor booleano vindo do banco no seu estado
-                // Se for true (produz sob demanda), vira true. Se for false, vira false.
-                setIsSobDemanda(Boolean(response?.fabricacao_sob_demanda));
+                setProducaoSobDemanda(response?.fabricacao_sob_demanda === true);
             } catch (error) {
                 console.error("Erro ao carregar dados do fabrico na Sidebar:", error);
+                setProducaoSobDemanda(false);
             }
         };
 
@@ -39,18 +38,26 @@ export function Sidebar() {
     }, [fabricoId]);
 
     const menuItems = useMemo(() => {
-        return [
+        const items = [
             { name: "Início", slug: "inicio", path: "/" },
-            // Condicional: se isSobDemanda for true -> "Pedidos". Se for false -> "Produções"
-            { name: isSobDemanda ? "Pedidos" : "Produções", slug: "pedidos", path: "/pedidos" },
+            {
+                name: producaoSobDemanda ? "Pedidos" : "Produções",
+                slug: "pedidos",
+                path: "/pedidos",
+            },
             { name: "Parceiros", slug: "parceiros", path: "/parceiros" },
-            { name: "Clientes", slug: "clientes", path: "/clientes" },
             { name: "Produtos", slug: "produtos", path: "/produtos" },
             { name: "Estoque", slug: "estoque", path: "/estoque" },
             { name: "Financeiro", slug: "financeiro", path: "/financeiro" },
             { name: "Configurações", slug: "configuracoes", path: "/configuracoes" },
         ];
-    }, [isSobDemanda]);
+
+        if (producaoSobDemanda) {
+            items.splice(3, 0, { name: "Clientes", slug: "clientes", path: "/clientes" });
+        }
+
+        return items;
+    }, [producaoSobDemanda]);
 
     return (
         <aside className="w-[219px] h-screen pl-[24px] flex flex-col items-center py-8 gap-[32px] bg-transparent overflow-y-auto">
