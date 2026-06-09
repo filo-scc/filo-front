@@ -273,17 +273,40 @@ export default function TransferenciaEtapaModal({
             {/* CONTAINER PRINCIPAL DO MODAL */}
             <div className="relative w-full max-w-4xl rounded-[24px] bg-white p-8 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
                 {/* CABEÇALHO DO MODAL */}
-                <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center gap-2">
-                        <img
-                            src="/transferencia.png"
-                            alt="Ícone"
-                            className="w-6 h-6 object-contain"
-                        />
-                        <h2 className="text-[22px] font-light text-[#404040]">
-                            Transferência para {proximaEtapa.nome}
-                        </h2>
+                <div className="flex items-start justify-between mb-8">
+                    <div className="flex flex-col">
+                        <div className="flex items-center gap-2">
+                            <img
+                                src="/transferencia.png"
+                                alt="Ícone"
+                                className="w-6 h-6 object-contain"
+                            />
+                            <h2 className="text-[22px] font-light text-[#404040] leading-none">
+                                Transferência para {proximaEtapa.nome}
+                            </h2>
+                        </div>
+
+                        <div className="text-[14px] font-light text-[#7B7D80] ml-9 mt-1 leading-none">
+                            {[
+                                fichaTecnica?.pedido?.numero
+                                    ? `Nº${fichaTecnica.pedido.numero}`
+                                    : null,
+                                fichaTecnica?.id ? `Ficha Técnica: ${fichaTecnica.id}` : null,
+                                fichaTecnica?.pedido?.cliente?.nome || null,
+                            ]
+                                .filter(Boolean)
+                                .map((texto, index, arrayOriginal) => (
+                                    <React.Fragment key={index}>
+                                        {texto}
+                                        {/* Insere a barra colorida apenas se não for o último item da lista */}
+                                        {index < arrayOriginal.length - 1 && (
+                                            <span className="text-[#D9D9D9] mx-2">|</span>
+                                        )}
+                                    </React.Fragment>
+                                ))}
+                        </div>
                     </div>
+
                     <button onClick={onClose} className="rounded-full p-2 transition-colors">
                         <img src="/fechar-cinza.png" alt="Fechar" className="w-3 h-3 opacity-50" />
                     </button>
