@@ -699,7 +699,7 @@ export default function ProdutoEditar() {
     }
 
     return (
-        <div className="p-6 pt-0 w-full flex justify-center font-Outfit">
+        <div className="p-6 pt-0 mt-6 w-full flex justify-center font-Outfit">
             <div className="bg-white p-8 rounded-[24px] shadow-sm w-full min-h-[650px]">
                 <ProdutoDetalhesHeader
                     title="Editar produto"

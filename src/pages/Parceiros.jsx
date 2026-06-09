@@ -122,7 +122,7 @@ const Parceiros = () => {
     };
 
     return (
-        <div className="p-6 pt-0 w-full">
+        <div className="p-6 pt-0 mt-6 w-full">
             {/* Card Branco Principal */}
             <div className="bg-white p-8 rounded-[24px] shadow-sm w-full mx-auto">
                 <div className="w-full">

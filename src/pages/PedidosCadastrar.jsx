@@ -620,8 +620,8 @@ export default function PedidosCadastrar() {
 
     return (
         <>
-            {/* Contentor principal idêntico ao de Clientes (p-6 pt-0 w-full relative z-0) */}
-            <div className="p-6 pt-0 w-full relative z-0 font-['Outfit',_sans-serif]">
+            {/* Contentor principal alinhado ao padrão da Home */}
+            <div className="p-6 pt-0 mt-6 w-full relative z-0 font-['Outfit',_sans-serif]">
                 {/* Card de Fundo Branco com o mesmo arredondamento, sombra e comportamento responsivo de Clientes */}
                 <div className="bg-white p-10 rounded-[24px] shadow-sm w-full mx-auto">
                     {/* 1. CABEÇALHO: Título da tela e número do pedido */}
