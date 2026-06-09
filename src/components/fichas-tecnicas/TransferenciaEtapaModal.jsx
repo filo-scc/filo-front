@@ -538,7 +538,7 @@ export default function TransferenciaEtapaModal({
                                                                     );
                                                                 }}
                                                                 placeholder="-"
-                                                                className="w-full h-[32px] border-0 bg-transparent text-center text-[14px] outline-none focus:ring-0 text-[#898C8F] font-light"
+                                                                className="w-full h-[32px] border-0 bg-transparent text-center text-[14px] outline-none focus:ring-0 text-[#898C8F] font-light [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0"
                                                             />
                                                         </div>
                                                     )}
