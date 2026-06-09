@@ -101,22 +101,6 @@ export default function ModalReferencias({
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
             onClick={handleClose}
         >
-            {/* Estilos locais para deixar o scroll extremamente sutil apenas neste modal */}
-            <style>
-                {`
-          .scrollbar-sutil::-webkit-scrollbar {
-            width: 4px;
-          }
-          .scrollbar-sutil::-webkit-scrollbar-track {
-            background: transparent;
-          }
-          .scrollbar-sutil::-webkit-scrollbar-thumb {
-            background-color: #d1d5db; /* gray-300 */
-            border-radius: 10px;
-          }
-        `}
-            </style>
-
             {/* Container do Modal - Largura aumentada para 730px */}
             <div
                 className="bg-[#F3F4FA] w-full max-w-[730px] rounded-[24px] shadow-[4px_4px_10px_2px_rgba(0,0,0,0.15)] p-8"

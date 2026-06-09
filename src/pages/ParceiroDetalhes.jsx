@@ -85,7 +85,7 @@ const ParceiroDetalhes = () => {
     }
 
     return (
-        <div className="p-6 pt-0 w-full">
+        <div className="p-6 pt-0 mt-6 w-full">
             <div className="bg-white p-8 rounded-[24px] shadow-sm w-full mx-auto">
                 <h1 className="flex items-center gap-3 text-[28px] font-light mb-6">
                     <img
