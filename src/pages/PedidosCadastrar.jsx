@@ -290,24 +290,35 @@ export default function PedidosCadastrar() {
         const carregarDados = async () => {
             setCarregandoClientes(true);
             try {
-                const [fabricoInfo, listaClientes] = await Promise.all([
-                    getFabricoById(fabricoId),
-                    getClientes(fabricoId),
-                ]);
+                const fabricoInfo = await getFabricoById(fabricoId);
                 if (ignorar) return;
 
-                const produzSobDemanda = Boolean(
-                    fabricoInfo?.fabricacao_sob_demanda ??
-                    fabricoInfo?.produz_sob_demanda ??
-                    fabricoInfo?.sob_demanda ??
-                    true,
-                );
+                const produzSobDemanda = fabricoInfo?.fabricacao_sob_demanda === true;
                 setIsSobDemanda(produzSobDemanda);
-                setClientes(listaClientes || []);
+
+                if (!produzSobDemanda) {
+                    setClientes([]);
+                    return;
+                }
+
+                try {
+                    const listaClientes = await getClientes(fabricoId);
+                    if (ignorar) return;
+
+                    setClientes(listaClientes || []);
+                } catch (error) {
+                    console.error("Erro ao carregar clientes:", error);
+                    if (!ignorar) {
+                        setClientes([]);
+                        setErro("Não foi possível carregar clientes.");
+                    }
+                }
             } catch (error) {
-                console.error("Erro ao carregar dados:", error);
+                console.error("Erro ao carregar configuração do fabrico:", error);
                 if (!ignorar) {
-                    setErro("Não foi possível carregar configurações e clientes.");
+                    setIsSobDemanda(false);
+                    setClientes([]);
+                    setErro("Não foi possível carregar configurações do fabrico.");
                 }
             } finally {
                 if (!ignorar) setCarregandoClientes(false);
@@ -634,7 +645,7 @@ export default function PedidosCadastrar() {
 
                             <div className="flex flex-col gap-0 items-start">
                                 <h1 className="text-[28px] sm:text-[30px] font-light text-[#404040] tracking-tight leading-none">
-                                    {isSobDemanda ? "Novo Pedido" : "Nova Ordem de Produção"}
+                                    {isSobDemanda ? "Novo Pedido" : "Nova Produção"}
                                 </h1>
 
                                 <p className="text-[18px] font-light text-[#898C8F] mt-0.5 leading-none">
