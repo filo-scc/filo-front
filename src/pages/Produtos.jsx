@@ -70,7 +70,7 @@ export default function Produtos() {
     }, [fabricoId]);
 
     return (
-        <div className="p-6 pt-0 font-['Outfit',_sans-serif]">
+        <div className="p-6 pt-0 mt-6 font-['Outfit',_sans-serif]">
             {/* Container Branco Principal */}
             <div className="bg-white rounded-[24px] shadow-sm min-h-[400px] w-full overflow-hidden pb-8">
                 {/* Cabeçalho */}

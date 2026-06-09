@@ -212,7 +212,7 @@ export default function ClientesEditar() {
         }
     };
     return (
-        <div className="w-full max-w-[1200px] xl:max-w-none mx-auto font-['Outfit',_sans-serif]">
+        <div className="p-6 pt-0 mt-6 w-full font-['Outfit',_sans-serif]">
             <div className="bg-white p-8 sm:p-10 rounded-[32px] shadow-[0_8px_40px_rgba(70,150,173,0.08)] border border-[#F0F4F6] w-full">
                 <div className="flex flex-wrap items-center gap-3 mb-10">
                     <img src="/star.png" alt="" className="w-8 h-8 shrink-0" />
