@@ -41,9 +41,6 @@ export default function Home() {
     const carregarDadosDoQuadro = async () => {
         setLoading(true);
         try {
-            // Delay temporário para validar visualmente o skeleton em ambiente local.
-            await new Promise((resolve) => setTimeout(resolve, 1500));
-
             const dadosUsuario = await getMe();
             const fId = dadosUsuario.fabrico_id;
             setFabricoId(fId);

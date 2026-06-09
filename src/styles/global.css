@@ -7,6 +7,49 @@ body {
     background-image: linear-gradient(180deg, #f3f4fa 0%, #a9e2f2 100%);
 }
 
+@keyframes filo-breathe {
+    0%,
+    100% {
+        opacity: 0.9;
+        transform: scale(0.99);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.02);
+    }
+}
+
+.animate-filo-breathe {
+    animation: filo-breathe 3.2s ease-in-out infinite;
+}
+
+@keyframes filo-text-shimmer {
+    0% {
+        background-position: 140% 50%;
+    }
+
+    100% {
+        background-position: -140% 50%;
+    }
+}
+
+.animate-filo-text-shimmer {
+    color: transparent;
+    background-image: linear-gradient(
+        90deg,
+        rgb(70 150 173 / 0.35) 0%,
+        rgb(70 150 173 / 0.55) 35%,
+        rgb(70 150 173 / 0.95) 50%,
+        rgb(70 150 173 / 0.55) 65%,
+        rgb(70 150 173 / 0.35) 100%
+    );
+    background-size: 240% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    animation: filo-text-shimmer 2s ease-in-out infinite;
+}
+
 .scrollbar-sutil {
     scrollbar-width: thin;
     scrollbar-color: #d6d6d6 transparent;
