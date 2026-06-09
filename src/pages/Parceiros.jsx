@@ -122,7 +122,7 @@ const Parceiros = () => {
     };
 
     return (
-        <div className="p-6 pt-0 w-full">
+        <div className="p-6 pt-0 mt-6 w-full">
             {/* Card Branco Principal */}
             <div className="bg-white p-8 rounded-[24px] shadow-sm w-full mx-auto">
                 <div className="w-full">
@@ -180,28 +180,20 @@ const Parceiros = () => {
                     </div>
 
                     {/* Tabela */}
-                    <div className="w-full overflow-visible pb-16">
-                        <div className="w-full border border-gray-200 rounded-xl bg-white">
-                            <table className="w-full text-[16px] font-['Outfit',_sans-serif] font-light text-center">
+                    <div className="w-full pb-16">
+                        <div className="w-full border border-gray-200 rounded-xl overflow-hidden bg-[#D3EBF2]">
+                            <table className="w-full border-separate border-spacing-0 text-[16px] font-['Outfit',_sans-serif] font-light text-center">
                                 <thead className="bg-[#D3EBF2] text-[#4696AD]">
                                     <tr className="h-[64px]">
-                                        <th className="px-6 font-light first:rounded-tl-xl">
-                                            Parceiro
-                                        </th>
-
+                                        <th className="px-6 font-light">Parceiro</th>
                                         <th className="px-6 font-light">Possui pedido</th>
-
                                         <th className="px-6 font-light">Consultar endereço</th>
-
                                         <th className="px-6 font-light">Contato</th>
-
-                                        <th className="px-6 font-light last:rounded-tr-xl">
-                                            Opções
-                                        </th>
+                                        <th className="px-6 font-light">Opções</th>
                                     </tr>
                                 </thead>
 
-                                <tbody className="text-[#404040]">
+                                <tbody className="bg-white text-[#404040]">
                                     {loading ? (
                                         <tr className="h-[64px]">
                                             <td colSpan="5" className="text-gray-400">
@@ -219,8 +211,6 @@ const Parceiros = () => {
                                             const isPar = index % 2 === 0;
 
                                             const isMenuOpen = dropdownOpenId === parceiro.id;
-
-                                            const isLast = index === parceiros.length - 1;
 
                                             return (
                                                 <tr
@@ -262,11 +252,7 @@ const Parceiros = () => {
                                                         )}
                                                     </td>
 
-                                                    <td
-                                                        className={`px-6 ${
-                                                            isLast ? "rounded-br-xl" : ""
-                                                        }`}
-                                                    >
+                                                    <td className="px-6">
                                                         <div onClick={(e) => e.stopPropagation()}>
                                                             <MenuOpcoes
                                                                 onEdit={() =>

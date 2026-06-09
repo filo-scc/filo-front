@@ -184,23 +184,6 @@ export default function Home() {
 
     return (
         <div className="p-6 pt-0 w-full min-w-0 mt-6">
-            <style>{`
-            .custom-scrollbar::-webkit-scrollbar {
-                width: 4px;
-            }
-            .custom-scrollbar::-webkit-scrollbar-track {
-                background: transparent;
-                margin-top: 8px;
-                margin-bottom: 8px;
-            }
-            .custom-scrollbar::-webkit-scrollbar-thumb {
-                background-color: #d6d6d6;
-                border-radius: 999px;
-            }
-            .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                background-color: #bcbcbc;
-            }
-        `}</style>
             {mostrarErro && mensagem && (
                 <div className="fixed top-4 right-4 z-50 bg-red-500 text-white px-6 py-3 rounded-lg shadow-2xl animate-fade-in-out">
                     <div className="flex items-center gap-2">
@@ -291,7 +274,7 @@ export default function Home() {
                                             </button>
                                         </div>
 
-                                        <div className="flex-1 overflow-y-auto pr-1 pb-2 flex flex-col gap-1 min-h-0 custom-scrollbar">
+                                        <div className="flex-1 overflow-y-auto pr-1 pb-2 flex flex-col gap-1 min-h-0 scrollbar-sutil">
                                             {coluna.fichas.map((ficha) => {
                                                 const parceirosVinculados =
                                                     ficha.produto?.parceiro_produto || [];

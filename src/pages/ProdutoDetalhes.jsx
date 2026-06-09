@@ -85,7 +85,7 @@ export default function ProdutoDetalhes() {
     }
 
     return (
-        <div className="p-6 pt-0 w-full flex justify-center">
+        <div className="p-6 pt-0 mt-6 w-full flex justify-center">
             <div className="bg-white p-8 rounded-[24px] shadow-sm w-full min-h-[400px]">
                 <ProdutoDetalhesHeader title="Detalhes de produto" />
 
