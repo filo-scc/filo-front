@@ -400,6 +400,13 @@ export default function FichaTecnicaModal({
         // Calculando a quantidade total para exibir na Tabela da tela de Pedidos
         const quantidadeTotal = itensPayload.reduce((acc, curr) => acc + curr.quantidade, 0);
 
+        if (quantidadeTotal === 0) {
+            setError(
+                "Informe a quantidade de pelo menos um tamanho/cor antes de adicionar a ficha.",
+            );
+            return;
+        }
+
         // Montamos um RASCUNHO e devolvemos pra tela pai!
         const rascunhoFicha = {
             id: `temp-${Date.now()}`, // ID temporário para o frontend iterar na tabela

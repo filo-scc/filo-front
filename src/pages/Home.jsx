@@ -1,12 +1,10 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import React, { useEffect, useRef, useState } from "react";
-import { getEtapasByFabrico } from "../services/etapasService";
+import { getAllEtapasByFabricoId } from "../services/etapaService";
 import { getFabricoById } from "../services/fabricoService";
-import {
-    getFichaTecnicaByFabrico,
-    updateEtapaFichaTecnica,
-} from "../services/fichasTecnicasService";
+import { getFichaTecnicaByFabrico } from "../services/fichasTecnicasService";
 import { getMe } from "../services/authService";
+import TransferenciaEtapaModal from "../components/fichas-tecnicas/TransferenciaEtapaModal";
 
 export default function Home() {
     const location = useLocation();
@@ -22,6 +20,8 @@ export default function Home() {
     const [mostrarSetaDireita, setMostrarSetaDireita] = useState(null);
 
     const [producaoSobDemanda, setProducaoSobDemanda] = useState(null);
+    const [transferenciaAtiva, setTransferenciaAtiva] = useState(null);
+    const [fabricoId, setFabricoId] = useState(null);
 
     const mensagem = location.state?.error;
     const labelNovaFicha =
@@ -37,43 +37,46 @@ export default function Home() {
         }
     }, [mostrarErro, location.pathname, navigate]);
 
-    useEffect(() => {
-        const inicializarDados = async () => {
+    const carregarDadosDoQuadro = async () => {
+        setLoading(true);
+        try {
             const dadosUsuario = await getMe();
-            const fabricoId = dadosUsuario.fabrico_id;
-            const fabrico = await getFabricoById(fabricoId);
-            setProducaoSobDemanda(fabrico?.fabricacao_sob_demanda === true);
-            try {
-                setLoading(true);
+            const fId = dadosUsuario.fabrico_id;
+            setFabricoId(fId);
 
-                if (!fabricoId) {
-                    throw new Error("Usuário não possui um fabrico associado");
-                }
-
-                const [etapas, fichasTecnicas] = await Promise.all([
-                    getEtapasByFabrico(fabricoId),
-                    getFichaTecnicaByFabrico(fabricoId),
-                ]);
-
-                const etapasOrdenada = etapas.sort((a, b) => a.ordem - b.ordem);
-                const colunasAgrupadas = etapasOrdenada.map((etapa) => ({
-                    ...etapa,
-                    fichas: fichasTecnicas.filter((ficha) => ficha.etapa_atual_id == etapa.id),
-                }));
-
-                setQuadro(colunasAgrupadas);
-
-                if (colunasAgrupadas.length > 4) {
-                    setMostrarSetaDireita(true);
-                }
-            } catch (error) {
-                console.error("Erro ao carregar os dados", error);
-            } finally {
-                setLoading(false);
+            if (!fId) {
+                throw new Error("Usuário não possui um fabrico associado");
             }
-        };
 
-        inicializarDados();
+            const fabrico = await getFabricoById(fId);
+            setProducaoSobDemanda(fabrico?.fabricacao_sob_demanda === true);
+
+            const [etapas, fichasTecnicas] = await Promise.all([
+                getAllEtapasByFabricoId(fId),
+                getFichaTecnicaByFabrico(fId),
+            ]);
+
+            const etapas_ativas = etapas.filter((etapa) => etapa.ativa);
+            const etapasOrdenada = etapas_ativas.sort((a, b) => a.ordem - b.ordem);
+            const colunasAgrupadas = etapasOrdenada.map((etapa) => ({
+                ...etapa,
+                fichas: fichasTecnicas.filter((ficha) => ficha.etapa_atual_id == etapa.id),
+            }));
+
+            setQuadro(colunasAgrupadas);
+
+            if (colunasAgrupadas.length > 4) {
+                setMostrarSetaDireita(true);
+            }
+        } catch (error) {
+            console.error("Erro ao carregar os dados", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        carregarDadosDoQuadro();
     }, []);
 
     const handleScroll = () => {
@@ -158,29 +161,24 @@ export default function Home() {
 
         if (etapaOrigemId == etapaFinalId || !etapaOrigemId || !fichaId) return;
 
-        setQuadro((quadroAtual) => {
-            const novoQuadro = quadroAtual.map((coluna) => ({
-                ...coluna,
-                fichas: [...coluna.fichas],
-            }));
+        const colunaOrigem = quadro.find((c) => c.id == etapaOrigemId);
+        const colunaDestino = quadro.find((c) => c.id == etapaFinalId);
 
-            const indexOrigem = novoQuadro.findIndex((e) => e.id == etapaOrigemId);
-            const indexFinal = novoQuadro.findIndex((e) => e.id == etapaFinalId);
-            if (indexOrigem === -1 || indexFinal === -1) return quadroAtual;
+        if (colunaOrigem && colunaDestino) {
+            if (colunaDestino.ordem < colunaOrigem.ordem) {
+                console.warn("Não é permitido mover a ficha para uma etapa anterior.");
+                return;
+            }
+        }
 
-            const indexFicha = novoQuadro[indexOrigem].fichas.findIndex((f) => f.id == fichaId);
-            if (indexFicha === -1) return quadroAtual;
+        const fichaSelecionada = colunaOrigem?.fichas.find((f) => f.id == fichaId);
 
-            const [fichaMovida] = novoQuadro[indexOrigem].fichas.splice(indexFicha, 1);
-            fichaMovida.etapa_atual_id = etapaFinalId;
-            novoQuadro[indexFinal].fichas.push(fichaMovida);
-
-            return novoQuadro;
-        });
-        try {
-            await updateEtapaFichaTecnica(fichaId, etapaFinalId);
-        } catch (error) {
-            console.error("Erro ao mover a ficha no back-end", error);
+        if (colunaOrigem && colunaDestino && fichaSelecionada) {
+            setTransferenciaAtiva({
+                fichaTecnica: fichaSelecionada,
+                etapaConcluida: { id: colunaOrigem.id, nome: colunaOrigem.nome },
+                proximaEtapa: { id: colunaDestino.id, nome: colunaDestino.nome },
+            });
         }
     };
 
@@ -277,7 +275,7 @@ export default function Home() {
                                         onDragOver={handleDragOver}
                                         onDrop={(e) => handleDrop(e, coluna.id)}
                                     >
-                                        <div className="flex justify-between items-center mb-4 px-1 shrink-0">
+                                        <div className="flex justify-between items-center mb-4 px-3 pt-3 shrink-0">
                                             <h2 className="font-normal text-base text-[#404040] flex items-center gap-2">
                                                 <img
                                                     src={coluna.icone?.link || ""}
@@ -295,7 +293,7 @@ export default function Home() {
                                             </button>
                                         </div>
 
-                                        <div className="flex-1 overflow-y-auto pr-1 pb-2 flex flex-col gap-1 min-h-0 custom-scrollbar">
+                                        <div className="flex-1 overflow-y-auto pr-1 pb-3 pl-3 flex flex-col gap-3 min-h-0 custom-scrollbar">
                                             {coluna.fichas.map((ficha) => {
                                                 const parceirosVinculados =
                                                     ficha.produto?.parceiro_produto || [];
@@ -455,6 +453,20 @@ export default function Home() {
                     </div>
                 )}
             </div>
+
+            {transferenciaAtiva && (
+                <TransferenciaEtapaModal
+                    isOpen={!!transferenciaAtiva}
+                    onClose={() => setTransferenciaAtiva(null)}
+                    fichaTecnica={transferenciaAtiva.fichaTecnica}
+                    fabricoId={fabricoId}
+                    etapaConcluida={transferenciaAtiva.etapaConcluida}
+                    proximaEtapa={transferenciaAtiva.proximaEtapa}
+                    onSuccess={() => {
+                        carregarDadosDoQuadro();
+                    }}
+                />
+            )}
         </div>
     );
 }
