@@ -161,6 +161,14 @@ export default function Home() {
 
         const colunaOrigem = quadro.find((c) => c.id == etapaOrigemId);
         const colunaDestino = quadro.find((c) => c.id == etapaFinalId);
+
+        if (colunaOrigem && colunaDestino) {
+            if (colunaDestino.ordem < colunaOrigem.ordem) {
+                console.warn("Não é permitido mover a ficha para uma etapa anterior.");
+                return;
+            }
+        }
+
         const fichaSelecionada = colunaOrigem?.fichas.find((f) => f.id == fichaId);
 
         if (colunaOrigem && colunaDestino && fichaSelecionada) {
