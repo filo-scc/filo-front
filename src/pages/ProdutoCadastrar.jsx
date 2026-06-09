@@ -39,8 +39,12 @@ function DropdownField({
     isSelectedOption,
     showOptionIndicator = false,
     actionButton,
+    maxVisibleOptions,
     className = "",
 }) {
+    const shouldScrollOptions =
+        Number.isFinite(maxVisibleOptions) && options.length > maxVisibleOptions;
+
     return (
         <div className={`relative ${isOpen ? "z-50" : "z-10"} ${className}`}>
             <button
@@ -74,7 +78,13 @@ function DropdownField({
                         onClick={onToggle}
                         className="fixed inset-0 z-10 cursor-default"
                     />
-                    <div className="absolute left-0 right-0 top-[calc(100%+2px)] z-20 overflow-hidden rounded-[14px] border border-[#898C8F] bg-white ">
+                    <div
+                        className={`absolute left-0 right-0 top-[calc(100%+2px)] z-20 rounded-[14px] border border-[#898C8F] bg-white ${
+                            shouldScrollOptions
+                                ? "max-h-[288px] overflow-y-auto overflow-x-hidden scrollbar-sutil"
+                                : "overflow-hidden"
+                        }`}
+                    >
                         {options.map((option) => {
                             const selected = isSelectedOption(option);
 
@@ -483,6 +493,7 @@ export default function ProdutoCadastar() {
                                                 formData.aviamentos.some((a) => a.nome === nome)
                                             }
                                             showOptionIndicator
+                                            maxVisibleOptions={6}
                                             actionButton={{
                                                 label: "Novo aviamento",
                                                 onClick: () => {
@@ -512,6 +523,7 @@ export default function ProdutoCadastar() {
                                             isSelectedOption={(option) =>
                                                 formData.tecido === option
                                             }
+                                            maxVisibleOptions={6}
                                             actionButton={{
                                                 label: "Novo tecido",
                                                 onClick: () => {
