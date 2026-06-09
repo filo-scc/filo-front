@@ -18,7 +18,11 @@ const ProdutoCard = ({ id, nome, tipo, data, foto }) => {
                     <img src={foto} alt={nome} className="w-full h-full object-cover" />
                 ) : (
                     <div className="w-full h-full bg-[#E5E7EB] flex items-center justify-center text-center p-4">
-                        <img src="/image-delete-02-2.png" alt="Sem imagem" className="w-[65px] h-[65px] mb-2 object-contain" />
+                        <img
+                            src="/image-delete-02-2.png"
+                            alt="Sem imagem"
+                            className="w-[65px] h-[65px] mb-2 object-contain"
+                        />
                     </div>
                 )}
 
