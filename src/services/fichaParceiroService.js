@@ -1,27 +1,26 @@
-import api from "./api"; // Sua configuração do axios
+import api from "./api"; // Ajuste para a sua importação do axios
 
-// Busca todos os parceiros atrelados a uma Ficha Técnica (Traz a relação + os dados do parceiro)
-export const getFichaParceiroByFicha = async (fichaId) => {
-    const response = await api.get(`/fichas-tecnicas/${fichaId}/parceiros`);
+export const getFichaParceiroByFicha = async (ficha_id) => {
+    const response = await api.get(`/fichas-tecnicas/${ficha_id}/parceiros`);
     return response.data;
 };
 
-// Faz o papel do UPSERT inteligentemente no frontend
-export const upsertFichaTecnicaParceiro = async (ficha_id, parceiro_id, data) => {
-    try {
-        // Tenta atualizar a relação existente (PUT)
-        return await api.put(`/fichas-tecnicas/${ficha_id}/parceiros/${parceiro_id}`, data);
-    } catch (error) {
-        // Se retornar 404 (Não Encontrado), significa que a relação não existe, então criamos (POST)
-        if (error.response?.status === 404) {
-            return await api.post(`/fichas-tecnicas/parceiros`, {
-                ficha_id,
-                parceiro_id,
-                ...data,
-            });
-        }
-        throw error;
-    }
+// Faz o GET de uma relação específica para avaliar se existe
+export const getFichaParceiroById = async (ficha_id, parceiro_id) => {
+    const response = await api.get(`/fichas-tecnicas/${ficha_id}/parceiros/${parceiro_id}`);
+    return response.data;
+};
+
+// Cria a nova relação (POST)
+export const createFichaTecnicaParceiro = async (data) => {
+    const response = await api.post(`/fichas-tecnicas/parceiros`, data);
+    return response.data;
+};
+
+// Atualiza a relação existente (PUT)
+export const updateFichaTecnicaParceiro = async (ficha_id, parceiro_id, data) => {
+    const response = await api.put(`/fichas-tecnicas/${ficha_id}/parceiros/${parceiro_id}`, data);
+    return response.data;
 };
 
 export const createFichaParceiro = async (ficha_id, parceiro_id, operacao, valor, quantidade) => {

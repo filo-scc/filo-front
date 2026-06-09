@@ -187,6 +187,9 @@ const Parceiros = () => {
                                     <tr className="h-[64px]">
                                         <th className="px-6 font-light">Parceiro</th>
                                         <th className="px-6 font-light">Possui pedido</th>
+
+                                        <th className="px-6 font-light"> Etapa de Produção </th>
+
                                         <th className="px-6 font-light">Consultar endereço</th>
                                         <th className="px-6 font-light">Contato</th>
                                         <th className="px-6 font-light">Opções</th>
@@ -240,6 +243,10 @@ const Parceiros = () => {
                                                                     : "Não"}
                                                             </span>
                                                         </div>
+                                                    </td>
+
+                                                    <td className="px-6 text-[14px]">
+                                                        {parceiro.categoria}
                                                     </td>
 
                                                     <td className="px-6 text-[14px] hover:font-normal">

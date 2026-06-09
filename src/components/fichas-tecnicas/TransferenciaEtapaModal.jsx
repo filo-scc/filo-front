@@ -1,17 +1,23 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { getAllEtapasByFabricoId } from "../../services/etapaService";
 import { getParceirosByFabrico } from "../../services/parceiroService";
-import { updateParceiroProdutoPrice } from "../../services/fichaTecnicaItemService";
+import {
+    createParceiroProduto,
+    getProdutoParceiro,
+    updateParceiroProdutoPrice,
+} from "../../services/fichaTecnicaItemService";
 import {
     finalizarFichaEtapa,
-    iniciarFichaEtapa,
     getFichaEtapaByFichaTecnica,
+    updateEtapaFichaTecnica,
 } from "../../services/fichasTecnicasService";
 
 import {
     getFichaParceiroByFicha,
-    upsertFichaTecnicaParceiro,
+    createFichaTecnicaParceiro,
+    updateFichaTecnicaParceiro,
 } from "../../services/fichaParceiroService";
+import { createFichaEtapa } from "../../services/fichaEtapaService";
 
 export default function TransferenciaEtapaModal({
     isOpen,
@@ -31,6 +37,7 @@ export default function TransferenciaEtapaModal({
     const [dropdownAberto, setDropdownAberto] = useState(false);
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [parceirosIniciais, setParceirosIniciais] = useState([]);
 
     // Estados para o comportamento visual da nova tabela
     const [hoveredParceiroIndex, setHoveredParceiroIndex] = useState(null);
@@ -77,6 +84,9 @@ export default function TransferenciaEtapaModal({
 
                 // 3. Buscar parceiros já associados a esta Ficha Técnica
                 const parceirosExistentes = await getFichaParceiroByFicha(fichaTecnica.id);
+
+                setParceirosIniciais(parceirosExistentes);
+
                 const jaVinculadosDestaEtapa = parceirosExistentes
                     .filter(
                         (fp) =>
@@ -87,8 +97,8 @@ export default function TransferenciaEtapaModal({
                         id: fp.parceiro.id,
                         nome: fp.parceiro.nome,
                         operacao: fp.operacao || "",
-                        quantidade: fp.quantidade || fichaTecnica.quantidade,
-                        custoTotalFormatado: formatarMoedaBR(fp.custo ? Number(fp.custo) * 100 : 0),
+                        quantidade: fp.quantidade,
+                        custoTotalFormatado: formatarMoedaBR(fp.custo ? Number(fp.custo) : 0),
                     }));
 
                 setLinhasTabela(jaVinculadosDestaEtapa);
@@ -181,19 +191,50 @@ export default function TransferenciaEtapaModal({
                     const precoUnitario = qtdAlocada > 0 ? custoTotal / qtdAlocada : 0;
 
                     // Passos de Negócio mapeados:
-                    // 1. Atualizar preço da relação parceiro_produto
-                    await updateParceiroProdutoPrice(
-                        linha.id,
+                    // 1 - Ver se existe parceiro_produto
+                    const parceiro_produto = await getProdutoParceiro(
                         fichaTecnica.produto_id,
-                        precoUnitario,
+                        linha.id,
                     );
 
-                    // 2. Criar ou atualizar o registro de ficha_tecnica_parceiro
-                    await upsertFichaTecnicaParceiro(fichaTecnica.id, linha.id, {
+                    if (parceiro_produto) {
+                        // 1. Atualizar preço da relação parceiro_produto
+                        await updateParceiroProdutoPrice(
+                            linha.id,
+                            fichaTecnica.produto_id,
+                            precoUnitario,
+                        );
+                    } else {
+                        // 2. Criar relação parceiro_produto
+                        await createParceiroProduto(
+                            linha.id,
+                            fichaTecnica.produto_id,
+                            precoUnitario,
+                        );
+                    }
+
+                    const payloadCusto = {
                         operacao: linha.operacao,
                         custo: custoTotal,
                         quantidade: qtdAlocada,
-                    });
+                    };
+
+                    // Analisa se a relação já existia antes de fazer qualquer requisição
+                    const parceiroJaExistia = parceirosIniciais.some(
+                        (p) => p.parceiro.id === linha.id,
+                    );
+
+                    if (parceiroJaExistia) {
+                        // Se já existia, atualiza
+                        await updateFichaTecnicaParceiro(fichaTecnica.id, linha.id, payloadCusto);
+                    } else {
+                        // Se não existia, cria
+                        await createFichaTecnicaParceiro({
+                            ficha_id: fichaTecnica.id,
+                            parceiro_id: linha.id,
+                            ...payloadCusto,
+                        });
+                    }
                 }
             }
 
@@ -207,11 +248,14 @@ export default function TransferenciaEtapaModal({
             }
 
             // 4. Iniciar a nova etapa do fluxo
-            await iniciarFichaEtapa({
+            await createFichaEtapa({
                 ficha_tecnica_id: fichaTecnica.id,
                 etapa_id: proximaEtapa.id,
                 data_inicio: new Date().toISOString(),
             });
+
+            // 5. Atualizar etapa_atual_id da ficha técnica para refletir a nova etapa
+            await updateEtapaFichaTecnica(fichaTecnica.id, proximaEtapa.id);
 
             if (onSuccess) onSuccess();
             onClose();
@@ -229,17 +273,40 @@ export default function TransferenciaEtapaModal({
             {/* CONTAINER PRINCIPAL DO MODAL */}
             <div className="relative w-full max-w-4xl rounded-[24px] bg-white p-8 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
                 {/* CABEÇALHO DO MODAL */}
-                <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center gap-2">
-                        <img
-                            src="/transferencia.png"
-                            alt="Ícone"
-                            className="w-6 h-6 object-contain"
-                        />
-                        <h2 className="text-[22px] font-light text-[#404040]">
-                            Transferência para {proximaEtapa.nome}
-                        </h2>
+                <div className="flex items-start justify-between mb-8">
+                    <div className="flex flex-col">
+                        <div className="flex items-center gap-2">
+                            <img
+                                src="/transferencia.png"
+                                alt="Ícone"
+                                className="w-6 h-6 object-contain"
+                            />
+                            <h2 className="text-[22px] font-light text-[#404040] leading-none">
+                                Transferência para {proximaEtapa.nome}
+                            </h2>
+                        </div>
+
+                        <div className="text-[14px] font-light text-[#7B7D80] ml-9 mt-1 leading-none">
+                            {[
+                                fichaTecnica?.pedido?.numero
+                                    ? `Nº${fichaTecnica.pedido.numero}`
+                                    : null,
+                                fichaTecnica?.id ? `Ficha Técnica: ${fichaTecnica.id}` : null,
+                                fichaTecnica?.pedido?.cliente?.nome || null,
+                            ]
+                                .filter(Boolean)
+                                .map((texto, index, arrayOriginal) => (
+                                    <React.Fragment key={index}>
+                                        {texto}
+                                        {/* Insere a barra colorida apenas se não for o último item da lista */}
+                                        {index < arrayOriginal.length - 1 && (
+                                            <span className="text-[#D9D9D9] mx-2">|</span>
+                                        )}
+                                    </React.Fragment>
+                                ))}
+                        </div>
                     </div>
+
                     <button onClick={onClose} className="rounded-full p-2 transition-colors">
                         <img src="/fechar-cinza.png" alt="Fechar" className="w-3 h-3 opacity-50" />
                     </button>
@@ -262,7 +329,7 @@ export default function TransferenciaEtapaModal({
 
                                     const linkIcone = isConcluida
                                         ? etapa.icone_verde?.link
-                                        : etapa.icone?.link;
+                                        : etapa.icone_cinza?.link;
 
                                     const estiloCaixa = isConcluida
                                         ? "bg-[#FBFFF0] border-[#B4D64E] text-[#B4D64E]"
@@ -494,7 +561,7 @@ export default function TransferenciaEtapaModal({
                                                                     );
                                                                 }}
                                                                 placeholder="-"
-                                                                className="w-full h-[32px] border-0 bg-transparent text-center text-[14px] outline-none focus:ring-0 text-[#898C8F] font-light"
+                                                                className="w-full h-[32px] border-0 bg-transparent text-center text-[14px] outline-none focus:ring-0 text-[#898C8F] font-light [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0"
                                                             />
                                                         </div>
                                                     )}
