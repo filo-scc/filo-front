@@ -17,6 +17,8 @@ import {
     updateParceiroProdutoPrice,
     createParceiroProduto,
 } from "../services/fichaTecnicaItemService";
+import { iniciarFichaEtapa } from "../services/fichasTecnicasService";
+import { createFichaParceiro } from "../services/fichaParceiroService";
 import { createPedido } from "../services/pedidoService";
 import { getPedidosByFabricoId } from "../services/pedidoService";
 
@@ -587,26 +589,40 @@ export default function PedidosCadastrar() {
                     await saveFichaTecnicaItens(novaFicha.id, itensParaSalvar);
                 }
 
+                const etapaIdAtual = ficha.etapa_atual_id || etapaIdFallback;
+                if (etapaIdAtual) {
+                    try {
+                        await iniciarFichaEtapa(novaFicha.id, etapaIdAtual);
+                    } catch (err) {
+                        if (err?.response?.status !== 409) {
+                            console.error("Erro ao registrar ficha_etapa:", err);
+                        }
+                    }
+                }
+
+                // Sincronizar Parceiros atribuídos
                 if (ficha.parceiroRows?.length > 0) {
+                    const totalParceiros = ficha.parceiroRows.length;
+
                     for (const parceiro of ficha.parceiroRows) {
+                        let precoFormatado = 0;
+
+                        if (parceiro.preco) {
+                            precoFormatado =
+                                typeof parceiro.preco === "string"
+                                    ? parseFloat(
+                                          parceiro.preco
+                                              .replace(",", ".")
+                                              .replace("R$ ", "")
+                                              .trim(),
+                                      ) || 0
+                                    : Number(parceiro.preco);
+                        }
+
+                        const parceiroIdFinal = parceiro.parceiroId || parceiro.id;
+                        const produtoIdFinal = pId;
+
                         try {
-                            let precoFormatado = 0;
-
-                            if (parceiro.preco) {
-                                precoFormatado =
-                                    typeof parceiro.preco === "string"
-                                        ? parseFloat(
-                                              parceiro.preco
-                                                  .replace(",", ".")
-                                                  .replace("R$ ", "")
-                                                  .trim(),
-                                          ) || 0
-                                        : Number(parceiro.preco);
-                            }
-
-                            const parceiroIdFinal = parceiro.parceiroId || parceiro.id;
-                            const produtoIdFinal = pId;
-
                             if (parceiro.isNew === false) {
                                 await updateParceiroProdutoPrice(
                                     parceiroIdFinal,
@@ -623,6 +639,52 @@ export default function PedidosCadastrar() {
                         } catch (err) {
                             console.error(
                                 `Erro ao processar parceiro ${parceiro.parceiroId || parceiro.id}:`,
+                                err,
+                            );
+                        }
+                        try {
+                            let valorFinal = undefined;
+                            let quantidadeFinal = undefined;
+
+                            if (totalParceiros === 1) {
+                                quantidadeFinal = Number(ficha.quantidade);
+                                const calculo = quantidadeFinal * precoFormatado;
+                                valorFinal = Number(calculo.toFixed(2));
+                            }
+
+                            await createFichaParceiro(
+                                novaFicha.id,
+                                parceiroIdFinal,
+                                parceiro.operacao || null,
+                                valorFinal,
+                                quantidadeFinal,
+                            );
+                        } catch (err) {
+                            console.error(
+                                `Erro ao criar Ficha-Parceiro para o id ${parceiroIdFinal}`,
+                                err,
+                            );
+                        }
+                        try {
+                            let valorFinal = undefined;
+                            let quantidadeFinal = undefined;
+
+                            if (totalParceiros === 1) {
+                                quantidadeFinal = Number(ficha.quantidade);
+                                const calculo = quantidadeFinal * precoFormatado;
+                                valorFinal = Number(calculo.toFixed(2));
+                            }
+
+                            await createFichaParceiro(
+                                novaFicha.id,
+                                parceiroIdFinal,
+                                parceiro.operacao || null,
+                                valorFinal,
+                                quantidadeFinal,
+                            );
+                        } catch (err) {
+                            console.error(
+                                `Erro ao criar Ficha-Parceiro para o id ${parceiroIdFinal}`,
                                 err,
                             );
                         }
