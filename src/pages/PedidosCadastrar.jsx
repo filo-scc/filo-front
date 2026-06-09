@@ -220,23 +220,22 @@ export default function PedidosCadastrar() {
 
         const carregarNumeroDoPedido = async () => {
             try {
-                const pedidos_do_fabrico = await getPedidosByFabricoId(fabricoId);
+                const resposta = await getPedidosByFabricoId(fabricoId);
 
                 if (ignorar) return;
 
-                setPedidosExistentes(pedidos_do_fabrico || []);
+                // Garante que extraímos o Array corretamente, mesmo se a API retornar dentro de .data
+                const pedidos_do_fabrico = Array.isArray(resposta)
+                    ? resposta
+                    : resposta?.data || resposta?.pedidos || [];
 
-                if (!pedidos_do_fabrico || pedidos_do_fabrico.length === 0) {
-                    setNumeroPedido("1");
-                    return;
-                }
+                // Guarda a lista para uso posterior no restante do componente
+                setPedidosExistentes(pedidos_do_fabrico);
 
-                const maiorNumero = pedidos_do_fabrico.reduce((maior, pedido) => {
-                    const numero = primeiroNumeroValido(pedido.numero);
-                    return numero > maior ? numero : maior;
-                }, 0);
+                // Objetivo: Contar o número de pedidos atuais e somar 1 para o próximo
+                const proximoNumero = pedidos_do_fabrico.length + 1;
 
-                setNumeroPedido(String(maiorNumero + 1));
+                setNumeroPedido(String(proximoNumero));
             } catch (error) {
                 console.error("Erro ao gerar o número do pedido:", error);
                 if (!ignorar) setNumeroPedido("-");
@@ -620,8 +619,8 @@ export default function PedidosCadastrar() {
 
     return (
         <>
-            {/* Contentor principal alinhado ao padrão da Home */}
-            <div className="p-6 pt-0 mt-6 w-full relative z-0 font-['Outfit',_sans-serif]">
+            {/* Contentor principal idêntico ao de Clientes (p-6 pt-0 w-full relative z-0) */}
+            <div className="p-6 pt-0 w-full relative z-0 font-['Outfit',_sans-serif]">
                 {/* Card de Fundo Branco com o mesmo arredondamento, sombra e comportamento responsivo de Clientes */}
                 <div className="bg-white p-10 rounded-[24px] shadow-sm w-full mx-auto">
                     {/* 1. CABEÇALHO: Título da tela e número do pedido */}
