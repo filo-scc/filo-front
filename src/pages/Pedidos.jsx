@@ -131,7 +131,7 @@ const Pedidos = () => {
                     </div>
                 ) : (
                     <div className="w-full overflow-visible">
-                        <div className="min-w-max border border-[#D9D9D9] rounded-xl font-light text-[16px]">
+                        <div className="min-w-max border border-[#D9D9D9] rounded-xl font-light text-[16px] overflow-hidden">
                             <table className="w-full text-left border-collapse relative z-10">
                                 <thead>
                                     <tr className="bg-[#C9EAF6] text-[#4696AD]">
