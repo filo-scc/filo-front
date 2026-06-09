@@ -425,7 +425,6 @@ export default function FichaTecnicaModal({
 
     return (
         <>
-            <style>{`.scrollbar-sutil::-webkit-scrollbar { width: 4px; height: 4px; } .scrollbar-sutil::-webkit-scrollbar-thumb { background-color: #d6d6d6; border-radius: 999px; }`}</style>
             <div
                 className="fixed inset-0 z-[999] flex items-center justify-center bg-black/35 px-4 py-6 backdrop-blur-sm font-['Outfit',_sans-serif]"
                 onClick={handleForceClose}

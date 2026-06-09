@@ -367,7 +367,7 @@ function ModalClientesDoProduto({
                     />
                 </div>
 
-                <div className="max-h-[280px] overflow-y-auto pr-2">
+                <div className="max-h-[280px] overflow-y-auto pr-2 scrollbar-sutil">
                     {loading ? (
                         <div className="flex justify-center py-12 text-[#4696AD]">
                             Buscando clientes...
@@ -699,7 +699,7 @@ export default function ProdutoEditar() {
     }
 
     return (
-        <div className="p-6 pt-0 w-full flex justify-center font-Outfit">
+        <div className="p-6 pt-0 mt-6 w-full flex justify-center font-Outfit">
             <div className="bg-white p-8 rounded-[24px] shadow-sm w-full min-h-[650px]">
                 <ProdutoDetalhesHeader
                     title="Editar produto"

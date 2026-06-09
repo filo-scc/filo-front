@@ -176,7 +176,7 @@ const ParceiroCadastro = () => {
         "border border-[#D3D3D3] rounded-[10px] px-3 h-[39px] text-sm text-gray-600 focus:outline-none";
 
     return (
-        <div className="w-full flex justify-center px-6">
+        <div className="w-full flex justify-center px-6 mt-6">
             <div className="bg-white p-14 lg:px-19 lg:py-8 rounded-[24px] shadow-sm w-full max-w-[1400px] mx-auto">
                 {/* Título */}
                 <div className="flex items-center gap-3 mb-10 text-gray-800">
@@ -232,7 +232,7 @@ const ParceiroCadastro = () => {
                                             onClick={() => setDropdownEtapaAberto(false)}
                                         ></div>
 
-                                        <div className="absolute z-20 mt-1 w-full bg-white border border-[#D3D3D3] rounded-[10px] shadow-lg overflow-hidden max-h-60 overflow-y-auto">
+                                        <div className="absolute z-20 mt-1 w-full bg-white border border-[#D3D3D3] rounded-[10px] shadow-lg overflow-hidden max-h-60 overflow-y-auto scrollbar-sutil">
                                             {etapas.map((etapa) => (
                                                 <div
                                                     key={etapa.id}

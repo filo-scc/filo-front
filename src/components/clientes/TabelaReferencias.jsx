@@ -110,6 +110,7 @@ export default function TabelaReferencias({
     const borderStyle = { borderColor };
     const podeRemover = Boolean(onRemoverLinha);
     const podeEditar = Boolean(onSalvarEdicao);
+    const mostrarColunaAcoes = produtos.length > 0 && (podeRemover || podeEditar);
     const ultimo = produtos.length - 1;
 
     const celulasLinha = (item, isEditing) => (
@@ -170,9 +171,11 @@ export default function TabelaReferencias({
             <h3 className="text-[18px] font-Outfit font-normal text-[#404040] mb-4">{title}</h3>
             <div className="flex flex-col w-full">
                 {/* Header */}
-                <div className="flex flex-row items-stretch gap-4 w-full">
+                <div
+                    className={`flex flex-row items-stretch w-full ${mostrarColunaAcoes ? "gap-4" : ""}`}
+                >
                     <div
-                        className="flex-1 rounded-t-[10px] border overflow-hidden"
+                        className={`${mostrarColunaAcoes ? "flex-1" : "w-full"} rounded-t-[10px] border overflow-hidden`}
                         style={borderStyle}
                     >
                         <div
@@ -199,7 +202,7 @@ export default function TabelaReferencias({
                             </div>
                         </div>
                     </div>
-                    <div className="w-[30px] shrink-0" />
+                    {mostrarColunaAcoes ? <div className="w-[30px] shrink-0" /> : null}
                 </div>
 
                 {/* Rows */}
@@ -209,37 +212,39 @@ export default function TabelaReferencias({
                     return (
                         <div
                             key={idAtual || idx}
-                            className="flex flex-row items-center gap-4 w-full group/row"
+                            className={`flex flex-row items-center w-full group/row ${mostrarColunaAcoes ? "gap-4" : ""}`}
                         >
                             <div
-                                className={`flex-1 border-l border-r border-b overflow-hidden h-[152px] ${idx === ultimo ? "rounded-b-[10px]" : ""}`}
+                                className={`${mostrarColunaAcoes ? "flex-1" : "w-full"} border-l border-r border-b overflow-hidden h-[152px] ${idx === ultimo ? "rounded-b-[10px]" : ""}`}
                                 style={borderStyle}
                             >
                                 <div className={`${gridColsClass} w-full h-full items-center`}>
                                     {celulasLinha(item, isEditing)}
                                 </div>
                             </div>
-                            <div className="w-[30px] shrink-0 flex flex-col items-center gap-3">
-                                {isEditing ? (
-                                    <button
-                                        onClick={() => handleSalvarClick(idAtual)}
-                                        disabled={loading}
-                                    >
-                                        <IconeSalvar />
-                                    </button>
-                                ) : (
-                                    podeEditar && (
-                                        <button onClick={() => handleIniciarEdicao(item)}>
-                                            <IconeEditar />
+                            {mostrarColunaAcoes ? (
+                                <div className="w-[30px] shrink-0 flex flex-col items-center gap-3">
+                                    {isEditing ? (
+                                        <button
+                                            onClick={() => handleSalvarClick(idAtual)}
+                                            disabled={loading}
+                                        >
+                                            <IconeSalvar />
                                         </button>
-                                    )
-                                )}
-                                {podeRemover && (
-                                    <button onClick={() => onRemoverLinha(item, idx)}>
-                                        <IconeLixeira />
-                                    </button>
-                                )}
-                            </div>
+                                    ) : (
+                                        podeEditar && (
+                                            <button onClick={() => handleIniciarEdicao(item)}>
+                                                <IconeEditar />
+                                            </button>
+                                        )
+                                    )}
+                                    {podeRemover && (
+                                        <button onClick={() => onRemoverLinha(item, idx)}>
+                                            <IconeLixeira />
+                                        </button>
+                                    )}
+                                </div>
+                            ) : null}
                         </div>
                     );
                 })}

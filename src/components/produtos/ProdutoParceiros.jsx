@@ -127,23 +127,6 @@ const ProdutoParceiros = ({
 
     return (
         <>
-            <style>
-                {`
-                .scrollbar-sutil::-webkit-scrollbar {
-                    width: 4px;
-                }
-
-                .scrollbar-sutil::-webkit-scrollbar-track {
-                    background: transparent;
-                }
-
-                .scrollbar-sutil::-webkit-scrollbar-thumb {
-                    background-color: #d1d5db;
-                    border-radius: 10px;
-                }
-            `}
-            </style>
-
             <div
                 className="fixed inset-0 bg-black/35 backdrop-blur-sm flex items-center justify-center z-[999]"
                 onClick={onClose}

@@ -315,9 +315,9 @@ export default function ClientesCadastrar() {
     };
 
     return (
-        <div className="w-full max-w-[1200px] xl:max-w-none mx-auto font-['Outfit',_sans-serif]">
-            <div className="bg-white p-8 sm:p-10 rounded-[32px] shadow-[0_8px_40px_rgba(70,150,173,0.08)] border border-[#F0F4F6] w-full">
-                <div className="flex items-center gap-3 mb-10">
+        <div className="p-6 pt-0 mt-6 w-full">
+            <div className="bg-white p-8 rounded-[24px] shadow-sm w-full mx-auto">
+                <div className="flex items-center gap-3 mb-8 pl-6 font-['Outfit',_sans-serif]">
                     <img
                         src="/add-star-preto.png"
                         alt=""
@@ -487,7 +487,7 @@ export default function ClientesCadastrar() {
                             </div>
                         </div>
 
-                        <div className="max-h-[280px] overflow-y-auto pr-2">
+                        <div className="max-h-[280px] overflow-y-auto pr-2 scrollbar-sutil">
                             {loadingReferencias ? (
                                 <div className="flex justify-center items-center h-[150px] text-[#4696AD]">
                                     Buscando produtos...

@@ -223,23 +223,22 @@ export default function PedidosCadastrar() {
 
         const carregarNumeroDoPedido = async () => {
             try {
-                const pedidos_do_fabrico = await getPedidosByFabricoId(fabricoId);
+                const resposta = await getPedidosByFabricoId(fabricoId);
 
                 if (ignorar) return;
 
-                setPedidosExistentes(pedidos_do_fabrico || []);
+                // Garante que extraímos o Array corretamente, mesmo se a API retornar dentro de .data
+                const pedidos_do_fabrico = Array.isArray(resposta)
+                    ? resposta
+                    : resposta?.data || resposta?.pedidos || [];
 
-                if (!pedidos_do_fabrico || pedidos_do_fabrico.length === 0) {
-                    setNumeroPedido("1");
-                    return;
-                }
+                // Guarda a lista para uso posterior no restante do componente
+                setPedidosExistentes(pedidos_do_fabrico);
 
-                const maiorNumero = pedidos_do_fabrico.reduce((maior, pedido) => {
-                    const numero = primeiroNumeroValido(pedido.numero);
-                    return numero > maior ? numero : maior;
-                }, 0);
+                // Objetivo: Contar o número de pedidos atuais e somar 1 para o próximo
+                const proximoNumero = pedidos_do_fabrico.length + 1;
 
-                setNumeroPedido(String(maiorNumero + 1));
+                setNumeroPedido(String(proximoNumero));
             } catch (error) {
                 console.error("Erro ao gerar o número do pedido:", error);
                 if (!ignorar) setNumeroPedido("-");

@@ -366,7 +366,7 @@ export default function ProdutoCadastar() {
     };
 
     return (
-        <div className="w-full px-6 pt-0">
+        <div className="w-full px-6 pt-0 mt-6">
             <div className="bg-white rounded-[24px] w-full min-h-[650px] px-8 py-7 lg:px-12 lg:py-8">
                 <ProdutoDetalhesHeader
                     title="Cadastrar produto"

@@ -184,7 +184,7 @@ const EditarParceiro = () => {
 
     if (loading) {
         return (
-            <div className="p-6 pt-0 w-full">
+            <div className="p-6 pt-0 mt-6 w-full">
                 <div className="bg-white p-8 rounded-[24px] shadow-sm w-full mx-auto">
                     <div className="flex items-center gap-3 mb-10">
                         <img
@@ -202,7 +202,7 @@ const EditarParceiro = () => {
 
     return (
         <>
-            <div className="p-6 pt-0 w-full">
+            <div className="p-6 pt-0 mt-6 w-full">
                 <div className="bg-white p-8 rounded-[24px] shadow-sm w-full mx-auto">
                     {/* Título */}
                     <div className="flex items-center gap-3 mb-10 pl-6 text-gray-800">
