@@ -25,11 +25,7 @@ export default function Home() {
 
     const mensagem = location.state?.error;
     const labelNovaFicha =
-        producaoSobDemanda === null
-            ? ""
-            : producaoSobDemanda
-              ? "Novo pedido"
-              : "Nova produção";
+        producaoSobDemanda === null ? "" : producaoSobDemanda ? "Novo pedido" : "Nova produção";
 
     useEffect(() => {
         if (mostrarErro) {
