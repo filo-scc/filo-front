@@ -97,7 +97,7 @@ export default function TransferenciaEtapaModal({
                         id: fp.parceiro.id,
                         nome: fp.parceiro.nome,
                         operacao: fp.operacao || "",
-                        quantidade: fichaTecnica.quantidade,
+                        quantidade: fp.quantidade,
                         custoTotalFormatado: formatarMoedaBR(fp.custo ? Number(fp.custo) : 0),
                     }));
 
