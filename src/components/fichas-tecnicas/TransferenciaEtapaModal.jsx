@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { getAllEtapasByFabricoId } from "../../services/etapaService";
 import { getParceirosByFabrico } from "../../services/parceiroService";
-import { updateParceiroProdutoPrice } from "../../services/fichaTecnicaItemService";
+import {
+    createParceiroProduto,
+    getProdutoParceiro,
+    updateParceiroProdutoPrice,
+} from "../../services/fichaTecnicaItemService";
 import {
     finalizarFichaEtapa,
     getFichaEtapaByFichaTecnica,
@@ -10,7 +14,8 @@ import {
 
 import {
     getFichaParceiroByFicha,
-    upsertFichaTecnicaParceiro,
+    createFichaTecnicaParceiro,
+    updateFichaTecnicaParceiro,
 } from "../../services/fichaParceiroService";
 import { createFichaEtapa } from "../../services/fichaEtapaService";
 
@@ -32,6 +37,7 @@ export default function TransferenciaEtapaModal({
     const [dropdownAberto, setDropdownAberto] = useState(false);
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [parceirosIniciais, setParceirosIniciais] = useState([]);
 
     // Estados para o comportamento visual da nova tabela
     const [hoveredParceiroIndex, setHoveredParceiroIndex] = useState(null);
@@ -78,6 +84,9 @@ export default function TransferenciaEtapaModal({
 
                 // 3. Buscar parceiros já associados a esta Ficha Técnica
                 const parceirosExistentes = await getFichaParceiroByFicha(fichaTecnica.id);
+
+                setParceirosIniciais(parceirosExistentes);
+
                 const jaVinculadosDestaEtapa = parceirosExistentes
                     .filter(
                         (fp) =>
@@ -88,8 +97,8 @@ export default function TransferenciaEtapaModal({
                         id: fp.parceiro.id,
                         nome: fp.parceiro.nome,
                         operacao: fp.operacao || "",
-                        quantidade: fp.quantidade || fichaTecnica.quantidade,
-                        custoTotalFormatado: formatarMoedaBR(fp.custo ? Number(fp.custo) * 100 : 0),
+                        quantidade: fichaTecnica.quantidade,
+                        custoTotalFormatado: formatarMoedaBR(fp.custo ? Number(fp.custo) : 0),
                     }));
 
                 setLinhasTabela(jaVinculadosDestaEtapa);
@@ -182,19 +191,50 @@ export default function TransferenciaEtapaModal({
                     const precoUnitario = qtdAlocada > 0 ? custoTotal / qtdAlocada : 0;
 
                     // Passos de Negócio mapeados:
-                    // 1. Atualizar preço da relação parceiro_produto
-                    await updateParceiroProdutoPrice(
-                        linha.id,
+                    // 1 - Ver se existe parceiro_produto
+                    const parceiro_produto = await getProdutoParceiro(
                         fichaTecnica.produto_id,
-                        precoUnitario,
+                        linha.id,
                     );
 
-                    // 2. Criar ou atualizar o registro de ficha_tecnica_parceiro
-                    await upsertFichaTecnicaParceiro(fichaTecnica.id, linha.id, {
+                    if (parceiro_produto) {
+                        // 1. Atualizar preço da relação parceiro_produto
+                        await updateParceiroProdutoPrice(
+                            linha.id,
+                            fichaTecnica.produto_id,
+                            precoUnitario,
+                        );
+                    } else {
+                        // 2. Criar relação parceiro_produto
+                        await createParceiroProduto(
+                            linha.id,
+                            fichaTecnica.produto_id,
+                            precoUnitario,
+                        );
+                    }
+
+                    const payloadCusto = {
                         operacao: linha.operacao,
                         custo: custoTotal,
                         quantidade: qtdAlocada,
-                    });
+                    };
+
+                    // Analisa se a relação já existia antes de fazer qualquer requisição
+                    const parceiroJaExistia = parceirosIniciais.some(
+                        (p) => p.parceiro.id === linha.id,
+                    );
+
+                    if (parceiroJaExistia) {
+                        // Se já existia, atualiza
+                        await updateFichaTecnicaParceiro(fichaTecnica.id, linha.id, payloadCusto);
+                    } else {
+                        // Se não existia, cria
+                        await createFichaTecnicaParceiro({
+                            ficha_id: fichaTecnica.id,
+                            parceiro_id: linha.id,
+                            ...payloadCusto,
+                        });
+                    }
                 }
             }
 
