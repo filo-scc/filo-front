@@ -220,23 +220,22 @@ export default function PedidosCadastrar() {
 
         const carregarNumeroDoPedido = async () => {
             try {
-                const pedidos_do_fabrico = await getPedidosByFabricoId(fabricoId);
+                const resposta = await getPedidosByFabricoId(fabricoId);
 
                 if (ignorar) return;
 
-                setPedidosExistentes(pedidos_do_fabrico || []);
+                // Garante que extraímos o Array corretamente, mesmo se a API retornar dentro de .data
+                const pedidos_do_fabrico = Array.isArray(resposta)
+                    ? resposta
+                    : resposta?.data || resposta?.pedidos || [];
 
-                if (!pedidos_do_fabrico || pedidos_do_fabrico.length === 0) {
-                    setNumeroPedido("1");
-                    return;
-                }
+                // Guarda a lista para uso posterior no restante do componente
+                setPedidosExistentes(pedidos_do_fabrico);
 
-                const maiorNumero = pedidos_do_fabrico.reduce((maior, pedido) => {
-                    const numero = primeiroNumeroValido(pedido.numero);
-                    return numero > maior ? numero : maior;
-                }, 0);
+                // Objetivo: Contar o número de pedidos atuais e somar 1 para o próximo
+                const proximoNumero = pedidos_do_fabrico.length + 1;
 
-                setNumeroPedido(String(maiorNumero + 1));
+                setNumeroPedido(String(proximoNumero));
             } catch (error) {
                 console.error("Erro ao gerar o número do pedido:", error);
                 if (!ignorar) setNumeroPedido("-");
@@ -620,42 +619,6 @@ export default function PedidosCadastrar() {
 
     return (
         <>
-            <style>{`
-                /* ========================================================
-                   1. SCROLLBAR DA PÁGINA GLOBAL (Aplica na tela inteira)
-                   ======================================================== */
-                ::-webkit-scrollbar {
-                    width: 6px; /* Largura sutil, mas confortável para a página */
-                    height: 6px;
-                }
-                ::-webkit-scrollbar-track {
-                    background: transparent; /* Trilho invisível para um visual limpo */
-                }
-                ::-webkit-scrollbar-thumb {
-                    background-color: #d6d6d6;
-                    border-radius: 999px;
-                }
-                ::-webkit-scrollbar-thumb:hover {
-                    background-color: #bcbcbc; /* Escurece sutilmente ao passar o mouse */
-                }
-
-                /* ========================================================
-                   2. SCROLLBAR INTERNA DOS DROPDOWNS (.scrollbar-sutil)
-                   ======================================================== */
-                .scrollbar-sutil::-webkit-scrollbar { 
-                    width: 4px; 
-                    height: 4px; 
-                } 
-                .scrollbar-sutil::-webkit-scrollbar-thumb { 
-                    background-color: #d6d6d6; 
-                    border-radius: 999px; 
-                }
-                /* Recuo para o scroll do dropdown respeitar os cantos arredondados de 14px e não vazar */
-                .scrollbar-sutil::-webkit-scrollbar-track {
-                    margin-top: 8px;
-                    margin-bottom: 8px;
-                }
-            `}</style>
             {/* Contentor principal idêntico ao de Clientes (p-6 pt-0 w-full relative z-0) */}
             <div className="p-6 pt-0 w-full relative z-0 font-['Outfit',_sans-serif]">
                 {/* Card de Fundo Branco com o mesmo arredondamento, sombra e comportamento responsivo de Clientes */}
