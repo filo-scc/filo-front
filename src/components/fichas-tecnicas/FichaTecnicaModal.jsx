@@ -856,7 +856,7 @@ export default function FichaTecnicaModal({
                                             Operação
                                         </div>
                                         <div className="bg-[#C9EAF6] rounded-tr-[10px] px-4 py-2.5 h-10">
-                                            Preço
+                                            Preço Unitário
                                         </div>
                                     </div>
                                     <div className="relative">

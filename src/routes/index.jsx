@@ -16,6 +16,7 @@ import ProdutoEditar from "../pages/ProdutoEditar";
 import ParceiroCadastro from "../pages/ParceiroCadastro";
 import ProdutoCadastar from "../pages/ProdutoCadastrar";
 import PedidosCadastar from "../pages/PedidosCadastrar";
+import Pedidos from "../pages/Pedidos";
 
 function AppRoutes() {
     return (
@@ -154,9 +155,7 @@ function AppRoutes() {
                     element={
                         <PrivateRoute>
                             <Layout>
-                                <div className="flex justify-center items-center h-full text-gray-500 text-2xl font-light">
-                                    Página de Pedidos em construção...
-                                </div>
+                                <Pedidos />
                             </Layout>
                         </PrivateRoute>
                     }
