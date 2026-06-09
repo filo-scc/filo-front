@@ -306,7 +306,7 @@ export default function TransferenciaEtapaModal({
 
                                     const linkIcone = isConcluida
                                         ? etapa.icone_verde?.link
-                                        : etapa.icone?.link;
+                                        : etapa.icone_cinza?.link;
 
                                     const estiloCaixa = isConcluida
                                         ? "bg-[#FBFFF0] border-[#B4D64E] text-[#B4D64E]"
