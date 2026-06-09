@@ -13,7 +13,18 @@ const ProdutoCard = ({ id, nome, tipo, data, foto }) => {
         >
             {/* Contêiner da Imagem */}
             <div className="relative w-full h-[155px] bg-white rounded-t-[14px] rounded-b-[4px] overflow-hidden">
-                <img src={foto} alt={nome} className="w-full h-full object-cover" />
+                {/* VALIDAÇÃO DA IMAGEM */}
+                {foto ? (
+                    <img src={foto} alt={nome} className="w-full h-full object-cover" />
+                ) : (
+                    <div className="w-full h-full bg-[#E5E7EB] flex items-center justify-center text-center p-4">
+                        <img
+                            src="/image-delete-02-2.png"
+                            alt="Sem imagem"
+                            className="w-[65px] h-[65px] mb-2 object-contain"
+                        />
+                    </div>
+                )}
 
                 {/* Overlay Gradiente: Azul do ModalReferencias (40% opacidade) */}
                 <div className="absolute inset-0 z-10 bg-gradient-to-t from-[#4696AD]/40 via-transparent via-50% to-transparent" />
@@ -23,6 +34,7 @@ const ProdutoCard = ({ id, nome, tipo, data, foto }) => {
                     <img
                         src="/etiqueta-branca.png"
                         className="w-[14px] h-[14px] shrink-0 object-contain"
+                        alt="Etiqueta"
                     />
                     <span className="text-white text-[14px] font-normal tracking-wide drop-shadow-sm truncate block">
                         {nome}
@@ -148,7 +160,7 @@ export default function Produtos() {
                                         ? `Criado em ${new Date(produto.created_at).toLocaleDateString()}`
                                         : "Sem data"
                                 }
-                                foto={produto.foto || "https://via.placeholder.com/400x300"}
+                                foto={produto.foto}
                             />
                         ))
                     )}
