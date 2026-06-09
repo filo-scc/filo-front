@@ -18,10 +18,10 @@ jobs:
   validate-pr-flow:
     name: Validate PR Flow
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
 
     steps:
       - name: Validar branch de destino
+        if: github.event_name == 'pull_request'
         env:
           BASE_BRANCH: ${{ github.base_ref }}
           HEAD_BRANCH: ${{ github.head_ref }}
@@ -35,6 +35,10 @@ jobs:
             echo "PRs para develop devem sair de branches de trabalho versionadas por prefixo: feature/*, fix/*, infra/*, chore/*, refactor/*, docs/* ou test/*."
             exit 1
           fi
+
+      - name: Validar push permitido
+        if: github.event_name == 'push'
+        run: echo "Push em branch monitorada pelo workflow; fluxo de PR não se aplica."
 
   validate-and-build:
     name: Lint, Format & Build
