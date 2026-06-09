@@ -5,6 +5,7 @@ import { getFabricoById } from "../services/fabricoService";
 import { getFichaTecnicaByFabrico } from "../services/fichasTecnicasService";
 import { getMe } from "../services/authService";
 import TransferenciaEtapaModal from "../components/fichas-tecnicas/TransferenciaEtapaModal";
+import HomeSkeleton from "../components/home/HomeSkeleton";
 
 export default function Home() {
     const location = useLocation();
@@ -40,6 +41,9 @@ export default function Home() {
     const carregarDadosDoQuadro = async () => {
         setLoading(true);
         try {
+            // Delay temporário para validar visualmente o skeleton em ambiente local.
+            await new Promise((resolve) => setTimeout(resolve, 1500));
+
             const dadosUsuario = await getMe();
             const fId = dadosUsuario.fabrico_id;
             setFabricoId(fId);
@@ -193,247 +197,252 @@ export default function Home() {
             )}
 
             <div className="bg-white px-6 py-8 rounded-[24px] shadow-sm h-[calc(100vh-120px)] w-full flex flex-col relative overflow-hidden min-w-0">
-                <div className="flex justify-between items-center mb-8 shrink-0">
-                    <h1 className="font-normal text-base text-[#404040] flex items-center gap-2">
-                        <span className="flex items-center">
-                            <img
-                                src="icone-quadro-producao.png"
-                                alt="Ícone Quadro Produção"
-                                className="w-5 h-5 shrink-0 object-contain"
-                            />
-                        </span>
-                        Quadro de produção
-                    </h1>
-                    <button
-                        onClick={() => navigate("/pedidos/cadastrar")}
-                        disabled={producaoSobDemanda === null}
-                        aria-busy={producaoSobDemanda === null}
-                        className="w-[169px] h-[39px] bg-[#A9E2F2] text-[#4696AD] font-normal text-base rounded-full flex items-center justify-center gap-2 shrink-0"
-                    >
-                        <span className="flex items-center w-4 h-4 relative">
-                            <img
-                                src="nova-ficha-azul.png"
-                                alt="Ícone Nova ficha"
-                                className="w-full h-full object-contain"
-                            />
-                        </span>
-                        <span className="min-w-[103px]">{labelNovaFicha}</span>
-                    </button>
-                </div>
-
                 {loading ? (
-                    <div className="flex-1 flex items-center justify-center text-gray-400">
-                        Carregando quadro...
-                    </div>
+                    <HomeSkeleton />
                 ) : (
-                    <div className="relative flex-1 min-h-0 min-w-0 overflow-hidden">
-                        {mostrarSetaEsquerda && (
+                    <>
+                        <div className="flex justify-between items-center mb-8 shrink-0">
+                            <h1 className="font-normal text-base text-[#404040] flex items-center gap-2">
+                                <span className="flex items-center">
+                                    <img
+                                        src="icone-quadro-producao.png"
+                                        alt="Ícone Quadro Produção"
+                                        className="w-5 h-5 shrink-0 object-contain"
+                                    />
+                                </span>
+                                Quadro de produção
+                            </h1>
                             <button
-                                onClick={rolarParaEsquerda}
-                                className="absolute left-0 top-1/2 -translate-y-1/2 bg-[#AEE5E8] text-[#347A8A] w-10 h-10 rounded-r-xl shadow-md flex items-center justify-center hover:bg-[#9cdfe2] transition-colors z-10"
+                                onClick={() => navigate("/pedidos/cadastrar")}
+                                disabled={producaoSobDemanda === null}
+                                aria-busy={producaoSobDemanda === null}
+                                className="w-[169px] h-[39px] bg-[#A9E2F2] text-[#4696AD] font-normal text-base rounded-full flex items-center justify-center gap-2 shrink-0"
                             >
-                                ❮
+                                <span className="flex items-center w-4 h-4 relative">
+                                    <img
+                                        src="nova-ficha-azul.png"
+                                        alt="Ícone Nova ficha"
+                                        className="w-full h-full object-contain"
+                                    />
+                                </span>
+                                <span className="min-w-[103px]">{labelNovaFicha}</span>
                             </button>
-                        )}
+                        </div>
 
-                        <div
-                            ref={scrollRef}
-                            onScroll={handleScroll}
-                            className="flex gap-1 overflow-x-auto overflow-y-hidden h-full pb-4 scroll-smooth no-scrollbar w-full"
-                            style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}
-                        >
-                            {quadro.map((coluna, index) => {
-                                let rounded = "rounded-xl";
+                        <div className="relative flex-1 min-h-0 min-w-0 overflow-hidden">
+                            {mostrarSetaEsquerda && (
+                                <button
+                                    onClick={rolarParaEsquerda}
+                                    className="absolute left-0 top-1/2 -translate-y-1/2 bg-[#AEE5E8] text-[#347A8A] w-10 h-10 rounded-r-xl shadow-md flex items-center justify-center hover:bg-[#9cdfe2] transition-colors z-10"
+                                >
+                                    ❮
+                                </button>
+                            )}
 
-                                if (index === 0) {
-                                    rounded = "rounded-l-[24px] rounded-r-xl";
-                                } else if (index === quadro.length - 1) {
-                                    rounded = "rounded-l-xl rounded-r-[24px]";
-                                }
+                            <div
+                                ref={scrollRef}
+                                onScroll={handleScroll}
+                                className="flex gap-1 overflow-x-auto overflow-y-hidden h-full pb-4 scroll-smooth no-scrollbar w-full"
+                                style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}
+                            >
+                                {quadro.map((coluna, index) => {
+                                    let rounded = "rounded-xl";
 
-                                return (
-                                    <div
-                                        key={coluna.id}
-                                        className={`w-[270px] min-w-[270px] max-h-full bg-[#F4F4F4] ${rounded} p-1 flex flex-col shrink-0`}
-                                        onDragOver={handleDragOver}
-                                        onDrop={(e) => handleDrop(e, coluna.id)}
-                                    >
-                                        <div className="flex justify-between items-center mb-4 px-3 pt-3 shrink-0">
-                                            <h2 className="font-normal text-base text-[#404040] flex items-center gap-2">
-                                                <img
-                                                    src={coluna.icone?.link || ""}
-                                                    alt={`Ícone ${coluna.nome}`}
-                                                    className="w-5 h-5 object-contain shrink-0"
-                                                />
-                                                {coluna.nome}
-                                            </h2>
-                                            <button className="hover:opacity-70 transition-opacity flex items-center justify-center">
-                                                <img
-                                                    src="/tres-pontos.png"
-                                                    alt="Três pontos"
-                                                    className="w-4 h-4 object-contain"
-                                                />
-                                            </button>
-                                        </div>
+                                    if (index === 0) {
+                                        rounded = "rounded-l-[24px] rounded-r-xl";
+                                    } else if (index === quadro.length - 1) {
+                                        rounded = "rounded-l-xl rounded-r-[24px]";
+                                    }
 
-                                        <div className="flex-1 overflow-y-auto pr-1 pb-2 flex flex-col gap-1 min-h-0 scrollbar-sutil">
-                                            {coluna.fichas.map((ficha) => {
-                                                const parceirosVinculados =
-                                                    ficha.produto?.parceiro_produto || [];
-                                                let textoParceiro = "Não designado";
+                                    return (
+                                        <div
+                                            key={coluna.id}
+                                            className={`w-[270px] min-w-[270px] max-h-full bg-[#F4F4F4] ${rounded} p-1 flex flex-col shrink-0`}
+                                            onDragOver={handleDragOver}
+                                            onDrop={(e) => handleDrop(e, coluna.id)}
+                                        >
+                                            <div className="flex justify-between items-center mb-4 px-3 pt-3 shrink-0">
+                                                <h2 className="font-normal text-base text-[#404040] flex items-center gap-2">
+                                                    <img
+                                                        src={coluna.icone?.link || ""}
+                                                        alt={`Ícone ${coluna.nome}`}
+                                                        className="w-5 h-5 object-contain shrink-0"
+                                                    />
+                                                    {coluna.nome}
+                                                </h2>
+                                                <button className="hover:opacity-70 transition-opacity flex items-center justify-center">
+                                                    <img
+                                                        src="/tres-pontos.png"
+                                                        alt="Três pontos"
+                                                        className="w-4 h-4 object-contain"
+                                                    />
+                                                </button>
+                                            </div>
 
-                                                if (parceirosVinculados.length === 1) {
-                                                    textoParceiro =
-                                                        parceirosVinculados[0].parceiro?.nome;
-                                                } else if (parceirosVinculados.length > 1) {
-                                                    textoParceiro = `${parceirosVinculados[0].parceiro?.nome} +${parceirosVinculados.length - 1}`;
-                                                }
+                                            <div className="flex-1 overflow-y-auto pr-1 pb-2 flex flex-col gap-1 min-h-0 scrollbar-sutil">
+                                                {coluna.fichas.map((ficha) => {
+                                                    const parceirosVinculados =
+                                                        ficha.produto?.parceiro_produto || [];
+                                                    let textoParceiro = "Não designado";
 
-                                                let isAtrasado = false;
-                                                if (ficha.pedido?.data_prevista) {
-                                                    const hoje = new Date();
-                                                    hoje.setHours(0, 0, 0, 0);
+                                                    if (parceirosVinculados.length === 1) {
+                                                        textoParceiro =
+                                                            parceirosVinculados[0].parceiro?.nome;
+                                                    } else if (parceirosVinculados.length > 1) {
+                                                        textoParceiro = `${parceirosVinculados[0].parceiro?.nome} +${parceirosVinculados.length - 1}`;
+                                                    }
 
-                                                    const dataFicha = new Date(
-                                                        ficha.pedido.data_prevista,
-                                                    );
-                                                    dataFicha.setHours(0, 0, 0, 0);
+                                                    let isAtrasado = false;
+                                                    if (ficha.pedido?.data_prevista) {
+                                                        const hoje = new Date();
+                                                        hoje.setHours(0, 0, 0, 0);
 
-                                                    isAtrasado = dataFicha < hoje;
-                                                }
+                                                        const dataFicha = new Date(
+                                                            ficha.pedido.data_prevista,
+                                                        );
+                                                        dataFicha.setHours(0, 0, 0, 0);
 
-                                                const corPrincipal = isAtrasado
-                                                    ? "text-[#D75757]"
-                                                    : "text-[#7B7D80]";
-                                                const corParceiro = isAtrasado
-                                                    ? "text-[#E9C6C6]"
-                                                    : "text-gray-400";
+                                                        isAtrasado = dataFicha < hoje;
+                                                    }
 
-                                                return (
-                                                    <div
-                                                        key={ficha.id}
-                                                        className="bg-white p-4 rounded-[10px] shadow-sm border border-gray-100 flex flex-col gap-1.5 relative border-l-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow shrink-0"
-                                                        style={{
-                                                            borderLeftColor:
-                                                                ficha.pedido?.cor || "#ffffff",
-                                                        }}
-                                                        draggable
-                                                        onDragStart={(e) =>
-                                                            handleDragStart(e, ficha.id, coluna.id)
-                                                        }
-                                                        onDragEnd={handleDragEnd}
-                                                    >
+                                                    const corPrincipal = isAtrasado
+                                                        ? "text-[#D75757]"
+                                                        : "text-[#7B7D80]";
+                                                    const corParceiro = isAtrasado
+                                                        ? "text-[#E9C6C6]"
+                                                        : "text-gray-400";
+
+                                                    return (
                                                         <div
-                                                            className={`flex justify-between text-base font-normal ${corPrincipal}`}
+                                                            key={ficha.id}
+                                                            className="bg-white p-4 rounded-[10px] shadow-sm border border-gray-100 flex flex-col gap-1.5 relative border-l-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow shrink-0"
+                                                            style={{
+                                                                borderLeftColor:
+                                                                    ficha.pedido?.cor || "#ffffff",
+                                                            }}
+                                                            draggable
+                                                            onDragStart={(e) =>
+                                                                handleDragStart(
+                                                                    e,
+                                                                    ficha.id,
+                                                                    coluna.id,
+                                                                )
+                                                            }
+                                                            onDragEnd={handleDragEnd}
                                                         >
-                                                            <span className="pointer-events-none break-words max-w-[180px]">
-                                                                {ficha.id}
-                                                                {`${ficha.pedido?.cliente?.nome ? ` - ${ficha.pedido?.cliente?.nome}` : ""}`}
-                                                            </span>
-                                                            <span className="font-light text-xs pointer-events-none">
-                                                                Nº{ficha.pedido?.id || "--"}
-                                                            </span>
-                                                        </div>
-
-                                                        <div
-                                                            className={`text-xs font-light flex flex-col gap-1 pointer-events-none ${corPrincipal}`}
-                                                        >
-                                                            <span className="flex items-start gap-1">
-                                                                <img
-                                                                    src={
-                                                                        isAtrasado
-                                                                            ? "/etiqueta-vermelha.png"
-                                                                            : "/etiqueta_cinza_claro.png"
-                                                                    }
-                                                                    alt="Ícone etiqueta"
-                                                                    className="w-[12px] h-[12px] shrink-0 mt-[2px]"
-                                                                />
-                                                                <span className="break-words">
-                                                                    Ref.{" "}
-                                                                    {ficha.produto?.nome ||
-                                                                        "Produto"}
-                                                                </span>
-                                                            </span>
-
-                                                            <span className="flex items-start gap-1">
-                                                                <img
-                                                                    src={
-                                                                        isAtrasado
-                                                                            ? "/camisa-vermelha.png"
-                                                                            : "/camisa_cinza_clara.png"
-                                                                    }
-                                                                    alt="ícone camisa"
-                                                                    className="w-[12px] h-[12px] shrink-0 mt-[2px]"
-                                                                />
-                                                                <span className="break-words">
-                                                                    {ficha.quantidade} peças
-                                                                </span>
-                                                            </span>
-                                                        </div>
-
-                                                        <div className="flex justify-between items-center pointer-events-none text-xs">
-                                                            <span
-                                                                className={`flex items-center gap-1 ${corParceiro}`}
+                                                            <div
+                                                                className={`flex justify-between text-base font-normal ${corPrincipal}`}
                                                             >
-                                                                <img
-                                                                    src={
-                                                                        isAtrasado
-                                                                            ? "/maquina-costura-rosa-claro.png"
-                                                                            : "/maquina-costura-preta.png"
-                                                                    }
-                                                                    alt="máquina de costura"
-                                                                    className={`w-[12px] h-[12px] shrink-0 ${isAtrasado ? "" : "opacity-40"}`}
-                                                                />
-                                                                <span className="truncate max-w-[120px]">
-                                                                    {textoParceiro}
+                                                                <span className="pointer-events-none break-words max-w-[180px]">
+                                                                    {ficha.id}
+                                                                    {`${ficha.pedido?.cliente?.nome ? ` - ${ficha.pedido?.cliente?.nome}` : ""}`}
                                                                 </span>
-                                                            </span>
+                                                                <span className="font-light text-xs pointer-events-none">
+                                                                    Nº{ficha.pedido?.id || "--"}
+                                                                </span>
+                                                            </div>
 
-                                                            {ficha.pedido?.data_prevista && (
+                                                            <div
+                                                                className={`text-xs font-light flex flex-col gap-1 pointer-events-none ${corPrincipal}`}
+                                                            >
+                                                                <span className="flex items-start gap-1">
+                                                                    <img
+                                                                        src={
+                                                                            isAtrasado
+                                                                                ? "/etiqueta-vermelha.png"
+                                                                                : "/etiqueta_cinza_claro.png"
+                                                                        }
+                                                                        alt="Ícone etiqueta"
+                                                                        className="w-[12px] h-[12px] shrink-0 mt-[2px]"
+                                                                    />
+                                                                    <span className="break-words">
+                                                                        Ref.{" "}
+                                                                        {ficha.produto?.nome ||
+                                                                            "Produto"}
+                                                                    </span>
+                                                                </span>
+
+                                                                <span className="flex items-start gap-1">
+                                                                    <img
+                                                                        src={
+                                                                            isAtrasado
+                                                                                ? "/camisa-vermelha.png"
+                                                                                : "/camisa_cinza_clara.png"
+                                                                        }
+                                                                        alt="ícone camisa"
+                                                                        className="w-[12px] h-[12px] shrink-0 mt-[2px]"
+                                                                    />
+                                                                    <span className="break-words">
+                                                                        {ficha.quantidade} peças
+                                                                    </span>
+                                                                </span>
+                                                            </div>
+
+                                                            <div className="flex justify-between items-center pointer-events-none text-xs">
                                                                 <span
-                                                                    className={`flex items-center gap-1 font-light shrink-0 ${corPrincipal}`}
+                                                                    className={`flex items-center gap-1 ${corParceiro}`}
                                                                 >
                                                                     <img
                                                                         src={
                                                                             isAtrasado
-                                                                                ? "/calendario-vermelho.png"
-                                                                                : "/calendario-prazo.png"
+                                                                                ? "/maquina-costura-rosa-claro.png"
+                                                                                : "/maquina-costura-preta.png"
                                                                         }
-                                                                        alt="calendario"
-                                                                        className="w-[12px] h-[12px] shrink-0"
+                                                                        alt="máquina de costura"
+                                                                        className={`w-[12px] h-[12px] shrink-0 ${isAtrasado ? "" : "opacity-40"}`}
                                                                     />
-                                                                    {new Date(
-                                                                        ficha.pedido.data_prevista,
-                                                                    )
-                                                                        .toLocaleDateString(
-                                                                            "pt-BR",
-                                                                            {
-                                                                                day: "2-digit",
-                                                                                month: "2-digit",
-                                                                            },
-                                                                        )
-                                                                        .replace("/", ".")}
+                                                                    <span className="truncate max-w-[120px]">
+                                                                        {textoParceiro}
+                                                                    </span>
                                                                 </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
 
-                        {mostrarSetaDireita && (
-                            <button
-                                onClick={rolarParaDireita}
-                                className="absolute right-0 top-1/2 -translate-y-1/2 bg-[#AEE5E8] text-[#347A8A] w-10 h-10 rounded-l-xl shadow-md flex items-center justify-center hover:bg-[#9cdfe2] transition-colors z-10"
-                            >
-                                ❯
-                            </button>
-                        )}
-                    </div>
+                                                                {ficha.pedido?.data_prevista && (
+                                                                    <span
+                                                                        className={`flex items-center gap-1 font-light shrink-0 ${corPrincipal}`}
+                                                                    >
+                                                                        <img
+                                                                            src={
+                                                                                isAtrasado
+                                                                                    ? "/calendario-vermelho.png"
+                                                                                    : "/calendario-prazo.png"
+                                                                            }
+                                                                            alt="calendario"
+                                                                            className="w-[12px] h-[12px] shrink-0"
+                                                                        />
+                                                                        {new Date(
+                                                                            ficha.pedido
+                                                                                .data_prevista,
+                                                                        )
+                                                                            .toLocaleDateString(
+                                                                                "pt-BR",
+                                                                                {
+                                                                                    day: "2-digit",
+                                                                                    month: "2-digit",
+                                                                                },
+                                                                            )
+                                                                            .replace("/", ".")}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {mostrarSetaDireita && (
+                                <button
+                                    onClick={rolarParaDireita}
+                                    className="absolute right-0 top-1/2 -translate-y-1/2 bg-[#AEE5E8] text-[#347A8A] w-10 h-10 rounded-l-xl shadow-md flex items-center justify-center hover:bg-[#9cdfe2] transition-colors z-10"
+                                >
+                                    ❯
+                                </button>
+                            )}
+                        </div>
+                    </>
                 )}
             </div>
 
