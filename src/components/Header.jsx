@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 
 export function Header() {
-    const { user, logout } = useAuth();
+    const { user, logout, loading } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const cargoMap = {
         GERENTE: "Gerente",
@@ -10,10 +10,13 @@ export function Header() {
         ADMIN: "Admin",
     };
 
+    if (loading) {
+        return <header className="w-full pt-8 pb-2 pr-10" />;
+    }
+
     return (
         <header className="w-full pt-8 pb-2 flex items-center justify-end bg-transparent relative z-50 pr-10">
             <div className="relative">
-                {/* Acionador do Menu */}
                 <div
                     className="flex items-center gap-3 cursor-pointer select-none"
                     onClick={() => setIsOpen(!isOpen)}

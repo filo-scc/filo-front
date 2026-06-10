@@ -1,7 +1,14 @@
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
+import { useAuth } from "@/context/AuthContext";
 
 export function Layout({ children }) {
+    const { loading } = useAuth();
+
+    if (loading) {
+        return null;
+    }
+
     return (
         <div
             className="min-h-screen flex flex-col"
