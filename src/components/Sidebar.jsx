@@ -1,14 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 import { getFabricoById } from "../services/fabricoService";
 
 export function Sidebar() {
     const [hoveredPath, setHoveredPath] = useState(null);
+    const navigate = useNavigate();
     const [producaoSobDemanda, setProducaoSobDemanda] = useState(null);
 
     const usuarioLogado = JSON.parse(localStorage.getItem("user") || "{}");
     const fabricoId = usuarioLogado?.fabrico_id;
+
+    const labelNovaFicha =
+        producaoSobDemanda === null ? "" : producaoSobDemanda ? "Novo pedido" : "Nova produção";
 
     useEffect(() => {
         if (!fabricoId) {
@@ -67,9 +71,12 @@ export function Sidebar() {
             </div>
 
             {/* 1. Botão Nova Ficha */}
-            <button className="w-[169px] h-[39px] min-h-[39px] bg-[#A9E2F2] rounded-[18.5px] flex items-center justify-start px-4 gap-3 transition-all duration-200 shadow-sm hover:bg-[#8ecce0]">
+            <button
+                className="w-[169px] h-[39px] min-h-[39px] bg-[#A9E2F2] rounded-[18.5px] flex items-center justify-start px-4 gap-3 transition-all duration-200 shadow-sm hover:bg-[#8ecce0]"
+                onClick={() => navigate("/pedidos/cadastrar")}
+            >
                 <img src="/nova-ficha.png" alt="" className="w-5 h-5" />
-                <span className="text-[#FFFFFF] font-normal text-sm">Nova ficha</span>
+                <span className="text-[#FFFFFF] font-normal text-sm">{labelNovaFicha}</span>
             </button>
 
             {/* 2. Menu Itens */}
