@@ -282,11 +282,39 @@ export default function Home() {
                                                         ficha.produto?.parceiro_produto || [];
                                                     let textoParceiro = "Não designado";
 
-                                                    if (parceirosVinculados.length === 1) {
-                                                        textoParceiro =
-                                                            parceirosVinculados[0].parceiro?.nome;
-                                                    } else if (parceirosVinculados.length > 1) {
-                                                        textoParceiro = `${parceirosVinculados[0].parceiro?.nome} +${parceirosVinculados.length - 1}`;
+                                                    const categoriaAceitas = [
+                                                        "Costura",
+                                                        "costura",
+                                                        "Facção",
+                                                        "facção",
+                                                        "Facçao",
+                                                        "facçao",
+                                                        "Faccão",
+                                                        "faccão",
+                                                        "Faccao",
+                                                        "faccao",
+                                                        "Confecção",
+                                                        "confecção",
+                                                        "Confecçao",
+                                                        "confecçao",
+                                                        "Confeccão",
+                                                        "confeccão",
+                                                        "Confeccao",
+                                                        "confeccao",
+                                                    ];
+                                                    const parceiroPrioridade =
+                                                        parceirosVinculados.find((pv) =>
+                                                            categoriaAceitas.includes(
+                                                                pv.parceiro?.categoria,
+                                                            ),
+                                                        );
+
+                                                    if (parceiroPrioridade) {
+                                                        if (parceirosVinculados.length === 1) {
+                                                            textoParceiro = `${parceiroPrioridade.parceiro?.nome}`;
+                                                        } else {
+                                                            textoParceiro = `${parceiroPrioridade.parceiro?.nome} +${parceirosVinculados.length - 1}`;
+                                                        }
                                                     }
 
                                                     let isAtrasado = false;
