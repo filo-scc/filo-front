@@ -26,11 +26,18 @@ export default function SecaoDadosProduto({ produto, aviamentos = [] }) {
             {/* Bloco da Imagem */}
             <div className="flex flex-col shrink-0">
                 <h3 className="text-[20px] font-Outfit font-light text-[#404040] mb-4">Imagem</h3>
-                <div className="w-[260px] h-[170px] rounded-[10px] overflow-hidden border border-gray-200">
+                <div className="w-[248px] h-[187px] rounded-[10px] overflow-hidden border border-gray-200">
                     <img
-                        src={produto.foto}
-                        alt={produto.nome}
-                        className="w-full h-full object-cover"
+                        src={produto.foto || "/image-delete-02-2.png"}
+                        alt={produto.nome || "Imagem não cadastrada"}
+                        className={`w-full h-full ${
+                            produto.foto ? "object-cover" : "object-contain p-4"
+                        }`}
+                        onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "/image-delete-02-2.png";
+                            e.target.className = "w-full h-full object-contain p-4";
+                        }}
                     />
                 </div>
             </div>
