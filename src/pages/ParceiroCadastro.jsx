@@ -63,7 +63,8 @@ const ParceiroCadastro = () => {
                     const fabricoId = usuarioLogado.fabrico_id;
                     if (fabricoId) {
                         const dados = await getAllEtapasByFabricoId(fabricoId);
-                        setEtapas(dados || []);
+                        const etapasAtivas = (dados || []).filter((etapa) => etapa.ativa === true);
+                        setEtapas(etapasAtivas);
                     }
                 }
             } catch (err) {
