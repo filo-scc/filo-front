@@ -395,7 +395,7 @@ export default function TransferenciaEtapaModal({
 
                         {/* SELETOR (INPUT DE BUSCA COM DROPDOWN) */}
                         <div className="mb-6 flex flex-col items-start">
-                            <label className="block text-[16px] font-light text-[#7B7D80] mb-2">
+                            <label className="block text-[16px] font-medium text-[#4696AD] mb-2">
                                 Registrar custo do(a) {etapaConcluida.nome}
                             </label>
 
