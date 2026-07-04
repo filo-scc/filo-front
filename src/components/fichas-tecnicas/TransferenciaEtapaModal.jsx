@@ -66,7 +66,6 @@ export default function TransferenciaEtapaModal({
     // Estados para o comportamento visual da nova tabela
     const [hoveredParceiroIndex, setHoveredParceiroIndex] = useState(null);
     const [tabelaScrollTop, setTabelaScrollTop] = useState(0);
-    const [etapasArrastando, setEtapasArrastando] = useState(false);
 
     // Refs
     const dropdownRef = useRef(null);
@@ -115,8 +114,6 @@ export default function TransferenciaEtapaModal({
             scrollLeft: etapasScrollRef.current.scrollLeft,
         };
 
-        setEtapasArrastando(true);
-
         try {
             event.currentTarget.setPointerCapture(event.pointerId);
         } catch (error) {
@@ -134,7 +131,6 @@ export default function TransferenciaEtapaModal({
 
     const finalizarArrasteEtapas = (event) => {
         dragStateRef.current.isDragging = false;
-        setEtapasArrastando(false);
 
         try {
             event.currentTarget.releasePointerCapture(event.pointerId);
@@ -474,18 +470,17 @@ export default function TransferenciaEtapaModal({
                 ) : (
                     <>
                         {/* BARRA DE PROGRESSÃO (ETAPAS) */}
-                        <div className="w-full overflow-x-auto overflow-y-hidden pb-8 scrollbar-sutil cursor-grab select-none touch-pan-x">
-                            <div
-                                ref={etapasScrollRef}
-                                onPointerDown={iniciarArrasteEtapas}
-                                onPointerMove={moverArrasteEtapas}
-                                onPointerUp={finalizarArrasteEtapas}
-                                onPointerLeave={finalizarArrasteEtapas}
-                                onPointerCancel={finalizarArrasteEtapas}
-                                className={`min-w-max flex items-center justify-center px-2 py-2 ${
-                                    etapasArrastando ? "cursor-grabbing" : "cursor-grab"
-                                }`}
-                            >
+                        <div
+                            ref={etapasScrollRef}
+                            onPointerDown={iniciarArrasteEtapas}
+                            onPointerMove={moverArrasteEtapas}
+                            onPointerUp={finalizarArrasteEtapas}
+                            onPointerLeave={finalizarArrasteEtapas}
+                            onPointerCancel={finalizarArrasteEtapas}
+                            className="w-full overflow-x-auto overflow-y-hidden pb-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden cursor-grab select-none touch-pan-x"
+                            style={{ msOverflowStyle: "none" }}
+                        >
+                            <div className="min-w-max flex items-center justify-center px-2 py-2">
                                 {etapas.map((etapa, idx) => {
                                     const isConcluida =
                                         indiceProximaEtapa !== -1 && idx < indiceProximaEtapa;
