@@ -1,14 +1,29 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 
 export function Header() {
     const { user, logout, loading } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef(null);
     const cargoMap = {
         GERENTE: "Gerente",
         PROPRIETARIO: "Proprietário",
         ADMIN: "Admin",
     };
+
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        }
+
+        document.addEventListener("mousedown", handleClickOutside);
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
 
     if (loading) {
         return <header className="w-full pt-8 pb-2 pr-10" />;
@@ -16,7 +31,7 @@ export function Header() {
 
     return (
         <header className="w-full pt-8 pb-2 flex items-center justify-end bg-transparent relative z-50 pr-10">
-            <div className="relative">
+            <div className="relative" ref={dropdownRef}>
                 <div
                     className="flex items-center gap-3 cursor-pointer select-none"
                     onClick={() => setIsOpen(!isOpen)}
