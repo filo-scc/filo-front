@@ -14,6 +14,7 @@ import {
     getProdutoById,
     getTecidosByFabrico,
 } from "../services/produtoService";
+import { getFabricoById } from "../services/fabricoService"; // 👈 Adicione este import
 import {
     desvincularProdutoDoCliente,
     getClientes,
@@ -431,6 +432,7 @@ export default function ProdutoEditar() {
     const [salvando, setSalvando] = useState(false);
     const [erro, setErro] = useState("");
     const [produto, setProduto] = useState(null);
+    const [fabrico, setFabrico] = useState(null);
     const [clientesAssociados, setClientesAssociados] = useState([]);
     const [arquivoImagem, setArquivoImagem] = useState(null);
     const [imagemPreview, setImagemPreview] = useState("");
@@ -473,18 +475,25 @@ export default function ProdutoEditar() {
             try {
                 setLoading(true);
 
-                const [dadosProduto, dadosClientes, clientesDoFabrico, resGrades, resTecidos] =
-                    await Promise.all([
-                        getProdutoById(id),
-                        getClientesDoProduto(id),
-                        Number.isFinite(fabricoId) ? getClientes(fabricoId) : Promise.resolve([]),
-                        Number.isFinite(fabricoId)
-                            ? getGradesByFabrico(fabricoId)
-                            : Promise.resolve([]),
-                        Number.isFinite(fabricoId)
-                            ? getTecidosByFabrico(fabricoId)
-                            : Promise.resolve([]),
-                    ]);
+                const [
+                    dadosProduto,
+                    dadosClientes,
+                    clientesDoFabrico,
+                    resGrades,
+                    resTecidos,
+                    dadosFabrico,
+                ] = await Promise.all([
+                    getProdutoById(id),
+                    getClientesDoProduto(id),
+                    Number.isFinite(fabricoId) ? getClientes(fabricoId) : Promise.resolve([]),
+                    Number.isFinite(fabricoId)
+                        ? getGradesByFabrico(fabricoId)
+                        : Promise.resolve([]),
+                    Number.isFinite(fabricoId)
+                        ? getTecidosByFabrico(fabricoId)
+                        : Promise.resolve([]),
+                    Number.isFinite(fabricoId) ? getFabricoById(fabricoId) : Promise.resolve(null),
+                ]);
 
                 if (ignorar) return;
 
@@ -511,6 +520,7 @@ export default function ProdutoEditar() {
                     nome: tecido?.nome || tecido?.tecido?.nome || "Sem nome na API",
                 }));
 
+                setFabrico(dadosFabrico);
                 setProduto(dadosProduto);
                 setClientesAssociados(
                     enriquecerClientesAssociados(
@@ -842,6 +852,7 @@ export default function ProdutoEditar() {
                             clientes={clientesAssociados}
                             referenciaInterna={formData.referencia}
                             produtoId={id}
+                            fabricacao_sob_demanda={fabrico?.fabricacao_sob_demanda}
                             onAbrirModal={() => setModalClientesAberto(true)}
                             onRemoverLinha={handleRemoverReferencia}
                             onSalvarEdicao={handleSalvarReferencia}
