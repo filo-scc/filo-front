@@ -38,7 +38,7 @@ export function Header() {
                 >
                     <div className="flex flex-col items-start">
                         <span className="text-[#404040] font-normal text-[17px] leading-tight">
-                            {user?.nome || "Mateus Marinho"}
+                            {user?.nome || "Usuario Sem Nome"}
                         </span>
                         <span className="text-[#7B7D80] font-normal text-[15px] leading-none">
                             {user?.cargo ? cargoMap[user.cargo] || user.cargo : "Gerente"}
@@ -47,7 +47,7 @@ export function Header() {
 
                     <div className="w-[48px] h-[48px] rounded-full border border-[#A9E2F2] p-[1px] overflow-hidden">
                         <img
-                            src={user?.foto_de_perfil || "/filo-cliente.png"}
+                            src={user?.foto_de_perfil || "/no-user-image.png"}
                             alt="Perfil"
                             className="w-full h-full rounded-full object-cover"
                         />
