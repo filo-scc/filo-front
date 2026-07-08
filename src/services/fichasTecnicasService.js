@@ -12,6 +12,16 @@ export const updateEtapaFichaTecnica = async (id, novaEtapa) => {
     return response.data;
 };
 
+export const findOne = async (id) => {
+    const response = await api.get(`/fichas-tecnicas/${id}`);
+    return response.data;
+};
+
+export const updateFichaTecnica = async (id) => {
+    const response = await api.put(`/fichas-tecnicas/${id}`);
+    return response;
+};
+
 // FICHA-ETAPA
 export const getFichaEtapaByFichaTecnica = async (ficha_tecnica_id) => {
     const response = await api.get(`/fichas-etapas/ficha-tecnica/${ficha_tecnica_id}`);
