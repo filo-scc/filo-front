@@ -14,7 +14,7 @@ import {
     getProdutoById,
     getTecidosByFabrico,
 } from "../services/produtoService";
-import { getFabricoById } from "../services/fabricoService"; // 👈 Adicione este import
+import { getFabricoById } from "../services/fabricoService";
 import {
     desvincularProdutoDoCliente,
     getClientes,
