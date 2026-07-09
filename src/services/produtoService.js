@@ -76,6 +76,11 @@ export const getTiposProdutoByFabrico = async () => {
     return response.data;
 };
 
+export const criarTipoProduto = async (data) => {
+    const response = await api.post("/tipo-produto", data);
+    return response.data;
+};
+
 export const vincularProdutoAviamento = async (data) => {
     const response = await api.post("/produto-aviamento", data);
     return response.data;
