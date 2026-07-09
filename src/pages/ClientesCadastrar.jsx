@@ -263,7 +263,6 @@ export default function ClientesCadastrar() {
                 const clienteRecemCriado = [...(clientes || [])].reverse().find((cliente) => {
                     const cnpjCliente = valorOuUndefined(apenasNumeros(cliente?.cnpj));
 
-                    // Se ambos forem null/undefined, a comparação (undefined === undefined) será verdadeira
                     const correspondenciaCnpj = cnpjCliente === cnpjNumerico;
 
                     const mesmoNome = String(cliente?.nome || "").trim() === nome;
