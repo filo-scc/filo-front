@@ -18,6 +18,72 @@ import {
     updateFichaTecnicaParceiro,
 } from "../../services/fichaParceiroService";
 import { createFichaEtapa } from "../../services/fichaEtapaService";
+import { InlineLoading, SkeletonBox } from "../geral/Loading";
+
+function TransferenciaEtapaLoading() {
+    return (
+        <div className="px-4 py-2">
+            <div className="flex justify-center pb-7">
+                <InlineLoading label="Carregando modal de transferência" />
+            </div>
+
+            <div className="mb-9 w-full overflow-hidden pb-3">
+                <div className="flex items-center justify-center px-2">
+                    {[0, 1, 2, 3].map((item) => (
+                        <React.Fragment key={item}>
+                            <div className="flex flex-col items-center gap-3">
+                                <SkeletonBox className="h-[83px] w-[83px] rounded-[30px]" />
+                                <SkeletonBox className="h-[16px] w-[72px] rounded-[8px]" />
+                            </div>
+                            {item < 3 && (
+                                <SkeletonBox className="mx-1 mb-8 h-[2px] w-[60px] rounded-none" />
+                            )}
+                        </React.Fragment>
+                    ))}
+                </div>
+            </div>
+
+            <div className="mb-6">
+                <SkeletonBox className="mb-2 h-[18px] w-[230px] rounded-[8px]" />
+                <SkeletonBox className="h-[39px] w-[45%] max-w-[320px] rounded-[10px]" />
+            </div>
+
+            <div className="mb-6 w-full">
+                <div className="grid h-10 grid-cols-3 overflow-hidden rounded-t-[10px]">
+                    {[0, 1, 2].map((item) => (
+                        <SkeletonBox
+                            key={item}
+                            className="h-10 rounded-none border-r border-[#D9D9D9] last:border-r-0"
+                        />
+                    ))}
+                </div>
+                <div className="overflow-hidden rounded-b-[10px] border-x border-b border-[#D9D9D9]">
+                    {[0, 1, 2].map((row) => (
+                        <div
+                            key={row}
+                            className="grid h-10 grid-cols-3 border-b border-[#E8E8E8] last:border-b-0"
+                        >
+                            {[0, 1, 2].map((cell) => (
+                                <div
+                                    key={`${row}-${cell}`}
+                                    className={`flex items-center justify-center border-r border-[#E8E8E8] px-4 last:border-r-0 ${
+                                        row % 2 === 1 ? "bg-[#F4F4F4]" : "bg-white"
+                                    }`}
+                                >
+                                    <SkeletonBox className="h-[14px] w-[65%] rounded-[8px]" />
+                                </div>
+                            ))}
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="flex justify-end pt-4">
+                <SkeletonBox className="h-[39px] w-[200px] rounded-full" />
+            </div>
+        </div>
+    );
+}
 
 export default function TransferenciaEtapaModal({
     isOpen,
@@ -313,9 +379,7 @@ export default function TransferenciaEtapaModal({
                 </div>
 
                 {loading ? (
-                    <div className="flex h-64 items-center justify-center text-[#898C8F] font-light">
-                        Carregando informações da etapa...
-                    </div>
+                    <TransferenciaEtapaLoading />
                 ) : (
                     <>
                         {/* BARRA DE PROGRESSÃO (ETAPAS) */}

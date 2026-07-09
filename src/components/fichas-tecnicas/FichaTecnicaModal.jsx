@@ -11,6 +11,7 @@ import { getGradesLiberadasByFabricoId } from "../../services/gradeService";
 import { getParceiroByProduto } from "../../services/produtoService";
 
 import ProdutoParceiros from "../produtos/ProdutoParceiros";
+import { InlineLoading, SkeletonBox } from "../geral/Loading";
 
 function FloatingInput({ label, value, readOnly, onChange, placeholder }) {
     return (
@@ -465,8 +466,18 @@ export default function FichaTecnicaModal({
                     )}
 
                     {loading ? (
-                        <div className="flex min-h-[400px] items-center justify-center text-[14px] text-[#777]">
-                            Carregando...
+                        <div className="min-h-[400px] px-[30px] pt-3">
+                            <div className="flex justify-center py-8">
+                                <InlineLoading label="Carregando ficha técnica" />
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6">
+                                <SkeletonBox className="h-[150px] rounded-[10px]" />
+                                <div className="space-y-4">
+                                    <SkeletonBox className="h-[39px] rounded-[10px]" />
+                                    <SkeletonBox className="h-[39px] rounded-[10px]" />
+                                    <SkeletonBox className="h-[120px] rounded-[12px]" />
+                                </div>
+                            </div>
                         </div>
                     ) : (
                         <div className="!max-w-full w-full flex-1 overflow-y-auto px-4 pt-3 scrollbar-sutil">
