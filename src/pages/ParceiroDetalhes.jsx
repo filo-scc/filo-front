@@ -8,6 +8,7 @@ import SecaoEndereco from "../components/parceiros/SecaoEndereco";
 import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import ModalAtencao from "../components/geral/ModalAtencao";
+import { DetailPageSkeleton } from "../components/geral/Loading";
 
 const ParceiroDetalhes = () => {
     const { id } = useParams();
@@ -18,6 +19,7 @@ const ParceiroDetalhes = () => {
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
     const [modalAtencaoAberto, setModalAtencaoAberto] = useState(false);
+    const [excluindo, setExcluindo] = useState(false);
 
     useEffect(() => {
         const fetchParceiro = async () => {
@@ -56,21 +58,34 @@ const ParceiroDetalhes = () => {
     };
 
     const handleConfirmarExclusao = async () => {
-        if (!parceiro) return;
+        if (!parceiro || excluindo) return;
         try {
+            setExcluindo(true);
             await excluirParceiro(parceiro.id);
             setModalExclusaoAberto(false);
             setModalConfirmacaoAberto(true);
         } catch (error) {
             console.error("Erro ao excluir parceiro:", error);
             alert("Erro ao excluir parceiro.");
+        } finally {
+            setExcluindo(false);
         }
     };
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-screen">
-                <p className="text-[#4696AD] font-Outfit">Carregando detalhes...</p>
+            <div className="p-6 pt-0 mt-6 w-full">
+                <div className="bg-white p-8 rounded-[24px] shadow-sm w-full mx-auto">
+                    <h1 className="flex items-center gap-3 text-[28px] font-light mb-6">
+                        <img
+                            src="/maquina-costura-preta.png"
+                            alt="Ícone"
+                            className="w-[30px] h-[30px]"
+                        />
+                        Detalhes do parceiro
+                    </h1>
+                    <DetailPageSkeleton variant="parceiro" />
+                </div>
             </div>
         );
     }
@@ -226,6 +241,7 @@ const ParceiroDetalhes = () => {
                 onConfirm={handleConfirmarExclusao}
                 nomeItem={parceiro?.nome}
                 tipoItem="o parceiro"
+                loading={excluindo}
             />
 
             <ModalConfirmacao
