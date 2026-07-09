@@ -263,11 +263,12 @@ export default function ClientesCadastrar() {
                 const clientes = await getClientes(fabricoIdNumerico);
                 const clienteRecemCriado = [...(clientes || [])].reverse().find((cliente) => {
                     const cnpjCliente = valorOuUndefined(apenasNumeros(cliente?.cnpj));
-                    return (
-                        cnpjCliente &&
-                        cnpjCliente === cnpjNumerico &&
-                        String(cliente?.nome || "").trim() === nome
-                    );
+
+                    const correspondenciaCnpj = cnpjCliente === cnpjNumerico;
+
+                    const mesmoNome = String(cliente?.nome || "").trim() === nome;
+
+                    return correspondenciaCnpj && mesmoNome;
                 });
 
                 clienteId = primeiroNumeroValido(

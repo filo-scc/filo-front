@@ -141,7 +141,7 @@ function DropdownField({
                                         key={option.value}
                                         type="button"
                                         onClick={() => onSelect(option)}
-                                        className={`relative overflow-hidden flex w-full items-center pl-[12px] pr-3 py-3 border-l-[3px] text-left text-[16px] transition-colors first:rounded-t-[13px] last:rounded-b-[13px] ${
+                                        className={`relative overflow-hidden flex w-full items-center pl-[12px] pr-3 py-3 border-l-[3px] text-left text-[16px] transition-colors ${
                                             selected
                                                 ? "border-[#C4F042] text-[#707070] bg-white"
                                                 : "border-transparent text-[#707070] bg-white hover:bg-[#FAFAFA]"
@@ -751,7 +751,7 @@ export default function PedidosCadastrar() {
                 }
             `}</style>
 
-            <div className="p-6 pt-0 w-full relative z-0 font-['Outfit',_sans-serif]">
+            <div className="p-6 pt-0 mt-6 w-full relative z-0 font-['Outfit',_sans-serif]">
                 <div className="bg-white p-10 rounded-[24px] shadow-sm w-full mx-auto">
                     {/* 1. CABEÇALHO: Título da tela e número do pedido */}
                     <div className="mb-6">

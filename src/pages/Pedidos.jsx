@@ -78,7 +78,7 @@ const Pedidos = () => {
     };
 
     return (
-        <div className="p-6 pt-0 relative flex justify-start w-full">
+        <div className="p-6 pt-0 mt-6 relative flex justify-start w-full">
             <div className="bg-white px-10 py-8 rounded-[24px] shadow-sm w-full flex flex-col relative h-fit">
                 {/* Cabeçalho da Página */}
                 <div className="flex justify-between items-center mb-8">

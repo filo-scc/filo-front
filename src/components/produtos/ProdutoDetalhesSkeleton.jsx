@@ -9,7 +9,7 @@ export default function ProdutoDetalhesSkeleton() {
                 <div className="flex flex-col shrink-0">
                     <SkeletonBox className="h-[28px] w-24 mb-4 rounded-[8px]" />{" "}
                     {/* título "Imagem" */}
-                    <SkeletonBox className="w-[260px] h-[170px] rounded-[10px]" />
+                    <SkeletonBox className="w-[248px] h-[187px] rounded-[10px]" />
                 </div>
 
                 {/* Bloco de Dados */}
