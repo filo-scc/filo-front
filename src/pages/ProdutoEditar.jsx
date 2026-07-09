@@ -7,6 +7,11 @@ import ModalAtencao from "../components/geral/ModalAtencao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import ModalExclusao from "../components/geral/ModalExclusao";
 import {
+    LoadingButton,
+    ProductEditPageSkeleton,
+    SelectionListSkeleton,
+} from "../components/geral/Loading";
+import {
     atualizarProduto,
     excluirProduto,
     getClientesDoProduto,
@@ -369,9 +374,7 @@ function ModalClientesDoProduto({
 
                 <div className="max-h-[280px] overflow-y-auto pr-2 scrollbar-sutil">
                     {loading ? (
-                        <div className="flex justify-center py-12 text-[#4696AD]">
-                            Buscando clientes...
-                        </div>
+                        <SelectionListSkeleton />
                     ) : clientesFiltrados.length === 0 ? (
                         <div className="flex justify-center py-12 text-[#898c8f]">
                             Nenhum cliente disponível.
@@ -442,6 +445,7 @@ export default function ProdutoEditar() {
     const [modalAtencaoAberto, setModalAtencaoAberto] = useState(false);
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
     const [modalExcluidoAberto, setModalExcluidoAberto] = useState(false);
+    const [excluindo, setExcluindo] = useState(false);
     const [formData, setFormData] = useState({
         referencia: "",
         modelo: "",
@@ -680,20 +684,31 @@ export default function ProdutoEditar() {
     };
 
     const handleConfirmarExclusao = async () => {
+        if (excluindo) return;
         try {
+            setExcluindo(true);
             await excluirProduto(id);
             setModalExclusaoAberto(false);
             setModalExcluidoAberto(true);
         } catch (error) {
             console.error("Erro ao excluir produto:", error);
             setErro("Erro ao excluir produto.");
+        } finally {
+            setExcluindo(false);
         }
     };
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-screen">
-                <p className="text-[#4696AD] font-Outfit">Carregando produto...</p>
+            <div className="p-6 pt-0 mt-6 w-full flex justify-center font-Outfit">
+                <div className="bg-white p-8 rounded-[24px] shadow-sm w-full min-h-[650px]">
+                    <ProdutoDetalhesHeader
+                        title="Editar produto"
+                        iconSrc="/produtos-ativado.png"
+                        iconClassName="w-[30px] h-[30px] object-contain"
+                    />
+                    <ProductEditPageSkeleton />
+                </div>
             </div>
         );
     }
@@ -715,7 +730,7 @@ export default function ProdutoEditar() {
 
                 <form onSubmit={handleSalvar} className="mt-8 flex flex-col min-h-[520px]">
                     <div className="flex flex-col xl:flex-row gap-9 xl:gap-10">
-                        <div className="w-[230px] shrink-0">
+                        <div className="w-[260px] shrink-0">
                             <FieldLabel>Imagem</FieldLabel>
                             <input
                                 ref={inputFileRef}
@@ -727,7 +742,7 @@ export default function ProdutoEditar() {
                             <button
                                 type="button"
                                 onClick={() => inputFileRef.current?.click()}
-                                className="w-[220px] h-[127px] rounded-[10px] overflow-hidden bg-[#D9D9D9] hover:opacity-90 transition-opacity"
+                                className="w-[260px] h-[170px] rounded-[10px] overflow-hidden bg-[#D9D9D9] hover:opacity-90 transition-opacity"
                             >
                                 {imagemPreview ? (
                                     <img
@@ -865,13 +880,14 @@ export default function ProdutoEditar() {
                             >
                                 Excluir produto
                             </button>
-                            <button
+                            <LoadingButton
                                 type="submit"
-                                disabled={salvando}
+                                loading={salvando}
+                                loadingText="Salvando..."
                                 className="w-[189px] h-[39px] rounded-[18.9px] bg-[#A9E2F2] text-[#4696AD] font-Outfit text-[16px] transition-colors hover:bg-[#A2DCED] disabled:opacity-60 disabled:cursor-not-allowed"
                             >
-                                {salvando ? "Salvando..." : "Editar produto"}
-                            </button>
+                                Editar produto
+                            </LoadingButton>
                         </div>
                     </div>
                 </form>
@@ -892,6 +908,7 @@ export default function ProdutoEditar() {
                 onConfirm={handleConfirmarExclusao}
                 nomeItem={produto?.nome}
                 tipoItem="o produto"
+                loading={excluindo}
             />
 
             <ModalConfirmacao
