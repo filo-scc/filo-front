@@ -65,6 +65,7 @@ export default function TabelaClientesDoProduto({
     clientes,
     referenciaInterna,
     produtoId,
+    fabricacao_sob_demanda,
     onAbrirModal,
     onRemoverLinha,
     onSalvarEdicao,
@@ -74,6 +75,10 @@ export default function TabelaClientesDoProduto({
     const [editPreco, setEditPreco] = useState("");
     const [salvando, setSalvando] = useState(false);
     const [erroEdicao, setErroEdicao] = useState("");
+
+    if (!fabricacao_sob_demanda) {
+        return null;
+    }
 
     const formatPreco = (valor) => {
         return new Intl.NumberFormat("pt-BR", {

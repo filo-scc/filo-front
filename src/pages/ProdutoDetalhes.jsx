@@ -6,6 +6,7 @@ import {
     excluirProduto,
     getAviamentosDoProduto,
 } from "../services/produtoService";
+import { getFabricoById } from "../services/fabricoService";
 
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
 import SecaoDadosProduto from "../components/produtos/SecaoDadosProduto";
@@ -26,6 +27,7 @@ export default function ProdutoDetalhes() {
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
     const [modalAtencaoAberto, setModalAtencaoAberto] = useState(false);
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
+    const [fabrico, setFabrico] = useState(null);
 
     useEffect(() => {
         async function fetchData() {
@@ -60,6 +62,21 @@ export default function ProdutoDetalhes() {
 
         fetchData();
     }, [id, navigate]);
+
+    useEffect(() => {
+        async function carregarDadosDoFabrico() {
+            if (produto && produto.fabrico_id) {
+                try {
+                    const dadosFabrico = await getFabricoById(produto.fabrico_id);
+                    setFabrico(dadosFabrico);
+                } catch (error) {
+                    console.error("Erro ao buscar dados do fabrico:", error);
+                }
+            }
+        }
+
+        carregarDadosDoFabrico();
+    }, [produto]);
 
     const handleAcessoNegadoConfirm = () => {
         setModalAtencaoAberto(false);
@@ -97,7 +114,9 @@ export default function ProdutoDetalhes() {
                             <SecaoDadosProduto produto={produto} aviamentos={aviamentosProduto} />
                             <TabelaClientesDoProduto
                                 clientes={clientesAssociados}
+                                produtoId={id}
                                 referenciaInterna={produto.nome}
+                                fabricacao_sob_demanda={fabrico?.fabricacao_sob_demanda}
                             />
                         </>
                     ) : (
