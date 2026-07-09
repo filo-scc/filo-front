@@ -91,6 +91,12 @@ export default function TransferenciaEtapaModal({
         return somaQuantidades === Number(fichaTecnica?.quantidade || 0);
     }, [linhasTabela.length, somaQuantidades, fichaTecnica?.quantidade]);
 
+    const precoUnitarioValido = useMemo(() => {
+        return linhasTabela.every(
+            (linha) => parseCurrencyToNumber(linha.precoUnitarioFormatado) > 0,
+        );
+    }, [linhasTabela]);
+
     const gridTemplateColumnsTabela =
         linhasTabela.length > 1
             ? "minmax(180px, 1.15fr) minmax(150px, 0.85fr) minmax(130px, 0.6fr) minmax(160px, 0.8fr) minmax(170px, 0.85fr)"
@@ -296,24 +302,33 @@ export default function TransferenciaEtapaModal({
             prev.map((linha) => {
                 if (linha.id !== id) return linha;
 
-                const valorNormalizado =
-                    campo === "precoUnitarioFormatado" ? formatCurrencyBR(valor) : valor;
-
                 const linhaAtualizada = {
                     ...linha,
-                    [campo]: valorNormalizado,
                 };
 
-                const quantidadeEfetiva =
+                if (campo === "precoUnitarioFormatado" || campo === "custoTotalFormatado") {
+                    linhaAtualizada[campo] = formatCurrencyBR(valor);
+                } else {
+                    linhaAtualizada[campo] = valor;
+                }
+
+                const quantidade =
                     prev.length === 1
                         ? Number(fichaTecnica?.quantidade || 0)
                         : Number(linhaAtualizada.quantidade || 0);
-                const precoUnitario = parseCurrencyToNumber(linhaAtualizada.precoUnitarioFormatado);
 
                 if (campo === "precoUnitarioFormatado" || campo === "quantidade") {
-                    linhaAtualizada.custoTotalFormatado = formatCurrencyBR(
-                        precoUnitario * quantidadeEfetiva,
-                    );
+                    const preco = parseCurrencyToNumber(linhaAtualizada.precoUnitarioFormatado);
+
+                    linhaAtualizada.custoTotalFormatado = formatCurrencyBR(preco * quantidade);
+                }
+
+                if (campo === "custoTotalFormatado") {
+                    const total = parseCurrencyToNumber(linhaAtualizada.custoTotalFormatado);
+
+                    const preco = quantidade > 0 ? total / quantidade : 0;
+
+                    linhaAtualizada.precoUnitarioFormatado = formatCurrencyBR(preco);
                 }
 
                 return linhaAtualizada;
@@ -806,10 +821,15 @@ export default function TransferenciaEtapaModal({
                                                         <input
                                                             type="text"
                                                             value={row.custoTotalFormatado}
-                                                            readOnly
-                                                            tabIndex={-1}
+                                                            onChange={(e) =>
+                                                                atualizarCampoLinha(
+                                                                    row.id,
+                                                                    "custoTotalFormatado",
+                                                                    e.target.value,
+                                                                )
+                                                            }
                                                             placeholder="R$ 0,00"
-                                                            className="h-[32px] w-full cursor-not-allowed border-0 bg-transparent text-center text-[14px] font-light text-[#898C8F] outline-none focus:ring-0"
+                                                            className="h-[32px] w-full border-0 bg-transparent text-center text-[14px] font-light text-[#898C8F] outline-none focus:ring-0"
                                                         />
                                                     </div>
                                                 </div>
@@ -879,14 +899,21 @@ export default function TransferenciaEtapaModal({
                             </div>
                         )}
 
+                        {!precoUnitarioValido && linhasTabela.length > 0 && (
+                            <div className="mb-6 rounded-[10px] border border-red-200 bg-red-50 p-4 text-[14px] font-light text-red-700">
+                                <span className="font-medium">Atenção:</span> O preço unitário deve
+                                ser maior que R$ 0,00 para todos os colaboradores.
+                            </div>
+                        )}
+
                         {/* FOOTER / AÇÕES FINAIS DO MODAL */}
                         <div className="flex justify-end pt-4">
                             <button
                                 type="button"
                                 onClick={handleTransferir}
-                                disabled={submitting || !quantidadeValida}
+                                disabled={submitting || !quantidadeValida || !precoUnitarioValido}
                                 className={`h-[39px] w-[200px] rounded-full px-10 text-[15px] font-normal transition-all ${
-                                    !quantidadeValida
+                                    !quantidadeValida || !precoUnitarioValido
                                         ? "cursor-not-allowed border border-[#D9D9D9] bg-[#F5F5F5] text-[#898C8F]"
                                         : "bg-[#A9E2F2] text-[#4696AD] hover:bg-[#A2DCED] active:scale-95"
                                 }`}
