@@ -901,8 +901,9 @@ export default function TransferenciaEtapaModal({
 
                         {!precoUnitarioValido && linhasTabela.length > 0 && (
                             <div className="mb-6 rounded-[10px] border border-red-200 bg-red-50 p-4 text-[14px] font-light text-red-700">
-                                <span className="font-medium">Atenção:</span> O preço unitário deve
-                                ser maior que R$ 0,00 para todos os colaboradores.
+                                <span className="font-medium">Atenção:</span> Para prosseguir com a
+                                transferência, cadastre o valor do(a){" "}
+                                {etapaConcluida.nome.toUpperCase()};
                             </div>
                         )}
 
