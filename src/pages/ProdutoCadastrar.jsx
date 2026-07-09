@@ -6,11 +6,10 @@ import {
     getAviamentosByFabrico,
     getGradesByFabrico,
     getTecidosByFabrico,
+    getTiposProdutoByFabrico,
     vincularProdutoAviamento,
 } from "../services/produtoService.js";
 import { upload } from "../services/utilsService";
-
-const modelos = ["Top e short", "Top e calça", "Macaquito", "Macacão"];
 
 function FieldLabel({ children }) {
     return <label className="block text-[20px] font-light text-[#404040] mb-3">{children}</label>;
@@ -162,10 +161,12 @@ export default function ProdutoCadastar() {
     const [openDropdown, setOpenDropdown] = useState(null);
     const [salvando, setSalvando] = useState(false);
     const [carregandoGrades, setCarregandoGrades] = useState(false);
+    const [carregandoModelos, setCarregandoModelos] = useState(false);
     const [erroCadastro, setErroCadastro] = useState("");
     const [gradesDisponiveis, setGradesDisponiveis] = useState([]);
     const [tecidosDisponiveis, setTecidosDisponiveis] = useState([]);
     const [aviamentosDisponiveis, setAviamentosDisponiveis] = useState([]);
+    const [modelosDisponiveis, setModelosDisponiveis] = useState([]);
     const [formData, setFormData] = useState({
         referencia: "",
         modelo: "",
@@ -184,12 +185,15 @@ export default function ProdutoCadastar() {
         const carregarGrades = async () => {
             try {
                 setCarregandoGrades(true);
+                setCarregandoModelos(true);
 
-                const [resGrades, resTecidos, resAviamentos] = await Promise.allSettled([
-                    getGradesByFabrico(fabricoId),
-                    getTecidosByFabrico(fabricoId),
-                    getAviamentosByFabrico(fabricoId),
-                ]);
+                const [resGrades, resTecidos, resAviamentos, resTiposProduto] =
+                    await Promise.allSettled([
+                        getGradesByFabrico(fabricoId),
+                        getTecidosByFabrico(fabricoId),
+                        getAviamentosByFabrico(fabricoId),
+                        getTiposProdutoByFabrico(),
+                    ]);
 
                 if (ignorar) return;
 
@@ -235,9 +239,20 @@ export default function ProdutoCadastar() {
                     console.error("Erro ao carregar aviamentos:", resAviamentos.reason);
                     setAviamentosDisponiveis([]);
                 }
+
+                if (resTiposProduto.status === "fulfilled") {
+                    const nomesModelos = (resTiposProduto.value || [])
+                        .map((tipo) => tipo?.nome || tipo?.tipo || tipo?.descricao)
+                        .filter(Boolean);
+                    setModelosDisponiveis(nomesModelos);
+                } else {
+                    console.error("Erro ao carregar tipos de produto:", resTiposProduto.reason);
+                    setModelosDisponiveis([]);
+                }
             } finally {
                 if (!ignorar) {
                     setCarregandoGrades(false);
+                    setCarregandoModelos(false);
                 }
             }
         };
@@ -458,8 +473,10 @@ export default function ProdutoCadastar() {
                                     <FieldLabel>Modelo</FieldLabel>
                                     <DropdownField
                                         value={formData.modelo}
-                                        placeholder="Modelo*"
-                                        options={modelos}
+                                        placeholder={
+                                            carregandoModelos ? "Carregando modelos..." : "Modelo*"
+                                        }
+                                        options={modelosDisponiveis}
                                         isOpen={openDropdown === "modelo"}
                                         onToggle={() => toggleDropdown("modelo")}
                                         onSelect={(value) => handleDropdownSelect("modelo", value)}

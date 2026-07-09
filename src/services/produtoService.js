@@ -71,6 +71,11 @@ export const getAviamentosByFabrico = async (fabricoId) => {
     return response.data;
 };
 
+export const getTiposProdutoByFabrico = async () => {
+    const response = await api.get("/tipo-produto");
+    return response.data;
+};
+
 export const vincularProdutoAviamento = async (data) => {
     const response = await api.post("/produto-aviamento", data);
     return response.data;
