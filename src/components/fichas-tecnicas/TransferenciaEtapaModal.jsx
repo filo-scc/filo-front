@@ -330,7 +330,7 @@ export default function TransferenciaEtapaModal({
         setSubmitting(true);
         try {
             if (linhasTabela.length > 0) {
-                for (const [linha] of linhasTabela.entries()) {
+                for (const [, linha] of linhasTabela.entries()) {
                     const totalLinhas = linhasTabela.length;
                     const quantidadeEfetiva = getEffectiveQuantity(
                         linha,
