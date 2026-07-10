@@ -31,7 +31,7 @@ export async function clearFichaTecnicaItens(fichaTecnicaId) {
 }
 
 export async function getProdutoParceiro(produtoId, parceiroId) {
-    const response = await api.get(`/parceiros-produtos/${produtoId}/${parceiroId}`);
+    const response = await api.get(`/parceiros-produtos/${parceiroId}/${produtoId}`);
     return unwrap(response);
 }
 
