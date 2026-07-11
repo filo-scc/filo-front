@@ -21,10 +21,7 @@ export default function SecaoDadosProduto({ produto, aviamentos = [] }) {
 
     const nomeTecido = produto?.tecido?.nome;
     const nomeModelo =
-        produto?.tipo_produto?.nome ||
-        produto?.tipoProduto?.nome ||
-        produto?.tipo ||
-        null;
+        produto?.tipo_produto?.nome || produto?.tipoProduto?.nome || produto?.tipo || null;
 
     return (
         <section className="flex flex-col md:flex-row gap-10 pr-4 md:pr-[15%]">

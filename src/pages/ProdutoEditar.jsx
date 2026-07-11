@@ -13,6 +13,7 @@ import {
     getGradesByFabrico,
     getProdutoById,
     getTecidosByFabrico,
+    getTiposProdutoByFabrico,
 } from "../services/produtoService";
 import {
     desvincularProdutoDoCliente,
@@ -21,7 +22,6 @@ import {
 } from "../services/clientesService";
 import { upload } from "../services/utilsService";
 
-const modelos = ["Top e short", "Top e calça", "Macaquito", "Macacão"];
 const aviamentosDisponiveis = ["Viés", "Bojo", "Elástico", "Argola"];
 
 function FieldLabel({ children, className = "" }) {
@@ -437,6 +437,7 @@ export default function ProdutoEditar() {
     const [openDropdown, setOpenDropdown] = useState(null);
     const [gradesDisponiveis, setGradesDisponiveis] = useState([]);
     const [tecidosDisponiveis, setTecidosDisponiveis] = useState([]);
+    const [modelosDisponiveis, setModelosDisponiveis] = useState([]);
     const [modalClientesAberto, setModalClientesAberto] = useState(false);
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
     const [modalAtencaoAberto, setModalAtencaoAberto] = useState(false);
@@ -445,6 +446,7 @@ export default function ProdutoEditar() {
     const [formData, setFormData] = useState({
         referencia: "",
         modelo: "",
+        tipo_produto_id: undefined,
         tecido: "",
         tecido_id: undefined,
         grade: "",
@@ -473,18 +475,25 @@ export default function ProdutoEditar() {
             try {
                 setLoading(true);
 
-                const [dadosProduto, dadosClientes, clientesDoFabrico, resGrades, resTecidos] =
-                    await Promise.all([
-                        getProdutoById(id),
-                        getClientesDoProduto(id),
-                        Number.isFinite(fabricoId) ? getClientes(fabricoId) : Promise.resolve([]),
-                        Number.isFinite(fabricoId)
-                            ? getGradesByFabrico(fabricoId)
-                            : Promise.resolve([]),
-                        Number.isFinite(fabricoId)
-                            ? getTecidosByFabrico(fabricoId)
-                            : Promise.resolve([]),
-                    ]);
+                const [
+                    dadosProduto,
+                    dadosClientes,
+                    clientesDoFabrico,
+                    resGrades,
+                    resTecidos,
+                    resTiposProduto,
+                ] = await Promise.all([
+                    getProdutoById(id),
+                    getClientesDoProduto(id),
+                    Number.isFinite(fabricoId) ? getClientes(fabricoId) : Promise.resolve([]),
+                    Number.isFinite(fabricoId)
+                        ? getGradesByFabrico(fabricoId)
+                        : Promise.resolve([]),
+                    Number.isFinite(fabricoId)
+                        ? getTecidosByFabrico(fabricoId)
+                        : Promise.resolve([]),
+                    getTiposProdutoByFabrico().catch(() => []),
+                ]);
 
                 if (ignorar) return;
 
@@ -511,6 +520,22 @@ export default function ProdutoEditar() {
                     nome: tecido?.nome || tecido?.tecido?.nome || "Sem nome na API",
                 }));
 
+                const modelosMapeados = (resTiposProduto || [])
+                    .map((tipo) => ({
+                        id: tipo?.id,
+                        nome: tipo?.nome || tipo?.tipo || tipo?.descricao,
+                    }))
+                    .filter((tipo) => tipo.id && tipo.nome);
+
+                const tipoProdutoRelacionado =
+                    dadosProduto.tipo_produto ||
+                    dadosProduto.tipoProduto ||
+                    modelosMapeados.find((tipo) => tipo.id === dadosProduto.tipo_produto_id);
+
+                const nomeModelo = tipoProdutoRelacionado?.nome || dadosProduto.tipo || "";
+                const tipoProdutoId =
+                    dadosProduto.tipo_produto_id || tipoProdutoRelacionado?.id || undefined;
+
                 setProduto(dadosProduto);
                 setClientesAssociados(
                     enriquecerClientesAssociados(
@@ -520,10 +545,12 @@ export default function ProdutoEditar() {
                 );
                 setGradesDisponiveis(gradesMapeadas);
                 setTecidosDisponiveis(tecidosMapeados);
+                setModelosDisponiveis(modelosMapeados);
                 setImagemPreview(dadosProduto.foto || "");
                 setFormData({
                     referencia: dadosProduto.nome || "",
-                    modelo: dadosProduto.tipo || "",
+                    modelo: nomeModelo,
+                    tipo_produto_id: tipoProdutoId,
                     tecido: getTecidoNome(dadosProduto),
                     tecido_id: dadosProduto.tecido_id || dadosProduto.tecido?.id,
                     grade: getGradeNome(dadosProduto),
@@ -557,11 +584,6 @@ export default function ProdutoEditar() {
         setOpenDropdown((prev) => (prev === field ? null : field));
     };
 
-    const handleDropdownSelect = (field, value) => {
-        setFormData((prev) => ({ ...prev, [field]: value }));
-        setOpenDropdown(null);
-    };
-
     const handleGradeSelect = (nomeGrade) => {
         const gradeSelecionada = gradesDisponiveis.find((grade) => grade.nome === nomeGrade);
 
@@ -580,6 +602,17 @@ export default function ProdutoEditar() {
             ...prev,
             tecido: nomeTecido,
             tecido_id: tecidoSelecionado?.id,
+        }));
+        setOpenDropdown(null);
+    };
+
+    const handleModeloSelect = (nomeModelo) => {
+        const modeloSelecionado = modelosDisponiveis.find((modelo) => modelo.nome === nomeModelo);
+
+        setFormData((prev) => ({
+            ...prev,
+            modelo: nomeModelo,
+            tipo_produto_id: modeloSelecionado?.id,
         }));
         setOpenDropdown(null);
     };
@@ -611,7 +644,7 @@ export default function ProdutoEditar() {
             return;
         }
 
-        if (!formData.modelo) {
+        if (!formData.modelo || !formData.tipo_produto_id) {
             setErro("Selecione o modelo do produto.");
             return;
         }
@@ -631,7 +664,7 @@ export default function ProdutoEditar() {
             await atualizarProduto(id, {
                 foto: urlFoto,
                 nome: formData.referencia.trim(),
-                tipo: formData.modelo,
+                tipo_produto_id: formData.tipo_produto_id,
                 fabrico_id: fabricoId,
                 tecido_id: formData.tecido_id,
                 grade_versao_id: formData.grade_versao_id,
@@ -760,10 +793,10 @@ export default function ProdutoEditar() {
                                     <DropdownField
                                         value={formData.modelo}
                                         placeholder="Modelo"
-                                        options={modelos}
+                                        options={modelosDisponiveis.map((modelo) => modelo.nome)}
                                         isOpen={openDropdown === "modelo"}
                                         onToggle={() => toggleDropdown("modelo")}
-                                        onSelect={(value) => handleDropdownSelect("modelo", value)}
+                                        onSelect={handleModeloSelect}
                                         isSelectedOption={(option) => formData.modelo === option}
                                     />
                                 </div>
