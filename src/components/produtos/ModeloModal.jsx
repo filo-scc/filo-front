@@ -65,7 +65,9 @@ export default function ModeloModal({ isOpen, onClose, onSuccess }) {
                             alt=""
                             className="h-[28px] w-[28px] object-contain"
                         />
-                        <h2 className="text-[26px] font-light text-[#404040]">Cadastrar modelo</h2>
+                        <h2 className="text-[26px] font-light text-[#404040]">
+                            Cadastrar tipo de modelo
+                        </h2>
                     </div>
                     <button
                         type="button"
@@ -85,11 +87,11 @@ export default function ModeloModal({ isOpen, onClose, onSuccess }) {
 
                 <div>
                     <label className="mb-2 block text-[14px] font-light text-[#4696AD]">
-                        Novo modelo
+                        Novo tipo de modelo
                     </label>
                     <div className="flex items-center gap-4">
                         <FloatingLabelInput
-                            label="Nome do modelo"
+                            label="Nome do tipo de modelo"
                             value={nome}
                             onChange={(e) => setNome(e.target.value)}
                             className="flex-1"
