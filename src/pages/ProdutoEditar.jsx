@@ -496,9 +496,7 @@ export default function ProdutoEditar() {
                         ? getTecidosByFabrico(fabricoId)
                         : Promise.resolve([]),
                     getTiposProdutoByFabrico().catch(() => []),
-                    Number.isFinite(fabricoId)
-                        ? getFabricoById(fabricoId)
-                        : Promise.resolve(null),
+                    Number.isFinite(fabricoId) ? getFabricoById(fabricoId) : Promise.resolve(null),
                 ]);
 
                 if (ignorar) return;
