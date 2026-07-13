@@ -1,5 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
-import { updateFichaTecnica } from "../../services/fichasTecnicasService";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import {
     syncFichaTecnicaCores,
     updateFichaTecnicaItem,
@@ -165,9 +164,12 @@ export default function EdicaoFichaTecnicaModal({
     const [referenciaCliente, setReferenciaCliente] = useState("-");
     const [isProdutoParceirosOpen, setIsProdutoParceirosOpen] = useState(false);
 
-    const sizeItems = dadosFicha?.grade_versao?.itens || [];
+    const sizeItems = useMemo(
+        () => dadosFicha?.grade_versao?.itens || [],
+        [dadosFicha?.grade_versao?.itens],
+    );
 
-    const carregarReferencia = async () => {
+    const carregarReferencia = useCallback(async () => {
         try {
             if (dadosFicha?.produto?.id && dadosFicha.pedido?.cliente?.id) {
                 const prodtuoCleinte = await getProdutosDoCliente(dadosFicha.pedido.cliente.id);
@@ -177,10 +179,11 @@ export default function EdicaoFichaTecnicaModal({
                 setReferenciaCliente(produtoVinculado?.nome_para_cliente || "-");
             }
         } catch (error) {
-            console.error("Erro ao carregar Referência");
+            console.error("Erro ao carregar Referência", error);
         }
-    };
-    const carregarCoresDaFabrica = async () => {
+    }, [dadosFicha?.produto?.id, dadosFicha?.pedido?.cliente?.id]);
+
+    const carregarCoresDaFabrica = useCallback(async () => {
         if (dadosFicha?.fabrico_id) {
             try {
                 const cores = await getCoresByFabricoId(dadosFicha.fabrico_id);
@@ -189,7 +192,7 @@ export default function EdicaoFichaTecnicaModal({
                 console.error("Erro ao buscar cores", error);
             }
         }
-    };
+    }, [dadosFicha?.fabrico_id]);
 
     useEffect(() => {
         if (isOpen && dadosFicha) {
@@ -226,7 +229,7 @@ export default function EdicaoFichaTecnicaModal({
             setParceiros(parceirosIniciais);
             carregarReferencia();
         }
-    }, [isOpen, dadosFicha]);
+    }, [isOpen, dadosFicha, carregarCoresDaFabrica, carregarReferencia]);
 
     const handleToggleCor = (cor) => {
         setCoresSelecionadas((prev) => {
@@ -407,7 +410,7 @@ export default function EdicaoFichaTecnicaModal({
         <>
             <div
                 className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4 backdrop-blur-sm print:hidden"
-                onClick={(e) => {
+                onClick={() => {
                     if (!isProdutoParceirosOpen) {
                         onClose();
                     }

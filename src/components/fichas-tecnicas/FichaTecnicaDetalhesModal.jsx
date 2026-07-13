@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { findOne } from "../../services/fichasTecnicasService";
 import { getProdutosDoCliente } from "../../services/clientesService";
 import EdicaoFichaTecnicaModal from "./EdicaoFichaTecnicaModal";
@@ -32,7 +32,7 @@ export default function FichaTecnicaModal({ isOpen, onClose, fichaId }) {
 
     const [modalEdicaoAberto, setModalEdicaoAberto] = useState(false);
 
-    const carregarDados = async () => {
+    const carregarDados = useCallback(async () => {
         try {
             const dados = await findOne(fichaId);
             setFicha(dados);
@@ -45,18 +45,18 @@ export default function FichaTecnicaModal({ isOpen, onClose, fichaId }) {
                 setReferenciaCliente(produtoVinculado?.nome_para_cliente || "-");
             }
         } catch (error) {
-            console.error("Erro ao carregar os dados da ficha");
+            console.error("Erro ao carregar os dados da ficha", error);
         } finally {
             setLoading(false);
         }
-    };
+    }, [fichaId]);
 
     useEffect(() => {
         if (isOpen && fichaId) {
             setLoading(true);
             carregarDados();
         }
-    }, [isOpen, fichaId]);
+    }, [isOpen, fichaId, carregarDados]);
 
     const handleContentClick = (e) => {
         e.stopPropagation();
