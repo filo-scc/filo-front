@@ -15,6 +15,7 @@ import {
     getTecidosByFabrico,
     getTiposProdutoByFabrico,
 } from "../services/produtoService";
+import { getFabricoById } from "../services/fabricoService";
 import {
     desvincularProdutoDoCliente,
     getClientes,
@@ -431,6 +432,7 @@ export default function ProdutoEditar() {
     const [salvando, setSalvando] = useState(false);
     const [erro, setErro] = useState("");
     const [produto, setProduto] = useState(null);
+    const [fabrico, setFabrico] = useState(null);
     const [clientesAssociados, setClientesAssociados] = useState([]);
     const [arquivoImagem, setArquivoImagem] = useState(null);
     const [imagemPreview, setImagemPreview] = useState("");
@@ -875,6 +877,7 @@ export default function ProdutoEditar() {
                             clientes={clientesAssociados}
                             referenciaInterna={formData.referencia}
                             produtoId={id}
+                            fabricacao_sob_demanda={fabrico?.fabricacao_sob_demanda}
                             onAbrirModal={() => setModalClientesAberto(true)}
                             onRemoverLinha={handleRemoverReferencia}
                             onSalvarEdicao={handleSalvarReferencia}

@@ -19,6 +19,30 @@ import {
 } from "../../services/fichaParceiroService";
 import { createFichaEtapa } from "../../services/fichaEtapaService";
 
+const currencyFormatter = new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+});
+
+function parseCurrencyToNumber(value) {
+    if (value === null || value === undefined || value === "") return 0;
+    if (typeof value === "number") return value;
+
+    const normalized = String(value).replace(/[^\d]/g, "");
+    if (!normalized) return 0;
+
+    return Number(normalized) / 100;
+}
+
+function formatCurrencyBR(value) {
+    return currencyFormatter.format(parseCurrencyToNumber(value));
+}
+
+function getEffectiveQuantity(line, totalLines, fichaQuantidade) {
+    if (totalLines === 1) return Number(fichaQuantidade || 0);
+    return Number(line?.quantidade || 0);
+}
+
 export default function TransferenciaEtapaModal({
     isOpen,
     onClose,
@@ -46,24 +70,82 @@ export default function TransferenciaEtapaModal({
     // Refs
     const dropdownRef = useRef(null);
     const tabelaScrollRef = useRef(null);
+    const etapasScrollRef = useRef(null);
+    const etapasRefs = useRef({});
+    const dragStateRef = useRef({
+        isDragging: false,
+        startX: 0,
+        scrollLeft: 0,
+    });
 
-    // --- Máscaras e Utilitários de Formatação ---
-    const formatarMoedaBR = (valor) => {
-        const limpo = String(valor).replace(/\D/g, "");
-        const numero = Number(limpo) / 100;
-        return numero.toLocaleString("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-        });
+    const indiceProximaEtapa = useMemo(() => {
+        return etapas.findIndex((e) => e.id === proximaEtapa?.id);
+    }, [etapas, proximaEtapa?.id]);
+
+    const somaQuantidades = useMemo(() => {
+        return linhasTabela.reduce((acc, curr) => acc + Number(curr.quantidade || 0), 0);
+    }, [linhasTabela]);
+
+    const quantidadeValida = useMemo(() => {
+        if (linhasTabela.length <= 1) return true;
+        return somaQuantidades === Number(fichaTecnica?.quantidade || 0);
+    }, [linhasTabela.length, somaQuantidades, fichaTecnica?.quantidade]);
+
+    const precoUnitarioValido = useMemo(() => {
+        return linhasTabela.every(
+            (linha) => parseCurrencyToNumber(linha.precoUnitarioFormatado) > 0,
+        );
+    }, [linhasTabela]);
+
+    const gridTemplateColumnsTabela =
+        linhasTabela.length > 1
+            ? "minmax(180px, 1.15fr) minmax(150px, 0.85fr) minmax(130px, 0.6fr) minmax(160px, 0.8fr) minmax(170px, 0.85fr)"
+            : "minmax(180px, 1.15fr) minmax(150px, 0.85fr) minmax(160px, 0.8fr) minmax(170px, 0.85fr)";
+
+    const registrarRefEtapa = (etapaId) => (node) => {
+        if (node) {
+            etapasRefs.current[etapaId] = node;
+        } else {
+            delete etapasRefs.current[etapaId];
+        }
     };
 
-    const converterMoedaParaFloat = (stringMoeda) => {
-        if (!stringMoeda) return 0;
-        const limpo = stringMoeda.replace(/[^\d]/g, "");
-        return Number(limpo) / 100;
+    const iniciarArrasteEtapas = (event) => {
+        if (!etapasScrollRef.current) return;
+        if (event.pointerType === "mouse" && event.button !== 0) return;
+
+        dragStateRef.current = {
+            isDragging: true,
+            startX: event.clientX,
+            scrollLeft: etapasScrollRef.current.scrollLeft,
+        };
+
+        try {
+            event.currentTarget.setPointerCapture(event.pointerId);
+        } catch (error) {
+            console.log(error);
+            // Ignorado de propósito.
+        }
     };
 
-    // --- Carga Inicial de Dados ---
+    const moverArrasteEtapas = (event) => {
+        if (!dragStateRef.current.isDragging || !etapasScrollRef.current) return;
+
+        const delta = event.clientX - dragStateRef.current.startX;
+        etapasScrollRef.current.scrollLeft = dragStateRef.current.scrollLeft - delta;
+    };
+
+    const finalizarArrasteEtapas = (event) => {
+        dragStateRef.current.isDragging = false;
+
+        try {
+            event.currentTarget.releasePointerCapture(event.pointerId);
+        } catch (error) {
+            console.log(error);
+            // Ignorado de propósito.
+        }
+    };
+
     useEffect(() => {
         const carregarDadosIniciais = async () => {
             setLoading(true);
@@ -78,32 +160,46 @@ export default function TransferenciaEtapaModal({
                 // 2. Buscar parceiros do fabrico filtrando pela categoria da etapa concluída
                 const listaParceiros = await getParceirosByFabrico(fabricoId);
                 const filtradosPorCategoria = listaParceiros.filter(
-                    (p) => p.categoria?.toLowerCase() === etapaConcluida.nome?.toLowerCase(),
+                    (p) => p.categoria?.toLowerCase() === etapaConcluida?.nome?.toLowerCase(),
                 );
                 setParceirosDisponiveis(filtradosPorCategoria);
 
                 // 3. Buscar parceiros já associados a esta Ficha Técnica
-                const parceirosExistentes = await getFichaParceiroByFicha(fichaTecnica.id);
+                const parceirosExistentesRaw = await getFichaParceiroByFicha(fichaTecnica.id);
+                const parceirosExistentes = Array.isArray(parceirosExistentesRaw)
+                    ? parceirosExistentesRaw
+                    : [];
 
                 setParceirosIniciais(parceirosExistentes);
 
                 const jaVinculadosDestaEtapa = parceirosExistentes
                     .filter(
                         (fp) =>
-                            fp.parceiro?.categoria?.toLowerCase() ===
-                            etapaConcluida.nome?.toLowerCase(),
+                            fp?.parceiro?.categoria?.toLowerCase() ===
+                            etapaConcluida?.nome?.toLowerCase(),
                     )
-                    .map((fp) => ({
-                        id: fp.parceiro.id,
-                        nome: fp.parceiro.nome,
-                        operacao: fp.operacao || "",
-                        quantidade: fp.quantidade,
-                        custoTotalFormatado: formatarMoedaBR(fp.custo ? Number(fp.custo) : 0),
-                    }));
+                    .map((fp) => {
+                        const quantidade = Number(fp?.quantidade || fichaTecnica?.quantidade || 0);
+
+                        // o backend pode devolver "valor" ou "custo";
+                        const valorBruto = Number(fp?.valor ?? fp?.custo ?? 0);
+
+                        // se o valor recebido for o total, o unitário é o total dividido pela quantidade
+                        const precoUnitario = quantidade > 0 ? valorBruto / quantidade : 0;
+
+                        return {
+                            id: fp.parceiro.id,
+                            nome: fp.parceiro.nome,
+                            operacao: fp.operacao || "",
+                            quantidade,
+                            precoUnitarioFormatado: formatCurrencyBR(precoUnitario),
+                            custoTotalFormatado: formatCurrencyBR(valorBruto),
+                        };
+                    });
 
                 setLinhasTabela(jaVinculadosDestaEtapa);
-            } catch (error) {
-                console.error("Erro ao carregar dados do modal de transferência:", error);
+            } catch (err) {
+                console.error("Erro ao carregar dados do modal de transferência:", err);
             } finally {
                 setLoading(false);
             }
@@ -112,10 +208,36 @@ export default function TransferenciaEtapaModal({
         if (isOpen && fabricoId && fichaTecnica?.id) {
             carregarDadosIniciais();
         }
-    }, [isOpen, fabricoId, fichaTecnica, etapaConcluida]);
+    }, [
+        isOpen,
+        fabricoId,
+        fichaTecnica?.id,
+        fichaTecnica?.quantidade,
+        etapaConcluida?.id,
+        etapaConcluida?.nome,
+        proximaEtapa?.id,
+        proximaEtapa?.nome,
+    ]);
 
-    // --- Fechamento do Dropdown ao clicar fora ---
     useEffect(() => {
+        if (!isOpen || loading || !proximaEtapa?.id) return;
+
+        const frame = window.requestAnimationFrame(() => {
+            const alvo = etapasRefs.current[proximaEtapa.id];
+            if (alvo) {
+                alvo.scrollIntoView({
+                    behavior: "smooth",
+                    inline: "center",
+                    block: "nearest",
+                });
+            }
+        });
+
+        return () => window.cancelAnimationFrame(frame);
+    }, [isOpen, loading, proximaEtapa?.id, etapas]);
+
+    useEffect(() => {
+        // --- Fechamento do Dropdown ao clicar fora ---
         function handleClickOutside(event) {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setDropdownAberto(false);
@@ -136,68 +258,111 @@ export default function TransferenciaEtapaModal({
 
     // --- Ações da Tabela ---
     const adicionarParceiroNaTabela = (parceiro) => {
+        const quantidadeInicial =
+            linhasTabela.length === 0 ? Number(fichaTecnica?.quantidade || 0) : 0;
+
         const novaLinha = {
             id: parceiro.id,
             nome: parceiro.nome,
             operacao: "",
-            // Se for o primeiro, assume o total. Se já existirem outros, inicia zerado para validação forçar o ajuste
-            quantidade: linhasTabela.length === 0 ? fichaTecnica.quantidade : 0,
-            custoTotalFormatado: formatarMoedaBR(0),
+            quantidade: quantidadeInicial,
+            precoUnitarioFormatado: formatCurrencyBR(0),
+            custoTotalFormatado: formatCurrencyBR(0),
         };
-        setLinhasTabela([...linhasTabela, novaLinha]);
+
+        setLinhasTabela((prev) => [...prev, novaLinha]);
         setBuscaParceiro("");
         setDropdownAberto(false);
     };
 
     const removerParceiroDaTabela = (id) => {
-        setLinhasTabela((prev) => prev.filter((linha) => linha.id !== id));
+        setLinhasTabela((prev) => {
+            const restantes = prev.filter((linha) => linha.id !== id);
+
+            if (restantes.length === 1) {
+                const unicaLinha = restantes[0];
+                const quantidadeEfetiva = Number(fichaTecnica?.quantidade || 0);
+                const precoUnitario = parseCurrencyToNumber(unicaLinha.precoUnitarioFormatado);
+
+                return [
+                    {
+                        ...unicaLinha,
+                        quantidade: quantidadeEfetiva,
+                        custoTotalFormatado: formatCurrencyBR(precoUnitario * quantidadeEfetiva),
+                    },
+                ];
+            }
+
+            return restantes;
+        });
     };
 
     const atualizarCampoLinha = (id, campo, valor) => {
-        setLinhasTabela(
-            linhasTabela.map((linha) => {
+        setLinhasTabela((prev) =>
+            prev.map((linha) => {
                 if (linha.id !== id) return linha;
-                if (campo === "custoTotalFormatado") {
-                    return { ...linha, [campo]: formatarMoedaBR(valor) };
+
+                const linhaAtualizada = {
+                    ...linha,
+                };
+
+                if (campo === "precoUnitarioFormatado" || campo === "custoTotalFormatado") {
+                    linhaAtualizada[campo] = formatCurrencyBR(valor);
+                } else {
+                    linhaAtualizada[campo] = valor;
                 }
-                return { ...linha, [campo]: valor };
+
+                const quantidade =
+                    prev.length === 1
+                        ? Number(fichaTecnica?.quantidade || 0)
+                        : Number(linhaAtualizada.quantidade || 0);
+
+                if (campo === "precoUnitarioFormatado" || campo === "quantidade") {
+                    const preco = parseCurrencyToNumber(linhaAtualizada.precoUnitarioFormatado);
+
+                    linhaAtualizada.custoTotalFormatado = formatCurrencyBR(preco * quantidade);
+                }
+
+                if (campo === "custoTotalFormatado") {
+                    const total = parseCurrencyToNumber(linhaAtualizada.custoTotalFormatado);
+
+                    const preco = quantidade > 0 ? total / quantidade : 0;
+
+                    linhaAtualizada.precoUnitarioFormatado = formatCurrencyBR(preco);
+                }
+
+                return linhaAtualizada;
             }),
         );
     };
 
-    // --- Cálculos de Validação de Quantidade ---
-    const somaQuantidades = useMemo(() => {
-        return linhasTabela.reduce((acc, curr) => acc + Number(curr.quantidade || 0), 0);
-    }, [linhasTabela]);
-
-    const quantidadeValida = useMemo(() => {
-        if (linhasTabela.length <= 1) return true;
-        return somaQuantidades === fichaTecnica.quantidade;
-    }, [linhasTabela, somaQuantidades, fichaTecnica]);
-
     // --- Submit / Processamento da Transferência ---
     const handleTransferir = async () => {
-        if (!quantidadeValida) return;
+        if (!quantidadeValida) {
+            return;
+        }
+
         setSubmitting(true);
         try {
             if (linhasTabela.length > 0) {
-                for (const linha of linhasTabela) {
-                    const custoTotal = converterMoedaParaFloat(linha.custoTotalFormatado);
-                    const qtdAlocada =
-                        linhasTabela.length === 1
-                            ? fichaTecnica.quantidade
-                            : Number(linha.quantidade);
-                    // Evita divisão por zero boba
-                    const precoUnitario = qtdAlocada > 0 ? custoTotal / qtdAlocada : 0;
+                for (const [, linha] of linhasTabela.entries()) {
+                    const totalLinhas = linhasTabela.length;
+                    const quantidadeEfetiva = getEffectiveQuantity(
+                        linha,
+                        totalLinhas,
+                        fichaTecnica?.quantidade,
+                    );
+                    const precoUnitario = parseCurrencyToNumber(linha.precoUnitarioFormatado);
+                    const custoTotal = precoUnitario * quantidadeEfetiva;
 
                     // Passos de Negócio mapeados:
                     // 1 - Ver se existe parceiro_produto
-                    const parceiro_produto = await getProdutoParceiro(
+                    const parceiroProdutoExistente = await getProdutoParceiro(
                         fichaTecnica.produto_id,
                         linha.id,
                     );
 
-                    if (parceiro_produto) {
+                    if (parceiroProdutoExistente) {
                         // 1. Atualizar preço da relação parceiro_produto
                         await updateParceiroProdutoPrice(
                             linha.id,
@@ -216,13 +381,14 @@ export default function TransferenciaEtapaModal({
                     const payloadCusto = {
                         operacao: linha.operacao,
                         custo: custoTotal,
-                        quantidade: qtdAlocada,
+                        quantidade: quantidadeEfetiva,
                     };
 
                     // Analisa se a relação já existia antes de fazer qualquer requisição
-                    const parceiroJaExistia = parceirosIniciais.some(
-                        (p) => p.parceiro.id === linha.id,
-                    );
+                    const parceiroJaExistia = parceirosIniciais.some((p) => {
+                        const idEncontrado = p?.parceiro?.id ?? p?.parceiro_id ?? p?.id ?? null;
+                        return idEncontrado === linha.id;
+                    });
 
                     if (parceiroJaExistia) {
                         // Se já existia, atualiza
@@ -238,13 +404,13 @@ export default function TransferenciaEtapaModal({
                 }
             }
 
-            const fichas_etapas = await getFichaEtapaByFichaTecnica(fichaTecnica.id);
-            const ficha_etapa_concluida = fichas_etapas.find(
-                (fe) => fe.etapa_id === etapaConcluida.id,
+            const fichasEtapas = await getFichaEtapaByFichaTecnica(fichaTecnica.id);
+            const fichaEtapaConcluida = fichasEtapas.find(
+                (fe) => fe.etapa_id === etapaConcluida?.id,
             );
 
-            if (ficha_etapa_concluida) {
-                await finalizarFichaEtapa(ficha_etapa_concluida.id);
+            if (fichaEtapaConcluida) {
+                await finalizarFichaEtapa(fichaEtapaConcluida.id);
             }
 
             // 4. Iniciar a nova etapa do fluxo
@@ -269,24 +435,24 @@ export default function TransferenciaEtapaModal({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 font-['Outfit'] px-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 px-4 font-['Outfit']">
             {/* CONTAINER PRINCIPAL DO MODAL */}
-            <div className="relative w-full max-w-4xl rounded-[24px] bg-white p-8 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div className="relative w-full max-w-6xl max-h-[90vh] overflow-y-auto custom-scrollbar bg-white p-8 shadow-2xl rounded-[24px]">
                 {/* CABEÇALHO DO MODAL */}
-                <div className="flex items-start justify-between mb-8">
+                <div className="mb-8 flex items-start justify-between">
                     <div className="flex flex-col">
                         <div className="flex items-center gap-2">
                             <img
                                 src="/transferencia.png"
                                 alt="Ícone"
-                                className="w-6 h-6 object-contain"
+                                className="h-6 w-6 object-contain"
                             />
-                            <h2 className="text-[22px] font-light text-[#404040] leading-none">
+                            <h2 className="text-[22px] font-light leading-none text-[#404040]">
                                 Transferência para {proximaEtapa.nome}
                             </h2>
                         </div>
 
-                        <div className="text-[14px] font-light text-[#7B7D80] ml-9 mt-1 leading-none">
+                        <div className="ml-9 mt-1 text-[14px] font-light leading-none text-[#7B7D80]">
                             {[
                                 fichaTecnica?.pedido?.numero
                                     ? `Nº${fichaTecnica.pedido.numero}`
@@ -300,7 +466,7 @@ export default function TransferenciaEtapaModal({
                                         {texto}
                                         {/* Insere a barra colorida apenas se não for o último item da lista */}
                                         {index < arrayOriginal.length - 1 && (
-                                            <span className="text-[#D9D9D9] mx-2">|</span>
+                                            <span className="mx-2 text-[#D9D9D9]">|</span>
                                         )}
                                     </React.Fragment>
                                 ))}
@@ -308,25 +474,31 @@ export default function TransferenciaEtapaModal({
                     </div>
 
                     <button onClick={onClose} className="rounded-full p-2 transition-colors">
-                        <img src="/fechar-cinza.png" alt="Fechar" className="w-3 h-3 opacity-50" />
+                        <img src="/fechar-cinza.png" alt="Fechar" className="h-3 w-3 opacity-50" />
                     </button>
                 </div>
 
                 {loading ? (
-                    <div className="flex h-64 items-center justify-center text-[#898C8F] font-light">
+                    <div className="flex h-64 items-center justify-center font-light text-[#898C8F]">
                         Carregando informações da etapa...
                     </div>
                 ) : (
                     <>
                         {/* BARRA DE PROGRESSÃO (ETAPAS) */}
-                        <div className="w-full overflow-x-auto pb-8 mb-4 scrollbar-thin">
-                            <div className="flex items-center justify-center min-w-max px-2">
+                        <div
+                            ref={etapasScrollRef}
+                            onPointerDown={iniciarArrasteEtapas}
+                            onPointerMove={moverArrasteEtapas}
+                            onPointerUp={finalizarArrasteEtapas}
+                            onPointerLeave={finalizarArrasteEtapas}
+                            onPointerCancel={finalizarArrasteEtapas}
+                            className="w-full overflow-x-auto overflow-y-hidden pb-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden cursor-grab select-none touch-pan-x"
+                            style={{ msOverflowStyle: "none" }}
+                        >
+                            <div className="min-w-max flex items-center justify-center px-2 py-2">
                                 {etapas.map((etapa, idx) => {
-                                    const idxProxima = etapas.findIndex(
-                                        (e) => e.id === proximaEtapa.id,
-                                    );
-                                    const isConcluida = idx < idxProxima;
-
+                                    const isConcluida =
+                                        indiceProximaEtapa !== -1 && idx < indiceProximaEtapa;
                                     const linkIcone = isConcluida
                                         ? etapa.icone_verde?.link
                                         : etapa.icone_cinza?.link;
@@ -337,20 +509,27 @@ export default function TransferenciaEtapaModal({
 
                                     return (
                                         <React.Fragment key={etapa.id}>
-                                            <div className="flex flex-col items-center gap-3 relative z-10 bg-white">
+                                            <div
+                                                ref={registrarRefEtapa(etapa.id)}
+                                                className="relative z-10 flex flex-col items-center gap-3 bg-white"
+                                            >
                                                 <div
-                                                    className={`w-[83px] h-[83px] rounded-[30px] border flex items-center justify-center transition-all ${estiloCaixa}`}
+                                                    className={`flex h-[83px] w-[83px] items-center justify-center rounded-[30px] border transition-all ${estiloCaixa}`}
                                                     title={etapa.descricao}
                                                 >
                                                     {linkIcone && (
                                                         <img
                                                             src={linkIcone}
-                                                            className="w-9 h-9 object-contain"
+                                                            className="h-9 w-9 object-contain"
                                                         />
                                                     )}
                                                 </div>
                                                 <span
-                                                    className={`text-[16px] font-normal tracking-wide absolute -bottom-7 whitespace-nowrap ${isConcluida ? "text-[#B4D64E]" : "text-[#D9D9D9]"}`}
+                                                    className={`absolute -bottom-7 whitespace-nowrap text-[16px] font-normal tracking-wide ${
+                                                        isConcluida
+                                                            ? "text-[#B4D64E]"
+                                                            : "text-[#D9D9D9]"
+                                                    }`}
                                                 >
                                                     {etapa.nome}
                                                 </span>
@@ -359,8 +538,12 @@ export default function TransferenciaEtapaModal({
                                             {idx < etapas.length - 1 &&
                                                 (() => {
                                                     const proxEtapaLista = etapas[idx + 1];
-                                                    const estaConcluida = idx < idxProxima;
-                                                    const proximaConcluida = idx + 1 < idxProxima;
+                                                    const estaConcluida =
+                                                        indiceProximaEtapa !== -1 &&
+                                                        idx < indiceProximaEtapa;
+                                                    const proximaConcluida =
+                                                        indiceProximaEtapa !== -1 &&
+                                                        idx + 1 < indiceProximaEtapa;
 
                                                     let estiloLinha = {
                                                         backgroundColor: "#D9D9D9",
@@ -371,8 +554,8 @@ export default function TransferenciaEtapaModal({
                                                             backgroundColor: "#B4D64E",
                                                         };
                                                     } else if (
-                                                        etapa.id === etapaConcluida.id &&
-                                                        proxEtapaLista.id === proximaEtapa.id
+                                                        etapa.id === etapaConcluida?.id &&
+                                                        proxEtapaLista.id === proximaEtapa?.id
                                                     ) {
                                                         estiloLinha = {
                                                             backgroundImage:
@@ -382,7 +565,7 @@ export default function TransferenciaEtapaModal({
 
                                                     return (
                                                         <div
-                                                            className="h-[2px] w-[60px] mx-1 transition-all z-0"
+                                                            className="z-0 mx-1 h-[2px] w-[60px] transition-all"
                                                             style={estiloLinha}
                                                         />
                                                     );
@@ -395,7 +578,7 @@ export default function TransferenciaEtapaModal({
 
                         {/* SELETOR (INPUT DE BUSCA COM DROPDOWN) */}
                         <div className="mb-6 flex flex-col items-start">
-                            <label className="block text-[16px] font-light text-[#7B7D80] mb-2">
+                            <label className="mb-2 block text-[16px] font-medium text-[#4696AD]">
                                 Registrar custo do(a) {etapaConcluida.nome}
                             </label>
 
@@ -406,9 +589,9 @@ export default function TransferenciaEtapaModal({
                                     onFocus={() => setDropdownAberto(true)}
                                     onChange={(e) => setBuscaParceiro(e.target.value)}
                                     placeholder="Colaborador"
-                                    className="w-full h-[39px] rounded-[10px] border border-[#898C8F] bg-white px-4 text-[14px] outline-none placeholder:text-[#898C8F] text-[#404040] transition-all"
+                                    className="h-[39px] w-full rounded-[10px] border border-[#898C8F] bg-white px-4 text-[14px] text-[#404040] outline-none placeholder:text-[#898C8F] transition-all"
                                 />
-                                <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#898C8F]">
+                                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#898C8F]">
                                     <svg
                                         width="14"
                                         height="14"
@@ -424,9 +607,9 @@ export default function TransferenciaEtapaModal({
                                 </span>
 
                                 {dropdownAberto && (
-                                    <ul className="absolute left-0 right-0 top-[45px] z-50 max-h-[200px] overflow-y-auto rounded-[10px] border border-[#D9D9D9] bg-white shadow-lg">
+                                    <ul className="absolute left-0 right-0 top-[45px] z-50 max-h-[200px] overflow-y-auto rounded-[10px] border border-[#D9D9D9] bg-white shadow-lg scrollbar-sutil">
                                         {parceirosFiltrados.length === 0 ? (
-                                            <li className="px-4 py-3 text-[14px] text-[#898C8F] font-light">
+                                            <li className="px-4 py-3 text-[14px] font-light text-[#898C8F]">
                                                 Nenhum colaborador disponível para esta categoria
                                             </li>
                                         ) : (
@@ -436,7 +619,7 @@ export default function TransferenciaEtapaModal({
                                                     onClick={() =>
                                                         adicionarParceiroNaTabela(parceiro)
                                                     }
-                                                    className="px-4 py-2.5 text-[14px] text-[#404040] font-light hover:bg-[#F5F5F5] cursor-pointer transition-colors"
+                                                    className="cursor-pointer px-4 py-2.5 text-[14px] font-light text-[#404040] transition-colors hover:bg-[#F5F5F5]"
                                                 >
                                                     {parceiro.nome}
                                                 </li>
@@ -450,20 +633,26 @@ export default function TransferenciaEtapaModal({
                         {/* TABELA DE CUSTOS (VISUAL REFATORADO AO PADRÃO DA FICHA TECNICA) */}
                         <div className="mb-6 w-full">
                             <div
-                                className={`grid ${linhasTabela.length > 1 ? "grid-cols-4" : "grid-cols-3"} items-center h-10 font-normal text-center text-[#4696AD]`}
+                                className="grid h-10 items-center text-center font-normal text-[#4696AD]"
+                                style={{
+                                    gridTemplateColumns: gridTemplateColumnsTabela,
+                                }}
                             >
-                                <div className="bg-[#C9EAF6] px-4 py-2.5 border-r-[0.5px] rounded-tl-[10px] border-[#7B7D80] h-10">
+                                <div className="h-10 rounded-tl-[10px] border-r-[0.5px] border-[#7B7D80] bg-[#C9EAF6] px-4 py-2.5">
                                     Colaborador
                                 </div>
-                                <div className="bg-[#C9EAF6] px-4 py-2.5 border-r-[0.5px] border-[#7B7D80] h-10">
+                                <div className="h-10 border-r-[0.5px] border-[#7B7D80] bg-[#C9EAF6] px-4 py-2.5">
                                     Operação
                                 </div>
                                 {linhasTabela.length > 1 && (
-                                    <div className="bg-[#C9EAF6] px-4 py-2.5 border-r-[0.5px] border-[#7B7D80] h-10">
+                                    <div className="h-10 border-r-[0.5px] border-[#7B7D80] bg-[#C9EAF6] px-4 py-2.5">
                                         Total de peças
                                     </div>
                                 )}
-                                <div className="bg-[#C9EAF6] rounded-tr-[10px] px-4 py-2.5 h-10">
+                                <div className="h-10 border-r-[0.5px] border-[#7B7D80] bg-[#C9EAF6] px-4 py-2.5">
+                                    Preço Unitário
+                                </div>
+                                <div className="h-10 rounded-tr-[10px] bg-[#C9EAF6] px-4 py-2.5">
                                     Custo Total
                                 </div>
                             </div>
@@ -477,10 +666,15 @@ export default function TransferenciaEtapaModal({
                                     {linhasTabela.length > 0 ? (
                                         linhasTabela.map((row, index) => {
                                             const isLastRow = index === linhasTabela.length - 1;
+
                                             return (
                                                 <div
                                                     key={row.id}
-                                                    className={`grid ${linhasTabela.length > 1 ? "grid-cols-4" : "grid-cols-3"} items-stretch min-h-[40px] h-[40px]`}
+                                                    className="grid min-h-[40px] h-[40px] items-stretch"
+                                                    style={{
+                                                        gridTemplateColumns:
+                                                            gridTemplateColumnsTabela,
+                                                    }}
                                                     onMouseEnter={() =>
                                                         setHoveredParceiroIndex(index)
                                                     }
@@ -489,7 +683,11 @@ export default function TransferenciaEtapaModal({
                                                     }
                                                 >
                                                     <div
-                                                        className={`min-w-0 flex items-center justify-center px-4 ${index % 2 === 1 ? "bg-[#F4F4F4]" : "bg-[#FFFFFF]"}`}
+                                                        className={`min-w-0 flex items-center justify-center px-4 ${
+                                                            index % 2 === 1
+                                                                ? "bg-[#F4F4F4]"
+                                                                : "bg-[#FFFFFF]"
+                                                        }`}
                                                         style={{
                                                             borderTopWidth: "0px",
                                                             borderLeftWidth: "0.5px",
@@ -502,13 +700,17 @@ export default function TransferenciaEtapaModal({
                                                             borderRightColor: "#7B7D80",
                                                         }}
                                                     >
-                                                        <span className="text-[14px] font-light text-[#898C8F] truncate cursor-not-allowed select-none">
+                                                        <span className="cursor-not-allowed select-none truncate text-[14px] font-light text-[#898C8F]">
                                                             {row.nome}
                                                         </span>
                                                     </div>
 
                                                     <div
-                                                        className={`min-w-0 flex items-center justify-center px-2 ${index % 2 === 1 ? "bg-[#F4F4F4]" : "bg-[#FFFFFF]"}`}
+                                                        className={`min-w-0 flex items-center justify-center px-2 ${
+                                                            index % 2 === 1
+                                                                ? "bg-[#F4F4F4]"
+                                                                : "bg-[#FFFFFF]"
+                                                        }`}
                                                         style={{
                                                             borderTopWidth: "0px",
                                                             borderLeftWidth: "0px",
@@ -528,13 +730,17 @@ export default function TransferenciaEtapaModal({
                                                                 )
                                                             }
                                                             placeholder="-"
-                                                            className="w-full h-[32px] border-0 bg-transparent text-center text-[14px] outline-none focus:ring-0 text-[#898C8F] font-light"
+                                                            className="h-[32px] w-full border-0 bg-transparent text-center text-[14px] font-light text-[#898C8F] outline-none focus:ring-0"
                                                         />
                                                     </div>
 
                                                     {linhasTabela.length > 1 && (
                                                         <div
-                                                            className={`min-w-0 flex items-center justify-center px-2 ${index % 2 === 1 ? "bg-[#F4F4F4]" : "bg-[#FFFFFF]"}`}
+                                                            className={`min-w-0 flex items-center justify-center px-2 ${
+                                                                index % 2 === 1
+                                                                    ? "bg-[#F4F4F4]"
+                                                                    : "bg-[#FFFFFF]"
+                                                            }`}
                                                             style={{
                                                                 borderTopWidth: "0px",
                                                                 borderLeftWidth: "0px",
@@ -561,13 +767,46 @@ export default function TransferenciaEtapaModal({
                                                                     );
                                                                 }}
                                                                 placeholder="-"
-                                                                className="w-full h-[32px] border-0 bg-transparent text-center text-[14px] outline-none focus:ring-0 text-[#898C8F] font-light [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0"
+                                                                className="h-[32px] w-full border-0 bg-transparent text-center text-[14px] font-light text-[#898C8F] outline-none focus:ring-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none"
                                                             />
                                                         </div>
                                                     )}
 
                                                     <div
-                                                        className={`min-w-0 flex items-center justify-center px-2 ${index % 2 === 1 ? "bg-[#F4F4F4]" : "bg-[#FFFFFF]"} ${isLastRow ? "rounded-br-[10px]" : ""}`}
+                                                        className={`min-w-0 flex items-center justify-center px-2 ${
+                                                            index % 2 === 1
+                                                                ? "bg-[#F4F4F4]"
+                                                                : "bg-[#FFFFFF]"
+                                                        }`}
+                                                        style={{
+                                                            borderTopWidth: "0px",
+                                                            borderLeftWidth: "0px",
+                                                            borderRightWidth: "0.5px",
+                                                            borderBottomWidth: "0.5px",
+                                                            borderColor: "#D9D9D9",
+                                                        }}
+                                                    >
+                                                        <input
+                                                            type="text"
+                                                            value={row.precoUnitarioFormatado}
+                                                            onChange={(e) =>
+                                                                atualizarCampoLinha(
+                                                                    row.id,
+                                                                    "precoUnitarioFormatado",
+                                                                    e.target.value,
+                                                                )
+                                                            }
+                                                            placeholder="R$ 0,00"
+                                                            className="h-[32px] w-full border-0 bg-transparent text-center text-[14px] font-light text-[#898C8F] outline-none focus:ring-0"
+                                                        />
+                                                    </div>
+
+                                                    <div
+                                                        className={`min-w-0 flex items-center justify-center px-2 ${
+                                                            index % 2 === 1
+                                                                ? "bg-[#F4F4F4]"
+                                                                : "bg-[#FFFFFF]"
+                                                        } ${isLastRow ? "rounded-br-[10px]" : ""}`}
                                                         style={{
                                                             borderTopWidth: "0px",
                                                             borderLeftWidth: "0px",
@@ -589,8 +828,8 @@ export default function TransferenciaEtapaModal({
                                                                     e.target.value,
                                                                 )
                                                             }
-                                                            placeholder="R$ -"
-                                                            className="w-full h-[32px] border-0 bg-transparent text-center text-[14px] outline-none focus:ring-0 text-[#898C8F] font-light"
+                                                            placeholder="R$ 0,00"
+                                                            className="h-[32px] w-full border-0 bg-transparent text-center text-[14px] font-light text-[#898C8F] outline-none focus:ring-0"
                                                         />
                                                     </div>
                                                 </div>
@@ -598,7 +837,7 @@ export default function TransferenciaEtapaModal({
                                         })
                                     ) : (
                                         <div
-                                            className="px-4 py-5 text-center text-[13px] text-[#888] bg-white rounded-b-[10px]"
+                                            className="rounded-b-[10px] bg-white px-4 py-5 text-center text-[13px] text-[#888]"
                                             style={{
                                                 borderLeft: "0.5px solid #D9D9D9",
                                                 borderRight: "0.5px solid #D9D9D9",
@@ -622,7 +861,9 @@ export default function TransferenciaEtapaModal({
                                                 onClick={() => removerParceiroDaTabela(row.id)}
                                                 onMouseEnter={() => setHoveredParceiroIndex(index)}
                                                 onMouseLeave={() => setHoveredParceiroIndex(null)}
-                                                className={`pointer-events-auto absolute z-20 rounded p-1 transition-opacity ${isVisible ? "opacity-100" : "opacity-0"}`}
+                                                className={`pointer-events-auto absolute z-20 rounded p-1 transition-opacity ${
+                                                    isVisible ? "opacity-100" : "opacity-0"
+                                                }`}
                                                 style={{
                                                     top,
                                                     right: "-28px",
@@ -651,10 +892,18 @@ export default function TransferenciaEtapaModal({
 
                         {/* MENSAGEM DE VALIDAÇÃO (SE QUANTIDADE NÃO BATER E > 1 COLABORADOR) */}
                         {!quantidadeValida && linhasTabela.length > 0 && (
-                            <div className="mb-6 bg-amber-50 text-amber-800 p-4 rounded-[10px] text-[14px] font-light border border-amber-200">
+                            <div className="mb-6 rounded-[10px] border border-amber-200 bg-amber-50 p-4 text-[14px] font-light text-amber-800">
                                 <span className="font-medium">Atenção:</span> A soma das peças (
                                 {somaQuantidades}) não corresponde ao total da Ficha (
                                 {fichaTecnica.quantidade}).
+                            </div>
+                        )}
+
+                        {!precoUnitarioValido && linhasTabela.length > 0 && (
+                            <div className="mb-6 rounded-[10px] border border-red-200 bg-red-50 p-4 text-[14px] font-light text-red-700">
+                                <span className="font-medium">Atenção:</span> Para prosseguir com a
+                                transferência, cadastre o valor do(a){" "}
+                                {etapaConcluida.nome.toUpperCase()};
                             </div>
                         )}
 
@@ -663,10 +912,10 @@ export default function TransferenciaEtapaModal({
                             <button
                                 type="button"
                                 onClick={handleTransferir}
-                                disabled={submitting || !quantidadeValida}
-                                className={`px-10 h-[39px] w-[200px] rounded-full font-normal transition-all text-[15px] ${
-                                    !quantidadeValida
-                                        ? "bg-[#F5F5F5] text-[#898C8F] cursor-not-allowed border border-[#D9D9D9]"
+                                disabled={submitting || !quantidadeValida || !precoUnitarioValido}
+                                className={`h-[39px] w-[200px] rounded-full px-10 text-[15px] font-normal transition-all ${
+                                    !quantidadeValida || !precoUnitarioValido
+                                        ? "cursor-not-allowed border border-[#D9D9D9] bg-[#F5F5F5] text-[#898C8F]"
                                         : "bg-[#A9E2F2] text-[#4696AD] hover:bg-[#A2DCED] active:scale-95"
                                 }`}
                             >
