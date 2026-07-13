@@ -129,7 +129,10 @@ const ProdutoParceiros = ({
         <>
             <div
                 className="fixed inset-0 bg-black/35 backdrop-blur-sm flex items-center justify-center z-[999]"
-                onClick={onClose}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    if (onClose) onClose();
+                }}
             >
                 <div
                     className="w-[900px] bg-white rounded-[24px] px-10 pt-10 pb-8 relative"

@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { findOne } from "../../services/fichasTecnicasService";
 import { getProdutosDoCliente } from "../../services/clientesService";
+import EdicaoFichaTecnicaModal from "./EdicaoFichaTecnicaModal";
+import { useNavigate } from "react-router-dom";
+import FichaTecnicaPrintView from "../FichaTecnicaPrintView";
 
 const CampoDetalhe = ({ label, valor }) => (
     <div className="relative border border-[#898C8F] rounded-[10px] h-[39px] px-3 flex items-center mt-2 w-full bg-white">
@@ -25,31 +28,32 @@ export default function FichaTecnicaModal({ isOpen, onClose, fichaId }) {
     const [ficha, setFicha] = useState(null);
     const [loading, setLoading] = useState(false);
     const [referenciaCliente, setReferenciaCliente] = useState("-");
+    const navigate = useNavigate();
+
+    const [modalEdicaoAberto, setModalEdicaoAberto] = useState(false);
+
+    const carregarDados = async () => {
+        try {
+            const dados = await findOne(fichaId);
+            setFicha(dados);
+
+            if (dados?.pedido?.cliente?.id && dados?.produto?.id) {
+                const produtoDoCliente = await getProdutosDoCliente(dados.pedido.cliente.id);
+                const produtoVinculado = produtoDoCliente.find(
+                    (item) => item.produto?.id == dados.produto.id,
+                );
+                setReferenciaCliente(produtoVinculado?.nome_para_cliente || "-");
+            }
+        } catch (error) {
+            console.error("Erro ao carregar os dados da ficha");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
         if (isOpen && fichaId) {
             setLoading(true);
-            const carregarDados = async () => {
-                try {
-                    const dados = await findOne(fichaId);
-                    setFicha(dados);
-
-                    if (dados?.pedido?.cliente?.id && dados?.produto?.id) {
-                        const produtoDoCliente = await getProdutosDoCliente(
-                            dados.pedido.cliente.id,
-                        );
-                        const produtoVinculado = produtoDoCliente.find(
-                            (item) => item.produto?.id == dados.produto.id,
-                        );
-
-                        setReferenciaCliente(produtoVinculado?.nome_para_cliente || "-");
-                    }
-                } catch (error) {
-                    console.error("Erro ao carregar os dados da ficha");
-                } finally {
-                    setLoading(false);
-                }
-            };
             carregarDados();
         }
     }, [isOpen, fichaId]);
@@ -153,7 +157,7 @@ export default function FichaTecnicaModal({ isOpen, onClose, fichaId }) {
                                 </div>
                             </div>
 
-                            <div className="mt-4 mx-[30px]">
+                            <div className="mt-4">
                                 <div className="mb-2 text-center text-[16px] font-light text-[#737373]">
                                     Grade
                                 </div>
@@ -215,7 +219,7 @@ export default function FichaTecnicaModal({ isOpen, onClose, fichaId }) {
                                     </div>
 
                                     <div
-                                        className="rounded-b-[10px] bg-white"
+                                        className="rounded-b-[10px] bg-white overflow-hidden"
                                         style={BORDER_SHELL_05}
                                     >
                                         <div className="flex flex-col w-full">
@@ -300,7 +304,9 @@ export default function FichaTecnicaModal({ isOpen, onClose, fichaId }) {
                                 <table className="w-full text-center text-sm">
                                     <thead className="bg-[#C9EAF6] text-[#4696AD]">
                                         <tr>
-                                            <th className="py-3 border-r border-white/50 font-normal"></th>
+                                            <th className="py-3 border-r border-white/50 font-normal">
+                                                Facção
+                                            </th>
                                             <th className="py-3 border-r border-white/50 font-normal">
                                                 Operação
                                             </th>
@@ -358,26 +364,58 @@ export default function FichaTecnicaModal({ isOpen, onClose, fichaId }) {
                     )}
                 </div>
 
-                {/* 5. FOOTER COM BOTÕES */}
                 <div className="px-8 py-5 border-t border-gray-100 flex justify-between items-center shrink-0">
-                    <button className="w-12 h-12 bg-[#A9E2F2] rounded-full flex items-center justify-center hover:bg-[#97D8EA] transition-colors">
+                    <button
+                        type="button"
+                        onClick={() => window.print()}
+                        className="w-[71px] h-[39px] bg-[#A9E2F2] rounded-full flex items-center justify-center hover:bg-[#97D8EA] transition-colors shadow-sm"
+                    >
                         <img
                             src="/impressora-azul.png"
                             alt="Imprimir"
-                            className="w-6 h-6 object-contain"
+                            className="w-[20px] h-[20px] object-contain"
                         />
                     </button>
 
                     <div className="flex gap-4">
-                        <button className="px-8 h-[39px] rounded-full border border-[#4696AD] text-[#4696AD] bg-[#F3F4FA] hover:bg-[#F3FBFC] transition-colors text-sm">
+                        <button
+                            onClick={() => setModalEdicaoAberto(true)}
+                            className="px-8 h-[39px] rounded-full border border-[#4696AD] text-[#4696AD] bg-[#F3F4FA] hover:bg-[#F3FBFC] transition-colors text-sm"
+                        >
                             Editar Ficha
                         </button>
-                        <button className="px-10 h-[39px] rounded-full bg-[#A9E2F2] text-[#4696AD] hover:bg-[#97D8EA] transition-colors text-sm">
+                        <button
+                            onClick={() => {
+                                onClose();
+                                navigate("/");
+                            }}
+                            className="px-10 h-[39px] rounded-full bg-[#A9E2F2] text-[#4696AD] hover:bg-[#97D8EA] transition-colors text-sm"
+                        >
                             Concluir
                         </button>
                     </div>
                 </div>
             </div>
+
+            {modalEdicaoAberto && (
+                <EdicaoFichaTecnicaModal
+                    isOpen={modalEdicaoAberto}
+                    fichaId={fichaId}
+                    dadosFicha={ficha}
+                    onClose={() => {
+                        setModalEdicaoAberto(false);
+                    }}
+                    onSuccess={() => {
+                        setModalEdicaoAberto(false);
+                        carregarDados();
+                    }}
+                />
+            )}
+            <FichaTecnicaPrintView
+                dadosFicha={ficha}
+                fichaId={fichaId}
+                referencia={referenciaCliente}
+            />
         </div>
     );
 }
