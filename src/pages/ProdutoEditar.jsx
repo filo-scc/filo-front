@@ -484,6 +484,7 @@ export default function ProdutoEditar() {
                     resGrades,
                     resTecidos,
                     resTiposProduto,
+                    dadosFabrico,
                 ] = await Promise.all([
                     getProdutoById(id),
                     getClientesDoProduto(id),
@@ -495,6 +496,9 @@ export default function ProdutoEditar() {
                         ? getTecidosByFabrico(fabricoId)
                         : Promise.resolve([]),
                     getTiposProdutoByFabrico().catch(() => []),
+                    Number.isFinite(fabricoId)
+                        ? getFabricoById(fabricoId)
+                        : Promise.resolve(null),
                 ]);
 
                 if (ignorar) return;
@@ -539,6 +543,7 @@ export default function ProdutoEditar() {
                     dadosProduto.tipo_produto_id || tipoProdutoRelacionado?.id || undefined;
 
                 setProduto(dadosProduto);
+                setFabrico(dadosFabrico);
                 setClientesAssociados(
                     enriquecerClientesAssociados(
                         Array.isArray(dadosClientes) ? dadosClientes : [],
