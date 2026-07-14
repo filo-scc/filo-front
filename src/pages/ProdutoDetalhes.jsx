@@ -5,6 +5,7 @@ import {
     getClientesDoProduto,
     excluirProduto,
     getAviamentosDoProduto,
+    getTiposProdutoByFabrico,
 } from "../services/produtoService";
 import { getFabricoById } from "../services/fabricoService";
 
@@ -37,11 +38,13 @@ export default function ProdutoDetalhes() {
                 const userString = localStorage.getItem("user");
                 const usuarioLogado = userString ? JSON.parse(userString) : null;
 
-                const [dadosProduto, dadosClientes, dadosAviamentos] = await Promise.all([
-                    getProdutoById(id),
-                    getClientesDoProduto(id),
-                    getAviamentosDoProduto(id),
-                ]);
+                const [dadosProduto, dadosClientes, dadosAviamentos, dadosTipos] =
+                    await Promise.all([
+                        getProdutoById(id),
+                        getClientesDoProduto(id),
+                        getAviamentosDoProduto(id),
+                        getTiposProdutoByFabrico().catch(() => []),
+                    ]);
 
                 if (usuarioLogado && dadosProduto.fabrico_id !== usuarioLogado.fabrico_id) {
                     setModalAtencaoAberto(true);
@@ -49,7 +52,17 @@ export default function ProdutoDetalhes() {
                     return;
                 }
 
-                setProduto(dadosProduto);
+                const tipoProdutoRelacionado =
+                    dadosProduto.tipo_produto ||
+                    dadosProduto.tipoProduto ||
+                    (Array.isArray(dadosTipos)
+                        ? dadosTipos.find((tipo) => tipo?.id === dadosProduto.tipo_produto_id)
+                        : null);
+
+                setProduto({
+                    ...dadosProduto,
+                    tipo_produto: tipoProdutoRelacionado || undefined,
+                });
                 setClientesAssociados(dadosClientes);
                 setAviamentosProduto(dadosAviamentos);
             } catch (error) {
