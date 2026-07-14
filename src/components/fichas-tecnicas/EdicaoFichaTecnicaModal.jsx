@@ -15,7 +15,6 @@ import {
 import { getProdutosDoCliente } from "../../services/clientesService";
 import ProdutoParceiros from "../produtos/ProdutoParceiros";
 import FichaTecnicaPrintView from "../FichaTecnicaPrintView";
-import { getParceiroByProduto } from "../../services/produtoService";
 
 const FloatingInput = ({
     label,
