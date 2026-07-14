@@ -1,6 +1,4 @@
-function SkeletonBox({ className }) {
-    return <div className={`bg-[#E8E9F0] rounded-[12px] animate-pulse ${className}`} />;
-}
+import { SkeletonBox } from "../geral/Loading";
 
 function SkeletonCard({ compact = false }) {
     return (

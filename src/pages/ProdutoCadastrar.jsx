@@ -11,6 +11,7 @@ import {
     vincularProdutoAviamento,
 } from "../services/produtoService.js";
 import { upload } from "../services/utilsService";
+import { DropdownOptionsSkeleton, LoadingButton, SkeletonBox } from "../components/geral/Loading";
 
 function FieldLabel({ children }) {
     return <label className="block text-[20px] font-light text-[#404040] mb-3">{children}</label>;
@@ -42,6 +43,7 @@ function DropdownField({
     actionButtonPosition = "end",
     maxVisibleOptions,
     className = "",
+    loading = false,
 }) {
     const shouldScrollOptions =
         Number.isFinite(maxVisibleOptions) && options.length > maxVisibleOptions;
@@ -71,11 +73,16 @@ function DropdownField({
             <button
                 type="button"
                 onClick={onToggle}
-                className="w-full h-[39px] border border-[#898C8F] rounded-[10px] px-3 text-sm focus:outline-none bg-white flex items-center justify-between"
+                disabled={loading}
+                className="w-full h-[39px] border border-[#898C8F] rounded-[10px] px-3 text-sm focus:outline-none bg-white flex items-center justify-between disabled:cursor-not-allowed"
             >
-                <span className={value ? "text-[#707070] font-normal" : "text-[#898C8F]"}>
-                    {value || placeholder}
-                </span>
+                {loading ? (
+                    <SkeletonBox className="h-[14px] w-32 rounded-[7px]" />
+                ) : (
+                    <span className={value ? "text-[#707070] font-normal" : "text-[#898C8F]"}>
+                        {value || placeholder}
+                    </span>
+                )}
                 <svg
                     className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
                     fill="none"
@@ -108,43 +115,63 @@ function DropdownField({
                     >
                         {actionButtonPosition === "start" && actionButtonElement}
 
-                        {options.map((option) => {
-                            const selected = isSelectedOption(option);
+                        {loading ? (
+                            <DropdownOptionsSkeleton />
+                        ) : (
+                            options.map((option) => {
+                                const selected = isSelectedOption(option);
 
-                            return (
-                                <button
-                                    key={option}
-                                    type="button"
-                                    onClick={() => onSelect(option)}
-                                    // Mudanças aqui: pl-[12px] em vez de 15px e border-l-[3px] global
-                                    className={`relative overflow-hidden flex w-full items-center pl-[12px] pr-3 py-3 border-l-[3px] text-left text-[16px] transition-colors ${
-                                        !actionButton || actionButtonPosition === "end"
-                                            ? "first:rounded-t-[13px]"
-                                            : ""
-                                    } ${
-                                        !actionButton || actionButtonPosition === "start"
-                                            ? "last:rounded-b-[13px]"
-                                            : ""
-                                    } ${
-                                        selected
-                                            ? "border-[#C4F042] text-[#707070] bg-white"
-                                            : "border-transparent text-[#707070] bg-white hover:bg-[#FAFAFA]"
-                                    }`}
-                                >
-                                    <span className={selected ? "font-normal text-[#707070]" : ""}>
-                                        {option}
-                                    </span>
-
-                                    {showOptionIndicator && (
-                                        <span className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center text-[#8B8B8B]">
-                                            {selected ? <CheckIcon /> : "+"}
+                                return (
+                                    <button
+                                        key={option}
+                                        type="button"
+                                        onClick={() => onSelect(option)}
+                                        // Mudanças aqui: pl-[12px] em vez de 15px e border-l-[3px] global
+                                        className={`relative overflow-hidden flex w-full items-center pl-[12px] pr-3 py-3 border-l-[3px] text-left text-[16px] transition-colors ${
+                                            !actionButton || actionButtonPosition === "end"
+                                                ? "first:rounded-t-[13px]"
+                                                : ""
+                                        } ${
+                                            !actionButton || actionButtonPosition === "start"
+                                                ? "last:rounded-b-[13px]"
+                                                : ""
+                                        } ${
+                                            selected
+                                                ? "border-[#C4F042] text-[#707070] bg-white"
+                                                : "border-transparent text-[#707070] bg-white hover:bg-[#FAFAFA]"
+                                        }`}
+                                    >
+                                        <span
+                                            className={selected ? "font-normal text-[#707070]" : ""}
+                                        >
+                                            {option}
                                         </span>
-                                    )}
-                                </button>
-                            );
-                        })}
 
-                        {actionButtonPosition === "end" && actionButtonElement}
+                                        {showOptionIndicator && (
+                                            <span className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center text-[#8B8B8B]">
+                                                {selected ? <CheckIcon /> : "+"}
+                                            </span>
+                                        )}
+                                    </button>
+                                );
+                            })
+                        )}
+
+                        {actionButtonPosition === "end" && actionButtonElement && !loading && (
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    actionButton.onClick();
+                                }}
+                                className="relative overflow-hidden flex w-full items-center pl-[12px] pr-3 py-3 border-l-[3px] text-left text-[16px] transition-colors border-transparent text-[#7B7D80] bg-white hover:bg-[#FAFAFA] first:rounded-t-[13px] last:rounded-b-[13px]"
+                            >
+                                <span className="font-normal">{actionButton.label}</span>
+                                <span className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center text-[#898C8F] font-light text-[20px]">
+                                    +
+                                </span>
+                            </button>
+                        )}
                     </div>
                 </>
             )}
@@ -548,11 +575,7 @@ export default function ProdutoCadastar() {
                                     <div>
                                         <DropdownField
                                             value=""
-                                            placeholder={
-                                                aviamentosDisponiveis.length === 0
-                                                    ? "Carregando..."
-                                                    : "Aviamentos"
-                                            }
+                                            placeholder="Aviamentos"
                                             options={aviamentosDisponiveis.map((a) => a.nome)}
                                             isOpen={openDropdown === "aviamentos"}
                                             onToggle={() => toggleDropdown("aviamentos")}
@@ -568,6 +591,7 @@ export default function ProdutoCadastar() {
                                             }
                                             showOptionIndicator
                                             maxVisibleOptions={6}
+                                            loading={carregandoGrades}
                                             actionButton={{
                                                 label: "Novo aviamento",
                                                 onClick: () => {
@@ -598,6 +622,7 @@ export default function ProdutoCadastar() {
                                                 formData.tecido === option
                                             }
                                             maxVisibleOptions={6}
+                                            loading={carregandoGrades}
                                             actionButton={{
                                                 label: "Novo tecido",
                                                 onClick: () => {
@@ -610,16 +635,13 @@ export default function ProdutoCadastar() {
                                     <div>
                                         <DropdownField
                                             value={formData.grade}
-                                            placeholder={
-                                                carregandoGrades
-                                                    ? "Carregando grades..."
-                                                    : "Grade de tamanho*"
-                                            }
+                                            placeholder="Grade de tamanho*"
                                             options={gradesDisponiveis.map((grade) => grade.nome)}
                                             isOpen={openDropdown === "grade"}
                                             onToggle={() => toggleDropdown("grade")}
                                             onSelect={handleGradeSelect}
                                             isSelectedOption={(option) => formData.grade === option}
+                                            loading={carregandoGrades}
                                         />
                                     </div>
                                 </div>
@@ -628,13 +650,14 @@ export default function ProdutoCadastar() {
                     </div>
 
                     <div className="mt-auto flex justify-end pt-16">
-                        <button
+                        <LoadingButton
                             type="submit"
-                            disabled={salvando}
+                            loading={salvando}
+                            loadingText="Salvando..."
                             className="w-[189px] h-[39px] rounded-[18.9px] bg-[#A9E2F2] text-[#4696AD] text-sm font-medium transition-colors hover:bg-[#8acbdc] disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                            {salvando ? "Salvando..." : "Finalizar cadastro"}
-                        </button>
+                            Finalizar cadastro
+                        </LoadingButton>
                     </div>
                 </form>
             </div>
