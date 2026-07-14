@@ -1,17 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
+import ModeloModal from "../components/produtos/ModeloModal";
 import {
     criarProduto,
     getAviamentosByFabrico,
     getGradesByFabrico,
     getTecidosByFabrico,
+    getTiposProdutoByFabrico,
     vincularProdutoAviamento,
 } from "../services/produtoService.js";
 import { upload } from "../services/utilsService";
 import { DropdownOptionsSkeleton, LoadingButton, SkeletonBox } from "../components/geral/Loading";
-
-const modelos = ["Top e short", "Top e calça", "Macaquito", "Macacão"];
 
 function FieldLabel({ children }) {
     return <label className="block text-[20px] font-light text-[#404040] mb-3">{children}</label>;
@@ -40,12 +40,33 @@ function DropdownField({
     isSelectedOption,
     showOptionIndicator = false,
     actionButton,
+    actionButtonPosition = "end",
     maxVisibleOptions,
     className = "",
     loading = false,
 }) {
     const shouldScrollOptions =
         Number.isFinite(maxVisibleOptions) && options.length > maxVisibleOptions;
+
+    const actionButtonElement = actionButton ? (
+        <button
+            type="button"
+            onClick={(e) => {
+                e.stopPropagation();
+                actionButton.onClick();
+            }}
+            className={`relative overflow-hidden flex w-full items-center pl-[12px] pr-3 py-3 border-l-[3px] text-left text-[16px] transition-colors border-transparent text-[#7B7D80] bg-white hover:bg-[#FAFAFA] ${
+                actionButtonPosition === "start"
+                    ? "first:rounded-t-[13px]"
+                    : "last:rounded-b-[13px]"
+            }`}
+        >
+            <span className="font-normal">{actionButton.label}</span>
+            <span className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center text-[#898C8F] font-light text-[20px]">
+                +
+            </span>
+        </button>
+    ) : null;
 
     return (
         <div className={`relative ${isOpen ? "z-50" : "z-10"} ${className}`}>
@@ -92,6 +113,8 @@ function DropdownField({
                                 : "overflow-hidden"
                         }`}
                     >
+                        {actionButtonPosition === "start" && actionButtonElement}
+
                         {loading ? (
                             <DropdownOptionsSkeleton />
                         ) : (
@@ -104,7 +127,15 @@ function DropdownField({
                                         type="button"
                                         onClick={() => onSelect(option)}
                                         // Mudanças aqui: pl-[12px] em vez de 15px e border-l-[3px] global
-                                        className={`relative overflow-hidden flex w-full items-center pl-[12px] pr-3 py-3 border-l-[3px] text-left text-[16px] transition-colors first:rounded-t-[13px] last:rounded-b-[13px] ${
+                                        className={`relative overflow-hidden flex w-full items-center pl-[12px] pr-3 py-3 border-l-[3px] text-left text-[16px] transition-colors ${
+                                            !actionButton || actionButtonPosition === "end"
+                                                ? "first:rounded-t-[13px]"
+                                                : ""
+                                        } ${
+                                            !actionButton || actionButtonPosition === "start"
+                                                ? "last:rounded-b-[13px]"
+                                                : ""
+                                        } ${
                                             selected
                                                 ? "border-[#C4F042] text-[#707070] bg-white"
                                                 : "border-transparent text-[#707070] bg-white hover:bg-[#FAFAFA]"
@@ -126,7 +157,7 @@ function DropdownField({
                             })
                         )}
 
-                        {actionButton && !loading && (
+                        {actionButtonPosition === "end" && actionButtonElement && !loading && (
                             <button
                                 type="button"
                                 onClick={(e) => {
@@ -175,13 +206,17 @@ export default function ProdutoCadastar() {
     const [openDropdown, setOpenDropdown] = useState(null);
     const [salvando, setSalvando] = useState(false);
     const [carregandoGrades, setCarregandoGrades] = useState(false);
+    const [carregandoModelos, setCarregandoModelos] = useState(false);
     const [erroCadastro, setErroCadastro] = useState("");
     const [gradesDisponiveis, setGradesDisponiveis] = useState([]);
     const [tecidosDisponiveis, setTecidosDisponiveis] = useState([]);
     const [aviamentosDisponiveis, setAviamentosDisponiveis] = useState([]);
+    const [modelosDisponiveis, setModelosDisponiveis] = useState([]);
+    const [modalModeloAberto, setModalModeloAberto] = useState(false);
     const [formData, setFormData] = useState({
         referencia: "",
         modelo: "",
+        tipo_produto_id: undefined,
         tecido: "",
         tecido_id: undefined,
         grade: "",
@@ -197,12 +232,15 @@ export default function ProdutoCadastar() {
         const carregarGrades = async () => {
             try {
                 setCarregandoGrades(true);
+                setCarregandoModelos(true);
 
-                const [resGrades, resTecidos, resAviamentos] = await Promise.allSettled([
-                    getGradesByFabrico(fabricoId),
-                    getTecidosByFabrico(fabricoId),
-                    getAviamentosByFabrico(fabricoId),
-                ]);
+                const [resGrades, resTecidos, resAviamentos, resTiposProduto] =
+                    await Promise.allSettled([
+                        getGradesByFabrico(fabricoId),
+                        getTecidosByFabrico(fabricoId),
+                        getAviamentosByFabrico(fabricoId),
+                        getTiposProdutoByFabrico(),
+                    ]);
 
                 if (ignorar) return;
 
@@ -248,9 +286,23 @@ export default function ProdutoCadastar() {
                     console.error("Erro ao carregar aviamentos:", resAviamentos.reason);
                     setAviamentosDisponiveis([]);
                 }
+
+                if (resTiposProduto.status === "fulfilled") {
+                    const modelosTratados = (resTiposProduto.value || [])
+                        .map((tipo) => ({
+                            id: tipo?.id,
+                            nome: tipo?.nome || tipo?.tipo || tipo?.descricao,
+                        }))
+                        .filter((tipo) => tipo.id && tipo.nome);
+                    setModelosDisponiveis(modelosTratados);
+                } else {
+                    console.error("Erro ao carregar tipos de produto:", resTiposProduto.reason);
+                    setModelosDisponiveis([]);
+                }
             } finally {
                 if (!ignorar) {
                     setCarregandoGrades(false);
+                    setCarregandoModelos(false);
                 }
             }
         };
@@ -282,11 +334,6 @@ export default function ProdutoCadastar() {
         setOpenDropdown((prev) => (prev === field ? null : field));
     };
 
-    const handleDropdownSelect = (field, value) => {
-        setFormData((prev) => ({ ...prev, [field]: value }));
-        setOpenDropdown(null);
-    };
-
     const handleGradeSelect = (nomeGrade) => {
         const gradeSelecionada = gradesDisponiveis.find((grade) => grade.nome === nomeGrade);
 
@@ -309,6 +356,36 @@ export default function ProdutoCadastar() {
         setOpenDropdown(null);
     };
 
+    const handleModeloSelect = (nomeModelo) => {
+        const modeloSelecionado = modelosDisponiveis.find((m) => m.nome === nomeModelo);
+
+        setFormData((prev) => ({
+            ...prev,
+            modelo: nomeModelo,
+            tipo_produto_id: modeloSelecionado?.id,
+        }));
+        setOpenDropdown(null);
+    };
+
+    const handleModeloCriado = (nomeModelo, tipoCriado) => {
+        const novoModelo = {
+            id: tipoCriado?.id,
+            nome: tipoCriado?.nome || nomeModelo,
+        };
+
+        if (!novoModelo.id) return;
+
+        setModelosDisponiveis((prev) => {
+            if (prev.some((m) => m.id === novoModelo.id)) return prev;
+            return [...prev, novoModelo];
+        });
+        setFormData((prev) => ({
+            ...prev,
+            modelo: novoModelo.nome,
+            tipo_produto_id: novoModelo.id,
+        }));
+    };
+
     const handleImagemChange = (event) => {
         const arquivo = event.target.files?.[0];
         if (!arquivo) return;
@@ -328,7 +405,7 @@ export default function ProdutoCadastar() {
             return;
         }
 
-        if (!formData.modelo) {
+        if (!formData.modelo || !formData.tipo_produto_id) {
             setErroCadastro("Selecione o modelo do produto.");
             return;
         }
@@ -357,7 +434,7 @@ export default function ProdutoCadastar() {
             const payload = {
                 foto: urlFoto,
                 nome: formData.referencia.trim(),
-                tipo: formData.modelo,
+                tipo_produto_id: formData.tipo_produto_id,
                 fabrico_id: fabricoId,
                 tecido_id: formData.tecido_id,
                 grade_versao_id: formData.grade_versao_id,
@@ -471,12 +548,23 @@ export default function ProdutoCadastar() {
                                     <FieldLabel>Modelo</FieldLabel>
                                     <DropdownField
                                         value={formData.modelo}
-                                        placeholder="Modelo*"
-                                        options={modelos}
+                                        placeholder={
+                                            carregandoModelos ? "Carregando modelos..." : "Modelo*"
+                                        }
+                                        options={modelosDisponiveis.map((m) => m.nome)}
                                         isOpen={openDropdown === "modelo"}
                                         onToggle={() => toggleDropdown("modelo")}
-                                        onSelect={(value) => handleDropdownSelect("modelo", value)}
+                                        onSelect={handleModeloSelect}
                                         isSelectedOption={(option) => formData.modelo === option}
+                                        maxVisibleOptions={6}
+                                        actionButton={{
+                                            label: "Novo modelo",
+                                            onClick: () => {
+                                                setOpenDropdown(null);
+                                                setModalModeloAberto(true);
+                                            },
+                                        }}
+                                        actionButtonPosition="start"
                                     />
                                 </div>
                             </div>
@@ -573,6 +661,12 @@ export default function ProdutoCadastar() {
                     </div>
                 </form>
             </div>
+
+            <ModeloModal
+                isOpen={modalModeloAberto}
+                onClose={() => setModalModeloAberto(false)}
+                onSuccess={handleModeloCriado}
+            />
         </div>
     );
 }
