@@ -15,6 +15,7 @@ import {
 import { getProdutosDoCliente } from "../../services/clientesService";
 import ProdutoParceiros from "../produtos/ProdutoParceiros";
 import FichaTecnicaPrintView from "../FichaTecnicaPrintView";
+import { getParceiroByProduto } from "../../services/produtoService";
 
 const FloatingInput = ({
     label,
@@ -47,6 +48,13 @@ const FloatingInput = ({
         />
     </div>
 );
+
+const calcularProporcao = (totaisPorTamanho) => {
+    const valoresValidos = totaisPorTamanho.map(Number).filter((t) => t > 0);
+    if (valoresValidos.length === 0) return totaisPorTamanho.map(() => 0);
+    const base = Math.min(...valoresValidos);
+    return totaisPorTamanho.map((t) => (t > 0 ? Math.round(t / base) : 0));
+};
 
 const ColorDropdown = ({ coresDisponiveis, coresSelecionadas, onToggleCor }) => {
     const [aberto, setAberto] = useState(false);
@@ -281,6 +289,17 @@ export default function EdicaoFichaTecnicaModal({
         });
         return totais;
     }, [sizeItems, coresSelecionadas, matrizQuantidades]);
+
+    const proporcoes = useMemo(() => {
+        const arrayDeTotais = sizeItems.map((s) => totaisPorTamanho[s.id] || 0);
+        const arrayDeProporcoes = calcularProporcao(arrayDeTotais);
+        const propsObj = {};
+        sizeItems.forEach((s, index) => {
+            propsObj[s.id] = arrayDeProporcoes[index];
+        });
+
+        return propsObj;
+    }, [sizeItems, totaisPorTamanho]);
 
     const handleQuantidadeChange = (corId, gradeItemId, novaQuantidade) => {
         setMatrizQuantidades((prev) => ({
@@ -531,7 +550,7 @@ export default function EdicaoFichaTecnicaModal({
                                                             : "#D7D7D7",
                                                 }}
                                             >
-                                                {totaisPorTamanho[s.id] || 0}
+                                                {proporcoes[s.id] || 0}
                                             </div>
                                         ))}
                                     </div>
@@ -697,16 +716,30 @@ export default function EdicaoFichaTecnicaModal({
                                                     <div className="flex items-center justify-center w-full h-full">
                                                         <span className="text-[#707070]">R$</span>
                                                         <input
-                                                            type="number"
-                                                            step="0.01"
-                                                            value={vinculo.preco_editavel || ""}
-                                                            onChange={(e) =>
+                                                            type="text"
+                                                            inputMode="numeric"
+                                                            value={
+                                                                vinculo.preco_editavel
+                                                                    ? Number(vinculo.preco_editavel)
+                                                                          .toFixed(2)
+                                                                          .replace(".", ",")
+                                                                    : ""
+                                                            }
+                                                            onChange={(e) => {
+                                                                const numeros =
+                                                                    e.target.value.replace(
+                                                                        /\D/g,
+                                                                        "",
+                                                                    );
+                                                                const valorNumerico = numeros
+                                                                    ? Number(numeros) / 100
+                                                                    : 0;
                                                                 handleParceiroChange(
                                                                     index,
                                                                     "preco_editavel",
-                                                                    e.target.value,
-                                                                )
-                                                            }
+                                                                    valorNumerico,
+                                                                );
+                                                            }}
                                                             className="w-[50px] py-3 pl-1 text-left bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                         />
                                                     </div>
