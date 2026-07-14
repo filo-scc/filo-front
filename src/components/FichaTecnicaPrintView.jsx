@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 
+const calcularProporcao = (totaisPorTamanho) => {
+    const valoresValidos = totaisPorTamanho.map(Number).filter((t) => t > 0);
+    if (valoresValidos.length === 0) return totaisPorTamanho.map(() => 0);
+    const base = Math.min(...valoresValidos);
+    return totaisPorTamanho.map((t) => (t > 0 ? Math.round(t / base) : 0));
+};
+
 export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia }) {
     const [isMounted, setIsMounted] = useState(false);
 
@@ -32,6 +39,39 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
     }, {});
 
     const totalGeral = Object.values(totaisPorTamanho).reduce((acc, val) => acc + val, 0);
+
+    const arrayDeTotais = sizeItems.map((s) => totaisPorTamanho[s.id] || 0);
+    const arrayDeProporcoes = calcularProporcao(arrayDeTotais);
+
+    const proporcoes = {};
+    sizeItems.forEach((s, index) => {
+        proporcoes[s.id] = arrayDeProporcoes[index];
+    });
+
+    const categoriaAceitas = [
+        "Costura",
+        "costura",
+        "Facção",
+        "facção",
+        "Facçao",
+        "facçao",
+        "Faccão",
+        "faccão",
+        "Faccao",
+        "faccao",
+        "Confecção",
+        "confecção",
+        "Confecçao",
+        "confecçao",
+        "Confeccão",
+        "confeccão",
+        "Confeccao",
+        "confeccao",
+    ];
+
+    const parceirosCostura = (dadosFicha?.ficha_parceiro || []).filter((vinculo) =>
+        categoriaAceitas.includes(vinculo.parceiro?.categoria),
+    );
 
     const printContent = (
         <>
@@ -200,20 +240,29 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                                                 borderBottom: "0.5px solid #7B7D80",
                                             }}
                                         ></th>
-                                        {sizeItems.map((s) => (
+                                        {sizeItems.map((s, i) => (
                                             <th
                                                 key={`total-${s.id}`}
                                                 className="h-[30px] text-center text-[13px] font-light bg-[#F4F4F4]"
                                                 style={{
-                                                    borderLeft: "0.5px solid #7B7D80",
-                                                    borderBottom: "0.5px solid #7B7D80",
+                                                    borderColor: "#7B7D80",
+                                                    borderLeftWidth: "0.5px",
+                                                    borderRightWidth:
+                                                        i === sizeItems.length - 1
+                                                            ? "0.5px"
+                                                            : "0px",
+                                                    borderTopWidth: "0.5px",
+                                                    borderBottomWidth: "0.5px",
+                                                    borderTopLeftRadius: i === 0 ? "10px" : "0px",
+                                                    borderTopRightRadius:
+                                                        i === sizeItems.length - 1 ? "10px" : "0px",
                                                     color:
                                                         totaisPorTamanho[s.id] > 0
                                                             ? "#898C8F"
                                                             : "#D7D7D7",
                                                 }}
                                             >
-                                                {totaisPorTamanho[s.id] || 0}
+                                                {proporcoes[s.id] || 0}
                                             </th>
                                         ))}
                                         <th
@@ -408,8 +457,8 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                                     </tr>
                                 </thead>
                                 <tbody className="text-[#707070]">
-                                    {dadosFicha?.ficha_parceiro?.length > 0 ? (
-                                        dadosFicha.ficha_parceiro.map((vinculo, index) => {
+                                    {parceirosCostura?.length > 0 ? (
+                                        parceirosCostura.map((vinculo, index) => {
                                             const parceiro = vinculo.parceiro;
                                             const nome = parceiro?.nome || "-";
                                             const operacao = vinculo.operacao || "-";

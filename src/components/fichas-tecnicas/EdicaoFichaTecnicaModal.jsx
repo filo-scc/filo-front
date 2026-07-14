@@ -15,6 +15,7 @@ import {
 import { getProdutosDoCliente } from "../../services/clientesService";
 import ProdutoParceiros from "../produtos/ProdutoParceiros";
 import FichaTecnicaPrintView from "../FichaTecnicaPrintView";
+import { getParceiroByProduto } from "../../services/produtoService";
 
 const FloatingInput = ({
     label,
@@ -170,11 +171,41 @@ export default function EdicaoFichaTecnicaModal({
     const [parceirosRemovidos, setParceirosRemovidos] = useState([]);
     const [referenciaCliente, setReferenciaCliente] = useState("-");
     const [isProdutoParceirosOpen, setIsProdutoParceirosOpen] = useState(false);
+    const [parceirosDisponiveis, setParceirosDisponiveis] = useState([]);
 
     const sizeItems = useMemo(
         () => dadosFicha?.grade_versao?.itens || [],
         [dadosFicha?.grade_versao?.itens],
     );
+
+    const carregarParceirosDisponiveis = useCallback(async () => {
+        if (!dadosFicha?.produto_id) return;
+        try {
+            const response = await getParceiroByProduto(dadosFicha.produto_id);
+            setParceirosDisponiveis(Array.isArray(response) ? response : []);
+        } catch (error) {
+            console.error("Erro ao buscar parceiros", error);
+            setParceirosDisponiveis([]);
+        }
+    }, [dadosFicha?.produto_id]);
+
+    const parceirosFiltrados = useMemo(() => {
+        return parceirosDisponiveis.filter((parceiro) => {
+            const categoria = parceiro.categoria || parceiro.parceiro?.categoria;
+            if (!categoria) return false;
+
+            const categoriaNormalizada = categoria
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .toLowerCase();
+
+            return (
+                categoriaNormalizada === "costura" ||
+                categoriaNormalizada === "faccao" ||
+                categoriaNormalizada === "confeccao"
+            );
+        });
+    }, [parceirosDisponiveis]);
 
     const carregarReferencia = useCallback(async () => {
         try {
@@ -204,6 +235,7 @@ export default function EdicaoFichaTecnicaModal({
     useEffect(() => {
         if (isOpen && dadosFicha) {
             carregarCoresDaFabrica();
+            carregarParceirosDisponiveis();
 
             const coresUnicasMap = {};
             dadosFicha.ficha_tecnica_itens?.forEach((item) => {
@@ -236,7 +268,13 @@ export default function EdicaoFichaTecnicaModal({
             setParceiros(parceirosIniciais);
             carregarReferencia();
         }
-    }, [isOpen, dadosFicha, carregarCoresDaFabrica, carregarReferencia]);
+    }, [
+        isOpen,
+        dadosFicha,
+        carregarCoresDaFabrica,
+        carregarParceirosDisponiveis,
+        carregarReferencia,
+    ]);
 
     const handleToggleCor = (cor) => {
         setCoresSelecionadas((prev) => {
@@ -314,9 +352,7 @@ export default function EdicaoFichaTecnicaModal({
     };
 
     const handleParceiroChange = (index, campo, valor) => {
-        const novosParceiros = [...parceiros];
-        novosParceiros[index][campo] = valor;
-        setParceiros(novosParceiros);
+        setParceiros((prev) => prev.map((p, i) => (i === index ? { ...p, [campo]: valor } : p)));
     };
 
     const handleRemoverParceiro = (index) => {
@@ -743,18 +779,22 @@ export default function EdicaoFichaTecnicaModal({
                                                         />
                                                     </div>
 
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleRemoverParceiro(index)}
-                                                        className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-[18px] h-[18px] flex items-center justify-center opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity"
-                                                        title="Remover parceiro"
-                                                    >
-                                                        <img
-                                                            src="/excluir-cinza-claro.png"
-                                                            alt="Remover parceiro"
-                                                            className="w-[18px] h-[18px] object-contain hover:opacity-70 transition-opacity"
-                                                        />
-                                                    </button>
+                                                    <div className="absolute top-0 -right-[30px] w-[30px] h-full flex items-center justify-center opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity z-20">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                handleRemoverParceiro(index)
+                                                            }
+                                                            className="w-[18px] h-[18px] flex items-center justify-center hover:opacity-70 transition-opacity"
+                                                            title="Remover parceiro"
+                                                        >
+                                                            <img
+                                                                src="/excluir-cinza-claro.png"
+                                                                alt="Remover parceiro"
+                                                                className="w-full h-full object-contain"
+                                                            />
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         );
@@ -802,6 +842,7 @@ export default function EdicaoFichaTecnicaModal({
                 isOpen={isProdutoParceirosOpen}
                 onClose={() => setIsProdutoParceirosOpen(false)}
                 produtoId={dadosFicha?.produto_id}
+                parceiros={parceirosFiltrados}
                 selectedParceiroIds={parceiros.map((p) => p.parceiro_id)}
                 onSelectParceiro={handleAddParceiroSelecionado}
             />
