@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { getProdutosByFabrico } from "../services/produtoService";
 import { useNavigate } from "react-router-dom";
+import { ProductGridSkeleton } from "../components/geral/Loading";
 
 // Componente do Card
 const ProdutoCard = ({ id, nome, tipo, data, foto }) => {
@@ -140,9 +141,7 @@ export default function Produtos() {
                      grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
                 >
                     {loading ? (
-                        <div className="col-span-full flex justify-center py-10 text-[#4696AD]">
-                            Carregando produtos...
-                        </div>
+                        <ProductGridSkeleton />
                     ) : produtos.length === 0 ? (
                         <div className="col-span-full flex justify-center py-10 text-gray-400 font-light">
                             Nenhum produto encontrado.

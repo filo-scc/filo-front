@@ -5,6 +5,7 @@ import {
     getClientesDoProduto,
     excluirProduto,
     getAviamentosDoProduto,
+    getTiposProdutoByFabrico,
 } from "../services/produtoService";
 import { getFabricoById } from "../services/fabricoService";
 
@@ -28,6 +29,7 @@ export default function ProdutoDetalhes() {
     const [modalAtencaoAberto, setModalAtencaoAberto] = useState(false);
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
     const [fabrico, setFabrico] = useState(null);
+    const [excluindo, setExcluindo] = useState(false);
 
     useEffect(() => {
         async function fetchData() {
@@ -37,11 +39,13 @@ export default function ProdutoDetalhes() {
                 const userString = localStorage.getItem("user");
                 const usuarioLogado = userString ? JSON.parse(userString) : null;
 
-                const [dadosProduto, dadosClientes, dadosAviamentos] = await Promise.all([
-                    getProdutoById(id),
-                    getClientesDoProduto(id),
-                    getAviamentosDoProduto(id),
-                ]);
+                const [dadosProduto, dadosClientes, dadosAviamentos, dadosTipos] =
+                    await Promise.all([
+                        getProdutoById(id),
+                        getClientesDoProduto(id),
+                        getAviamentosDoProduto(id),
+                        getTiposProdutoByFabrico().catch(() => []),
+                    ]);
 
                 if (usuarioLogado && dadosProduto.fabrico_id !== usuarioLogado.fabrico_id) {
                     setModalAtencaoAberto(true);
@@ -49,7 +53,17 @@ export default function ProdutoDetalhes() {
                     return;
                 }
 
-                setProduto(dadosProduto);
+                const tipoProdutoRelacionado =
+                    dadosProduto.tipo_produto ||
+                    dadosProduto.tipoProduto ||
+                    (Array.isArray(dadosTipos)
+                        ? dadosTipos.find((tipo) => tipo?.id === dadosProduto.tipo_produto_id)
+                        : null);
+
+                setProduto({
+                    ...dadosProduto,
+                    tipo_produto: tipoProdutoRelacionado || undefined,
+                });
                 setClientesAssociados(dadosClientes);
                 setAviamentosProduto(dadosAviamentos);
             } catch (error) {
@@ -84,19 +98,26 @@ export default function ProdutoDetalhes() {
     };
 
     const handleConfirmarExclusao = async () => {
+        if (excluindo) return;
         try {
+            setExcluindo(true);
             await excluirProduto(id);
             setModalExclusaoAberto(false);
             setModalConfirmacaoAberto(true);
         } catch {
             alert("Erro ao excluir produto.");
+        } finally {
+            setExcluindo(false);
         }
     };
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-screen">
-                <p className="text-[#4696AD] font-Outfit">Carregando detalhes...</p>
+            <div className="p-6 pt-0 mt-6 w-full flex justify-center">
+                <div className="bg-white p-8 rounded-[24px] shadow-sm w-full min-h-[400px]">
+                    <ProdutoDetalhesHeader title="Detalhes de produto" />
+                    <ProdutoDetalhesSkeleton />
+                </div>
             </div>
         );
     }
@@ -155,6 +176,7 @@ export default function ProdutoDetalhes() {
                 onConfirm={handleConfirmarExclusao}
                 nomeItem={produto?.nome}
                 tipoItem="o produto"
+                loading={excluindo}
             />
 
             <ModalConfirmacao

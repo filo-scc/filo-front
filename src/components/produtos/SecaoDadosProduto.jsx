@@ -20,6 +20,8 @@ export default function SecaoDadosProduto({ produto, aviamentos = [] }) {
             : null;
 
     const nomeTecido = produto?.tecido?.nome;
+    const nomeModelo =
+        produto?.tipo_produto?.nome || produto?.tipoProduto?.nome || produto?.tipo || null;
 
     return (
         <section className="flex flex-col md:flex-row gap-10 pr-4 md:pr-[15%]">
@@ -57,7 +59,7 @@ export default function SecaoDadosProduto({ produto, aviamentos = [] }) {
                         </div>
                         <div className="overflow-hidden">
                             <Label>Modelo</Label>
-                            <Valor>{produto.tipo}</Valor>
+                            <Valor>{nomeModelo}</Valor>
                         </div>
                     </div>
                 </div>
