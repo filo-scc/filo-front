@@ -91,6 +91,18 @@ export default function FichaTecnicaModal({ isOpen, onClose, fichaId }) {
 
     const proporcoes = calcularProporcao(totalsBySize);
 
+    const categoriasAceitas = ["costura", "faccao", "confeccao"];
+
+    const normalizarCategoria = (categoria) =>
+        (categoria || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase();
+
+    const parceirosFiltrados = (ficha?.ficha_parceiro || []).filter((vinculo) =>
+        categoriasAceitas.includes(normalizarCategoria(vinculo.parceiro?.categoria)),
+    );
+
     return (
         <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4 backdrop-blur-sm"
@@ -314,8 +326,8 @@ export default function FichaTecnicaModal({ isOpen, onClose, fichaId }) {
                                         </tr>
                                     </thead>
                                     <tbody className="text-[#707070]">
-                                        {ficha?.ficha_parceiro?.length > 0 ? (
-                                            ficha.ficha_parceiro.map((vinculo, index) => {
+                                        {parceirosFiltrados.length > 0 ? (
+                                            parceirosFiltrados.map((vinculo, index) => {
                                                 const parceiro = vinculo.parceiro;
                                                 const nome = parceiro?.nome || "-";
                                                 const operacao = vinculo.operacao || "-";
