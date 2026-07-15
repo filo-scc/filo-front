@@ -460,7 +460,7 @@ export default function EdicaoFichaTecnicaModal({
                     quantidade: temMultiplosParceiros ? 0 : quantidadeTotal,
                     valor: temMultiplosParceiros
                         ? undefined
-                        : quantidadeTotal * Number(p.preco_editavel),
+                        : Number((quantidadeTotal * Number(p.preco_editavel)).toFixed(2)),
                 };
                 if (p.isNovo) {
                     requisicoesDoParceiro.push(
