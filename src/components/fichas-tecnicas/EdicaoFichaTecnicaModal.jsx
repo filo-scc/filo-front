@@ -5,6 +5,7 @@ import {
     deleteFichaTecnicaItem,
     updateParceiroProdutoPrice,
     createFichaTecnicaItem,
+    createParceiroProduto,
 } from "../../services/fichaTecnicaItemService";
 import { getCoresByFabricoId } from "../../services/corService";
 import {
@@ -16,6 +17,8 @@ import { getProdutosDoCliente } from "../../services/clientesService";
 import ProdutoParceiros from "../produtos/ProdutoParceiros";
 import FichaTecnicaPrintView from "../FichaTecnicaPrintView";
 import { getParceiroByProduto } from "../../services/produtoService";
+import { updateFichaTecnica } from "../../services/fichasTecnicasService";
+import { getParceirosByFabrico } from "../../services/parceiroService";
 
 const FloatingInput = ({
     label,
@@ -179,15 +182,33 @@ export default function EdicaoFichaTecnicaModal({
     );
 
     const carregarParceirosDisponiveis = useCallback(async () => {
-        if (!dadosFicha?.produto_id) return;
+        if (!dadosFicha?.produto_id || !dadosFicha?.fabrico_id) return;
         try {
-            const response = await getParceiroByProduto(dadosFicha.produto_id);
-            setParceirosDisponiveis(Array.isArray(response) ? response : []);
+            const [parceirosDoFabrico, parceirosDoProduto] = await Promise.all([
+                getParceirosByFabrico(dadosFicha.fabrico_id),
+                getParceiroByProduto(dadosFicha.produto_id),
+            ]);
+
+            const precoPorParceiroId = {};
+            if (Array.isArray(parceirosDoProduto)) {
+                parceirosDoProduto.forEach((vinculo) => {
+                    precoPorParceiroId[vinculo.parceiro_id] = vinculo.preco;
+                });
+            }
+
+            const parceirosComPreco = (
+                Array.isArray(parceirosDoFabrico) ? parceirosDoFabrico : []
+            ).map((parceiro) => ({
+                ...parceiro,
+                preco: precoPorParceiroId[parceiro.id] ?? null,
+            }));
+
+            setParceirosDisponiveis(parceirosComPreco);
         } catch (error) {
             console.error("Erro ao buscar parceiros", error);
             setParceirosDisponiveis([]);
         }
-    }, [dadosFicha?.produto_id]);
+    }, [dadosFicha?.produto_id, dadosFicha?.fabrico_id]);
 
     const parceirosFiltrados = useMemo(() => {
         return parceirosDisponiveis.filter((parceiro) => {
@@ -255,16 +276,29 @@ export default function EdicaoFichaTecnicaModal({
             });
             setMatrizQuantidades(matrizInicial);
 
-            const parceirosIniciais = (dadosFicha.ficha_parceiro || []).map((p) => {
-                const precoTabela = p.parceiro?.parceiro_produto?.find(
-                    (pp) => pp.produto_id === dadosFicha.produto_id,
-                )?.preco;
+            const categoriasAceitas = ["costura", "faccao", "confeccao"];
 
-                return {
-                    ...p,
-                    preco_editavel: precoTabela || 0,
-                };
-            });
+            const normalizarCategoria = (categoria) =>
+                (categoria || "")
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .toLowerCase();
+
+            const parceirosIniciais = (dadosFicha.ficha_parceiro || [])
+                .filter((p) =>
+                    categoriasAceitas.includes(normalizarCategoria(p.parceiro?.categoria)),
+                )
+                .map((p) => {
+                    const vinculoProduto = p.parceiro?.parceiro_produto?.find(
+                        (pp) => pp.produto_id === dadosFicha.produto_id,
+                    );
+
+                    return {
+                        ...p,
+                        preco_editavel: vinculoProduto?.preco || 0,
+                        parceiroProdutoExiste: Boolean(vinculoProduto),
+                    };
+                });
             setParceiros(parceirosIniciais);
             carregarReferencia();
         }
@@ -298,6 +332,7 @@ export default function EdicaoFichaTecnicaModal({
             },
             operacao: "",
             preco_editavel: novoParceiro.preco || 0,
+            parceiroProdutoExiste: novoParceiro.preco !== null && novoParceiro.preco !== undefined,
             isNovo: true,
         };
 
@@ -400,33 +435,41 @@ export default function EdicaoFichaTecnicaModal({
             const promessasParceiros = parceiros.map((p) => {
                 const requisicoesDoParceiro = [];
 
-                requisicoesDoParceiro.push(
-                    updateParceiroProdutoPrice(
-                        p.parceiro_id,
-                        dadosFicha.produto_id,
-                        Number(p.preco_editavel),
-                    ),
-                );
+                if (p.parceiroProdutoExiste) {
+                    requisicoesDoParceiro.push(
+                        updateParceiroProdutoPrice(
+                            p.parceiro_id,
+                            dadosFicha.produto_id,
+                            Number(p.preco_editavel),
+                        ),
+                    );
+                } else {
+                    requisicoesDoParceiro.push(
+                        createParceiroProduto(
+                            p.parceiro_id,
+                            dadosFicha.produto_id,
+                            Number(p.preco_editavel),
+                        ),
+                    );
+                }
+
+                const temMultiplosParceiros = parceiros.length > 1;
 
                 const payloadFichaParceiro = {
                     operacao: p.operacao,
+                    quantidade: temMultiplosParceiros ? 0 : quantidadeTotal,
+                    valor: temMultiplosParceiros
+                        ? undefined
+                        : quantidadeTotal * Number(p.preco_editavel),
                 };
-
-                if (parceiros.length === 1) {
-                    payloadFichaParceiro.quantidade = quantidadeTotal;
-                    payloadFichaParceiro.valor = quantidadeTotal * Number(p.preco_editavel);
-                }
-
                 if (p.isNovo) {
                     requisicoesDoParceiro.push(
                         createFichaParceiro(
                             fichaId,
                             p.parceiro_id,
                             p.operacao,
-                            parceiros.length === 1
-                                ? quantidadeTotal * Number(p.preco_editavel)
-                                : undefined,
-                            parceiros.length === 1 ? quantidadeTotal : undefined,
+                            payloadFichaParceiro.valor,
+                            payloadFichaParceiro.quantidade,
                         ),
                     );
                 } else {
@@ -442,10 +485,15 @@ export default function EdicaoFichaTecnicaModal({
                 deleteFichaTecnicaParceiro(fichaId, parceiroId),
             );
 
+            const promessaAtualizarQuantidade = updateFichaTecnica(fichaId, {
+                quantidade: quantidadeTotal,
+            });
+
             await Promise.all([
                 ...promessasItens,
                 ...promessasParceiros,
                 ...promessasDelecaoParceiros,
+                promessaAtualizarQuantidade,
             ]);
             await syncFichaTecnicaCores(fichaId, coresIds);
 
@@ -807,14 +855,19 @@ export default function EdicaoFichaTecnicaModal({
                         <button
                             type="button"
                             onClick={() => setIsProdutoParceirosOpen(true)}
-                            className="w-full py-3 bg-[#F8F8F8] text-[#898C8F] text-[14px] font-light rounded-[10px] flex items-center justify-center gap-2 hover:bg-[#ebebeb] transition-colors border border-[#E8E8E8]"
+                            className="w-full py-3 bg-[#F8F8F8] text-[#898C8F] text-[14px] font-light rounded-[10px] flex items-center justify-center gap-2 hover:bg-[#ebebeb] transition-colors"
                         >
                             <img
                                 src="/maquina-costura-add.png"
                                 alt="Maquina de Costura Cinza"
                                 className="w-[14px] h-[14px] opacity-70"
                             />
-                            <span>Atribuir mais uma facção</span>
+                            <span>
+                                {" "}
+                                {parceiros.length > 0
+                                    ? "Atribuir mais uma facção"
+                                    : "Atribuir facção"}
+                            </span>
                         </button>
 
                         <div className="relative mt-2">

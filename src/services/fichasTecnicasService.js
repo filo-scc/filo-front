@@ -17,8 +17,8 @@ export const findOne = async (id) => {
     return response.data;
 };
 
-export const updateFichaTecnica = async (id) => {
-    const response = await api.put(`/fichas-tecnicas/${id}`);
+export const updateFichaTecnica = async (id, payload) => {
+    const response = await api.put(`/fichas-tecnicas/${id}`, payload);
     return response;
 };
 

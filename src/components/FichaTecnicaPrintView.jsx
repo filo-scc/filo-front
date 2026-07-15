@@ -8,6 +8,9 @@ const calcularProporcao = (totaisPorTamanho) => {
     return totaisPorTamanho.map((t) => (t > 0 ? Math.round(t / base) : 0));
 };
 
+const darkSide = "0.5px solid #7B7D80";
+const shellSide = "0.5px solid #D9D9D9";
+
 export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia }) {
     const [isMounted, setIsMounted] = useState(false);
 
@@ -39,6 +42,7 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
     }, {});
 
     const totalGeral = Object.values(totaisPorTamanho).reduce((acc, val) => acc + val, 0);
+    const totalRowBg = cores.length % 2 === 1 ? "bg-[#F9F9F9]" : "bg-white";
 
     const arrayDeTotais = sizeItems.map((s) => totaisPorTamanho[s.id] || 0);
     const arrayDeProporcoes = calcularProporcao(arrayDeTotais);
@@ -91,6 +95,14 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                         overflow: visible !important; 
                     }
 
+                    #ficha-print-view table {
+                        border-collapse: collapse;
+                    }
+                    #ficha-print-view th,
+                    #ficha-print-view td {
+                        border: none;
+                    }
+
                     @media print {
                         body > div:not(#portal-impressao) {
                             display: none !important;
@@ -102,7 +114,7 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                             width: 100% !important;
                             margin: 0 !important;
                             padding: 0 !important;
-                            
+
                         }
 
                         #ficha-print-view, #ficha-print-view * {
@@ -215,217 +227,174 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                             Grade
                         </div>
 
-                        <div
-                            className="w-full rounded-[10px] overflow-hidden"
-                            style={{ border: "0.5px solid #7B7D80" }}
-                        >
-                            <table
-                                className="w-full"
-                                style={{ tableLayout: "fixed", borderCollapse: "collapse" }}
+                        <div className="relative w-full">
+                            <div
+                                style={{
+                                    display: "grid",
+                                    gridTemplateColumns: `160px repeat(${sizeItems.length}, 1fr) 80px`,
+                                }}
                             >
-                                <colgroup>
-                                    <col style={{ width: "160px" }} />
-                                    {sizeItems.map((s) => (
-                                        <col key={`col-${s.id}`} />
-                                    ))}
-                                    <col style={{ width: "80px" }} />
-                                </colgroup>
-
-                                <thead>
-                                    <tr>
-                                        <th
-                                            className="bg-[#F4F4F4]"
+                                {/* proporção */}
+                                <div className="bg-transparent" />
+                                {sizeItems.map((s, i) => {
+                                    const isFirst = i === 0;
+                                    const isLast = i === sizeItems.length - 1;
+                                    return (
+                                        <div
+                                            key={`prop-${s.id}`}
+                                            className="h-[30px] flex items-center justify-center text-[13px] font-light bg-[#F4F4F4]"
                                             style={{
-                                                borderRight: "0.5px solid #7B7D80",
-                                                borderBottom: "0.5px solid #7B7D80",
+                                                borderTop: darkSide,
+                                                borderBottom: darkSide,
+                                                borderLeft: isFirst ? darkSide : "none",
+                                                borderRight: darkSide,
+                                                borderTopLeftRadius: isFirst ? "8px" : undefined,
+                                                borderTopRightRadius: isLast ? "8px" : undefined,
+                                                color:
+                                                    totaisPorTamanho[s.id] > 0
+                                                        ? "#898C8F"
+                                                        : "#D7D7D7",
                                             }}
-                                        ></th>
-                                        {sizeItems.map((s, i) => (
-                                            <th
-                                                key={`total-${s.id}`}
-                                                className="h-[30px] text-center text-[13px] font-light bg-[#F4F4F4]"
-                                                style={{
-                                                    borderColor: "#7B7D80",
-                                                    borderLeftWidth: "0.5px",
-                                                    borderRightWidth:
-                                                        i === sizeItems.length - 1
-                                                            ? "0.5px"
-                                                            : "0px",
-                                                    borderTopWidth: "0.5px",
-                                                    borderBottomWidth: "0.5px",
-                                                    borderTopLeftRadius: i === 0 ? "10px" : "0px",
-                                                    borderTopRightRadius:
-                                                        i === sizeItems.length - 1 ? "10px" : "0px",
-                                                    color:
-                                                        totaisPorTamanho[s.id] > 0
-                                                            ? "#898C8F"
-                                                            : "#D7D7D7",
-                                                }}
-                                            >
-                                                {proporcoes[s.id] || 0}
-                                            </th>
-                                        ))}
-                                        <th
-                                            className="bg-[#F4F4F4]"
-                                            style={{
-                                                borderLeft: "0.5px solid #7B7D80",
-                                                borderBottom: "0.5px solid #7B7D80",
-                                            }}
-                                        ></th>
-                                    </tr>
-
-                                    <tr>
-                                        <th
-                                            className="h-[40px] font-normal bg-[#C9EAF6] text-[#4696AD] px-4"
-                                            style={{ borderBottom: "0.5px solid #7B7D80" }}
                                         >
-                                            Cores
-                                        </th>
-                                        {sizeItems.map((s) => (
-                                            <th
-                                                key={`header-${s.id}`}
-                                                className="h-[40px] text-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
-                                                style={{
-                                                    borderLeft: "0.5px solid #7B7D80",
-                                                    borderBottom: "0.5px solid #7B7D80",
-                                                }}
-                                            >
-                                                {s.tamanho?.codigo || "-"}
-                                            </th>
-                                        ))}
-                                        <th
-                                            className="h-[40px] text-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
-                                            style={{ borderBottom: "0.5px solid #7B7D80" }}
-                                        >
-                                            Total (cor)
-                                        </th>
-                                    </tr>
-                                </thead>
+                                            {proporcoes[s.id] || 0}
+                                        </div>
+                                    );
+                                })}
+                                <div className="bg-transparent" />
 
-                                <tbody>
-                                    {cores.length > 0 ? (
-                                        cores.map((cor, index) => {
-                                            let totalCor = 0;
+                                <div
+                                    className="h-[40px] flex items-center px-4 font-normal bg-[#C9EAF6] text-[#4696AD]"
+                                    style={{
+                                        borderTopLeftRadius: "8px",
+                                    }}
+                                >
+                                    Cores
+                                </div>
+                                {sizeItems.map((s) => (
+                                    <div
+                                        key={`header-${s.id}`}
+                                        className="h-[40px] flex items-center justify-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
+                                    >
+                                        {s.tamanho?.codigo || "-"}
+                                    </div>
+                                ))}
+                                <div
+                                    className="h-[40px] flex items-center justify-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
+                                    style={{
+                                        borderTopRightRadius: "8px",
+                                    }}
+                                >
+                                    Total (cor)
+                                </div>
 
-                                            return (
-                                                <tr
-                                                    key={cor.id}
-                                                    className={`h-[45px] ${
-                                                        index % 2 === 1
-                                                            ? "bg-[#F9F9F9]"
-                                                            : "bg-white"
-                                                    }`}
+                                {/* Corpo — cores */}
+                                {cores.length > 0 ? (
+                                    cores.map((cor, index) => {
+                                        let totalCor = 0;
+                                        const rowBg = index % 2 === 1 ? "bg-[#F9F9F9]" : "bg-white";
+                                        return (
+                                            <React.Fragment key={cor.id}>
+                                                <div
+                                                    className={`h-[45px] flex items-center gap-3 pl-4 pr-4 ${rowBg}`}
                                                 >
-                                                    <td
-                                                        className="pl-4 pr-4"
+                                                    <span
+                                                        className="w-[18px] h-[18px] rounded-[4px] shrink-0 shadow-sm border border-black/10"
                                                         style={{
-                                                            borderTop:
-                                                                index === 0
-                                                                    ? "none"
-                                                                    : "0.5px solid #7B7D80",
-                                                            borderRight: "0.5px solid #7B7D80",
+                                                            backgroundColor:
+                                                                cor.codigo_hex || "#E5E5E5",
                                                         }}
-                                                    >
-                                                        <div className="flex items-center gap-3">
-                                                            <span
-                                                                className="w-[18px] h-[18px] rounded-[4px] shrink-0 shadow-sm border border-black/10"
-                                                                style={{
-                                                                    backgroundColor:
-                                                                        cor.codigo_hex || "#E5E5E5",
-                                                                }}
-                                                            />
-                                                            <span className="text-[14px] font-light text-[#707070] truncate">
-                                                                {cor.nome}
-                                                            </span>
-                                                        </div>
-                                                    </td>
-
-                                                    {sizeItems.map((s) => {
-                                                        const item =
-                                                            dadosFicha.ficha_tecnica_itens?.find(
-                                                                (fi) =>
-                                                                    fi.cor_id === cor.id &&
-                                                                    fi.grade_versao_item_id ===
-                                                                        s.id,
-                                                            );
-                                                        const val = item?.quantidade;
-                                                        if (typeof val === "number")
-                                                            totalCor += val;
-
-                                                        return (
-                                                            <td
-                                                                key={`qty-${cor.id}-${s.id}`}
-                                                                className="text-center text-[14px] font-light text-[#707070]"
-                                                                style={{
-                                                                    borderTop:
-                                                                        index === 0
-                                                                            ? "none"
-                                                                            : "0.5px solid #7B7D80",
-                                                                    borderRight:
-                                                                        "0.5px solid #7B7D80",
-                                                                }}
-                                                            >
-                                                                {val || "-"}
-                                                            </td>
+                                                    />
+                                                    <span className="text-[14px] font-light text-[#707070] truncate">
+                                                        {cor.nome}
+                                                    </span>
+                                                </div>
+                                                {sizeItems.map((s) => {
+                                                    const item =
+                                                        dadosFicha.ficha_tecnica_itens?.find(
+                                                            (fi) =>
+                                                                fi.cor_id === cor.id &&
+                                                                fi.grade_versao_item_id === s.id,
                                                         );
-                                                    })}
+                                                    const val = item?.quantidade;
+                                                    if (typeof val === "number") totalCor += val;
+                                                    return (
+                                                        <div
+                                                            key={`qty-${cor.id}-${s.id}`}
+                                                            className={`h-[45px] flex items-center justify-center text-[14px] font-light text-[#707070] ${rowBg}`}
+                                                        >
+                                                            {val || "-"}
+                                                        </div>
+                                                    );
+                                                })}
+                                                <div
+                                                    className={`h-[45px] flex items-center justify-center text-[14px] font-normal text-[#707070] ${rowBg}`}
+                                                >
+                                                    {totalCor || "-"}
+                                                </div>
+                                            </React.Fragment>
+                                        );
+                                    })
+                                ) : (
+                                    <div
+                                        className="py-4 text-center text-[13px] text-[#888]"
+                                        style={{ gridColumn: `1 / span ${sizeItems.length + 2}` }}
+                                    >
+                                        Nenhuma cor selecionada.
+                                    </div>
+                                )}
 
-                                                    <td
-                                                        className="text-center text-[14px] font-normal text-[#707070]"
-                                                        style={{
-                                                            borderTop:
-                                                                index === 0
-                                                                    ? "none"
-                                                                    : "0.5px solid #7B7D80",
-                                                        }}
-                                                    >
-                                                        {totalCor || "-"}
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })
-                                    ) : (
-                                        <tr>
-                                            <td
-                                                colSpan={sizeItems.length + 2}
-                                                className="py-4 text-center text-[13px] text-[#888]"
-                                            >
-                                                Nenhuma cor selecionada.
-                                            </td>
-                                        </tr>
-                                    )}
+                                {/* Rodapé */}
+                                <div
+                                    className="h-[45px] flex items-center justify-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
+                                    style={{ borderBottomLeftRadius: "8px" }}
+                                >
+                                    Total (tamanho)
+                                </div>
+                                {sizeItems.map((s) => (
+                                    <div
+                                        key={`total-rodape-${s.id}`}
+                                        className={`h-[45px] flex items-center justify-center text-[14px] font-normal text-[#707070] ${totalRowBg}`}
+                                        style={{ borderBottom: shellSide }}
+                                    >
+                                        {totaisPorTamanho[s.id] || "-"}
+                                    </div>
+                                ))}
+                                <div
+                                    className="h-[45px] flex items-center justify-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
+                                    style={{ borderBottomRightRadius: "8px" }}
+                                >
+                                    {totalGeral || "-"}
+                                </div>
+                            </div>
 
-                                    <tr className="h-[45px]">
-                                        <td
-                                            className="text-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
-                                            style={{
-                                                borderTop: "0.5px solid #7B7D80",
-                                                borderRight: "0.5px solid #7B7D80",
-                                            }}
-                                        >
-                                            Total (tamanho)
-                                        </td>
-                                        {sizeItems.map((s) => (
-                                            <td
-                                                key={`total-rodape-${s.id}`}
-                                                className="text-center text-[14px] font-normal text-[#707070]"
+                            {/* divisórias verticais (header + corpo + rodapé) */}
+                            <div
+                                className="absolute left-0 right-0 pointer-events-none"
+                                style={{ top: "30px", bottom: 0 }}
+                            >
+                                <div
+                                    style={{
+                                        display: "grid",
+                                        gridTemplateColumns: `160px repeat(${sizeItems.length}, 1fr) 80px`,
+                                        height: "100%",
+                                    }}
+                                >
+                                    <div />
+                                    {sizeItems.map((s, i) => {
+                                        const isFirst = i === 0;
+                                        return (
+                                            <div
+                                                key={`divider-${s.id}`}
                                                 style={{
-                                                    borderTop: "0.5px solid #7B7D80",
-                                                    borderRight: "0.5px solid #7B7D80",
+                                                    borderLeft: isFirst ? darkSide : "none",
+                                                    borderRight: darkSide,
                                                 }}
-                                            >
-                                                {totaisPorTamanho[s.id] || "-"}
-                                            </td>
-                                        ))}
-                                        <td
-                                            className="text-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
-                                            style={{ borderTop: "0.5px solid #7B7D80" }}
-                                        >
-                                            {totalGeral || "-"}
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                                            />
+                                        );
+                                    })}
+                                    <div />
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -443,13 +412,13 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                                     <tr>
                                         <th
                                             className="py-3 font-normal w-1/3"
-                                            style={{ borderRight: "1px solid #7B7D80" }}
+                                            style={{ borderRight: darkSide }}
                                         >
                                             Facção
                                         </th>
                                         <th
                                             className="py-3 font-normal w-1/3"
-                                            style={{ borderRight: "1px solid #7B7D80" }}
+                                            style={{ borderRight: darkSide }}
                                         >
                                             Operação
                                         </th>
@@ -468,13 +437,13 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                                                 <tr key={vinculo.id || index}>
                                                     <td
                                                         className="py-3"
-                                                        style={{ borderRight: "1px solid #7B7D80" }}
+                                                        style={{ borderRight: darkSide }}
                                                     >
                                                         {nome}
                                                     </td>
                                                     <td
                                                         className="py-3 text-[#D3D3D3]"
-                                                        style={{ borderRight: "1px solid #7B7D80" }}
+                                                        style={{ borderRight: darkSide }}
                                                     >
                                                         {operacao}
                                                     </td>
@@ -506,13 +475,22 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                             <table className="w-full text-center text-sm border-collapse">
                                 <thead>
                                     <tr className="bg-[#F4F4F4] text-[#898C8F]">
-                                        <th className="py-2.5 font-normal border-r border-r-[#7B7D80] w-1/4">
+                                        <th
+                                            className="py-2.5 font-normal w-1/4"
+                                            style={{ borderRight: darkSide }}
+                                        >
                                             Defeito de costura
                                         </th>
-                                        <th className="py-2.5 font-normal border-r border-r-[#7B7D80] w-1/4">
+                                        <th
+                                            className="py-2.5 font-normal w-1/4"
+                                            style={{ borderRight: darkSide }}
+                                        >
                                             Defeito no tecido
                                         </th>
-                                        <th className="py-2.5 font-normal border-r border-r-[#7B7D80] w-1/4">
+                                        <th
+                                            className="py-2.5 font-normal w-1/4"
+                                            style={{ borderRight: darkSide }}
+                                        >
                                             Retiradas
                                         </th>
                                         <th className="py-2.5 font-normal w-1/4">Sobras</th>
@@ -520,10 +498,10 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                                 </thead>
                                 <tbody className="text-[#707070] font-light bg-white">
                                     <tr>
-                                        <td className="py-4 border-t border-r border-r-[#7B7D80]"></td>
-                                        <td className="py-4 border-t border-r border-r-[#7B7D80]"></td>
-                                        <td className="py-4 border-t border-r border-r-[#7B7D80]"></td>
-                                        <td className="py-4 border-t border-r-[#7B7D80]"></td>
+                                        <td className="py-4" style={{ borderRight: darkSide }}></td>
+                                        <td className="py-4" style={{ borderRight: darkSide }}></td>
+                                        <td className="py-4" style={{ borderRight: darkSide }}></td>
+                                        <td className="py-4"></td>
                                     </tr>
                                 </tbody>
                             </table>
