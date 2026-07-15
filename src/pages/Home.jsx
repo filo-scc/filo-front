@@ -5,6 +5,7 @@ import { getFabricoById } from "../services/fabricoService";
 import { getFichaTecnicaByFabrico } from "../services/fichasTecnicasService";
 import { getMe } from "../services/authService";
 import TransferenciaEtapaModal from "../components/fichas-tecnicas/TransferenciaEtapaModal";
+import FichaTecnicaDetalhesModal from "../components/fichas-tecnicas/FichaTecnicaDetalhesModal";
 import HomeSkeleton from "../components/home/HomeSkeleton";
 
 export default function Home() {
@@ -23,6 +24,9 @@ export default function Home() {
     const [producaoSobDemanda, setProducaoSobDemanda] = useState(null);
     const [transferenciaAtiva, setTransferenciaAtiva] = useState(null);
     const [fabricoId, setFabricoId] = useState(null);
+
+    const [modalDetalhesAberto, setModalDetalhesAberto] = useState(false);
+    const [fichaSelecionadaId, setFichaSelecionadaId] = useState(null);
 
     const mensagem = location.state?.error;
     const labelNovaFicha =
@@ -282,11 +286,39 @@ export default function Home() {
                                                         ficha.produto?.parceiro_produto || [];
                                                     let textoParceiro = "Não designado";
 
-                                                    if (parceirosVinculados.length === 1) {
-                                                        textoParceiro =
-                                                            parceirosVinculados[0].parceiro?.nome;
-                                                    } else if (parceirosVinculados.length > 1) {
-                                                        textoParceiro = `${parceirosVinculados[0].parceiro?.nome} +${parceirosVinculados.length - 1}`;
+                                                    const categoriaAceitas = [
+                                                        "Costura",
+                                                        "costura",
+                                                        "Facção",
+                                                        "facção",
+                                                        "Facçao",
+                                                        "facçao",
+                                                        "Faccão",
+                                                        "faccão",
+                                                        "Faccao",
+                                                        "faccao",
+                                                        "Confecção",
+                                                        "confecção",
+                                                        "Confecçao",
+                                                        "confecçao",
+                                                        "Confeccão",
+                                                        "confeccão",
+                                                        "Confeccao",
+                                                        "confeccao",
+                                                    ];
+                                                    const parceiroPrioridade =
+                                                        parceirosVinculados.find((pv) =>
+                                                            categoriaAceitas.includes(
+                                                                pv.parceiro?.categoria,
+                                                            ),
+                                                        );
+
+                                                    if (parceiroPrioridade) {
+                                                        if (parceirosVinculados.length === 1) {
+                                                            textoParceiro = `${parceiroPrioridade.parceiro?.nome}`;
+                                                        } else {
+                                                            textoParceiro = `${parceiroPrioridade.parceiro?.nome} +${parceirosVinculados.length - 1}`;
+                                                        }
                                                     }
 
                                                     let isAtrasado = false;
@@ -312,6 +344,10 @@ export default function Home() {
                                                     return (
                                                         <div
                                                             key={ficha.id}
+                                                            onClick={() => {
+                                                                setModalDetalhesAberto(true);
+                                                                setFichaSelecionadaId(ficha.id);
+                                                            }}
                                                             className="bg-white p-4 rounded-[10px] shadow-sm border border-gray-100 flex flex-col gap-1.5 relative border-l-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow shrink-0"
                                                             style={{
                                                                 borderLeftColor:
@@ -335,7 +371,7 @@ export default function Home() {
                                                                     {`${ficha.pedido?.cliente?.nome ? ` - ${ficha.pedido?.cliente?.nome}` : ""}`}
                                                                 </span>
                                                                 <span className="font-light text-xs pointer-events-none">
-                                                                    Nº{ficha.pedido?.id || "--"}
+                                                                    Nº{ficha.pedido?.numero || "--"}
                                                                 </span>
                                                             </div>
 
@@ -453,6 +489,17 @@ export default function Home() {
                     proximaEtapa={transferenciaAtiva.proximaEtapa}
                     onSuccess={() => {
                         carregarDadosDoQuadro();
+                    }}
+                />
+            )}
+
+            {modalDetalhesAberto && fichaSelecionadaId && (
+                <FichaTecnicaDetalhesModal
+                    isOpen={modalDetalhesAberto}
+                    fichaId={fichaSelecionadaId}
+                    onClose={() => {
+                        setModalDetalhesAberto(false);
+                        setFichaSelecionadaId(null);
                     }}
                 />
             )}
