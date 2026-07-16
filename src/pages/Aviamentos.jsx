@@ -40,13 +40,40 @@ const formatarCusto = (aviamento) => {
     return `R$${valor.toFixed(2).replace(".", ",")}`;
 };
 
+const AVIAMENTOS_MOCK = [
+    {
+        id: 1,
+        nome: "Botão",
+        unidade_medida: "Unidade",
+        sigla: "un",
+        custo_unitario: 0.05,
+        created_at: "2025-12-05T12:00:00.000Z",
+    },
+    {
+        id: 2,
+        nome: "Elástico Nº5",
+        unidade_medida: "Centímetro",
+        sigla: "cm",
+        custo_unitario: 0.05,
+        created_at: "2025-12-03T12:00:00.000Z",
+    },
+    {
+        id: 3,
+        nome: "Bojo",
+        unidade_medida: "Par",
+        sigla: "par",
+        custo_unitario: 0.5,
+        created_at: "2025-12-02T12:00:00.000Z",
+    },
+];
+
 const Aviamentos = () => {
     const navigate = useNavigate();
     const userString = localStorage.getItem("user");
     const fabrico_id = userString ? JSON.parse(userString).fabrico_id : null;
 
-    const [aviamentos, setAviamentos] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [aviamentos, setAviamentos] = useState(AVIAMENTOS_MOCK);
+    const [loading, setLoading] = useState(false);
     const [busca, setBusca] = useState("");
 
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
@@ -56,15 +83,18 @@ const Aviamentos = () => {
     useEffect(() => {
         const fetchAviamentos = async () => {
             if (!fabrico_id) {
+                setAviamentos(AVIAMENTOS_MOCK);
                 setLoading(false);
                 return;
             }
             try {
                 setLoading(true);
                 const data = await getAviamentosByFabrico(fabrico_id);
-                setAviamentos(Array.isArray(data) ? data : data?.data || []);
+                const lista = Array.isArray(data) ? data : data?.data || [];
+                setAviamentos(lista.length > 0 ? lista : AVIAMENTOS_MOCK);
             } catch (error) {
                 console.error("Erro ao carregar os aviamentos", error);
+                setAviamentos(AVIAMENTOS_MOCK);
             } finally {
                 setLoading(false);
             }
