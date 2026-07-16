@@ -6,12 +6,9 @@ export default function ModalExclusao({
     onConfirm,
     nomeItem,
     tipoItem = "o cadastro de",
-<<<<<<< HEAD
     titulo,
     mensagem,
-=======
-    loading = false,
->>>>>>> develop
+    loading = false
 }) {
     if (!isOpen) return null;
 
