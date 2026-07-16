@@ -8,7 +8,7 @@ export default function ModalExclusao({
     tipoItem = "o cadastro de",
     titulo,
     mensagem,
-    loading = false
+    loading = false,
 }) {
     if (!isOpen) return null;
 
