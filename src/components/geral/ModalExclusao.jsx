@@ -37,8 +37,8 @@ export default function ModalExclusao({
                     <p className="text-[18px] font-light text-[#404040] px-6 mb-8">{mensagem}</p>
                 ) : (
                     <p className="text-[18px] font-light text-[#404040] px-6 mb-8">
-                        Deseja mesmo{" "}
-                        <strong className="font-medium text-[#404040]">excluir</strong> {tipoItem}{" "}
+                        Deseja mesmo <strong className="font-medium text-[#404040]">excluir</strong>{" "}
+                        {tipoItem}{" "}
                         <strong className="font-medium text-[#404040]">{nomeItem}</strong>?
                     </p>
                 )}
