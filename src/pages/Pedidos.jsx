@@ -117,7 +117,7 @@ const Pedidos = () => {
 
                         <button
                             onClick={() => navigate("/pedidos/cadastrar")}
-                            className="w-[169px] h-[39px] bg-[#AEE5E8] text-[#FFFFFF] font-normal text-[16px] rounded-full flex items-center justify-center gap-2 hover:bg-[#9cdfe2] transition-colors shrink-0"
+                            className="w-[169px] h-[39px] bg-[#A9E2F2] text-[#FFFFFF] font-normal text-[16px] rounded-full flex items-center justify-center gap-2 hover:bg-[#8acbdc] transition-colors shrink-0"
                         >
                             <img
                                 src="/pedido-adicionar.png"
