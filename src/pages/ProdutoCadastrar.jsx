@@ -74,7 +74,7 @@ function DropdownField({
                 type="button"
                 onClick={onToggle}
                 disabled={loading}
-                className="w-full h-[39px] border border-[#898C8F] rounded-[10px] px-3 text-sm focus:outline-none bg-white flex items-center justify-between disabled:cursor-not-allowed"
+                className="w-full h-[39px] border border-[#898C8F] rounded-[10px] px-3 text-[16px] focus:outline-none bg-white flex items-center justify-between disabled:cursor-not-allowed"
             >
                 {loading ? (
                     <SkeletonBox className="h-[14px] w-32 rounded-[7px]" />
@@ -126,7 +126,6 @@ function DropdownField({
                                         key={option}
                                         type="button"
                                         onClick={() => onSelect(option)}
-                                        // Mudanças aqui: pl-[12px] em vez de 15px e border-l-[3px] global
                                         className={`relative overflow-hidden flex w-full items-center pl-[12px] pr-3 py-3 border-l-[3px] text-left text-[16px] transition-colors ${
                                             !actionButton || actionButtonPosition === "end"
                                                 ? "first:rounded-t-[13px]"
@@ -219,6 +218,7 @@ export default function ProdutoCadastar() {
         tipo_produto_id: undefined,
         tecido: "",
         tecido_id: undefined,
+        quantidade_tecido: "",
         grade: "",
         grade_versao_id: undefined,
         aviamentos: [],
@@ -268,6 +268,9 @@ export default function ProdutoCadastar() {
                     const tecidosTratados = (dadosTecidos || []).map((t) => ({
                         id: t?.id || t?.tecido?.id,
                         nome: t?.nome || t?.tecido?.nome || "Sem nome na API",
+                        custo_unitario: Number(t?.custo_unitario || t?.tecido?.custo_unitario || 0),
+                        unidade_de_medida:
+                            t?.unidade_de_medida || t?.tecido?.unidade_de_medida || "",
                     }));
                     setTecidosDisponiveis(tecidosTratados);
                 } else {
@@ -280,6 +283,8 @@ export default function ProdutoCadastar() {
                     const aviamentosTratados = (dadosAviamentos || []).map((a) => ({
                         id: a.id,
                         nome: a.nome,
+                        custo_unitario: Number(a.custo_unitario || 0),
+                        unidade_de_medida: a.unidade_de_medida || "",
                     }));
                     setAviamentosDisponiveis(aviamentosTratados);
                 } else {
@@ -318,6 +323,21 @@ export default function ProdutoCadastar() {
         setFormData((prev) => ({ ...prev, [field]: event.target.value }));
     };
 
+    const handleQuantidadeTecido = (event) => {
+        const apenasNumeros = event.target.value.replace(/[^0-9.,]/g, "");
+        setFormData((prev) => ({ ...prev, quantidade_tecido: apenasNumeros }));
+    };
+
+    const handleQuantidadeAviamento = (id, value) => {
+        const apenasNumeros = value.replace(/[^0-9.,]/g, "");
+        setFormData((prev) => ({
+            ...prev,
+            aviamentos: prev.aviamentos.map((a) =>
+                a.id === id ? { ...a, quantidade: apenasNumeros } : a,
+            ),
+        }));
+    };
+
     const handleToggleAviamento = (aviamentoObj) => {
         setFormData((prev) => {
             const jaSelecionado = prev.aviamentos.some((a) => a.id === aviamentoObj.id);
@@ -325,7 +345,7 @@ export default function ProdutoCadastar() {
                 ...prev,
                 aviamentos: jaSelecionado
                     ? prev.aviamentos.filter((a) => a.id !== aviamentoObj.id)
-                    : [...prev.aviamentos, aviamentoObj],
+                    : [...prev.aviamentos, { ...aviamentoObj, quantidade: "" }],
             };
         });
     };
@@ -395,6 +415,17 @@ export default function ProdutoCadastar() {
         setErroCadastro("");
     };
 
+    const tecidoSelecionado = tecidosDisponiveis.find((t) => t.id === formData.tecido_id);
+    const qtdTecidoCalculo = Number(String(formData.quantidade_tecido).replace(",", ".") || 0);
+    const custoTecidoCalculado = qtdTecidoCalculo * (tecidoSelecionado?.custo_unitario || 0);
+
+    const custoAviamentosCalculado = formData.aviamentos.reduce((acc, av) => {
+        const qtd = Number(String(av.quantidade).replace(",", ".") || 0);
+        return acc + qtd * (av.custo_unitario || 0);
+    }, 0);
+
+    const valorTotalGasto = custoTecidoCalculado + custoAviamentosCalculado;
+
     const handleSubmit = async (event) => {
         event.preventDefault();
 
@@ -431,25 +462,34 @@ export default function ProdutoCadastar() {
                 }
             }
 
-            const payload = {
+            const payloadProduto = {
                 foto: urlFoto,
                 nome: formData.referencia.trim(),
                 tipo_produto_id: formData.tipo_produto_id,
                 fabrico_id: fabricoId,
                 tecido_id: formData.tecido_id,
                 grade_versao_id: formData.grade_versao_id,
+                quantidade_tecido: qtdTecidoCalculo,
+                custo_tecido: Number(custoTecidoCalculado.toFixed(2)),
+                custo_operacional: null,
+                outros_custos: null,
             };
 
-            const produtoCriado = await criarProduto(payload);
+            const produtoCriado = await criarProduto(payloadProduto);
             const produtoId = produtoCriado.id;
 
             if (formData.aviamentos.length > 0 && produtoId) {
-                const promessasAviamentos = formData.aviamentos.map((aviamento) =>
-                    vincularProdutoAviamento({
+                const promessasAviamentos = formData.aviamentos.map((aviamento) => {
+                    const qtd = Number(String(aviamento.quantidade).replace(",", ".") || 0);
+                    const custoItem = qtd * (aviamento.custo_unitario || 0);
+
+                    return vincularProdutoAviamento({
                         produto_id: produtoId,
                         aviamento_id: aviamento.id,
-                    }),
-                );
+                        quantidade: qtd,
+                        custo: Number(custoItem.toFixed(2)),
+                    });
+                });
 
                 await Promise.all(promessasAviamentos);
             }
@@ -482,6 +522,7 @@ export default function ProdutoCadastar() {
                 )}
 
                 <form onSubmit={handleSubmit} className="mt-10 flex flex-col min-h-[520px]">
+                    {/* Bloco Superior: Imagem e Detalhes */}
                     <div className="flex flex-col xl:flex-row gap-12 xl:gap-16">
                         <div className="w-full xl:w-[184px] shrink-0">
                             <FieldLabel>Imagem</FieldLabel>
@@ -530,13 +571,13 @@ export default function ProdutoCadastar() {
                                                 
                                                 ${
                                                     formData.referencia
-                                                        ? "top-0 -translate-y-1/2 text-xs"
+                                                        ? "top-0 -translate-y-1/2 text-[12px]"
                                                         : "top-1/2 -translate-y-1/2 text-[16px]"
                                                 }
                                                 
                                                 group-focus-within:top-0
                                                 group-focus-within:-translate-y-1/2
-                                                group-focus-within:text-xs
+                                                group-focus-within:text-[12px]
                                             `}
                                         >
                                             Referência interna*
@@ -599,15 +640,6 @@ export default function ProdutoCadastar() {
                                                 },
                                             }}
                                         />
-                                        <div className="flex flex-wrap gap-2 mt-3">
-                                            {formData.aviamentos.map((item) => (
-                                                <SelectedAviamentoTag
-                                                    key={item.id}
-                                                    label={item.nome}
-                                                    onRemove={() => handleToggleAviamento(item)}
-                                                />
-                                            ))}
-                                        </div>
                                     </div>
 
                                     <div>
@@ -645,7 +677,100 @@ export default function ProdutoCadastar() {
                                         />
                                     </div>
                                 </div>
+
+                                <div className="flex flex-wrap w-full gap-2 mt-3">
+                                    {formData.aviamentos.map((item) => (
+                                        <SelectedAviamentoTag
+                                            key={item.id}
+                                            label={item.nome}
+                                            onRemove={() => handleToggleAviamento(item)}
+                                        />
+                                    ))}
+                                </div>
                             </div>
+                        </div>
+                    </div>
+
+                    {/* Bloco Inferior: Tabela de Quantidade */}
+                    <div className="mt-6 w-full">
+                        <h3 className="text-[20px] font-light text-[#4696AD] mb-4">
+                            Quantidade por aviamento
+                        </h3>
+                        <div className="w-full overflow-x-auto">
+                            <table className="w-full table-fixed border-separate border-spacing-0">
+                                <thead>
+                                    <tr>
+                                        <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] first:rounded-tl-[10px] last:rounded-tr-[10px] text-center border-none">
+                                            Tecido
+                                        </th>
+                                        {formData.aviamentos.map((av) => (
+                                            <th
+                                                key={av.id}
+                                                className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] text-center capitalize border-none"
+                                            >
+                                                {av.nome}
+                                            </th>
+                                        ))}
+                                        <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] first:rounded-tl-[10px] last:rounded-tr-[10px] text-center border-none">
+                                            Total
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td className="bg-[#FFFFFF] py-3 px-4 border-l-[0.5px] border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] first:rounded-bl-[10px] text-center">
+                                            <div className="flex items-center justify-center gap-1 w-full bg-transparent">
+                                                <input
+                                                    type="text"
+                                                    value={formData.quantidade_tecido}
+                                                    onChange={handleQuantidadeTecido}
+                                                    placeholder="-"
+                                                    className="text-right bg-transparent focus:outline-none placeholder-[#404040] text-[16px] font-light text-[#404040]"
+                                                    style={{
+                                                        width: `${Math.max(1, String(formData.quantidade_tecido).length)}ch`,
+                                                    }}
+                                                />
+                                                <span className="text-[16px] font-light text-[#404040]">
+                                                    ({tecidoSelecionado?.unidade_de_medida || "m"})
+                                                </span>
+                                            </div>
+                                        </td>
+                                        {formData.aviamentos.map((av) => (
+                                            <td
+                                                key={av.id}
+                                                className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center"
+                                            >
+                                                <div className="flex items-center justify-center gap-1 w-full bg-transparent">
+                                                    <input
+                                                        type="text"
+                                                        value={av.quantidade}
+                                                        onChange={(e) =>
+                                                            handleQuantidadeAviamento(
+                                                                av.id,
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        placeholder="-"
+                                                        className="text-right bg-transparent focus:outline-none placeholder-[#404040] text-[16px] font-light text-[#404040]"
+                                                        style={{
+                                                            width: `${Math.max(1, String(av.quantidade).length)}ch`,
+                                                        }}
+                                                    />
+                                                    <span className="text-[16px] font-light text-[#404040]">
+                                                        ({av.unidade_de_medida || ""})
+                                                    </span>
+                                                </div>
+                                            </td>
+                                        ))}
+                                        <td className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] last:rounded-br-[10px] text-center text-[16px] font-light text-[#404040]">
+                                            {new Intl.NumberFormat("pt-BR", {
+                                                style: "currency",
+                                                currency: "BRL",
+                                            }).format(valorTotalGasto)}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
