@@ -4,6 +4,7 @@ import TabelaReferencias from "../components/clientes/TabelaReferencias";
 import FloatingLabelInput from "../components/FloatingLabelInput";
 import ModalReferencias from "../components/clientes/ModalReferencias";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
+import { ClientEditPageSkeleton, LoadingButton } from "../components/geral/Loading";
 import {
     getClienteById,
     getProdutosDoCliente,
@@ -222,7 +223,7 @@ export default function ClientesEditar() {
                 </div>
 
                 {loading ? (
-                    <p className="text-center py-12">Carregando...</p>
+                    <ClientEditPageSkeleton />
                 ) : (
                     <>
                         <section className="mb-10">
@@ -322,14 +323,15 @@ export default function ClientesEditar() {
                         </div>
 
                         <div className="flex flex-wrap justify-end gap-4 pt-2">
-                            <button
+                            <LoadingButton
                                 type="button"
                                 onClick={handleFinalizar}
-                                disabled={salvando}
+                                loading={salvando}
+                                loadingText="Salvando..."
                                 className="bg-[#A9E2F2] hover:bg-[#94d6eb] text-white h-[42px] px-8 rounded-full min-w-[180px]"
                             >
-                                {salvando ? "Salvando..." : "Finalizar edição"}
-                            </button>
+                                Finalizar edição
+                            </LoadingButton>
                         </div>
                         {erro && <p className="pt-4 text-sm text-[#D75757] text-right">{erro}</p>}
                     </>

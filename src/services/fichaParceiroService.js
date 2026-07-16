@@ -36,3 +36,8 @@ export const createFichaParceiro = async (ficha_id, parceiro_id, operacao, valor
     const response = await api.post(`fichas-tecnicas/parceiros`, payload);
     return response;
 };
+
+export const deleteFichaTecnicaParceiro = async (ficha_id, parceiro_id) => {
+    const response = await api.delete(`/fichas-tecnicas/${ficha_id}/parceiros/${parceiro_id}`);
+    return response.data;
+};

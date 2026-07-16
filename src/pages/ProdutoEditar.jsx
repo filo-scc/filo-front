@@ -7,13 +7,20 @@ import ModalAtencao from "../components/geral/ModalAtencao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import ModalExclusao from "../components/geral/ModalExclusao";
 import {
+    LoadingButton,
+    ProductEditPageSkeleton,
+    SelectionListSkeleton,
+} from "../components/geral/Loading";
+import {
     atualizarProduto,
     excluirProduto,
     getClientesDoProduto,
     getGradesByFabrico,
     getProdutoById,
     getTecidosByFabrico,
+    getTiposProdutoByFabrico,
 } from "../services/produtoService";
+import { getFabricoById } from "../services/fabricoService";
 import {
     desvincularProdutoDoCliente,
     getClientes,
@@ -21,7 +28,6 @@ import {
 } from "../services/clientesService";
 import { upload } from "../services/utilsService";
 
-const modelos = ["Top e short", "Top e calça", "Macaquito", "Macacão"];
 const aviamentosDisponiveis = ["Viés", "Bojo", "Elástico", "Argola"];
 
 function FieldLabel({ children, className = "" }) {
@@ -369,9 +375,7 @@ function ModalClientesDoProduto({
 
                 <div className="max-h-[280px] overflow-y-auto pr-2 scrollbar-sutil">
                     {loading ? (
-                        <div className="flex justify-center py-12 text-[#4696AD]">
-                            Buscando clientes...
-                        </div>
+                        <SelectionListSkeleton />
                     ) : clientesFiltrados.length === 0 ? (
                         <div className="flex justify-center py-12 text-[#898c8f]">
                             Nenhum cliente disponível.
@@ -431,20 +435,24 @@ export default function ProdutoEditar() {
     const [salvando, setSalvando] = useState(false);
     const [erro, setErro] = useState("");
     const [produto, setProduto] = useState(null);
+    const [fabrico, setFabrico] = useState(null);
     const [clientesAssociados, setClientesAssociados] = useState([]);
     const [arquivoImagem, setArquivoImagem] = useState(null);
     const [imagemPreview, setImagemPreview] = useState("");
     const [openDropdown, setOpenDropdown] = useState(null);
     const [gradesDisponiveis, setGradesDisponiveis] = useState([]);
     const [tecidosDisponiveis, setTecidosDisponiveis] = useState([]);
+    const [modelosDisponiveis, setModelosDisponiveis] = useState([]);
     const [modalClientesAberto, setModalClientesAberto] = useState(false);
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
     const [modalAtencaoAberto, setModalAtencaoAberto] = useState(false);
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
     const [modalExcluidoAberto, setModalExcluidoAberto] = useState(false);
+    const [excluindo, setExcluindo] = useState(false);
     const [formData, setFormData] = useState({
         referencia: "",
         modelo: "",
+        tipo_produto_id: undefined,
         tecido: "",
         tecido_id: undefined,
         grade: "",
@@ -473,18 +481,27 @@ export default function ProdutoEditar() {
             try {
                 setLoading(true);
 
-                const [dadosProduto, dadosClientes, clientesDoFabrico, resGrades, resTecidos] =
-                    await Promise.all([
-                        getProdutoById(id),
-                        getClientesDoProduto(id),
-                        Number.isFinite(fabricoId) ? getClientes(fabricoId) : Promise.resolve([]),
-                        Number.isFinite(fabricoId)
-                            ? getGradesByFabrico(fabricoId)
-                            : Promise.resolve([]),
-                        Number.isFinite(fabricoId)
-                            ? getTecidosByFabrico(fabricoId)
-                            : Promise.resolve([]),
-                    ]);
+                const [
+                    dadosProduto,
+                    dadosClientes,
+                    clientesDoFabrico,
+                    resGrades,
+                    resTecidos,
+                    resTiposProduto,
+                    dadosFabrico,
+                ] = await Promise.all([
+                    getProdutoById(id),
+                    getClientesDoProduto(id),
+                    Number.isFinite(fabricoId) ? getClientes(fabricoId) : Promise.resolve([]),
+                    Number.isFinite(fabricoId)
+                        ? getGradesByFabrico(fabricoId)
+                        : Promise.resolve([]),
+                    Number.isFinite(fabricoId)
+                        ? getTecidosByFabrico(fabricoId)
+                        : Promise.resolve([]),
+                    getTiposProdutoByFabrico().catch(() => []),
+                    Number.isFinite(fabricoId) ? getFabricoById(fabricoId) : Promise.resolve(null),
+                ]);
 
                 if (ignorar) return;
 
@@ -511,7 +528,24 @@ export default function ProdutoEditar() {
                     nome: tecido?.nome || tecido?.tecido?.nome || "Sem nome na API",
                 }));
 
+                const modelosMapeados = (resTiposProduto || [])
+                    .map((tipo) => ({
+                        id: tipo?.id,
+                        nome: tipo?.nome || tipo?.tipo || tipo?.descricao,
+                    }))
+                    .filter((tipo) => tipo.id && tipo.nome);
+
+                const tipoProdutoRelacionado =
+                    dadosProduto.tipo_produto ||
+                    dadosProduto.tipoProduto ||
+                    modelosMapeados.find((tipo) => tipo.id === dadosProduto.tipo_produto_id);
+
+                const nomeModelo = tipoProdutoRelacionado?.nome || dadosProduto.tipo || "";
+                const tipoProdutoId =
+                    dadosProduto.tipo_produto_id || tipoProdutoRelacionado?.id || undefined;
+
                 setProduto(dadosProduto);
+                setFabrico(dadosFabrico);
                 setClientesAssociados(
                     enriquecerClientesAssociados(
                         Array.isArray(dadosClientes) ? dadosClientes : [],
@@ -520,10 +554,12 @@ export default function ProdutoEditar() {
                 );
                 setGradesDisponiveis(gradesMapeadas);
                 setTecidosDisponiveis(tecidosMapeados);
+                setModelosDisponiveis(modelosMapeados);
                 setImagemPreview(dadosProduto.foto || "");
                 setFormData({
                     referencia: dadosProduto.nome || "",
-                    modelo: dadosProduto.tipo || "",
+                    modelo: nomeModelo,
+                    tipo_produto_id: tipoProdutoId,
                     tecido: getTecidoNome(dadosProduto),
                     tecido_id: dadosProduto.tecido_id || dadosProduto.tecido?.id,
                     grade: getGradeNome(dadosProduto),
@@ -557,11 +593,6 @@ export default function ProdutoEditar() {
         setOpenDropdown((prev) => (prev === field ? null : field));
     };
 
-    const handleDropdownSelect = (field, value) => {
-        setFormData((prev) => ({ ...prev, [field]: value }));
-        setOpenDropdown(null);
-    };
-
     const handleGradeSelect = (nomeGrade) => {
         const gradeSelecionada = gradesDisponiveis.find((grade) => grade.nome === nomeGrade);
 
@@ -580,6 +611,17 @@ export default function ProdutoEditar() {
             ...prev,
             tecido: nomeTecido,
             tecido_id: tecidoSelecionado?.id,
+        }));
+        setOpenDropdown(null);
+    };
+
+    const handleModeloSelect = (nomeModelo) => {
+        const modeloSelecionado = modelosDisponiveis.find((modelo) => modelo.nome === nomeModelo);
+
+        setFormData((prev) => ({
+            ...prev,
+            modelo: nomeModelo,
+            tipo_produto_id: modeloSelecionado?.id,
         }));
         setOpenDropdown(null);
     };
@@ -611,7 +653,7 @@ export default function ProdutoEditar() {
             return;
         }
 
-        if (!formData.modelo) {
+        if (!formData.modelo || !formData.tipo_produto_id) {
             setErro("Selecione o modelo do produto.");
             return;
         }
@@ -631,7 +673,7 @@ export default function ProdutoEditar() {
             await atualizarProduto(id, {
                 foto: urlFoto,
                 nome: formData.referencia.trim(),
-                tipo: formData.modelo,
+                tipo_produto_id: formData.tipo_produto_id,
                 fabrico_id: fabricoId,
                 tecido_id: formData.tecido_id,
                 grade_versao_id: formData.grade_versao_id,
@@ -680,20 +722,31 @@ export default function ProdutoEditar() {
     };
 
     const handleConfirmarExclusao = async () => {
+        if (excluindo) return;
         try {
+            setExcluindo(true);
             await excluirProduto(id);
             setModalExclusaoAberto(false);
             setModalExcluidoAberto(true);
         } catch (error) {
             console.error("Erro ao excluir produto:", error);
             setErro("Erro ao excluir produto.");
+        } finally {
+            setExcluindo(false);
         }
     };
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-screen">
-                <p className="text-[#4696AD] font-Outfit">Carregando produto...</p>
+            <div className="p-6 pt-0 mt-6 w-full flex justify-center font-Outfit">
+                <div className="bg-white p-8 rounded-[24px] shadow-sm w-full min-h-[650px]">
+                    <ProdutoDetalhesHeader
+                        title="Editar produto"
+                        iconSrc="/produtos-ativado.png"
+                        iconClassName="w-[30px] h-[30px] object-contain"
+                    />
+                    <ProductEditPageSkeleton />
+                </div>
             </div>
         );
     }
@@ -715,7 +768,7 @@ export default function ProdutoEditar() {
 
                 <form onSubmit={handleSalvar} className="mt-8 flex flex-col min-h-[520px]">
                     <div className="flex flex-col xl:flex-row gap-9 xl:gap-10">
-                        <div className="w-[230px] shrink-0">
+                        <div className="w-[260px] shrink-0">
                             <FieldLabel>Imagem</FieldLabel>
                             <input
                                 ref={inputFileRef}
@@ -727,7 +780,7 @@ export default function ProdutoEditar() {
                             <button
                                 type="button"
                                 onClick={() => inputFileRef.current?.click()}
-                                className="w-[220px] h-[127px] rounded-[10px] overflow-hidden bg-[#D9D9D9] hover:opacity-90 transition-opacity"
+                                className="w-[260px] h-[170px] rounded-[10px] overflow-hidden bg-[#D9D9D9] hover:opacity-90 transition-opacity"
                             >
                                 {imagemPreview ? (
                                     <img
@@ -760,10 +813,10 @@ export default function ProdutoEditar() {
                                     <DropdownField
                                         value={formData.modelo}
                                         placeholder="Modelo"
-                                        options={modelos}
+                                        options={modelosDisponiveis.map((modelo) => modelo.nome)}
                                         isOpen={openDropdown === "modelo"}
                                         onToggle={() => toggleDropdown("modelo")}
-                                        onSelect={(value) => handleDropdownSelect("modelo", value)}
+                                        onSelect={handleModeloSelect}
                                         isSelectedOption={(option) => formData.modelo === option}
                                     />
                                 </div>
@@ -842,6 +895,7 @@ export default function ProdutoEditar() {
                             clientes={clientesAssociados}
                             referenciaInterna={formData.referencia}
                             produtoId={id}
+                            fabricacao_sob_demanda={fabrico?.fabricacao_sob_demanda}
                             onAbrirModal={() => setModalClientesAberto(true)}
                             onRemoverLinha={handleRemoverReferencia}
                             onSalvarEdicao={handleSalvarReferencia}
@@ -865,13 +919,14 @@ export default function ProdutoEditar() {
                             >
                                 Excluir produto
                             </button>
-                            <button
+                            <LoadingButton
                                 type="submit"
-                                disabled={salvando}
+                                loading={salvando}
+                                loadingText="Salvando..."
                                 className="w-[189px] h-[39px] rounded-[18.9px] bg-[#A9E2F2] text-[#4696AD] font-Outfit text-[16px] transition-colors hover:bg-[#A2DCED] disabled:opacity-60 disabled:cursor-not-allowed"
                             >
-                                {salvando ? "Salvando..." : "Editar produto"}
-                            </button>
+                                Editar produto
+                            </LoadingButton>
                         </div>
                     </div>
                 </form>
@@ -892,6 +947,7 @@ export default function ProdutoEditar() {
                 onConfirm={handleConfirmarExclusao}
                 nomeItem={produto?.nome}
                 tipoItem="o produto"
+                loading={excluindo}
             />
 
             <ModalConfirmacao

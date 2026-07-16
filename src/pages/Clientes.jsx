@@ -5,6 +5,7 @@ import { getClientes, excluirCliente } from "../services/clientesService";
 import MenuOpcoes from "../components/geral/MenuOpcoes";
 import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
+import { ClientesTableSkeleton } from "../components/geral/Loading";
 
 export default function Clientes() {
     const [clientes, setClientes] = useState([]);
@@ -18,6 +19,7 @@ export default function Clientes() {
 
     // Estado para o Modal de Confirmação de Exclusão
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
+    const [excluindo, setExcluindo] = useState(false);
 
     useEffect(() => {
         const carregarClientes = async () => {
@@ -64,9 +66,10 @@ export default function Clientes() {
     };
 
     const handleConfirmarExclusao = async () => {
-        if (!clienteSelecionado) return;
+        if (!clienteSelecionado || excluindo) return;
 
         try {
+            setExcluindo(true);
             await excluirCliente(clienteSelecionado.id);
 
             setClientes(clientes.filter((c) => c.id !== clienteSelecionado.id));
@@ -76,6 +79,8 @@ export default function Clientes() {
         } catch (error) {
             console.error("Erro ao excluir cliente:", error);
             alert("Erro ao excluir cliente.");
+        } finally {
+            setExcluindo(false);
         }
     };
 
@@ -185,11 +190,7 @@ export default function Clientes() {
 
                                     <tbody className="bg-white text-[#404040]">
                                         {loading ? (
-                                            <tr className="h-[64px]">
-                                                <td colSpan="5" className="text-gray-400">
-                                                    Carregando clientes...
-                                                </td>
-                                            </tr>
+                                            <ClientesTableSkeleton rows={5} />
                                         ) : clientes.length === 0 ? (
                                             <tr className="h-[64px]">
                                                 <td colSpan="5" className="text-gray-400">
@@ -276,6 +277,7 @@ export default function Clientes() {
                 onConfirm={handleConfirmarExclusao}
                 nomeItem={clienteSelecionado?.nome}
                 tipoItem="o cliente"
+                loading={excluindo}
             />
 
             <ModalConfirmacao
