@@ -431,6 +431,7 @@ export default function ProdutoCadastar() {
 
         setErroCadastro("");
 
+        // VALIDAÇÕES DOS CAMPOS OBRIGATÓRIOS
         if (!formData.referencia.trim()) {
             setErroCadastro("Informe a referência interna do produto.");
             return;
@@ -441,6 +442,11 @@ export default function ProdutoCadastar() {
             return;
         }
 
+        if (!formData.grade || !formData.grade_versao_id) {
+            setErroCadastro("Selecione a grade de tamanho do produto.");
+            return;
+        }
+
         if (!Number.isFinite(fabricoId)) {
             setErroCadastro("Não foi possível identificar a fábrica do usuário.");
             return;
@@ -448,7 +454,7 @@ export default function ProdutoCadastar() {
 
         try {
             setSalvando(true);
-            let urlFoto = undefined;
+            let urlFoto = null;
 
             // Realiza o upload caso tenha uma imagem selecionada
             if (arquivoImagem) {
@@ -467,10 +473,11 @@ export default function ProdutoCadastar() {
                 nome: formData.referencia.trim(),
                 tipo_produto_id: formData.tipo_produto_id,
                 fabrico_id: fabricoId,
-                tecido_id: formData.tecido_id,
+                tecido_id: formData.tecido_id || null,
                 grade_versao_id: formData.grade_versao_id,
-                quantidade_tecido: qtdTecidoCalculo,
-                custo_tecido: Number(custoTecidoCalculado.toFixed(2)),
+                quantidade_tecido: qtdTecidoCalculo || null,
+                custo_tecido:
+                    custoTecidoCalculado > 0 ? Number(custoTecidoCalculado.toFixed(2)) : null,
                 custo_operacional: null,
                 outros_custos: null,
             };
