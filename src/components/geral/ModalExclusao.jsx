@@ -6,6 +6,8 @@ export default function ModalExclusao({
     onConfirm,
     nomeItem,
     tipoItem = "o cadastro de",
+    titulo,
+    mensagem,
 }) {
     if (!isOpen) return null;
 
@@ -27,11 +29,19 @@ export default function ModalExclusao({
                     <img src="/fechar-cinza.png" className="w-3 h-3" alt="Fechar" />
                 </button>
 
-                {/* Texto dinâmico utilizando o tipoItem */}
-                <p className="text-[18px] font-light text-[#404040] px-6 mb-8">
-                    Deseja mesmo <strong className="font-medium text-[#404040]">excluir</strong>{" "}
-                    {tipoItem} <strong className="font-medium text-[#404040]">{nomeItem}</strong>?
-                </p>
+                {titulo && (
+                    <h2 className="text-[20px] font-medium text-[#404040] mb-3 px-6">{titulo}</h2>
+                )}
+
+                {mensagem ? (
+                    <p className="text-[18px] font-light text-[#404040] px-6 mb-8">{mensagem}</p>
+                ) : (
+                    <p className="text-[18px] font-light text-[#404040] px-6 mb-8">
+                        Deseja mesmo{" "}
+                        <strong className="font-medium text-[#404040]">excluir</strong> {tipoItem}{" "}
+                        <strong className="font-medium text-[#404040]">{nomeItem}</strong>?
+                    </p>
+                )}
 
                 <div className="flex gap-4 w-full">
                     <button

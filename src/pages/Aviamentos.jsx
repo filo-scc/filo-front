@@ -270,8 +270,13 @@ const Aviamentos = () => {
                 isOpen={modalExclusaoAberto}
                 onClose={() => setModalExclusaoAberto(false)}
                 onConfirm={handleConfirmarExclusao}
-                nomeItem={aviamentoSelecionado?.nome}
-                tipoItem="o aviamento"
+                titulo="Excluir aviamento"
+                mensagem={
+                    <>
+                        Deseja mesmo prosseguir com esta ação e excluir o{" "}
+                        {aviamentoSelecionado?.nome}?
+                    </>
+                }
             />
 
             <ModalConfirmacao
