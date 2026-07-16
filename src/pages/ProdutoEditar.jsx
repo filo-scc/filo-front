@@ -19,6 +19,8 @@ import {
     getProdutoById,
     getTecidosByFabrico,
     getTiposProdutoByFabrico,
+    getAviamentosByFabrico,
+    getAviamentosDoProduto,
 } from "../services/produtoService";
 import { getFabricoById } from "../services/fabricoService";
 import {
@@ -27,8 +29,6 @@ import {
     vincularProdutoAoCliente,
 } from "../services/clientesService";
 import { upload } from "../services/utilsService";
-
-const aviamentosDisponiveis = ["Viés", "Bojo", "Elástico", "Argola"];
 
 function FieldLabel({ children, className = "" }) {
     return (
@@ -96,7 +96,7 @@ function DropdownField({
                         onClick={onToggle}
                         className="fixed inset-0 z-10 cursor-default"
                     />
-                    <div className="absolute left-0 right-0 top-[calc(100%+2px)] z-20 overflow-hidden rounded-[14px] border border-[#D3D3D3] bg-white shadow-sm">
+                    <div className="absolute left-0 right-0 top-[calc(100%+2px)] z-20 overflow-y-auto max-h-[250px] scrollbar-sutil rounded-[14px] border border-[#D3D3D3] bg-white shadow-sm">
                         {options.map((option) => {
                             const selected = isSelectedOption(option);
 
@@ -442,6 +442,7 @@ export default function ProdutoEditar() {
     const [openDropdown, setOpenDropdown] = useState(null);
     const [gradesDisponiveis, setGradesDisponiveis] = useState([]);
     const [tecidosDisponiveis, setTecidosDisponiveis] = useState([]);
+    const [aviamentosDisponiveis, setAviamentosDisponiveis] = useState([]);
     const [modelosDisponiveis, setModelosDisponiveis] = useState([]);
     const [modalClientesAberto, setModalClientesAberto] = useState(false);
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
@@ -455,6 +456,7 @@ export default function ProdutoEditar() {
         tipo_produto_id: undefined,
         tecido: "",
         tecido_id: undefined,
+        quantidade_tecido: "",
         grade: "",
         grade_versao_id: undefined,
         aviamentos: [],
@@ -487,6 +489,8 @@ export default function ProdutoEditar() {
                     clientesDoFabrico,
                     resGrades,
                     resTecidos,
+                    resAviamentosFabrico,
+                    resAviamentosProduto,
                     resTiposProduto,
                     dadosFabrico,
                 ] = await Promise.all([
@@ -499,6 +503,10 @@ export default function ProdutoEditar() {
                     Number.isFinite(fabricoId)
                         ? getTecidosByFabrico(fabricoId)
                         : Promise.resolve([]),
+                    Number.isFinite(fabricoId)
+                        ? getAviamentosByFabrico(fabricoId)
+                        : Promise.resolve([]),
+                    getAviamentosDoProduto(id).catch(() => []),
                     getTiposProdutoByFabrico().catch(() => []),
                     Number.isFinite(fabricoId) ? getFabricoById(fabricoId) : Promise.resolve(null),
                 ]);
@@ -526,6 +534,26 @@ export default function ProdutoEditar() {
                 const tecidosMapeados = (resTecidos || []).map((tecido) => ({
                     id: tecido?.id || tecido?.tecido?.id,
                     nome: tecido?.nome || tecido?.tecido?.nome || "Sem nome na API",
+                    custo_unitario: Number(
+                        tecido?.custo_unitario || tecido?.tecido?.custo_unitario || 0,
+                    ),
+                    unidade_de_medida:
+                        tecido?.unidade_de_medida || tecido?.tecido?.unidade_de_medida || "",
+                }));
+
+                const aviamentosMapeados = (resAviamentosFabrico || []).map((a) => ({
+                    id: a.id,
+                    nome: a.nome,
+                    custo_unitario: Number(a.custo_unitario || 0),
+                    unidade_de_medida: a.unidade_de_medida || "",
+                }));
+
+                const aviamentosVinculados = (resAviamentosProduto || []).map((pivot) => ({
+                    id: pivot.aviamento?.id,
+                    nome: pivot.aviamento?.nome,
+                    custo_unitario: Number(pivot.aviamento?.custo_unitario || 0),
+                    unidade_de_medida: pivot.aviamento?.unidade_de_medida || "und",
+                    quantidade: pivot.quantidade || null,
                 }));
 
                 const modelosMapeados = (resTiposProduto || [])
@@ -554,6 +582,7 @@ export default function ProdutoEditar() {
                 );
                 setGradesDisponiveis(gradesMapeadas);
                 setTecidosDisponiveis(tecidosMapeados);
+                setAviamentosDisponiveis(aviamentosMapeados);
                 setModelosDisponiveis(modelosMapeados);
                 setImagemPreview(dadosProduto.foto || "");
                 setFormData({
@@ -562,13 +591,10 @@ export default function ProdutoEditar() {
                     tipo_produto_id: tipoProdutoId,
                     tecido: getTecidoNome(dadosProduto),
                     tecido_id: dadosProduto.tecido_id || dadosProduto.tecido?.id,
+                    quantidade_tecido: dadosProduto.quantidade_tecido || "",
                     grade: getGradeNome(dadosProduto),
                     grade_versao_id: dadosProduto.grade_versao_id || dadosProduto.grade_versao?.id,
-                    aviamentos: Array.isArray(dadosProduto.aviamentos)
-                        ? dadosProduto.aviamentos
-                        : dadosProduto.aviamentos
-                          ? [dadosProduto.aviamentos]
-                          : [],
+                    aviamentos: aviamentosVinculados,
                 });
             } catch (error) {
                 console.error("Erro ao carregar produto:", error);
@@ -587,6 +613,21 @@ export default function ProdutoEditar() {
 
     const handleChange = (field) => (event) => {
         setFormData((prev) => ({ ...prev, [field]: event.target.value }));
+    };
+
+    const handleQuantidadeTecido = (event) => {
+        const apenasNumeros = event.target.value.replace(/[^0-9.,]/g, "");
+        setFormData((prev) => ({ ...prev, quantidade_tecido: apenasNumeros }));
+    };
+
+    const handleQuantidadeAviamento = (aviamentoId, value) => {
+        const apenasNumeros = value.replace(/[^0-9.,]/g, "");
+        setFormData((prev) => ({
+            ...prev,
+            aviamentos: prev.aviamentos.map((a) =>
+                a.id === aviamentoId ? { ...a, quantidade: apenasNumeros } : a,
+            ),
+        }));
     };
 
     const toggleDropdown = (field) => {
@@ -626,13 +667,16 @@ export default function ProdutoEditar() {
         setOpenDropdown(null);
     };
 
-    const handleToggleAviamento = (item) => {
-        setFormData((prev) => ({
-            ...prev,
-            aviamentos: prev.aviamentos.includes(item)
-                ? prev.aviamentos.filter((aviamento) => aviamento !== item)
-                : [...prev.aviamentos, item],
-        }));
+    const handleToggleAviamento = (aviamentoObj) => {
+        setFormData((prev) => {
+            const jaSelecionado = prev.aviamentos.some((a) => a.id === aviamentoObj.id);
+            return {
+                ...prev,
+                aviamentos: jaSelecionado
+                    ? prev.aviamentos.filter((a) => a.id !== aviamentoObj.id)
+                    : [...prev.aviamentos, { ...aviamentoObj, quantidade: "" }],
+            };
+        });
     };
 
     const handleImagemChange = (event) => {
@@ -643,6 +687,17 @@ export default function ProdutoEditar() {
         setImagemPreview(URL.createObjectURL(arquivo));
         setErro("");
     };
+
+    const tecidoSelecionado = tecidosDisponiveis.find((t) => t.id === formData.tecido_id);
+    const qtdTecidoCalculo = Number(String(formData.quantidade_tecido).replace(",", ".") || 0);
+    const custoTecidoCalculado = qtdTecidoCalculo * (tecidoSelecionado?.custo_unitario || 0);
+
+    const custoAviamentosCalculado = formData.aviamentos.reduce((acc, av) => {
+        const qtd = Number(String(av.quantidade).replace(",", ".") || 0);
+        return acc + qtd * (av.custo_unitario || 0);
+    }, 0);
+
+    const valorTotalGasto = custoTecidoCalculado + custoAviamentosCalculado;
 
     const handleSalvar = async (event) => {
         event.preventDefault();
@@ -655,6 +710,11 @@ export default function ProdutoEditar() {
 
         if (!formData.modelo || !formData.tipo_produto_id) {
             setErro("Selecione o modelo do produto.");
+            return;
+        }
+
+        if (!formData.grade || !formData.grade_versao_id) {
+            setErro("Selecione a grade de tamanhos do produto.");
             return;
         }
 
@@ -675,7 +735,10 @@ export default function ProdutoEditar() {
                 nome: formData.referencia.trim(),
                 tipo_produto_id: formData.tipo_produto_id,
                 fabrico_id: fabricoId,
-                tecido_id: formData.tecido_id,
+                tecido_id: formData.tecido_id || null,
+                quantidade_tecido: qtdTecidoCalculo || null,
+                custo_tecido:
+                    custoTecidoCalculado > 0 ? Number(custoTecidoCalculado.toFixed(2)) : null,
                 grade_versao_id: formData.grade_versao_id,
                 aviamentos: formData.aviamentos,
             });
@@ -780,7 +843,7 @@ export default function ProdutoEditar() {
                             <button
                                 type="button"
                                 onClick={() => inputFileRef.current?.click()}
-                                className="w-[260px] h-[170px] rounded-[10px] overflow-hidden bg-[#D9D9D9] hover:opacity-90 transition-opacity"
+                                className="w-[260px] h-[170px] rounded-[10px] overflow-hidden bg-[#D9D9D9] hover:opacity-90 transition-opacity flex items-center justify-center border border-dashed border-[#898C8F]"
                             >
                                 {imagemPreview ? (
                                     <img
@@ -832,24 +895,21 @@ export default function ProdutoEditar() {
                                         <DropdownField
                                             value=""
                                             placeholder="Aviamentos"
-                                            options={aviamentosDisponiveis}
+                                            options={aviamentosDisponiveis.map((a) => a.nome)}
                                             isOpen={openDropdown === "aviamentos"}
                                             onToggle={() => toggleDropdown("aviamentos")}
-                                            onSelect={(value) => handleToggleAviamento(value)}
-                                            isSelectedOption={(option) =>
-                                                formData.aviamentos.includes(option)
+                                            onSelect={(nomeSelecionado) => {
+                                                const aviamentoCompleto =
+                                                    aviamentosDisponiveis.find(
+                                                        (a) => a.nome === nomeSelecionado,
+                                                    );
+                                                handleToggleAviamento(aviamentoCompleto);
+                                            }}
+                                            isSelectedOption={(nome) =>
+                                                formData.aviamentos.some((a) => a.nome === nome)
                                             }
                                             showOptionIndicator
                                         />
-                                        <div className="flex flex-wrap gap-2 mt-3">
-                                            {formData.aviamentos.map((item) => (
-                                                <SelectedAviamentoTag
-                                                    key={item}
-                                                    label={item}
-                                                    onRemove={() => handleToggleAviamento(item)}
-                                                />
-                                            ))}
-                                        </div>
                                     </div>
 
                                     <div>
@@ -886,11 +946,104 @@ export default function ProdutoEditar() {
                                         />
                                     </div>
                                 </div>
+                                {formData.aviamentos.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mt-4 w-full">
+                                        {formData.aviamentos.map((item) => (
+                                            <SelectedAviamentoTag
+                                                key={item.id}
+                                                label={item.nome}
+                                                onRemove={() => handleToggleAviamento(item)}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
 
-                    <div className="mt-8 w-full">
+                    <div className="mt-6 w-full">
+                        <h3 className="text-[20px] font-light text-[#404040] mb-4">
+                            Quantidade por aviamento
+                        </h3>
+                        <div className="w-full overflow-x-auto">
+                            <table className="w-full table-fixed border-separate border-spacing-0">
+                                <thead>
+                                    <tr>
+                                        <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] first:rounded-tl-[10px] last:rounded-tr-[10px] text-center border-none">
+                                            Tecido
+                                        </th>
+                                        {formData.aviamentos.map((av) => (
+                                            <th
+                                                key={av.id}
+                                                className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] text-center capitalize border-none"
+                                            >
+                                                {av.nome}
+                                            </th>
+                                        ))}
+                                        <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] first:rounded-tl-[10px] last:rounded-tr-[10px] text-center border-none">
+                                            Total
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td className="bg-[#FFFFFF] py-3 px-4 border-l-[0.5px] border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] first:rounded-bl-[10px] text-center">
+                                            <div className="flex items-center justify-center gap-1 w-full bg-transparent">
+                                                <input
+                                                    type="text"
+                                                    value={formData.quantidade_tecido}
+                                                    onChange={handleQuantidadeTecido}
+                                                    placeholder="-"
+                                                    className="text-right bg-transparent focus:outline-none placeholder-[#404040] text-[16px] font-light text-[#404040]"
+                                                    style={{
+                                                        width: `${Math.max(1, String(formData.quantidade_tecido).length)}ch`,
+                                                    }}
+                                                />
+                                                <span className="text-[16px] font-light text-[#404040]">
+                                                    ({tecidoSelecionado?.unidade_de_medida || "m"})
+                                                </span>
+                                            </div>
+                                        </td>
+                                        {formData.aviamentos.map((av) => (
+                                            <td
+                                                key={av.id}
+                                                className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center"
+                                            >
+                                                <div className="flex items-center justify-center gap-1 w-full bg-transparent">
+                                                    <input
+                                                        type="text"
+                                                        value={av.quantidade}
+                                                        onChange={(e) =>
+                                                            handleQuantidadeAviamento(
+                                                                av.id,
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        placeholder="-"
+                                                        className="text-right bg-transparent focus:outline-none placeholder-[#404040] text-[16px] font-light text-[#404040]"
+                                                        style={{
+                                                            width: `${Math.max(1, String(av.quantidade).length)}ch`,
+                                                        }}
+                                                    />
+                                                    <span className="text-[16px] font-light text-[#404040]">
+                                                        ({av.unidade_de_medida || "und"})
+                                                    </span>
+                                                </div>
+                                            </td>
+                                        ))}
+                                        <td className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] last:rounded-br-[10px] text-center text-[16px] font-light text-[#404040]">
+                                            {new Intl.NumberFormat("pt-BR", {
+                                                style: "currency",
+                                                currency: "BRL",
+                                            }).format(valorTotalGasto)}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div className="mt-12 w-full">
                         <TabelaClientesDoProduto
                             clientes={clientesAssociados}
                             referenciaInterna={formData.referencia}
