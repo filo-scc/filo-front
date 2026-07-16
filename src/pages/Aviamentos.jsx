@@ -175,10 +175,10 @@ const Aviamentos = () => {
 
                         <button
                             onClick={() => navigate("/aviamentos/cadastrar")}
-                            className="w-[196px] h-[39px] bg-[#AEE5E8] text-[#FFFFFF] font-normal text-[16px] rounded-full flex items-center justify-center gap-2 hover:bg-[#9cdfe2] transition-colors shrink-0"
+                            className="w-[196px] h-[39px] bg-[#A9E2F2] text-[#FFFFFF] font-normal text-[16px] rounded-full flex items-center justify-center gap-2 hover:bg-[#8acbdc] transition-colors shrink-0"
                         >
                             <img
-                                src="/pedido-adicionar.png"
+                                src="/add-aviamentos.png"
                                 alt="Adicionar aviamento ícone"
                                 className="w-6 h-6 object-contain"
                             />
