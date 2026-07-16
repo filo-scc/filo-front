@@ -111,6 +111,20 @@ export default function ProdutoDetalhes() {
         }
     };
 
+    const custoTecido = Number(
+        produto?.custo_tecido ||
+            Number(String(produto?.quantidade_tecido || 0).replace(",", ".")) *
+                Number(produto?.tecido?.custo_unitario || 0),
+    );
+
+    const custoAviamentos = aviamentosProduto.reduce((acc, pivot) => {
+        const qtd = Number(String(pivot.quantidade || 0).replace(",", "."));
+        const custo = Number(pivot.aviamento?.custo_unitario || 0);
+        return acc + qtd * custo;
+    }, 0);
+
+    const valorTotalGasto = custoTecido + custoAviamentos;
+
     if (loading) {
         return (
             <div className="p-6 pt-0 mt-6 w-full flex justify-center">
@@ -128,11 +142,68 @@ export default function ProdutoDetalhes() {
                 <ProdutoDetalhesHeader title="Detalhes de produto" />
 
                 <div className="mt-8 space-y-8">
-                    {/* 👇 Guard: só renderiza se produto foi carregado */}
-                    {/* depois */}
                     {produto ? (
                         <>
                             <SecaoDadosProduto produto={produto} aviamentos={aviamentosProduto} />
+
+                            {/* Tabela de Quantidade por aviamento - Visualização */}
+                            <div className="mt-6 w-full">
+                                <h3 className="text-[20px] font-light text-[#404040] mb-4">
+                                    Quantidade por aviamento
+                                </h3>
+                                <div className="w-full overflow-x-auto">
+                                    <table className="w-full table-fixed border-separate border-spacing-0">
+                                        <thead>
+                                            <tr>
+                                                <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] first:rounded-tl-[10px] last:rounded-tr-[10px] text-center border-none">
+                                                    Tecido
+                                                </th>
+                                                {aviamentosProduto.map((pivot) => (
+                                                    <th
+                                                        key={pivot.id}
+                                                        className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] text-center capitalize border-none"
+                                                    >
+                                                        {pivot.aviamento?.nome}
+                                                    </th>
+                                                ))}
+                                                <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] first:rounded-tl-[10px] last:rounded-tr-[10px] text-center border-none">
+                                                    Total
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td className="bg-[#FFFFFF] py-3 px-4 border-l-[0.5px] border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] first:rounded-bl-[10px] text-center">
+                                                    <span className="text-[16px] font-light text-[#404040]">
+                                                        {produto?.quantidade_tecido || "-"} (
+                                                        {produto?.tecido?.unidade_de_medida || "m"})
+                                                    </span>
+                                                </td>
+                                                {aviamentosProduto.map((pivot) => (
+                                                    <td
+                                                        key={pivot.id}
+                                                        className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center"
+                                                    >
+                                                        <span className="text-[16px] font-light text-[#404040]">
+                                                            {pivot.quantidade || "-"} (
+                                                            {pivot.aviamento?.unidade_de_medida ||
+                                                                "und"}
+                                                            )
+                                                        </span>
+                                                    </td>
+                                                ))}
+                                                <td className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] last:rounded-br-[10px] text-center text-[16px] font-light text-[#404040]">
+                                                    {new Intl.NumberFormat("pt-BR", {
+                                                        style: "currency",
+                                                        currency: "BRL",
+                                                    }).format(valorTotalGasto)}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
                             <TabelaClientesDoProduto
                                 clientes={clientesAssociados}
                                 produtoId={id}
