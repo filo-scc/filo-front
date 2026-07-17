@@ -13,6 +13,20 @@ import {
 import { upload } from "../services/utilsService";
 import { DropdownOptionsSkeleton, LoadingButton, SkeletonBox } from "../components/geral/Loading";
 
+// Função adicionada para formatar as unidades de medida
+function formatarUnidadeDeMedida(unidade) {
+    if (!unidade) return "";
+    const unidadesMapeadas = {
+        METRO: "m",
+        CENTIMETRO: "cm",
+        GRAMA: "g",
+        QUILOGRAMA: "kg",
+        UNIDADE: "und",
+        PAR: "par",
+    };
+    return unidadesMapeadas[unidade.toUpperCase()] || unidade.toLowerCase();
+}
+
 function FieldLabel({ children }) {
     return <label className="block text-[20px] font-light text-[#404040] mb-3">{children}</label>;
 }
@@ -738,7 +752,11 @@ export default function ProdutoCadastar() {
                                                     }}
                                                 />
                                                 <span className="text-[16px] font-light text-[#404040]">
-                                                    ({tecidoSelecionado?.unidade_de_medida || "m"})
+                                                    (
+                                                    {formatarUnidadeDeMedida(
+                                                        tecidoSelecionado?.unidade_de_medida,
+                                                    ) || ""}
+                                                    )
                                                 </span>
                                             </div>
                                         </td>
@@ -764,7 +782,11 @@ export default function ProdutoCadastar() {
                                                         }}
                                                     />
                                                     <span className="text-[16px] font-light text-[#404040]">
-                                                        ({av.unidade_de_medida || ""})
+                                                        (
+                                                        {formatarUnidadeDeMedida(
+                                                            av.unidade_de_medida,
+                                                        ) || ""}
+                                                        )
                                                     </span>
                                                 </div>
                                             </td>
