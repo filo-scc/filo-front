@@ -17,6 +17,22 @@ import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalAtencao from "../components/geral/ModalAtencao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 
+// Função para deixar as unidades de medida mais bonitas visualmente
+function formatarUnidadeDeMedida(unidade) {
+    if (!unidade) return "";
+
+    const unidadesMapeadas = {
+        METRO: "m",
+        CENTIMETRO: "cm",
+        GRAMA: "g",
+        QUILOGRAMA: "kg",
+        UNIDADE: "und",
+        PAR: "par",
+    };
+
+    return unidadesMapeadas[unidade.toUpperCase()] || unidade.toLowerCase();
+}
+
 export default function ProdutoDetalhes() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -176,7 +192,10 @@ export default function ProdutoDetalhes() {
                                                 <td className="bg-[#FFFFFF] py-3 px-4 border-l-[0.5px] border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] first:rounded-bl-[10px] text-center">
                                                     <span className="text-[16px] font-light text-[#404040]">
                                                         {produto?.quantidade_tecido || "-"} (
-                                                        {produto?.tecido?.unidade_de_medida || "m"})
+                                                        {formatarUnidadeDeMedida(
+                                                            produto?.tecido?.unidade_de_medida,
+                                                        ) || ""}
+                                                        )
                                                     </span>
                                                 </td>
                                                 {aviamentosProduto.map((pivot) => (
@@ -186,8 +205,9 @@ export default function ProdutoDetalhes() {
                                                     >
                                                         <span className="text-[16px] font-light text-[#404040]">
                                                             {pivot.quantidade || "-"} (
-                                                            {pivot.aviamento?.unidade_de_medida ||
-                                                                "und"}
+                                                            {formatarUnidadeDeMedida(
+                                                                pivot.aviamento?.unidade_de_medida,
+                                                            ) || ""}
                                                             )
                                                         </span>
                                                     </td>
