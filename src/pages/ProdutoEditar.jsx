@@ -30,6 +30,19 @@ import {
 } from "../services/clientesService";
 import { upload } from "../services/utilsService";
 
+function formatarUnidadeDeMedida(unidade) {
+    if (!unidade) return "";
+    const unidadesMapeadas = {
+        METRO: "m",
+        CENTIMETRO: "cm",
+        GRAMA: "g",
+        QUILOGRAMA: "kg",
+        UNIDADE: "und",
+        PAR: "par",
+    };
+    return unidadesMapeadas[unidade.toUpperCase()] || unidade.toLowerCase();
+}
+
 function FieldLabel({ children, className = "" }) {
     return (
         <label
@@ -533,7 +546,7 @@ export default function ProdutoEditar() {
 
                 const tecidosMapeados = (resTecidos || []).map((tecido) => ({
                     id: tecido?.id || tecido?.tecido?.id,
-                    nome: tecido?.nome || tecido?.tecido?.nome || "Sem nome na API",
+                    nome: tecido?.nome || tecido?.tecido?.nome || "Sem nome",
                     custo_unitario: Number(
                         tecido?.custo_unitario || tecido?.tecido?.custo_unitario || 0,
                     ),
@@ -1000,7 +1013,11 @@ export default function ProdutoEditar() {
                                                     }}
                                                 />
                                                 <span className="text-[16px] font-light text-[#404040]">
-                                                    ({tecidoSelecionado?.unidade_de_medida || "m"})
+                                                    (
+                                                    {formatarUnidadeDeMedida(
+                                                        tecidoSelecionado?.unidade_de_medida,
+                                                    ) || ""}
+                                                    )
                                                 </span>
                                             </div>
                                         </td>
@@ -1026,7 +1043,11 @@ export default function ProdutoEditar() {
                                                         }}
                                                     />
                                                     <span className="text-[16px] font-light text-[#404040]">
-                                                        ({av.unidade_de_medida || "und"})
+                                                        (
+                                                        {formatarUnidadeDeMedida(
+                                                            av.unidade_de_medida,
+                                                        ) || ""}
+                                                        )
                                                     </span>
                                                 </div>
                                             </td>
