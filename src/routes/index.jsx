@@ -18,7 +18,6 @@ import ProdutoCadastar from "../pages/ProdutoCadastrar";
 import PedidosCadastar from "../pages/PedidosCadastrar";
 import Pedidos from "../pages/Pedidos";
 import Aviamentos from "../pages/Aviamentos";
-import AviamentosCadastrar from "../pages/AviamentosCadastrar";
 
 function AppRoutes() {
     return (
@@ -180,17 +179,6 @@ function AppRoutes() {
                         <PrivateRoute>
                             <Layout>
                                 <Aviamentos />
-                            </Layout>
-                        </PrivateRoute>
-                    }
-                />
-
-                <Route
-                    path="/aviamentos/cadastrar"
-                    element={
-                        <PrivateRoute>
-                            <Layout>
-                                <AviamentosCadastrar />
                             </Layout>
                         </PrivateRoute>
                     }

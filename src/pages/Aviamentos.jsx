@@ -174,7 +174,7 @@ const Aviamentos = () => {
                         </div>
 
                         <button
-                            onClick={() => navigate("/aviamentos/cadastrar")}
+                            type="button"
                             className="w-[196px] h-[39px] bg-[#A9E2F2] text-[#FFFFFF] font-normal text-[16px] rounded-full flex items-center justify-center gap-2 hover:bg-[#8acbdc] transition-colors shrink-0"
                         >
                             <img
