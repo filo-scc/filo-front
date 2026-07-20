@@ -15,21 +15,7 @@ const formatarData = (dataString) => {
 };
 
 const formatarUnidade = (aviamento) => {
-    const nome =
-        aviamento.unidade_medida ||
-        aviamento.unidade?.nome ||
-        aviamento.unidade ||
-        aviamento.tipo_unidade;
-    const sigla =
-        aviamento.sigla ||
-        aviamento.unidade?.sigla ||
-        aviamento.unidade_abrev ||
-        aviamento.abreviacao;
-
-    if (nome && sigla) return `${nome} (${sigla})`;
-    if (nome) return nome;
-    if (sigla) return sigla;
-    return "-";
+    return aviamento.unidade_de_medida || "-";
 };
 
 const formatarCusto = (aviamento) => {
