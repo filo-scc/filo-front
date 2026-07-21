@@ -242,7 +242,7 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                                     return (
                                         <div
                                             key={`prop-${s.id}`}
-                                            className="h-[30px] flex items-center justify-center text-[13px] font-light bg-[#F4F4F4]"
+                                            className="h-[25px] flex items-center justify-center text-[13px] font-light bg-[#F4F4F4]"
                                             style={{
                                                 borderTop: darkSide,
                                                 borderBottom: darkSide,
@@ -263,7 +263,7 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                                 <div className="bg-transparent" />
 
                                 <div
-                                    className="h-[40px] flex items-center px-4 font-normal bg-[#C9EAF6] text-[#4696AD]"
+                                    className="h-[35px] flex items-center px-4 font-normal bg-[#C9EAF6] text-[#4696AD]"
                                     style={{
                                         borderTopLeftRadius: "8px",
                                     }}
@@ -273,13 +273,13 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                                 {sizeItems.map((s) => (
                                     <div
                                         key={`header-${s.id}`}
-                                        className="h-[40px] flex items-center justify-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
+                                        className="h-[35px] flex items-center justify-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
                                     >
                                         {s.tamanho?.codigo || "-"}
                                     </div>
                                 ))}
                                 <div
-                                    className="h-[40px] flex items-center justify-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
+                                    className="h-[35px] flex items-center justify-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
                                     style={{
                                         borderTopRightRadius: "8px",
                                     }}
@@ -295,7 +295,7 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                                         return (
                                             <React.Fragment key={cor.id}>
                                                 <div
-                                                    className={`h-[45px] flex items-center gap-3 pl-4 pr-4 ${rowBg}`}
+                                                    className={`h-[35px] flex items-center gap-3 pl-4 pr-4 ${rowBg}`}
                                                 >
                                                     <span
                                                         className="w-[18px] h-[18px] rounded-[4px] shrink-0 shadow-sm border border-black/10"
@@ -320,14 +320,14 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                                                     return (
                                                         <div
                                                             key={`qty-${cor.id}-${s.id}`}
-                                                            className={`h-[45px] flex items-center justify-center text-[14px] font-light text-[#707070] ${rowBg}`}
+                                                            className={`h-[35px] flex items-center justify-center text-[14px] font-light text-[#707070] ${rowBg}`}
                                                         >
                                                             {val || "-"}
                                                         </div>
                                                     );
                                                 })}
                                                 <div
-                                                    className={`h-[45px] flex items-center justify-center text-[14px] font-normal text-[#707070] ${rowBg}`}
+                                                    className={`h-[35px] flex items-center justify-center text-[14px] font-normal text-[#707070] ${rowBg}`}
                                                 >
                                                     {totalCor || "-"}
                                                 </div>
@@ -345,7 +345,7 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
 
                                 {/* Rodapé */}
                                 <div
-                                    className="h-[45px] flex items-center justify-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
+                                    className="h-[35px] flex items-center justify-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
                                     style={{ borderBottomLeftRadius: "8px" }}
                                 >
                                     Total (tamanho)
@@ -353,14 +353,14 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                                 {sizeItems.map((s) => (
                                     <div
                                         key={`total-rodape-${s.id}`}
-                                        className={`h-[45px] flex items-center justify-center text-[14px] font-normal text-[#707070] ${totalRowBg}`}
+                                        className={`h-[35px] flex items-center justify-center text-[14px] font-normal text-[#707070] ${totalRowBg}`}
                                         style={{ borderBottom: shellSide }}
                                     >
                                         {totaisPorTamanho[s.id] || "-"}
                                     </div>
                                 ))}
                                 <div
-                                    className="h-[45px] flex items-center justify-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
+                                    className="h-[35px] flex items-center justify-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
                                     style={{ borderBottomRightRadius: "8px" }}
                                 >
                                     {totalGeral || "-"}
@@ -370,7 +370,7 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                             {/* divisórias verticais (header + corpo + rodapé) */}
                             <div
                                 className="absolute left-0 right-0 pointer-events-none"
-                                style={{ top: "30px", bottom: 0 }}
+                                style={{ top: "25px", bottom: 0 }}
                             >
                                 <div
                                     style={{
