@@ -29,6 +29,9 @@ import {
     vincularProdutoAoCliente,
 } from "../services/clientesService";
 import { upload } from "../services/utilsService";
+import { getAllEtapasByFabricoId } from "../services/etapaService";
+import { getParceirosByFabrico } from "../services/parceiroService";
+import parceiroProdutoService from "../services/parceiroProdutoService";
 
 function formatarUnidadeDeMedida(unidade) {
     if (!unidade) return "";
@@ -433,6 +436,11 @@ function ModalClientesDoProduto({
     );
 }
 
+function formatarPreco(valor) {
+    if (valor === undefined || valor === null) return "R$ 0,00";
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor);
+}
+
 export default function ProdutoEditar() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -473,7 +481,10 @@ export default function ProdutoEditar() {
         grade: "",
         grade_versao_id: undefined,
         aviamentos: [],
+        custo_operacional: "",
+        outros_custos: "",
     });
+    const [colunasFlexiveis, setColunasFlexiveis] = useState([]);
 
     const carregarClientesDoProduto = async () => {
         const [dadosClientes, clientesDoFabrico] = await Promise.all([
@@ -506,6 +517,8 @@ export default function ProdutoEditar() {
                     resAviamentosProduto,
                     resTiposProduto,
                     dadosFabrico,
+                    todasEtapas,
+                    parceirosDisponiveis,
                 ] = await Promise.all([
                     getProdutoById(id),
                     getClientesDoProduto(id),
@@ -522,6 +535,8 @@ export default function ProdutoEditar() {
                     getAviamentosDoProduto(id).catch(() => []),
                     getTiposProdutoByFabrico().catch(() => []),
                     Number.isFinite(fabricoId) ? getFabricoById(fabricoId) : Promise.resolve(null),
+                    getAllEtapasByFabricoId(fabricoId).catch(() => []),
+                    getParceirosByFabrico(fabricoId).catch(() => []),
                 ]);
 
                 if (ignorar) return;
@@ -608,7 +623,71 @@ export default function ProdutoEditar() {
                     grade: getGradeNome(dadosProduto),
                     grade_versao_id: dadosProduto.grade_versao_id || dadosProduto.grade_versao?.id,
                     aviamentos: aviamentosVinculados,
+                    custo_operacional:
+                        dadosProduto.custo_operacional !== undefined &&
+                        dadosProduto.custo_operacional !== null
+                            ? String(dadosProduto.custo_operacional).replace(".", ",")
+                            : "",
+                    outros_custos:
+                        dadosProduto.outros_custos !== undefined &&
+                        dadosProduto.outros_custos !== null
+                            ? String(dadosProduto.outros_custos).replace(".", ",")
+                            : "",
                 });
+
+                // 1. Mapeamento inicial das etapas com o parceiro correspondente
+                const etapasPreMapeadas = (todasEtapas || []).map((etapa) => {
+                    const parceiroMapeado = (parceirosDisponiveis || []).find((p) => {
+                        const categoriaParceiro = (p?.categoria || "").trim().toLowerCase();
+                        const nomeEtapa = (etapa?.nome || "").trim().toLowerCase();
+                        return categoriaParceiro === nomeEtapa;
+                    });
+
+                    return {
+                        ...etapa,
+                        parceiro_id: parceiroMapeado ? parceiroMapeado.id : null,
+                    };
+                });
+
+                // 2. 🌟 Busca dinâmica na tabela intermediária (parceiro_produto) para cada vínculo encontrado
+                const etapasVinculadasComCustos = await Promise.all(
+                    etapasPreMapeadas.map(async (etapa) => {
+                        let custoFinal = 0;
+
+                        // Se houver um parceiro associado a esta etapa, buscamos o preço customizado
+                        if (etapa.parceiro_id) {
+                            try {
+                                const vinculo = await parceiroProdutoService.buscarVinculo(
+                                    etapa.parceiro_id,
+                                    id,
+                                );
+                                if (vinculo && vinculo.preco !== undefined) {
+                                    custoFinal = vinculo.preco;
+                                }
+                            } catch (err) {
+                                console.error(
+                                    `Erro ao buscar vínculo para parceiro ${etapa.parceiro_id} e produto ${id}:`,
+                                    err,
+                                );
+                            }
+                        }
+
+                        // Fallback: Se não achou na tabela intermediária, tenta pegar do etapas_produto antigo (como backup)
+                        if (custoFinal === 0) {
+                            const custoExistente = dadosProduto?.etapas_produto?.find(
+                                (ep) => ep.etapa_id === etapa.id,
+                            )?.custo;
+                            custoFinal = custoExistente || 0;
+                        }
+
+                        return {
+                            ...etapa,
+                            custo: custoFinal,
+                        };
+                    }),
+                );
+
+                setColunasFlexiveis(etapasVinculadasComCustos);
             } catch (error) {
                 console.error("Erro ao carregar produto:", error);
                 setModalAtencaoAberto(true);
@@ -641,6 +720,11 @@ export default function ProdutoEditar() {
                 a.id === aviamentoId ? { ...a, quantidade: apenasNumeros } : a,
             ),
         }));
+    };
+
+    const handleCustoMonetarioChange = (field) => (event) => {
+        const apenasNumeros = event.target.value.replace(/[^0-9.,]/g, "");
+        setFormData((prev) => ({ ...prev, [field]: apenasNumeros }));
     };
 
     const toggleDropdown = (field) => {
@@ -712,6 +796,14 @@ export default function ProdutoEditar() {
 
     const valorTotalGasto = custoTecidoCalculado + custoAviamentosCalculado;
 
+    // --- CÁLCULO DOS CUSTOS DA SEGUNDA TABELA ---
+    const custoOperacionalNum = Number(String(formData.custo_operacional).replace(",", ".") || 0);
+    const outrosCustosNum = Number(String(formData.outros_custos).replace(",", ".") || 0);
+
+    const somaEtapas = colunasFlexiveis.reduce((acc, item) => acc + Number(item.custo || 0), 0);
+    const totalGeralCustoPeca =
+        valorTotalGasto + somaEtapas + custoOperacionalNum + outrosCustosNum;
+
     const handleSalvar = async (event) => {
         event.preventDefault();
         setErro("");
@@ -743,6 +835,20 @@ export default function ProdutoEditar() {
                 if (responseUpload?.url) urlFoto = responseUpload.url;
             }
 
+            const custoOperacionalFormatado = formData.custo_operacional
+                ? Number(String(formData.custo_operacional).replace(",", "."))
+                : 0;
+
+            const outrosCustosFormatado = formData.outros_custos
+                ? Number(String(formData.outros_custos).replace(",", "."))
+                : 0;
+
+            // ADICIONE ESTA LINHA AQUI:
+            console.log("DADOS DO FORM:", formData, "FORMATADOS:", {
+                custoOperacionalFormatado,
+                outrosCustosFormatado,
+            });
+            
             await atualizarProduto(id, {
                 foto: urlFoto,
                 nome: formData.referencia.trim(),
@@ -754,6 +860,8 @@ export default function ProdutoEditar() {
                     custoTecidoCalculado > 0 ? Number(custoTecidoCalculado.toFixed(2)) : null,
                 grade_versao_id: formData.grade_versao_id,
                 aviamentos: formData.aviamentos,
+                custo_operacional: custoOperacionalFormatado,
+                outros_custos: outrosCustosFormatado,
             });
 
             setModalConfirmacaoAberto(true);
@@ -1057,6 +1165,106 @@ export default function ProdutoEditar() {
                                                 style: "currency",
                                                 currency: "BRL",
                                             }).format(valorTotalGasto)}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Bloco Inferior: Tabela de Custo por Peça */}
+                    <div className="mt-6 w-full">
+                        <h3 className="text-[20px] font-light text-[#404040] mb-4">
+                            Custo por peça
+                        </h3>
+                        <div className="w-full overflow-x-auto">
+                            <table className="w-full table-fixed border-separate border-spacing-0">
+                                <thead>
+                                    <tr>
+                                        <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] first:rounded-tl-[10px] text-center border-none">
+                                            Aviamentos
+                                        </th>
+                                        {colunasFlexiveis.map((etapa, index) => (
+                                            <th
+                                                key={etapa.id || index}
+                                                className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] text-center border-none capitalize"
+                                            >
+                                                {etapa.nome}
+                                            </th>
+                                        ))}
+                                        <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] text-center border-none">
+                                            Operacional
+                                        </th>
+                                        <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] text-center border-none">
+                                            Outros
+                                        </th>
+                                        <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] last:rounded-tr-[10px] text-center border-none">
+                                            Total
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        {/* Aviamentos (Calculado a partir da seleção de aviamentos acima) */}
+                                        <td className="bg-[#FFFFFF] py-3 px-4 border-l-[0.5px] border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] first:rounded-bl-[10px] text-center text-[16px] font-light text-[#404040]">
+                                            {formatarPreco(custoAviamentosCalculado)}
+                                        </td>
+
+                                        {/* Colunas Flexíveis (Etapas fixas do produto) */}
+                                        {colunasFlexiveis.map((etapa, index) => (
+                                            <td
+                                                key={etapa.id || index}
+                                                className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center text-[16px] font-light text-[#404040]"
+                                            >
+                                                {formatarPreco(etapa.custo || 0)}
+                                            </td>
+                                        ))}
+
+                                        {/* Operacional (EDITÁVEL) */}
+                                        <td className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center">
+                                            <div className="flex items-center justify-center gap-1 w-full bg-transparent">
+                                                <span className="text-[16px] font-light text-[#404040]">
+                                                    R$
+                                                </span>
+                                                <input
+                                                    type="text"
+                                                    value={formData.custo_operacional || ""}
+                                                    onChange={handleCustoMonetarioChange(
+                                                        "custo_operacional",
+                                                    )}
+                                                    placeholder="0,00"
+                                                    className="text-left bg-transparent focus:outline-none placeholder-[#898C8F] text-[16px] font-light text-[#404040]"
+                                                    style={{
+                                                        width: `${Math.max(3, String(formData.custo_operacional).length)}ch`,
+                                                    }}
+                                                />
+                                            </div>
+                                        </td>
+
+                                        {/* Outros (EDITÁVEL) */}
+                                        <td className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center">
+                                            <div className="flex items-center justify-center gap-1 w-full bg-transparent">
+                                                <span className="text-[16px] font-light text-[#404040]">
+                                                    R$
+                                                </span>
+                                                <input
+                                                    type="text"
+                                                    value={formData.outros_custos || ""}
+                                                    onChange={handleCustoMonetarioChange(
+                                                        "outros_custos",
+                                                    )}
+                                                    placeholder="0,00"
+                                                    className="text-left bg-transparent focus:outline-none placeholder-[#898C8F] text-[16px] font-light text-[#404040]"
+                                                    style={{
+                                                        width: `${Math.max(3, String(formData.outros_custos).length)}ch`,
+                                                    }}
+                                                />
+                                            </div>
+                                        </td>
+
+                                        {/* Total Geral */}
+                                        <td className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] last:rounded-br-[10px] text-center text-[16px] font-light text-[#404040]">
+                                            {formatarPreco(totalGeralCustoPeca)}
                                         </td>
                                     </tr>
                                 </tbody>

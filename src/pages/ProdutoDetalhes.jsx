@@ -8,6 +8,9 @@ import {
     getTiposProdutoByFabrico,
 } from "../services/produtoService";
 import { getFabricoById } from "../services/fabricoService";
+import { getAllEtapasByFabricoId } from "../services/etapaService";
+import { getParceirosByFabrico } from "../services/parceiroService";
+import parceiroProdutoService from "../services/parceiroProdutoService";
 
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
 import SecaoDadosProduto from "../components/produtos/SecaoDadosProduto";
@@ -33,6 +36,11 @@ function formatarUnidadeDeMedida(unidade) {
     return unidadesMapeadas[unidade.toUpperCase()] || unidade.toLowerCase();
 }
 
+function formatarPreco(valor) {
+    if (valor === undefined || valor === null) return "R$ 0,00";
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor);
+}
+
 export default function ProdutoDetalhes() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -46,6 +54,7 @@ export default function ProdutoDetalhes() {
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
     const [fabrico, setFabrico] = useState(null);
     const [excluindo, setExcluindo] = useState(false);
+    const [colunasFlexiveis, setColunasFlexiveis] = useState([]);
 
     useEffect(() => {
         async function fetchData() {
@@ -54,14 +63,23 @@ export default function ProdutoDetalhes() {
 
                 const userString = localStorage.getItem("user");
                 const usuarioLogado = userString ? JSON.parse(userString) : null;
+                const fabricoId = usuarioLogado?.fabrico_id;
 
-                const [dadosProduto, dadosClientes, dadosAviamentos, dadosTipos] =
-                    await Promise.all([
-                        getProdutoById(id),
-                        getClientesDoProduto(id),
-                        getAviamentosDoProduto(id),
-                        getTiposProdutoByFabrico().catch(() => []),
-                    ]);
+                const [
+                    dadosProduto,
+                    dadosClientes,
+                    dadosAviamentos,
+                    dadosTipos,
+                    todasEtapas,
+                    parceirosDisponiveis,
+                ] = await Promise.all([
+                    getProdutoById(id),
+                    getClientesDoProduto(id),
+                    getAviamentosDoProduto(id),
+                    getTiposProdutoByFabrico().catch(() => []),
+                    getAllEtapasByFabricoId(fabricoId).catch(() => []),
+                    getParceirosByFabrico(fabricoId).catch(() => []),
+                ]);
 
                 if (usuarioLogado && dadosProduto.fabrico_id !== usuarioLogado.fabrico_id) {
                     setModalAtencaoAberto(true);
@@ -82,6 +100,60 @@ export default function ProdutoDetalhes() {
                 });
                 setClientesAssociados(dadosClientes);
                 setAviamentosProduto(dadosAviamentos);
+
+                // 1. Mapeamento inicial das etapas com o parceiro correspondente
+                const etapasPreMapeadas = (todasEtapas || []).map((etapa) => {
+                    const parceiroMapeado = (parceirosDisponiveis || []).find((p) => {
+                        const categoriaParceiro = (p?.categoria || "").trim().toLowerCase();
+                        const nomeEtapa = (etapa?.nome || "").trim().toLowerCase();
+                        return categoriaParceiro === nomeEtapa;
+                    });
+
+                    return {
+                        ...etapa,
+                        parceiro_id: parceiroMapeado ? parceiroMapeado.id : null,
+                    };
+                });
+
+                // 2. 🌟 Busca dinâmica na tabela intermediária (parceiro_produto) para cada vínculo encontrado
+                const etapasVinculadasComCustos = await Promise.all(
+                    etapasPreMapeadas.map(async (etapa) => {
+                        let custoFinal = 0;
+
+                        // Se houver um parceiro associado a esta etapa, buscamos o preço customizado
+                        if (etapa.parceiro_id) {
+                            try {
+                                const vinculo = await parceiroProdutoService.buscarVinculo(
+                                    etapa.parceiro_id,
+                                    id,
+                                );
+                                if (vinculo && vinculo.preco !== undefined) {
+                                    custoFinal = vinculo.preco;
+                                }
+                            } catch (err) {
+                                console.error(
+                                    `Erro ao buscar vínculo para parceiro ${etapa.parceiro_id} e produto ${id}:`,
+                                    err,
+                                );
+                            }
+                        }
+
+                        // Fallback: Se não achou na tabela intermediária, tenta pegar do etapas_produto antigo (como backup)
+                        if (custoFinal === 0) {
+                            const custoExistente = dadosProduto?.etapas_produto?.find(
+                                (ep) => ep.etapa_id === etapa.id,
+                            )?.custo;
+                            custoFinal = custoExistente || 0;
+                        }
+
+                        return {
+                            ...etapa,
+                            custo: custoFinal,
+                        };
+                    }),
+                );
+
+                setColunasFlexiveis(etapasVinculadasComCustos);
             } catch (error) {
                 console.error("Erro ao carregar detalhes:", error);
                 setModalAtencaoAberto(true);
@@ -140,6 +212,17 @@ export default function ProdutoDetalhes() {
     }, 0);
 
     const valorTotalGasto = custoTecido + custoAviamentos;
+
+    const totalCustosEtapas = colunasFlexiveis.reduce(
+        (acc, etapa) => acc + (Number(etapa.custo) || 0),
+        0,
+    );
+
+    const totalGeral =
+        valorTotalGasto +
+        totalCustosEtapas +
+        (Number(produto?.custo_operacional) || 0) +
+        (Number(produto?.outros_custos) || 0);
 
     if (loading) {
         return (
@@ -217,6 +300,74 @@ export default function ProdutoDetalhes() {
                                                         style: "currency",
                                                         currency: "BRL",
                                                     }).format(valorTotalGasto)}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* Bloco Inferior: Tabela de Custo */}
+                            <div className="mt-6 w-full">
+                                <h3 className="text-[20px] font-light text-[#404040] mb-4">
+                                    Custo por peça
+                                </h3>
+                                <div className="w-full overflow-x-auto">
+                                    <table className="w-full table-fixed border-separate border-spacing-0">
+                                        <thead>
+                                            <tr>
+                                                <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] first:rounded-tl-[10px] text-center border-none">
+                                                    Aviamentos
+                                                </th>
+                                                {colunasFlexiveis.map((etapa, index) => (
+                                                    <th
+                                                        key={etapa.id || index}
+                                                        className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] text-center border-none"
+                                                    >
+                                                        {etapa.nome}
+                                                    </th>
+                                                ))}
+                                                <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] text-center border-none">
+                                                    Operacional
+                                                </th>
+                                                <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] text-center border-none">
+                                                    Outros
+                                                </th>
+                                                <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] last:rounded-tr-[10px] text-center border-none">
+                                                    Total
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                {/* Aviamentos */}
+                                                <td className="bg-[#FFFFFF] py-3 px-4 border-l-[0.5px] border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] first:rounded-bl-[10px] text-center text-[16px] font-light text-[#404040]">
+                                                    {formatarPreco(custoAviamentos)}
+                                                </td>
+
+                                                {/* Colunas Flexíveis (Etapas) */}
+                                                {colunasFlexiveis.map((etapa, index) => (
+                                                    <td
+                                                        key={etapa.id || index}
+                                                        className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center text-[16px] font-light text-[#404040]"
+                                                    >
+                                                        {formatarPreco(etapa.custo || 0)}
+                                                    </td>
+                                                ))}
+
+                                                {/* Operacional */}
+                                                <td className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center text-[16px] font-light text-[#404040]">
+                                                    {formatarPreco(produto.custo_operacional || 0)}
+                                                </td>
+
+                                                {/* Outros */}
+                                                <td className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center text-[16px] font-light text-[#404040]">
+                                                    {formatarPreco(produto.outros_custos || 0)}
+                                                </td>
+
+                                                {/* Total */}
+                                                <td className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] last:rounded-br-[10px] text-center text-[16px] font-light text-[#404040]">
+                                                    {formatarPreco(totalGeral)}
                                                 </td>
                                             </tr>
                                         </tbody>

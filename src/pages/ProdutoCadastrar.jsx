@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
 import ModeloModal from "../components/produtos/ModeloModal";
+import parceiroProdutoService from "@/services/parceiroProdutoService";
 import {
     criarProduto,
     getAviamentosByFabrico,
@@ -12,6 +13,8 @@ import {
 } from "../services/produtoService.js";
 import { upload } from "../services/utilsService";
 import { DropdownOptionsSkeleton, LoadingButton, SkeletonBox } from "../components/geral/Loading";
+import { getAllEtapasByFabricoId } from "../services/etapaService.js";
+import { getParceirosByFabrico } from "../services/parceiroService.js";
 
 // Função adicionada para formatar as unidades de medida
 function formatarUnidadeDeMedida(unidade) {
@@ -213,6 +216,10 @@ export default function ProdutoCadastar() {
     const userString = localStorage.getItem("user");
     const usuarioLogado = userString ? JSON.parse(userString) : null;
     const fabricoId = Number(usuarioLogado?.fabrico_id);
+    const [produto, setProduto] = useState({
+        custo_operacional: 0,
+        outros_custos: 0,
+    });
 
     const [arquivoImagem, setArquivoImagem] = useState(null);
     const [imagemPreview, setImagemPreview] = useState("");
@@ -226,6 +233,7 @@ export default function ProdutoCadastar() {
     const [aviamentosDisponiveis, setAviamentosDisponiveis] = useState([]);
     const [modelosDisponiveis, setModelosDisponiveis] = useState([]);
     const [modalModeloAberto, setModalModeloAberto] = useState(false);
+    const [fabrico, setFabrico] = useState(null);
     const [formData, setFormData] = useState({
         referencia: "",
         modelo: "",
@@ -248,13 +256,21 @@ export default function ProdutoCadastar() {
                 setCarregandoGrades(true);
                 setCarregandoModelos(true);
 
-                const [resGrades, resTecidos, resAviamentos, resTiposProduto] =
-                    await Promise.allSettled([
-                        getGradesByFabrico(fabricoId),
-                        getTecidosByFabrico(fabricoId),
-                        getAviamentosByFabrico(fabricoId),
-                        getTiposProdutoByFabrico(),
-                    ]);
+                const [
+                    resGrades,
+                    resTecidos,
+                    resAviamentos,
+                    resTiposProduto,
+                    resEtapasReal,
+                    resParceiros,
+                ] = await Promise.allSettled([
+                    getGradesByFabrico(fabricoId),
+                    getTecidosByFabrico(fabricoId),
+                    getAviamentosByFabrico(fabricoId),
+                    getTiposProdutoByFabrico(),
+                    getAllEtapasByFabricoId(fabricoId),
+                    getParceirosByFabrico(fabricoId),
+                ]);
 
                 if (ignorar) return;
 
@@ -317,6 +333,37 @@ export default function ProdutoCadastar() {
                 } else {
                     console.error("Erro ao carregar tipos de produto:", resTiposProduto.reason);
                     setModelosDisponiveis([]);
+                }
+
+                // 2. Pegamos a lista de parceiros se a requisição foi um sucesso
+                const parceirosDisponiveis =
+                    resParceiros.status === "fulfilled" ? resParceiros.value || [] : [];
+                if (resParceiros.status === "rejected") {
+                    console.error("Erro ao carregar parceiros:", resParceiros.reason);
+                }
+
+                if (resEtapasReal.status === "fulfilled") {
+                    const etapasComCusto = (resEtapasReal.value || []).map((etapa) => {
+                        // Encontra o parceiro correspondente comparando o nome da etapa com a categoria (em minúsculo!)
+                        const parceiroMapeado = parceirosDisponiveis.find((p) => {
+                            const categoriaParceiro = (p?.categoria || "").trim().toLowerCase();
+                            const nomeEtapa = (etapa?.nome || "").trim().toLowerCase();
+
+                            return categoriaParceiro === nomeEtapa;
+                        });
+
+                        return {
+                            ...etapa,
+                            custo: etapa.custo || 0,
+                            // Agora o ID do parceiro será injetado corretamente (1 para Modelagem, 2 para Corte)
+                            parceiro_id: parceiroMapeado ? parceiroMapeado.id : null,
+                        };
+                    });
+
+                    setFabrico({ etapas: etapasComCusto });
+                } else {
+                    console.error("Erro ao carregar etapas reais:", resEtapasReal.reason);
+                    setFabrico(null);
                 }
             } finally {
                 if (!ignorar) {
@@ -492,8 +539,10 @@ export default function ProdutoCadastar() {
                 quantidade_tecido: qtdTecidoCalculo || null,
                 custo_tecido:
                     custoTecidoCalculado > 0 ? Number(custoTecidoCalculado.toFixed(2)) : null,
-                custo_operacional: null,
-                outros_custos: null,
+                custo_operacional: produto.custo_operacional
+                    ? Number(produto.custo_operacional)
+                    : 0,
+                outros_custos: produto.outros_custos ? Number(produto.outros_custos) : 0,
             };
 
             const produtoCriado = await criarProduto(payloadProduto);
@@ -515,6 +564,10 @@ export default function ProdutoCadastar() {
                 await Promise.all(promessasAviamentos);
             }
 
+            if (produtoId) {
+                await salvarCustosNoBanco(produtoId);
+            }
+
             navigate("/produtos");
         } catch (error) {
             console.error("Erro ao cadastrar produto:", error);
@@ -523,6 +576,103 @@ export default function ProdutoCadastar() {
             );
         } finally {
             setSalvando(false);
+        }
+    };
+
+    const etapasAtivas = fabrico?.etapas?.filter((etapa) => etapa.ativa) || [];
+    const colunasFlexiveis = etapasAtivas.slice(0, -1);
+
+    const custoAviamentos = valorTotalGasto || 0;
+    const custoOperacional = produto?.custo_operacional || 0;
+    const custoOutros = produto?.outros_custos || 0;
+
+    const custoEtapasFlexiveis = colunasFlexiveis.reduce(
+        (acc, etapa) => acc + (etapa.custo || 0),
+        0,
+    );
+
+    const totalGeral = custoAviamentos + custoOperacional + custoOutros + custoEtapasFlexiveis;
+
+    const formatarMoeda = (valor) => {
+        return new Intl.NumberFormat("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+        }).format(valor);
+    };
+
+    // Atualiza os custos fixos do produto (Operacional e Outros)
+    const handleProdutoCustoChange = (campo, valor) => {
+        setProduto((prev) => ({
+            ...prev,
+            [campo]: parseFloat(valor) || 0,
+        }));
+    };
+
+    const handleEtapaCustoChange = (etapaId, valor) => {
+        setFabrico((prev) => {
+            if (!prev) return null;
+
+            // Mapeia o array original (com todas as etapas) e atualiza apenas a que tem o ID correspondente
+            const novasEtapas = prev.etapas.map((etapa) => {
+                if (etapa.id === etapaId) {
+                    return {
+                        ...etapa,
+                        custo: parseFloat(valor) || 0,
+                    };
+                }
+                return etapa;
+            });
+
+            return { ...prev, etapas: novasEtapas };
+        });
+    };
+
+    const salvarCustosNoBanco = async (produtoId) => {
+        try {
+            // 🔍 LINHA DE DIAGNÓSTICO: Vamos ver o que há dentro de colunasFlexiveis
+            console.log("Conteúdo das colunas flexíveis antes do filtro:", colunasFlexiveis);
+            // Filtramos apenas as colunas/etapas que possuem valor e um parceiro atrelado
+            const etapasParaSalvar = colunasFlexiveis.filter(
+                (etapa) => etapa.parceiro_id && etapa.custo > 0,
+            );
+
+            if (etapasParaSalvar.length === 0) {
+                alert("Nenhum custo de etapa flexível válido para salvar.");
+                return;
+            }
+
+            // Executa as verificações e salvamentos em paralelo
+            await Promise.all(
+                etapasParaSalvar.map(async (etapa) => {
+                    const parceiroId = etapa.parceiro_id;
+                    const precoInformado = etapa.custo;
+
+                    // 1. Verifica no banco se o vínculo já existe
+                    const vinculoExistente = await parceiroProdutoService.buscarVinculo(
+                        parceiroId,
+                        produtoId,
+                    );
+
+                    if (vinculoExistente) {
+                        // 2. Se já existe, atualiza (PUT)
+                        await parceiroProdutoService.atualizar(
+                            parceiroId,
+                            produtoId,
+                            precoInformado,
+                        );
+                        console.log(`Vínculo atualizado para o parceiro ${parceiroId}`);
+                    } else {
+                        // 3. Se não existe, cria um novo (POST)
+                        await parceiroProdutoService.criar(parceiroId, produtoId, precoInformado);
+                        console.log(`Novo vínculo criado para o parceiro ${parceiroId}`);
+                    }
+                }),
+            );
+
+            alert("Todos os registros de produto_parceiro foram atualizados com sucesso!");
+        } catch (error) {
+            console.error("Erro ao salvar custos de parceiros no banco:", error);
+            alert(error.response?.data?.message || "Ocorreu um erro ao salvar os custos.");
         }
     };
 
@@ -796,6 +946,115 @@ export default function ProdutoCadastar() {
                                                 style: "currency",
                                                 currency: "BRL",
                                             }).format(valorTotalGasto)}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Bloco Inferior: Tabela de Custo */}
+                    <div className="mt-6 w-full">
+                        <h3 className="text-[20px] font-light text-[#4696AD] mb-4">
+                            Custo por peça
+                        </h3>
+                        <div className="w-full overflow-x-auto">
+                            <table className="w-full table-fixed border-separate border-spacing-0">
+                                <thead>
+                                    <tr>
+                                        <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] first:rounded-tl-[10px] text-center border-none">
+                                            Aviamentos
+                                        </th>
+
+                                        {/* Colunas Flexíveis Dinâmicas */}
+                                        {colunasFlexiveis.map((etapa, index) => (
+                                            <th
+                                                key={etapa.id || index}
+                                                className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] text-center border-none"
+                                            >
+                                                {etapa.nome}
+                                            </th>
+                                        ))}
+
+                                        <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] text-center border-none">
+                                            Operacional
+                                        </th>
+                                        <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] text-center border-none">
+                                            Outros
+                                        </th>
+                                        <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] last:rounded-tr-[10px] text-center border-none">
+                                            Total
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        {/* Valor Aviamentos (Estático/Calculado) */}
+                                        <td className="bg-[#FFFFFF] py-3 px-4 border-l-[0.5px] border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] first:rounded-bl-[10px] text-center text-[16px] font-light text-[#404040]">
+                                            {formatarMoeda(custoAviamentos)}
+                                        </td>
+
+                                        {colunasFlexiveis.map((etapa, index) => (
+                                            <td
+                                                key={etapa.id || index}
+                                                className="bg-[#FFFFFF] p-1 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center text-[16px] font-light text-[#404040]"
+                                            >
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="0"
+                                                    placeholder="R$ 0,00"
+                                                    value={etapa.custo || ""}
+                                                    onChange={(e) =>
+                                                        handleEtapaCustoChange(
+                                                            etapa.id, // <-- Mude de 'index' para 'etapa.id'
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    className="w-full h-full py-2 px-3 text-center bg-transparent outline-none focus:bg-gray-50 rounded-[4px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                />
+                                            </td>
+                                        ))}
+
+                                        {/* Valor Operacional (Preenchível) */}
+                                        <td className="bg-[#FFFFFF] p-1 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center text-[16px] font-light text-[#404040]">
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                placeholder="R$ 0,00"
+                                                value={produto.custo_operacional || ""}
+                                                onChange={(e) =>
+                                                    handleProdutoCustoChange(
+                                                        "custo_operacional",
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                className="w-full h-full py-2 px-3 text-center bg-transparent outline-none focus:bg-gray-50 rounded-[4px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                            />
+                                        </td>
+
+                                        {/* Valor Outros (Preenchível) */}
+                                        <td className="bg-[#FFFFFF] p-1 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center text-[16px] font-light text-[#404040]">
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                placeholder="R$ 0,00"
+                                                value={produto.outros_custos || ""}
+                                                onChange={(e) =>
+                                                    handleProdutoCustoChange(
+                                                        "outros_custos",
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                className="w-full h-full py-2 px-3 text-center bg-transparent outline-none focus:bg-gray-50 rounded-[4px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                            />
+                                        </td>
+
+                                        {/* Valor Total Geral (Atualiza em tempo real) */}
+                                        <td className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] last:rounded-br-[10px] text-center text-[16px] font-light text-[#404040]">
+                                            {formatarMoeda(totalGeral)}
                                         </td>
                                     </tr>
                                 </tbody>
