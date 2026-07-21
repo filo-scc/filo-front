@@ -145,7 +145,7 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                                     Nº
                                 </span>
                                 <span className="text-[15px] font-medium text-[#4696AD]">
-                                    {fichaId}
+                                    {dadosFicha?.numero}
                                 </span>
                             </div>
                             <div className="border border-[#4696AD] rounded-[20px] h-[38px] min-w-[70px] relative flex items-center justify-center px-4">
