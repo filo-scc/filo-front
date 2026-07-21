@@ -518,21 +518,7 @@ export default function PedidosCadastrar() {
                 0,
             );
 
-            // === 3. SELEÇÃO DO NÚMERO DO PEDIDO ===
-            // Recalcula no save: maior numero do fabrico + 1 (fallback para o valor da tela)
-            const maioresNumeros = (pedidosExistentes || [])
-                .map((p) => p.numero)
-                .filter((n) => n != null && n !== "")
-                .map((n) => Number(n))
-                .filter((n) => Number.isFinite(n));
-            const numeroDaTela = Number.parseInt(numeroPedido, 10);
-            let numeroFinal =
-                maioresNumeros.length > 0
-                    ? Math.max(...maioresNumeros) + 1
-                    : Number.isFinite(numeroDaTela)
-                      ? numeroDaTela
-                      : 1;
-
+            
             // === AJUSTE DA DATA PARA O BACKEND (ISO-8601) ===
             let dataFormatadaBackend = undefined;
             if (dataPrevista && dataPrevista.length === 10) {
@@ -542,9 +528,7 @@ export default function PedidosCadastrar() {
             }
 
             const novoPedido = await createPedido({
-                fabrico_id: fabricoId,
                 cliente_id: clienteSelecionado?.id || null,
-                numero: numeroFinal,
                 finalizado: false,
                 data_prevista: dataFormatadaBackend,
                 observacoes: null,
