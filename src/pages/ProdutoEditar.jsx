@@ -79,6 +79,7 @@ function DropdownField({
     onSelect,
     isSelectedOption,
     showOptionIndicator = false,
+    actionButton,
 }) {
     return (
         <div className={`relative ${isOpen ? "z-50" : "z-10"}`}>
@@ -114,6 +115,24 @@ function DropdownField({
                         className="fixed inset-0 z-10 cursor-default"
                     />
                     <div className="absolute left-0 right-0 top-[calc(100%+2px)] z-20 overflow-y-auto max-h-[250px] scrollbar-sutil rounded-[14px] border border-[#D3D3D3] bg-white shadow-sm">
+
+                        {/* Renderização do Action Button no mesmo estilo dos itens */}
+                        {actionButton && (
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    actionButton.onClick();
+                                }}
+                                className="relative flex w-full items-center pl-[12px] pr-3 py-3 border-l-[3px] border-transparent text-left text-[15px] text-[#707070] bg-white hover:bg-[#FAFAFA] transition-colors"
+                            >
+                                <span>{actionButton.label}</span>
+                                <span className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center text-[#8B8B8B]">
+                                    +
+                                </span>
+                            </button>
+                        )}
+                        
                         {options.map((option) => {
                             const selected = isSelectedOption(option);
 
@@ -137,6 +156,7 @@ function DropdownField({
                                 </button>
                             );
                         })}
+
                     </div>
                 </>
             )}
@@ -1352,10 +1372,8 @@ export default function ProdutoEditar() {
                 onClose={() => setIsModalTecidoOpen(false)}
                 fabricoId={fabricoId}
                 onSuccess={(novoTecido) => {
-                    // 1. Recarrega a lista do dropdown com o novo item
                     recarregarTecidos();
 
-                    // 2. Seleciona automaticamente o tecido recém-criado no formulário
                     if (novoTecido) {
                         const idCriado = novoTecido.id || novoTecido.tecido?.id;
                         const nomeCriado = novoTecido.nome || novoTecido.tecido?.nome;
