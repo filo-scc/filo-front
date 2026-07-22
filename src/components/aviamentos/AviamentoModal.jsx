@@ -201,7 +201,9 @@ export default function AviamentoModal({
                 <div className="mb-8 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <img
-                            src={isEditMode ? "/aviamentos-ativado.png" : "/cadastrar-aviamento.png"}
+                            src={
+                                isEditMode ? "/aviamentos-ativado.png" : "/cadastrar-aviamento.png"
+                            }
                             alt=""
                             className="h-[28px] w-[28px] object-contain"
                         />
@@ -327,9 +329,7 @@ export default function AviamentoModal({
                                 <FloatingLabelInput
                                     label="Quantidade adquirida"
                                     value={quantidadeAdquirida}
-                                    onChange={(event) =>
-                                        setQuantidadeAdquirida(event.target.value)
-                                    }
+                                    onChange={(event) => setQuantidadeAdquirida(event.target.value)}
                                     inputClassName="border-[#898C8F] text-[14px] text-[#898C8F]"
                                 />
                             </div>

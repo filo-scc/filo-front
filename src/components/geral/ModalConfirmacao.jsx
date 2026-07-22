@@ -1,6 +1,12 @@
 import React from "react";
 
-export default function ModalConfirmacao({ isOpen, onClose, type, message, compactButton = false }) {
+export default function ModalConfirmacao({
+    isOpen,
+    onClose,
+    type,
+    message,
+    compactButton = false,
+}) {
     if (!isOpen) return null;
 
     return (

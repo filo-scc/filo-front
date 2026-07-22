@@ -198,18 +198,10 @@ const Aviamentos = () => {
                                 <thead className="bg-[#D3EBF2] text-[#4696AD]">
                                     <tr className="h-[64px]">
                                         <th className="px-6 font-light">Nome</th>
-                                        <th className="px-6 font-light">
-                                            Unidade de medida
-                                        </th>
-                                        <th className="px-6 font-light">
-                                            Custo unitário
-                                        </th>
-                                        <th className="px-6 font-light">
-                                            Data de cadastro
-                                        </th>
-                                        <th className="px-6 font-light">
-                                            Opções
-                                        </th>
+                                        <th className="px-6 font-light">Unidade de medida</th>
+                                        <th className="px-6 font-light">Custo unitário</th>
+                                        <th className="px-6 font-light">Data de cadastro</th>
+                                        <th className="px-6 font-light">Opções</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white text-[#404040]">
@@ -289,8 +281,8 @@ const Aviamentos = () => {
                 titulo="Excluir aviamento"
                 mensagem={
                     <>
-                        Deseja mesmo prosseguir com esta ação e excluir {" "}
-                        {aviamentoSelecionado?.nome}?
+                        Deseja mesmo prosseguir com esta ação e excluir {aviamentoSelecionado?.nome}
+                        ?
                     </>
                 }
             />
