@@ -1,9 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { deleteAviamento, getAviamentosByFabrico } from "../services/aviamentoService";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+    deleteAviamento,
+    getAviamentoById,
+    getAviamentosByFabrico,
+} from "../services/aviamentoService";
 import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import MenuOpcoes from "../components/geral/MenuOpcoes";
+import AviamentoModal from "../components/aviamentos/AviamentoModal";
 
 const formatarData = (dataString) => {
     if (!dataString) return "-";
@@ -15,7 +19,15 @@ const formatarData = (dataString) => {
 };
 
 const formatarUnidade = (aviamento) => {
-    return aviamento.unidade_de_medida || "-";
+    const unidades = {
+        METRO: "Metro (m)",
+        CENTIMETRO: "Centímetro (cm)",
+        GRAMA: "Grama (g)",
+        QUILOGRAMA: "Quilograma (kg)",
+        UNIDADE: "Unidade (un)",
+        PAR: "Par (par)",
+    };
+    return unidades[String(aviamento.unidade_de_medida || "").toUpperCase()] || "-";
 };
 
 const formatarCusto = (aviamento) => {
@@ -27,37 +39,40 @@ const formatarCusto = (aviamento) => {
 };
 
 const Aviamentos = () => {
-    const navigate = useNavigate();
     const userString = localStorage.getItem("user");
     const fabrico_id = userString ? JSON.parse(userString).fabrico_id : null;
 
     const [aviamentos, setAviamentos] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [carregandoEdicao, setCarregandoEdicao] = useState(false);
     const [busca, setBusca] = useState("");
 
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
+    const [modalAviamentoAberto, setModalAviamentoAberto] = useState(false);
+    const [modoModalAviamento, setModoModalAviamento] = useState("create");
     const [aviamentoSelecionado, setAviamentoSelecionado] = useState(null);
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
 
-    useEffect(() => {
-        const fetchAviamentos = async () => {
-            if (!fabrico_id) {
-                setLoading(false);
-                return;
-            }
-            try {
-                setLoading(true);
-                const data = await getAviamentosByFabrico(fabrico_id);
-                setAviamentos(Array.isArray(data) ? data : data?.data || []);
-            } catch (error) {
-                console.error("Erro ao carregar os aviamentos", error);
-                setAviamentos([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchAviamentos();
+    const carregarAviamentos = useCallback(async () => {
+        if (!fabrico_id) {
+            setLoading(false);
+            return;
+        }
+        try {
+            setLoading(true);
+            const data = await getAviamentosByFabrico(fabrico_id);
+            setAviamentos(Array.isArray(data) ? data : data?.data || []);
+        } catch (error) {
+            console.error("Erro ao carregar os aviamentos", error);
+            setAviamentos([]);
+        } finally {
+            setLoading(false);
+        }
     }, [fabrico_id]);
+
+    useEffect(() => {
+        carregarAviamentos();
+    }, [carregarAviamentos]);
 
     const aviamentosFiltrados = useMemo(() => {
         const termo = busca.trim().toLowerCase();
@@ -69,8 +84,35 @@ const Aviamentos = () => {
         });
     }, [aviamentos, busca]);
 
-    const handleEdit = (id) => {
-        navigate(`/aviamentos/editar/${id}`);
+    const abrirModalCadastro = () => {
+        setAviamentoSelecionado(null);
+        setModoModalAviamento("create");
+        setModalAviamentoAberto(true);
+    };
+
+    const fecharModalAviamento = () => {
+        setModalAviamentoAberto(false);
+        setAviamentoSelecionado(null);
+        setModoModalAviamento("create");
+    };
+
+    const handleEdit = async (id) => {
+        try {
+            setCarregandoEdicao(true);
+            const aviamento = await getAviamentoById(id);
+            setAviamentoSelecionado(aviamento);
+            setModoModalAviamento("edit");
+            setModalAviamentoAberto(true);
+        } catch (error) {
+            console.error("Erro ao carregar aviamento para edição:", error);
+            alert("Erro ao carregar aviamento para edição.");
+        } finally {
+            setCarregandoEdicao(false);
+        }
+    };
+
+    const handleAviamentoSalvo = async () => {
+        await carregarAviamentos();
     };
 
     const abrirModalExclusao = (aviamento) => {
@@ -132,6 +174,7 @@ const Aviamentos = () => {
 
                         <button
                             type="button"
+                            onClick={abrirModalCadastro}
                             className="w-[196px] h-[39px] bg-[#A9E2F2] text-[#FFFFFF] font-normal text-[16px] rounded-full flex items-center justify-center gap-2 hover:bg-[#8acbdc] transition-colors shrink-0"
                         >
                             <img
@@ -150,50 +193,51 @@ const Aviamentos = () => {
                     </div>
                 ) : (
                     <div className="w-full overflow-visible">
-                        <div className="min-w-max border border-[#D9D9D9] rounded-xl font-light text-[16px] overflow-hidden">
-                            <table className="w-full text-left border-collapse relative z-10">
-                                <thead>
-                                    <tr className="bg-[#C9EAF6] text-[#4696AD]">
-                                        <th className="py-4 px-6 text-center font-normal">Nome</th>
-                                        <th className="py-4 px-6 text-center font-normal">
+                        <div className="min-w-max border border-gray-200 rounded-xl overflow-hidden bg-[#D3EBF2]">
+                            <table className="w-full border-separate border-spacing-0 text-[16px] font-light text-center relative z-10">
+                                <thead className="bg-[#D3EBF2] text-[#4696AD]">
+                                    <tr className="h-[64px]">
+                                        <th className="px-6 font-light">Nome</th>
+                                        <th className="px-6 font-light">
                                             Unidade de medida
                                         </th>
-                                        <th className="py-4 px-6 text-center font-normal">
+                                        <th className="px-6 font-light">
                                             Custo unitário
                                         </th>
-                                        <th className="py-4 px-6 text-center font-normal">
+                                        <th className="px-6 font-light">
                                             Data de cadastro
                                         </th>
-                                        <th className="py-4 px-6 text-center font-normal">
+                                        <th className="px-6 font-light">
                                             Opções
                                         </th>
                                     </tr>
                                 </thead>
-                                <tbody className="text-[#404040]">
+                                <tbody className="bg-white text-[#404040]">
                                     {aviamentosFiltrados.map((aviamento, index) => {
                                         const isLast = index === aviamentosFiltrados.length - 1;
+                                        const isPar = index % 2 === 0;
 
                                         return (
                                             <tr
                                                 key={aviamento.id}
-                                                className="border-b border-[#E8E8E8] last:border-none even:bg-[#E8E8E8] transition-colors text-center"
+                                                className={`h-[64px] border-b last:border-0 transition-colors ${isPar ? "bg-white" : "bg-[#F4F4F4]"}`}
                                             >
-                                                <td className="py-4 px-6">
+                                                <td className="px-6 text-[14px]">
                                                     {aviamento.nome || "-"}
                                                 </td>
-                                                <td className="py-4 px-6">
+                                                <td className="px-6 text-[14px]">
                                                     {formatarUnidade(aviamento)}
                                                 </td>
-                                                <td className="py-4 px-6">
+                                                <td className="px-6 text-[14px]">
                                                     {formatarCusto(aviamento)}
                                                 </td>
-                                                <td className="py-4 px-6">
+                                                <td className="px-6 text-[14px]">
                                                     {formatarData(
                                                         aviamento.created_at ||
                                                             aviamento.data_cadastro,
                                                     )}
                                                 </td>
-                                                <td className="py-4 px-6">
+                                                <td className="px-6">
                                                     <MenuOpcoes
                                                         onEdit={() => handleEdit(aviamento.id)}
                                                         onDelete={() =>
@@ -223,6 +267,21 @@ const Aviamentos = () => {
                 )}
             </div>
 
+            {carregandoEdicao && (
+                <div className="fixed inset-0 z-[1090] flex items-center justify-center bg-black/20 backdrop-blur-sm font-Outfit text-[#4696AD]">
+                    Carregando aviamento...
+                </div>
+            )}
+
+            <AviamentoModal
+                isOpen={modalAviamentoAberto}
+                onClose={fecharModalAviamento}
+                onSuccess={handleAviamentoSalvo}
+                mode={modoModalAviamento}
+                fabricoId={fabrico_id}
+                aviamento={aviamentoSelecionado}
+            />
+
             <ModalExclusao
                 isOpen={modalExclusaoAberto}
                 onClose={() => setModalExclusaoAberto(false)}
@@ -240,6 +299,8 @@ const Aviamentos = () => {
                 isOpen={modalConfirmacaoAberto}
                 onClose={() => setModalConfirmacaoAberto(false)}
                 type="excluído"
+                message="Aviamento excluído com sucesso!"
+                compactButton
             />
         </div>
     );
