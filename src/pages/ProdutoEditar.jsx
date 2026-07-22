@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
 import TabelaClientesDoProduto from "../components/produtos/TabelaClientesDoProduto";
+import AviamentoModal from "../components/aviamentos/AviamentoModal";
 import ModalAtencao from "../components/geral/ModalAtencao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import ModalExclusao from "../components/geral/ModalExclusao";
@@ -14,11 +15,15 @@ import {
 import {
     atualizarProduto,
     excluirProduto,
+    desvincularProdutoAviamento,
+    getAviamentosByFabrico,
+    getAviamentosDoProduto,
     getClientesDoProduto,
     getGradesByFabrico,
     getProdutoById,
     getTecidosByFabrico,
     getTiposProdutoByFabrico,
+    vincularProdutoAviamento,
 } from "../services/produtoService";
 import { getFabricoById } from "../services/fabricoService";
 import {
@@ -27,8 +32,6 @@ import {
     vincularProdutoAoCliente,
 } from "../services/clientesService";
 import { upload } from "../services/utilsService";
-
-const aviamentosDisponiveis = ["Viés", "Bojo", "Elástico", "Argola"];
 
 function FieldLabel({ children, className = "" }) {
     return (
@@ -62,6 +65,7 @@ function DropdownField({
     onSelect,
     isSelectedOption,
     showOptionIndicator = false,
+    actionButton,
 }) {
     return (
         <div className={`relative ${isOpen ? "z-50" : "z-10"}`}>
@@ -97,6 +101,21 @@ function DropdownField({
                         className="fixed inset-0 z-10 cursor-default"
                     />
                     <div className="absolute left-0 right-0 top-[calc(100%+2px)] z-20 overflow-hidden rounded-[14px] border border-[#D3D3D3] bg-white shadow-sm">
+                        {actionButton && (
+                            <button
+                                type="button"
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    actionButton.onClick();
+                                }}
+                                className="relative flex w-full items-center pl-[12px] pr-3 py-3 border-l-[3px] border-transparent text-left text-[15px] text-[#7B7D80] transition-colors bg-white hover:bg-[#FAFAFA]"
+                            >
+                                <span>{actionButton.label}</span>
+                                <span className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center text-[#898C8F] font-light text-[20px]">
+                                    +
+                                </span>
+                            </button>
+                        )}
                         {options.map((option) => {
                             const selected = isSelectedOption(option);
 
@@ -227,6 +246,29 @@ function enriquecerClientesAssociados(clientesAssociados, clientesDoFabrico) {
                       },
         };
     });
+}
+
+function normalizarAviamentoDisponivel(item) {
+    const aviamento = item?.aviamento || item;
+    const id = aviamento?.id ?? item?.aviamento_id;
+    const nome = aviamento?.nome || item?.nome;
+
+    if (!id || !nome) return null;
+
+    return {
+        id,
+        nome,
+    };
+}
+
+function normalizarAviamentoRelacionado(item) {
+    const aviamento = normalizarAviamentoDisponivel(item);
+    if (!aviamento) return null;
+
+    return {
+        ...aviamento,
+        relacao_id: item?.id ?? item?.relacao_id,
+    };
 }
 
 function ModalClientesDoProduto({
@@ -442,8 +484,10 @@ export default function ProdutoEditar() {
     const [openDropdown, setOpenDropdown] = useState(null);
     const [gradesDisponiveis, setGradesDisponiveis] = useState([]);
     const [tecidosDisponiveis, setTecidosDisponiveis] = useState([]);
+    const [aviamentosDisponiveis, setAviamentosDisponiveis] = useState([]);
     const [modelosDisponiveis, setModelosDisponiveis] = useState([]);
     const [modalClientesAberto, setModalClientesAberto] = useState(false);
+    const [modalAviamentoAberto, setModalAviamentoAberto] = useState(false);
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
     const [modalAtencaoAberto, setModalAtencaoAberto] = useState(false);
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
@@ -487,6 +531,8 @@ export default function ProdutoEditar() {
                     clientesDoFabrico,
                     resGrades,
                     resTecidos,
+                    resAviamentos,
+                    resAviamentosProduto,
                     resTiposProduto,
                     dadosFabrico,
                 ] = await Promise.all([
@@ -499,6 +545,10 @@ export default function ProdutoEditar() {
                     Number.isFinite(fabricoId)
                         ? getTecidosByFabrico(fabricoId)
                         : Promise.resolve([]),
+                    Number.isFinite(fabricoId)
+                        ? getAviamentosByFabrico(fabricoId)
+                        : Promise.resolve([]),
+                    getAviamentosDoProduto(id).catch(() => []),
                     getTiposProdutoByFabrico().catch(() => []),
                     Number.isFinite(fabricoId) ? getFabricoById(fabricoId) : Promise.resolve(null),
                 ]);
@@ -528,6 +578,14 @@ export default function ProdutoEditar() {
                     nome: tecido?.nome || tecido?.tecido?.nome || "Sem nome na API",
                 }));
 
+                const aviamentosMapeados = (resAviamentos || [])
+                    .map(normalizarAviamentoDisponivel)
+                    .filter(Boolean);
+
+                const aviamentosSelecionados = (resAviamentosProduto || [])
+                    .map(normalizarAviamentoRelacionado)
+                    .filter(Boolean);
+
                 const modelosMapeados = (resTiposProduto || [])
                     .map((tipo) => ({
                         id: tipo?.id,
@@ -554,6 +612,7 @@ export default function ProdutoEditar() {
                 );
                 setGradesDisponiveis(gradesMapeadas);
                 setTecidosDisponiveis(tecidosMapeados);
+                setAviamentosDisponiveis(aviamentosMapeados);
                 setModelosDisponiveis(modelosMapeados);
                 setImagemPreview(dadosProduto.foto || "");
                 setFormData({
@@ -564,11 +623,7 @@ export default function ProdutoEditar() {
                     tecido_id: dadosProduto.tecido_id || dadosProduto.tecido?.id,
                     grade: getGradeNome(dadosProduto),
                     grade_versao_id: dadosProduto.grade_versao_id || dadosProduto.grade_versao?.id,
-                    aviamentos: Array.isArray(dadosProduto.aviamentos)
-                        ? dadosProduto.aviamentos
-                        : dadosProduto.aviamentos
-                          ? [dadosProduto.aviamentos]
-                          : [],
+                    aviamentos: aviamentosSelecionados,
                 });
             } catch (error) {
                 console.error("Erro ao carregar produto:", error);
@@ -626,12 +681,61 @@ export default function ProdutoEditar() {
         setOpenDropdown(null);
     };
 
-    const handleToggleAviamento = (item) => {
+    const vincularAviamentoAoProduto = async (aviamento) => {
+        const relacao = await vincularProdutoAviamento({
+            produto_id: Number(id),
+            aviamento_id: aviamento.id,
+            quantidade: 1,
+        });
+
+        return {
+            ...aviamento,
+            relacao_id: relacao?.id,
+        };
+    };
+
+    const handleAviamentoCriado = async (aviamentoCriado) => {
+        const novoAviamento = normalizarAviamentoDisponivel(aviamentoCriado);
+        if (!novoAviamento) return;
+
+        const aviamentoSelecionado = await vincularAviamentoAoProduto(novoAviamento);
+
+        setAviamentosDisponiveis((prev) => {
+            if (prev.some((aviamento) => aviamento.id === novoAviamento.id)) return prev;
+            return [...prev, novoAviamento];
+        });
+
+        setFormData((prev) => {
+            if (prev.aviamentos.some((aviamento) => aviamento.id === aviamentoSelecionado.id)) {
+                return prev;
+            }
+            return {
+                ...prev,
+                aviamentos: [...prev.aviamentos, aviamentoSelecionado],
+            };
+        });
+    };
+
+    const handleToggleAviamento = async (aviamento) => {
+        const aviamentoSelecionado = formData.aviamentos.find((item) => item.id === aviamento.id);
+
+        if (aviamentoSelecionado) {
+            if (aviamentoSelecionado.relacao_id) {
+                await desvincularProdutoAviamento(aviamentoSelecionado.relacao_id);
+            }
+
+            setFormData((prev) => ({
+                ...prev,
+                aviamentos: prev.aviamentos.filter((item) => item.id !== aviamento.id),
+            }));
+            return;
+        }
+
+        const novoVinculo = await vincularAviamentoAoProduto(aviamento);
+
         setFormData((prev) => ({
             ...prev,
-            aviamentos: prev.aviamentos.includes(item)
-                ? prev.aviamentos.filter((aviamento) => aviamento !== item)
-                : [...prev.aviamentos, item],
+            aviamentos: [...prev.aviamentos, novoVinculo],
         }));
     };
 
@@ -677,7 +781,6 @@ export default function ProdutoEditar() {
                 fabrico_id: fabricoId,
                 tecido_id: formData.tecido_id,
                 grade_versao_id: formData.grade_versao_id,
-                aviamentos: formData.aviamentos,
             });
 
             setModalConfirmacaoAberto(true);
@@ -832,20 +935,40 @@ export default function ProdutoEditar() {
                                         <DropdownField
                                             value=""
                                             placeholder="Aviamentos"
-                                            options={aviamentosDisponiveis}
+                                            options={aviamentosDisponiveis.map(
+                                                (aviamento) => aviamento.nome,
+                                            )}
                                             isOpen={openDropdown === "aviamentos"}
                                             onToggle={() => toggleDropdown("aviamentos")}
-                                            onSelect={(value) => handleToggleAviamento(value)}
+                                            onSelect={(nomeSelecionado) => {
+                                                const aviamentoCompleto =
+                                                    aviamentosDisponiveis.find(
+                                                        (aviamento) =>
+                                                            aviamento.nome === nomeSelecionado,
+                                                    );
+                                                if (aviamentoCompleto) {
+                                                    handleToggleAviamento(aviamentoCompleto);
+                                                }
+                                            }}
                                             isSelectedOption={(option) =>
-                                                formData.aviamentos.includes(option)
+                                                formData.aviamentos.some(
+                                                    (aviamento) => aviamento.nome === option,
+                                                )
                                             }
                                             showOptionIndicator
+                                            actionButton={{
+                                                label: "Novo aviamento",
+                                                onClick: () => {
+                                                    setOpenDropdown(null);
+                                                    setModalAviamentoAberto(true);
+                                                },
+                                            }}
                                         />
                                         <div className="flex flex-wrap gap-2 mt-3">
                                             {formData.aviamentos.map((item) => (
                                                 <SelectedAviamentoTag
-                                                    key={item}
-                                                    label={item}
+                                                    key={item.id}
+                                                    label={item.nome}
                                                     onRemove={() => handleToggleAviamento(item)}
                                                 />
                                             ))}
@@ -939,6 +1062,14 @@ export default function ProdutoEditar() {
                 fabricoId={fabricoId}
                 clientesAssociados={clientesAssociados}
                 onSuccess={carregarClientesDoProduto}
+            />
+
+            <AviamentoModal
+                isOpen={modalAviamentoAberto}
+                onClose={() => setModalAviamentoAberto(false)}
+                onSuccess={handleAviamentoCriado}
+                mode="create"
+                fabricoId={fabricoId}
             />
 
             <ModalExclusao

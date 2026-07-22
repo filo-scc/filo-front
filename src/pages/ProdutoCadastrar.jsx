@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
 import ModeloModal from "../components/produtos/ModeloModal";
+import AviamentoModal from "../components/aviamentos/AviamentoModal";
 import {
     criarProduto,
     getAviamentosByFabrico,
@@ -213,6 +214,7 @@ export default function ProdutoCadastar() {
     const [aviamentosDisponiveis, setAviamentosDisponiveis] = useState([]);
     const [modelosDisponiveis, setModelosDisponiveis] = useState([]);
     const [modalModeloAberto, setModalModeloAberto] = useState(false);
+    const [modalAviamentoAberto, setModalAviamentoAberto] = useState(false);
     const [formData, setFormData] = useState({
         referencia: "",
         modelo: "",
@@ -319,6 +321,8 @@ export default function ProdutoCadastar() {
     };
 
     const handleToggleAviamento = (aviamentoObj) => {
+        if (!aviamentoObj?.id) return;
+
         setFormData((prev) => {
             const jaSelecionado = prev.aviamentos.some((a) => a.id === aviamentoObj.id);
             return {
@@ -386,6 +390,28 @@ export default function ProdutoCadastar() {
         }));
     };
 
+    const handleAviamentoCriado = (aviamentoCriado) => {
+        if (!aviamentoCriado?.id) return;
+
+        const novoAviamento = {
+            id: aviamentoCriado.id,
+            nome: aviamentoCriado.nome,
+        };
+
+        setAviamentosDisponiveis((prev) => {
+            if (prev.some((aviamento) => aviamento.id === aviamentoCriado.id)) return prev;
+            return [...prev, novoAviamento];
+        });
+
+        setFormData((prev) => {
+            if (prev.aviamentos.some((aviamento) => aviamento.id === novoAviamento.id)) return prev;
+            return {
+                ...prev,
+                aviamentos: [...prev.aviamentos, novoAviamento],
+            };
+        });
+    };
+
     const handleImagemChange = (event) => {
         const arquivo = event.target.files?.[0];
         if (!arquivo) return;
@@ -448,6 +474,7 @@ export default function ProdutoCadastar() {
                     vincularProdutoAviamento({
                         produto_id: produtoId,
                         aviamento_id: aviamento.id,
+                        quantidade: 1,
                     }),
                 );
 
@@ -596,8 +623,10 @@ export default function ProdutoCadastar() {
                                                 label: "Novo aviamento",
                                                 onClick: () => {
                                                     setOpenDropdown(null);
+                                                    setModalAviamentoAberto(true);
                                                 },
                                             }}
+                                            actionButtonPosition="start"
                                         />
                                         <div className="flex flex-wrap gap-2 mt-3">
                                             {formData.aviamentos.map((item) => (
@@ -666,6 +695,14 @@ export default function ProdutoCadastar() {
                 isOpen={modalModeloAberto}
                 onClose={() => setModalModeloAberto(false)}
                 onSuccess={handleModeloCriado}
+            />
+
+            <AviamentoModal
+                isOpen={modalAviamentoAberto}
+                onClose={() => setModalAviamentoAberto(false)}
+                onSuccess={handleAviamentoCriado}
+                mode="create"
+                fabricoId={fabricoId}
             />
         </div>
     );
