@@ -32,6 +32,7 @@ import { upload } from "../services/utilsService";
 import { getAllEtapasByFabricoId } from "../services/etapaService";
 import { getParceirosByFabrico } from "../services/parceiroService";
 import parceiroProdutoService from "../services/parceiroProdutoService";
+import { CadastrarTecidoModal } from "../components/produtos/CadastrarTecidoModal";
 
 function formatarUnidadeDeMedida(unidade) {
     if (!unidade) return "";
@@ -471,6 +472,7 @@ export default function ProdutoEditar() {
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
     const [modalExcluidoAberto, setModalExcluidoAberto] = useState(false);
     const [excluindo, setExcluindo] = useState(false);
+    const [isModalTecidoOpen, setIsModalTecidoOpen] = useState(false);
     const [formData, setFormData] = useState({
         referencia: "",
         modelo: "",
@@ -743,7 +745,7 @@ export default function ProdutoEditar() {
     };
 
     const handleTecidoSelect = (nomeTecido) => {
-        const tecidoSelecionado = tecidosDisponiveis.find((tecido) => tecido.nome === nomeTecido);
+        const tecidoSelecionado = tecidosDisponiveis.find((t) => t.nome === nomeTecido);
 
         setFormData((prev) => ({
             ...prev,
@@ -804,6 +806,21 @@ export default function ProdutoEditar() {
     const totalGeralCustoPeca =
         valorTotalGasto + somaEtapas + custoOperacionalNum + outrosCustosNum;
 
+    const recarregarTecidos = async () => {
+        try {
+            const dados = await getTecidosByFabrico(fabricoId);
+            const tecidosTratados = (dados || []).map((t) => ({
+                id: t?.id || t?.tecido?.id,
+                nome: t?.nome || t?.tecido?.nome || "Sem nome na API",
+                custo_unitario: Number(t?.custo_unitario || t?.tecido?.custo_unitario || 0),
+                unidade_de_medida: t?.unidade_de_medida || t?.tecido?.unidade_de_medida || "",
+            }));
+            setTecidosDisponiveis(tecidosTratados);
+        } catch (err) {
+            console.error("Erro ao recarregar tecidos:", err);
+        }
+    };
+
     const handleSalvar = async (event) => {
         event.preventDefault();
         setErro("");
@@ -848,7 +865,7 @@ export default function ProdutoEditar() {
                 custoOperacionalFormatado,
                 outrosCustosFormatado,
             });
-            
+
             await atualizarProduto(id, {
                 foto: urlFoto,
                 nome: formData.referencia.trim(),
@@ -1035,20 +1052,27 @@ export default function ProdutoEditar() {
 
                                     <div>
                                         <span className="block text-[13px] font-light text-[#4696AD] mb-1">
-                                            Tecido
+                                            Tecidos
                                         </span>
                                         <DropdownField
                                             value={formData.tecido}
                                             placeholder="Tecido"
-                                            options={tecidosDisponiveis.map(
-                                                (tecido) => tecido.nome,
-                                            )}
+                                            options={tecidosDisponiveis.map((t) => t.nome)}
                                             isOpen={openDropdown === "tecido"}
                                             onToggle={() => toggleDropdown("tecido")}
                                             onSelect={handleTecidoSelect}
                                             isSelectedOption={(option) =>
                                                 formData.tecido === option
                                             }
+                                            maxVisibleOptions={6}
+                                            loading={loading}
+                                            actionButton={{
+                                                label: "Novo tecido",
+                                                onClick: () => {
+                                                    setOpenDropdown(null);
+                                                    setIsModalTecidoOpen(true);
+                                                },
+                                            }}
                                         />
                                     </div>
 
@@ -1321,6 +1345,28 @@ export default function ProdutoEditar() {
                 fabricoId={fabricoId}
                 clientesAssociados={clientesAssociados}
                 onSuccess={carregarClientesDoProduto}
+            />
+
+            <CadastrarTecidoModal
+                isOpen={isModalTecidoOpen}
+                onClose={() => setIsModalTecidoOpen(false)}
+                fabricoId={fabricoId}
+                onSuccess={(novoTecido) => {
+                    // 1. Recarrega a lista do dropdown com o novo item
+                    recarregarTecidos();
+
+                    // 2. Seleciona automaticamente o tecido recém-criado no formulário
+                    if (novoTecido) {
+                        const idCriado = novoTecido.id || novoTecido.tecido?.id;
+                        const nomeCriado = novoTecido.nome || novoTecido.tecido?.nome;
+
+                        setFormData((prev) => ({
+                            ...prev,
+                            tecido: nomeCriado,
+                            tecido_id: idCriado,
+                        }));
+                    }
+                }}
             />
 
             <ModalExclusao

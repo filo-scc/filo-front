@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
 import ModeloModal from "../components/produtos/ModeloModal";
 import parceiroProdutoService from "@/services/parceiroProdutoService";
+import { CadastrarTecidoModal } from "../components/produtos/CadastrarTecidoModal";
 import {
     criarProduto,
     getAviamentosByFabrico,
@@ -234,6 +235,7 @@ export default function ProdutoCadastar() {
     const [modelosDisponiveis, setModelosDisponiveis] = useState([]);
     const [modalModeloAberto, setModalModeloAberto] = useState(false);
     const [fabrico, setFabrico] = useState(null);
+    const [isModalTecidoOpen, setIsModalTecidoOpen] = useState(false);
     const [formData, setFormData] = useState({
         referencia: "",
         modelo: "",
@@ -486,6 +488,22 @@ export default function ProdutoCadastar() {
     }, 0);
 
     const valorTotalGasto = custoTecidoCalculado + custoAviamentosCalculado;
+
+    // Função para atualizar a lista de tecidos após cadastrar um novo
+    const recarregarTecidos = async () => {
+        try {
+            const dados = await getTecidosByFabrico(fabricoId);
+            const tecidosTratados = (dados || []).map((t) => ({
+                id: t?.id || t?.tecido?.id,
+                nome: t?.nome || t?.tecido?.nome || "Sem nome na API",
+                custo_unitario: Number(t?.custo_unitario || t?.tecido?.custo_unitario || 0),
+                unidade_de_medida: t?.unidade_de_medida || t?.tecido?.unidade_de_medida || "",
+            }));
+            setTecidosDisponiveis(tecidosTratados);
+        } catch (err) {
+            console.error("Erro ao recarregar tecidos:", err);
+        }
+    };
 
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -830,6 +848,7 @@ export default function ProdutoCadastar() {
                                                 label: "Novo tecido",
                                                 onClick: () => {
                                                     setOpenDropdown(null);
+                                                    setIsModalTecidoOpen(true);
                                                 },
                                             }}
                                         />
@@ -1074,6 +1093,23 @@ export default function ProdutoCadastar() {
                     </div>
                 </form>
             </div>
+
+            <CadastrarTecidoModal
+                isOpen={isModalTecidoOpen}
+                onClose={() => setIsModalTecidoOpen(false)}
+                fabricoId={fabricoId}
+                onSuccess={(novoTecido) => {
+                    recarregarTecidos();
+
+                    if (novoTecido) {
+                        setFormData((prev) => ({
+                            ...prev,
+                            tecido: novoTecido.nome,
+                            tecido_id: novoTecido.id,
+                        }));
+                    }
+                }}
+            />
 
             <ModeloModal
                 isOpen={modalModeloAberto}
