@@ -518,7 +518,6 @@ export default function PedidosCadastrar() {
                 0,
             );
 
-            
             // === AJUSTE DA DATA PARA O BACKEND (ISO-8601) ===
             let dataFormatadaBackend = undefined;
             if (dataPrevista && dataPrevista.length === 10) {
