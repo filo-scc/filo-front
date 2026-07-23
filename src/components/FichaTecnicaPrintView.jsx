@@ -411,18 +411,18 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                                 <thead className="bg-[#F4F4F4] text-[#737373]">
                                     <tr>
                                         <th
-                                            className="py-3 font-normal w-1/3"
+                                            className="py-1.5 font-normal w-1/3"
                                             style={{ borderRight: darkSide }}
                                         >
                                             Facção
                                         </th>
                                         <th
-                                            className="py-3 font-normal w-1/3"
+                                            className="py-1.5 font-normal w-1/3"
                                             style={{ borderRight: darkSide }}
                                         >
                                             Operação
                                         </th>
-                                        <th className="py-3 font-normal ">Quantidade</th>
+                                        <th className="py-1.5 font-normal ">Quantidade</th>
                                     </tr>
                                 </thead>
                                 <tbody className="text-[#707070]">
@@ -436,18 +436,18 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                                             return (
                                                 <tr key={vinculo.id || index}>
                                                     <td
-                                                        className="py-3"
+                                                        className="py-1.5"
                                                         style={{ borderRight: darkSide }}
                                                     >
                                                         {nome}
                                                     </td>
                                                     <td
-                                                        className="py-3 text-[#D3D3D3]"
+                                                        className="py-1.5 text-[#D3D3D3]"
                                                         style={{ borderRight: darkSide }}
                                                     >
                                                         {operacao}
                                                     </td>
-                                                    <td className="py-3">{quantidade}</td>
+                                                    <td className="py-1.5">{quantidade}</td>
                                                 </tr>
                                             );
                                         })
@@ -455,7 +455,7 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                                         <tr>
                                             <td
                                                 colSpan="3"
-                                                className="py-4 text-center text-[13px] text-[#888]"
+                                                className="py-1.5 text-center text-[13px] text-[#888]"
                                             >
                                                 Nenhuma facção vinculada a esta ficha.
                                             </td>
@@ -476,32 +476,32 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                                 <thead>
                                     <tr className="bg-[#F4F4F4] text-[#898C8F]">
                                         <th
-                                            className="py-2.5 font-normal w-1/4"
+                                            className="py-1.5 font-normal w-1/4"
                                             style={{ borderRight: darkSide }}
                                         >
                                             Defeito de costura
                                         </th>
                                         <th
-                                            className="py-2.5 font-normal w-1/4"
+                                            className="py-1.5 font-normal w-1/4"
                                             style={{ borderRight: darkSide }}
                                         >
                                             Defeito no tecido
                                         </th>
                                         <th
-                                            className="py-2.5 font-normal w-1/4"
+                                            className="py-1.5 font-normal w-1/4"
                                             style={{ borderRight: darkSide }}
                                         >
                                             Retiradas
                                         </th>
-                                        <th className="py-2.5 font-normal w-1/4">Sobras</th>
+                                        <th className="py-1.5 font-normal w-1/4">Sobras</th>
                                     </tr>
                                 </thead>
                                 <tbody className="text-[#707070] font-light bg-white">
                                     <tr>
-                                        <td className="py-4" style={{ borderRight: darkSide }}></td>
-                                        <td className="py-4" style={{ borderRight: darkSide }}></td>
-                                        <td className="py-4" style={{ borderRight: darkSide }}></td>
-                                        <td className="py-4"></td>
+                                        <td className="py-3" style={{ borderRight: darkSide }}></td>
+                                        <td className="py-3" style={{ borderRight: darkSide }}></td>
+                                        <td className="py-3" style={{ borderRight: darkSide }}></td>
+                                        <td className="py-3"></td>
                                     </tr>
                                 </tbody>
                             </table>
