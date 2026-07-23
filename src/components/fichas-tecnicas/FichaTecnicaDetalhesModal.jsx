@@ -423,11 +423,7 @@ export default function FichaTecnicaModal({ isOpen, onClose, fichaId }) {
                     }}
                 />
             )}
-            <FichaTecnicaPrintView
-                dadosFicha={ficha}
-                fichaId={fichaId}
-                referencia={referenciaCliente}
-            />
+            <FichaTecnicaPrintView dadosFicha={ficha} referencia={referenciaCliente} />
         </div>
     );
 }
