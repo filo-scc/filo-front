@@ -13,17 +13,17 @@ const parceiroProdutoService = {
 
     criar: async (parceiroId, produtoId, preco) => {
         const response = await api.post(`/parceiros-produtos/${parceiroId}/${produtoId}`, {
-            preco: parseFloat(preco) || 0
+            preco: parseFloat(preco) || 0,
         });
         return response.data;
     },
 
     atualizar: async (parceiroId, produtoId, preco) => {
         const response = await api.put(`/parceiros-produtos/${parceiroId}/${produtoId}`, {
-            preco: parseFloat(preco) || 0
+            preco: parseFloat(preco) || 0,
         });
         return response.data;
-    }
+    },
 };
 
 export default parceiroProdutoService;

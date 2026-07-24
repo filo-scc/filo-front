@@ -115,7 +115,6 @@ function DropdownField({
                         className="fixed inset-0 z-10 cursor-default"
                     />
                     <div className="absolute left-0 right-0 top-[calc(100%+2px)] z-20 overflow-y-auto max-h-[250px] scrollbar-sutil rounded-[14px] border border-[#D3D3D3] bg-white shadow-sm">
-
                         {/* Renderização do Action Button no mesmo estilo dos itens */}
                         {actionButton && (
                             <button
@@ -132,7 +131,7 @@ function DropdownField({
                                 </span>
                             </button>
                         )}
-                        
+
                         {options.map((option) => {
                             const selected = isSelectedOption(option);
 
@@ -156,7 +155,6 @@ function DropdownField({
                                 </button>
                             );
                         })}
-
                     </div>
                 </>
             )}
