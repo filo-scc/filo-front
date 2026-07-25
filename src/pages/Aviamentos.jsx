@@ -230,8 +230,8 @@ const Aviamentos = () => {
                 titulo="Excluir aviamento"
                 mensagem={
                     <>
-                        Deseja mesmo prosseguir com esta ação e excluir {" "}
-                        {aviamentoSelecionado?.nome}?
+                        Deseja mesmo prosseguir com esta ação e excluir {aviamentoSelecionado?.nome}
+                        ?
                     </>
                 }
             />
