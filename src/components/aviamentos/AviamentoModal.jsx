@@ -40,22 +40,15 @@ function CustoOption({ checked, label, onSelect }) {
             onClick={onSelect}
             className="flex items-center gap-2 text-[14px] font-light text-[#404040]"
         >
-            <span className="relative flex h-5 w-5 items-center justify-center">
+            <span className="relative flex h-6 w-6 items-center justify-center">
                 {checked ? (
                     <img
-                        src="/checkmark-background.png"
-                        alt=""
-                        className="h-5 w-5 object-contain"
+                        src="/checkmark.png"
+                        alt="Selecionado"
+                        className="h-6 w-6 max-w-none object-contain"
                     />
                 ) : (
                     <span className="h-[16px] w-[16px] rounded-[4px] border border-[#C4C8CD] bg-white" />
-                )}
-                {checked && (
-                    <img
-                        src="/checkmark.png"
-                        alt=""
-                        className="absolute inset-0 h-5 w-5 object-contain"
-                    />
                 )}
             </span>
             {label}
