@@ -11,13 +11,18 @@ const calcularProporcao = (totaisPorTamanho) => {
 const darkSide = "0.5px solid #7B7D80";
 const shellSide = "0.5px solid #D9D9D9";
 
-export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia }) {
+export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia, onReadyToPrint }) {
     const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsMounted(true);
     }, []);
+
+    useEffect(() => {
+        if (!isMounted) return undefined;
+        onReadyToPrint?.();
+    }, [isMounted, onReadyToPrint]);
 
     if (!dadosFicha || !isMounted) return null;
 
@@ -108,16 +113,16 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                             display: none !important;
                         }
 
-                        #portal-impressao {
+                        #portal-impressao-ficha {
                             display: block !important;
                             position: relative !important; 
                             width: 100% !important;
                             margin: 0 !important;
                             padding: 0 !important;
-
                         }
 
-                        #ficha-print-view, #ficha-print-view * {
+                        #ficha-print-view,
+                        #ficha-print-view * {
                             visibility: visible;
                             -webkit-print-color-adjust: exact !important;
                             print-color-adjust: exact !important;
