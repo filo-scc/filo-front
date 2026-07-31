@@ -147,7 +147,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                             className="w-[30px] h-[30px] object-contain"
                         />
                         <h2 className="text-[26px] font-light text-[#404040]">
-                            Ficha Técnica {fichaId}
+                            Ficha Técnica {ficha?.numero}
                         </h2>
                     </div>
 
