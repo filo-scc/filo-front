@@ -11,7 +11,7 @@ const calcularProporcao = (totaisPorTamanho) => {
 const darkSide = "0.5px solid #7B7D80";
 const shellSide = "0.5px solid #D9D9D9";
 
-export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia, onReadyToPrint }) {
+export default function FichaTecnicaPrintView({ dadosFicha, referencia, onReadyToPrint }) {
     const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
