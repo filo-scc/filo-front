@@ -123,7 +123,8 @@ export default function NotaDeSaidaPrintView({
 
     const colunasGrid = tamanhos.length > 0 ? tamanhos.length : 1;
 
-    // Correção: envolvemos o JSX e document.body com o createPortal(...)
+    const footerRowBg = itens.length % 2 === 1 ? "bg-[#F9F9F9]" : "bg-white";
+
     const printContent = createPortal(
         <>
             <style type="text/css" media="print">
@@ -323,7 +324,7 @@ export default function NotaDeSaidaPrintView({
                                 {tamanhos.map((tam) => (
                                     <div
                                         key={`total-rodape-${tam}`}
-                                        className="h-[45px] flex items-center justify-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
+                                        className={`h-[45px] flex items-center justify-center text-[14px] font-normal text-[#707070] ${footerRowBg}`}
                                     >
                                         {totaisPorTamanho[tam]}
                                     </div>
@@ -372,12 +373,12 @@ export default function NotaDeSaidaPrintView({
 
                     {/* ANOTAÇÕES */}
                     <div className="mx-[30px] relative mt-5 break-inside-avoid">
-                        <fieldset className="border border-[#D9D9D9] rounded-[10px] p-4 bg-white min-h-[110px]">
+                        <fieldset className="border border-[#D9D9D9] rounded-[10px] p-4 bg-white min-h-[200px]">
                             <legend className="px-2 text-[12px] text-[#898C8F] ml-2 font-light bg-white">
                                 Anotações
                             </legend>
                             <p className="text-[13px] text-[#707070] whitespace-pre-line font-light px-2 pt-1">
-                                {dados.anotacoes || ""}
+                                {""}
                             </p>
                         </fieldset>
                     </div>
