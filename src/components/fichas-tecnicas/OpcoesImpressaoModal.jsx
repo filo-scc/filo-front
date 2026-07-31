@@ -5,7 +5,6 @@ export default function OpcoesImpressaoModal({
     onSelectNotaSaida,
 }) {
     if (!isOpen) return null;
-
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
             <div className="bg-[#F2F5F8] rounded-[30px] w-full max-w-[420px] px-8 py-8 shadow-xl relative flex flex-col items-center font-['Outfit',_sans-serif]">
@@ -29,6 +28,7 @@ export default function OpcoesImpressaoModal({
                         onClick={() => {
                             if (onSelectFichaTecnica) onSelectFichaTecnica();
                             onClose();
+                            window.location.href = "/"; 
                         }}
                         className="bg-[#AEE2F3] hover:bg-[#99D9EB] text-[#3B92A7] font-medium py-2.5 px-6 rounded-full text-[15px] transition-colors focus:outline-none"
                     >
@@ -39,6 +39,7 @@ export default function OpcoesImpressaoModal({
                         onClick={() => {
                             if (onSelectNotaSaida) onSelectNotaSaida();
                             onClose();
+                            window.location.href = "/"; 
                         }}
                         className="bg-[#AEE2F3] hover:bg-[#99D9EB] text-[#3B92A7] font-medium py-2.5 px-6 rounded-full text-[15px] transition-colors focus:outline-none"
                     >
