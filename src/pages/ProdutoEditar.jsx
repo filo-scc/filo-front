@@ -493,6 +493,7 @@ export default function ProdutoEditar() {
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
     const [modalExcluidoAberto, setModalExcluidoAberto] = useState(false);
     const [excluindo, setExcluindo] = useState(false);
+    const [aviamentosOriginais, setAviamentosOriginais] = useState([]);
     const [formData, setFormData] = useState({
         referencia: "",
         modelo: "",
@@ -615,6 +616,7 @@ export default function ProdutoEditar() {
                 setAviamentosDisponiveis(aviamentosMapeados);
                 setModelosDisponiveis(modelosMapeados);
                 setImagemPreview(dadosProduto.foto || "");
+                setAviamentosOriginais(aviamentosSelecionados);
                 setFormData({
                     referencia: dadosProduto.nome || "",
                     modelo: nomeModelo,
@@ -681,24 +683,9 @@ export default function ProdutoEditar() {
         setOpenDropdown(null);
     };
 
-    const vincularAviamentoAoProduto = async (aviamento) => {
-        const relacao = await vincularProdutoAviamento({
-            produto_id: Number(id),
-            aviamento_id: aviamento.id,
-            quantidade: 1,
-        });
-
-        return {
-            ...aviamento,
-            relacao_id: relacao?.id,
-        };
-    };
-
-    const handleAviamentoCriado = async (aviamentoCriado) => {
+    const handleAviamentoCriado = (aviamentoCriado) => {
         const novoAviamento = normalizarAviamentoDisponivel(aviamentoCriado);
         if (!novoAviamento) return;
-
-        const aviamentoSelecionado = await vincularAviamentoAoProduto(novoAviamento);
 
         setAviamentosDisponiveis((prev) => {
             if (prev.some((aviamento) => aviamento.id === novoAviamento.id)) return prev;
@@ -706,24 +693,20 @@ export default function ProdutoEditar() {
         });
 
         setFormData((prev) => {
-            if (prev.aviamentos.some((aviamento) => aviamento.id === aviamentoSelecionado.id)) {
+            if (prev.aviamentos.some((aviamento) => aviamento.id === novoAviamento.id)) {
                 return prev;
             }
             return {
                 ...prev,
-                aviamentos: [...prev.aviamentos, aviamentoSelecionado],
+                aviamentos: [...prev.aviamentos, novoAviamento],
             };
         });
     };
 
-    const handleToggleAviamento = async (aviamento) => {
+    const handleToggleAviamento = (aviamento) => {
         const aviamentoSelecionado = formData.aviamentos.find((item) => item.id === aviamento.id);
 
         if (aviamentoSelecionado) {
-            if (aviamentoSelecionado.relacao_id) {
-                await desvincularProdutoAviamento(aviamentoSelecionado.relacao_id);
-            }
-
             setFormData((prev) => ({
                 ...prev,
                 aviamentos: prev.aviamentos.filter((item) => item.id !== aviamento.id),
@@ -731,11 +714,50 @@ export default function ProdutoEditar() {
             return;
         }
 
-        const novoVinculo = await vincularAviamentoAoProduto(aviamento);
-
         setFormData((prev) => ({
             ...prev,
-            aviamentos: [...prev.aviamentos, novoVinculo],
+            aviamentos: [...prev.aviamentos, aviamento],
+        }));
+    };
+
+    const sincronizarAviamentosProduto = async () => {
+        const idsAtuais = new Set(
+            formData.aviamentos.map((aviamento) => normalizarId(aviamento.id)),
+        );
+        const idsOriginais = new Set(
+            aviamentosOriginais.map((aviamento) => normalizarId(aviamento.id)),
+        );
+
+        const aviamentosRemovidos = aviamentosOriginais.filter(
+            (aviamento) => !idsAtuais.has(normalizarId(aviamento.id)) && aviamento.relacao_id,
+        );
+        const aviamentosAdicionados = formData.aviamentos.filter(
+            (aviamento) => !idsOriginais.has(normalizarId(aviamento.id)),
+        );
+
+        await Promise.all(
+            aviamentosRemovidos.map((aviamento) =>
+                desvincularProdutoAviamento(aviamento.relacao_id),
+            ),
+        );
+        await Promise.all(
+            aviamentosAdicionados.map((aviamento) =>
+                vincularProdutoAviamento({
+                    produto_id: Number(id),
+                    aviamento_id: aviamento.id,
+                }),
+            ),
+        );
+
+        const aviamentosAtualizados = await getAviamentosDoProduto(id);
+        const aviamentosSelecionados = (aviamentosAtualizados || [])
+            .map(normalizarAviamentoRelacionado)
+            .filter(Boolean);
+
+        setAviamentosOriginais(aviamentosSelecionados);
+        setFormData((prev) => ({
+            ...prev,
+            aviamentos: aviamentosSelecionados,
         }));
     };
 
@@ -782,6 +804,8 @@ export default function ProdutoEditar() {
                 tecido_id: formData.tecido_id,
                 grade_versao_id: formData.grade_versao_id,
             });
+
+            await sincronizarAviamentosProduto();
 
             setModalConfirmacaoAberto(true);
         } catch (error) {

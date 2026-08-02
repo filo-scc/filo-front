@@ -474,7 +474,6 @@ export default function ProdutoCadastar() {
                     vincularProdutoAviamento({
                         produto_id: produtoId,
                         aviamento_id: aviamento.id,
-                        quantidade: 1,
                     }),
                 );
 

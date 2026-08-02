@@ -25,12 +25,23 @@ const parseNumero = (valor) => {
     return Number.isFinite(numero) ? numero : 0;
 };
 
+const parseMoeda = (valor) => {
+    const digitos = String(valor || "").replace(/\D/g, "");
+    return digitos ? Number(digitos) / 100 : 0;
+};
+
 const formatarMoeda = (valor) => {
     const numero = Number(valor);
     return (Number.isFinite(numero) ? numero : 0).toLocaleString("pt-BR", {
         style: "currency",
         currency: "BRL",
     });
+};
+
+const maskMoeda = (valor) => {
+    const digitos = String(valor || "").replace(/\D/g, "");
+    if (!digitos) return "";
+    return formatarMoeda(Number(digitos) / 100);
 };
 
 function CustoOption({ checked, label, onSelect }) {
@@ -79,10 +90,10 @@ export default function AviamentoModal({
     const textoBotao = isEditMode ? "Concluir edição" : "Concluir cadastro";
 
     const custoCalculado = useMemo(() => {
-        if (tipoCusto === "unitario") return parseNumero(custoUnitario);
+        if (tipoCusto === "unitario") return parseMoeda(custoUnitario);
         const quantidade = parseNumero(quantidadeAdquirida);
         if (quantidade <= 0) return 0;
-        return parseNumero(valorPago) / quantidade;
+        return parseMoeda(valorPago) / quantidade;
     }, [custoUnitario, quantidadeAdquirida, tipoCusto, valorPago]);
 
     const resetForm = useCallback(() => {
@@ -109,7 +120,7 @@ export default function AviamentoModal({
         setNome(aviamento.nome || "");
         setUnidadeMedida(normalizarUnidade(aviamento.unidade_de_medida));
         setTipoCusto("unitario");
-        setCustoUnitario(custo === "" || custo == null ? "" : String(custo).replace(".", ","));
+        setCustoUnitario(custo === "" || custo == null ? "" : formatarMoeda(custo));
         setValorPago("");
         setQuantidadeAdquirida("");
         setError("");
@@ -306,7 +317,10 @@ export default function AviamentoModal({
                             <FloatingLabelInput
                                 label="Custo unitário"
                                 value={custoUnitario}
-                                onChange={(event) => setCustoUnitario(event.target.value)}
+                                inputMode="numeric"
+                                onChange={(event) =>
+                                    setCustoUnitario(maskMoeda(event.target.value))
+                                }
                                 inputClassName="border-[#898C8F] text-[14px] text-[#898C8F]"
                             />
                         </div>
@@ -316,7 +330,10 @@ export default function AviamentoModal({
                                 <FloatingLabelInput
                                     label="Valor pago"
                                     value={valorPago}
-                                    onChange={(event) => setValorPago(event.target.value)}
+                                    inputMode="numeric"
+                                    onChange={(event) =>
+                                        setValorPago(maskMoeda(event.target.value))
+                                    }
                                     inputClassName="border-[#898C8F] text-[14px] text-[#898C8F]"
                                 />
                                 <FloatingLabelInput
