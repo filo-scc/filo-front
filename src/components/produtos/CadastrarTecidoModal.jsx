@@ -247,24 +247,19 @@ export function CadastrarTecidoModal({ isOpen, onClose, onSuccess, fabricoId }) 
                                 className="flex items-center gap-2 cursor-pointer select-none"
                                 onClick={() => setTipoCusto("unitario")}
                             >
-                                <div className="relative flex h-5 w-5 items-center justify-center">
-                                    {/* Retângulo Base (Troca entre 383 quando selecionado e 382 quando desmarcado) */}
-                                    <img
-                                        src={
-                                            tipoCusto === "unitario"
-                                                ? "/Rectangle 383.png"
-                                                : "/Rectangle 382.png"
-                                        }
-                                        alt=""
-                                        className="h-5 w-5 object-contain"
-                                    />
-
-                                    {/* Checkmark 1 por cima da imagem do retângulo quando ativo */}
-                                    {tipoCusto === "unitario" && (
+                                {/* Contêiner Pai com tamanho fixo e quadrado (ajuste aqui o tamanho desejado) */}
+                                <div className="relative flex h-6 w-6 items-center justify-center">
+                                    {tipoCusto === "unitario" ? (
                                         <img
-                                            src="/checkmark 1.png"
+                                            src="/checkmark.png"
                                             alt="Selecionado"
-                                            className="absolute inset-0 h-5 w-5 object-contain pointer-events-none"
+                                            className="h-full w-full object-contain scale-125 pointer-events-none"
+                                        />
+                                    ) : (
+                                        <img
+                                            src="/Rectangle 382.png"
+                                            alt="Não selecionado"
+                                            className="h-full w-full object-contain scale-90"
                                         />
                                     )}
                                 </div>
@@ -276,24 +271,19 @@ export function CadastrarTecidoModal({ isOpen, onClose, onSuccess, fabricoId }) 
                                 className="flex items-center gap-2 cursor-pointer select-none"
                                 onClick={() => setTipoCusto("compra")}
                             >
-                                <div className="relative flex h-5 w-5 items-center justify-center">
-                                    {/* Retângulo Base (Troca entre 383 quando selecionado e 382 quando desmarcado) */}
-                                    <img
-                                        src={
-                                            tipoCusto === "compra"
-                                                ? "/Rectangle 383.png"
-                                                : "/Rectangle 382.png"
-                                        }
-                                        alt=""
-                                        className="h-5 w-5 object-contain"
-                                    />
-
-                                    {/* Checkmark 1 por cima da imagem do retângulo quando ativo */}
-                                    {tipoCusto === "compra" && (
+                                {/* Contêiner Pai com tamanho fixo e quadrado */}
+                                <div className="relative flex h-6 w-6 items-center justify-center">
+                                    {tipoCusto === "compra" ? (
                                         <img
-                                            src="/checkmark 1.png"
+                                            src="/checkmark.png"
                                             alt="Selecionado"
-                                            className="absolute inset-0 h-5 w-5 object-contain pointer-events-none"
+                                            className="h-full w-full object-contain scale-125 pointer-events-none"
+                                        />
+                                    ) : (
+                                        <img
+                                            src="/Rectangle 382.png"
+                                            alt="Não selecionado"
+                                            className="h-full w-full object-contain scale-90"
                                         />
                                     )}
                                 </div>
