@@ -10,7 +10,10 @@ import {
 import { getFabricoById } from "../services/fabricoService";
 import { getAllEtapasByFabricoId } from "../services/etapaService";
 import { getParceirosByFabrico } from "../services/parceiroService";
-import parceiroProdutoService from "../services/parceiroProdutoService";
+import {
+    getVinculoParceiroProduto,
+}
+from "../services/parceiroProdutoService";
 
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
 import SecaoDadosProduto from "../components/produtos/SecaoDadosProduto";
@@ -123,7 +126,7 @@ export default function ProdutoDetalhes() {
                         // Se houver um parceiro associado a esta etapa, buscamos o preço customizado
                         if (etapa.parceiro_id) {
                             try {
-                                const vinculo = await parceiroProdutoService.buscarVinculo(
+                                const vinculo = await getVinculoParceiroProduto(
                                     etapa.parceiro_id,
                                     id,
                                 );

@@ -31,7 +31,9 @@ import {
 import { upload } from "../services/utilsService";
 import { getAllEtapasByFabricoId } from "../services/etapaService";
 import { getParceirosByFabrico } from "../services/parceiroService";
-import parceiroProdutoService from "../services/parceiroProdutoService";
+import {
+    getVinculoParceiroProduto,
+} from "../services/parceiroProdutoService";
 import { CadastrarTecidoModal } from "../components/produtos/CadastrarTecidoModal";
 
 function formatarUnidadeDeMedida(unidade) {
@@ -677,7 +679,7 @@ export default function ProdutoEditar() {
                         // Se houver um parceiro associado a esta etapa, buscamos o preço customizado
                         if (etapa.parceiro_id) {
                             try {
-                                const vinculo = await parceiroProdutoService.buscarVinculo(
+                                const vinculo = await getVinculoParceiroProduto(
                                     etapa.parceiro_id,
                                     id,
                                 );
@@ -877,12 +879,6 @@ export default function ProdutoEditar() {
             const outrosCustosFormatado = formData.outros_custos
                 ? Number(String(formData.outros_custos).replace(",", "."))
                 : 0;
-
-            // ADICIONE ESTA LINHA AQUI:
-            console.log("DADOS DO FORM:", formData, "FORMATADOS:", {
-                custoOperacionalFormatado,
-                outrosCustosFormatado,
-            });
 
             await atualizarProduto(id, {
                 foto: urlFoto,
