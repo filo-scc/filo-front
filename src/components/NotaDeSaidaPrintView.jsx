@@ -2,15 +2,12 @@ import React, { useMemo, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { getFabricoById } from "../services/fabricoService";
 
-const darkSide = "0.5px solid #7B7D80";
-const shellSide = "0.5px solid #D9D9D9";
-
 const Campo = ({ label, valor }) => (
-    <div className="relative border border-[#B4B4B4] rounded-[10px] min-h-[39px] py-1.5 px-3 flex items-center bg-white">
-        <span className="absolute -top-[9px] left-2 bg-white px-1 text-[11px] text-[#898C8F]">
+    <div className="relative border border-[#666666] rounded-[10px] min-h-[39px] py-1.5 px-3 flex items-center bg-white">
+        <span className="absolute -top-[9px] left-2 bg-white px-1 text-[11px] text-[#555555]">
             {label}
         </span>
-        <span className="text-[14px] text-[#707070] leading-tight">{valor || "-"}</span>
+        <span className="text-[14px] text-[#333333] leading-tight">{valor || "-"}</span>
     </div>
 );
 
@@ -33,7 +30,6 @@ export default function NotaDeSaidaPrintView({
     const [fabricoInfo, setFabricoInfo] = useState(null);
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsMounted(true);
     }, []);
 
@@ -73,9 +69,8 @@ export default function NotaDeSaidaPrintView({
         onReadyToPrint?.();
     }, [isMounted, onReadyToPrint]);
 
-    // 1. Normalização dos dados básicos (aceita tanto 'ficha' quanto 'dados')
     const dados = useMemo(() => {
-        if (dadosProp) return dadosProp;
+        if (dadosProp) return { ...dadosProp, anotacoes: "" };
         if (!ficha) return null;
 
         const fornecedor =
@@ -94,12 +89,11 @@ export default function NotaDeSaidaPrintView({
             cliente: ficha.pedido?.cliente?.nome || "-",
             referenciaCliente: referenciaCliente || "-",
             tecido: ficha.produto?.tecido?.nome || "-",
-            imagemUrl: ficha.produto?.foto || null,
-            anotacoes: ficha.observacoes || ficha.anotacoes || "",
+            imagemUrl: ficha.produto?.foto || "/image-delete-02-2.png",
+            anotacoes: "",
         };
     }, [ficha, referenciaCliente, dadosProp, fabricoInfo]);
 
-    // 2. Mapeamento dinâmico da Grade (Tamanhos e Cores) a partir da Ficha
     const { tamanhos, itens, totaisPorTamanho, totalGeral, proporcoes } = useMemo(() => {
         const sizeItems = ficha?.grade_versao?.itens || [];
         const listaTamanhos = sizeItems.map((s) => s.tamanho?.codigo || s.codigo || "-");
@@ -167,7 +161,6 @@ export default function NotaDeSaidaPrintView({
     if (!dados || !isMounted) return null;
 
     const colunasGrid = tamanhos.length > 0 ? tamanhos.length : 1;
-
     const footerRowBg = itens.length % 2 === 1 ? "bg-[#F9F9F9]" : "bg-white";
     const isProducaoSobDemanda = Boolean(
         ficha?.fabrico?.fabricacao_sob_demanda ??
@@ -281,227 +274,172 @@ export default function NotaDeSaidaPrintView({
                             ) : null}
                         </div>
 
-                        <div className="w-[240px] h-[240px] rounded-[10px] overflow-hidden border border-[#D9D9D9] shrink-0 bg-gray-50 flex items-center justify-center">
-                            <img
-                                src={ficha?.produto?.foto || "/filo.png"}
-                                alt="Produto"
-                                className="w-full h-full object-cover"
-                            />
+                        {/* CONTAINER DE IMAGEM */}
+                        <div className="w-[240px] h-[240px] rounded-[10px] overflow-hidden border border-[#666666] shrink-0 bg-gray-50 flex items-center justify-center">
+                            {ficha?.produto?.foto ? (
+                                <img
+                                    src={ficha.produto.foto}
+                                    alt="Produto"
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <img
+                                    src="/image-delete-02-2.png"
+                                    alt="Adicionar imagem"
+                                    className="w-16 h-16 object-contain opacity-70"
+                                />
+                            )}
                         </div>
                     </div>
 
-                    {/* GRADE */}
+                    {/* GRADE DE TAMANHOS */}
                     <div className="mb-4 mx-[30px] break-inside-avoid">
-                        <div className="mb-2 text-center text-[15px] font-light text-[#737373]">
+                        <div className="mb-2 text-center text-[15px] font-light text-[#555555]">
                             Grade
                         </div>
 
-                        <div className="relative w-full">
+                        <div className="w-full">
                             <div
                                 style={{
                                     display: "grid",
-                                    gridTemplateColumns: `160px repeat(${colunasGrid}, 1fr) 80px`,
+                                    gridTemplateColumns: `160px repeat(${colunasGrid}, 1fr) 100px`,
                                 }}
                             >
-                                <div className="h-[26px] bg-transparent border-0" />
-                                {tamanhos.map((tam, index) => (
-                                    <div
-                                        key={`prop-${tam}`}
-                                        className="h-[26px] flex items-center justify-center text-[13px] font-light text-[#898C8F] bg-[#F4F4F4]"
-                                        style={{
-                                            borderTop: darkSide,
-                                            borderBottom: darkSide,
-                                            borderLeft: index === 0 ? darkSide : "none",
-                                            borderRight: darkSide,
-                                            borderTopLeftRadius: index === 0 ? "8px" : undefined,
-                                            borderTopRightRadius:
-                                                index === tamanhos.length - 1 ? "8px" : undefined,
-                                        }}
-                                    >
-                                        {proporcoes[index] || ""}
-                                    </div>
-                                ))}
-                                <div className="h-[26px] bg-transparent border-0" />
+                                {/* LINHA DE PROPORÇÕES */}
+                                <div className="bg-transparent" />
+                                {tamanhos.map((tam, index) => {
+                                    const isFirst = index === 0;
+                                    const isLast = index === tamanhos.length - 1;
+                                    return (
+                                        <div
+                                            key={`prop-${tam}`}
+                                            className={`h-[25px] flex items-center justify-center text-[13px] font-light text-[#555555] bg-[#F4F4F4] border-t border-b border-r border-[#666666] ${
+                                                isFirst ? "border-l rounded-tl-[8px]" : ""
+                                            } ${isLast ? "rounded-tr-[8px]" : ""}`}
+                                        >
+                                            {proporcoes[index] || ""}
+                                        </div>
+                                    );
+                                })}
+                                <div className="bg-transparent" />
 
-                                <div
-                                    className="h-[40px] flex items-center justify-center px-4 font-normal bg-[#C9EAF6] text-[#4696AD]"
-                                    style={{
-                                        borderTopLeftRadius: "8px",
-                                        borderTop: darkSide,
-                                        borderLeft: darkSide,
-                                        borderBottom: darkSide,
-                                    }}
-                                >
+                                {/* CABEÇALHO */}
+                                <div className="h-[35px] flex items-center px-4 font-medium bg-[#C9EAF6] text-[#2c6e80] rounded-l-[8px]">
                                     Cores
                                 </div>
-                                {tamanhos.map((tam, index) => (
-                                    <div
-                                        key={`header-${tam}`}
-                                        className="h-[40px] flex items-center justify-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
-                                        style={{
-                                            borderTop: darkSide,
-                                            borderBottom: darkSide,
-                                            borderLeft: index === 0 ? darkSide : "none",
-                                            borderRight: darkSide,
-                                        }}
-                                    >
-                                        {tam}
-                                    </div>
-                                ))}
-                                <div
-                                    className="h-[40px] flex items-center justify-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
-                                    style={{
-                                        borderTopRightRadius: "8px",
-                                        borderTop: darkSide,
-                                        borderBottom: darkSide,
-                                        borderRight: darkSide,
-                                    }}
-                                >
+                                {tamanhos.map((tam, index) => {
+                                    const isFirst = index === 0;
+                                    return (
+                                        <div
+                                            key={`header-${tam}`}
+                                            className={`h-[35px] flex items-center justify-center text-[14px] font-medium text-[#2c6e80] bg-[#C9EAF6] border-r border-[#666666] ${
+                                                isFirst ? "border-l" : ""
+                                            }`}
+                                        >
+                                            {tam}
+                                        </div>
+                                    );
+                                })}
+                                <div className="h-[35px] flex items-center justify-center text-[14px] font-medium text-[#2c6e80] bg-[#C9EAF6] rounded-r-[8px]">
                                     Total (cor)
                                 </div>
 
-                                {/* Corpo — cores */}
+                                {/* CORPO — LINHAS DE CORES */}
                                 {itens.length > 0 ? (
                                     itens.map((item, index) => {
-                                        let totalCor = 0;
                                         const rowBg = index % 2 === 1 ? "bg-[#F9F9F9]" : "bg-white";
                                         return (
                                             <React.Fragment key={item.id || item.corNome || index}>
                                                 <div
-                                                    className={`h-[45px] flex items-center gap-3 pl-4 pr-4 ${rowBg}`}
-                                                    style={{
-                                                        borderLeft: darkSide,
-                                                        borderRight: darkSide,
-                                                        borderBottom: darkSide,
-                                                    }}
+                                                    className={`h-[35px] flex items-center gap-3 pl-4 pr-4 ${rowBg}`}
                                                 >
                                                     <span
-                                                        className="w-[18px] h-[18px] rounded-[4px] shrink-0 shadow-sm border border-black/10"
+                                                        className="w-[18px] h-[18px] rounded-[4px] shrink-0 shadow-sm border border-black/30"
                                                         style={{
                                                             backgroundColor:
                                                                 item.hexColor || "#E5E5E5",
                                                         }}
                                                     />
-                                                    <span className="text-[14px] font-light text-[#707070] truncate">
+                                                    <span className="text-[14px] font-light text-[#333333] truncate">
                                                         {item.corNome}
                                                     </span>
                                                 </div>
-                                                {tamanhos.map((tam) => {
+                                                {tamanhos.map((tam, tIdx) => {
+                                                    const isFirst = tIdx === 0;
                                                     const val = item.quantidades?.[tam] || "";
                                                     return (
                                                         <div
                                                             key={`qty-${item.id || index}-${tam}`}
-                                                            className={`h-[45px] flex items-center justify-center text-[14px] font-light text-[#707070] ${rowBg}`}
-                                                            style={{
-                                                                borderRight: darkSide,
-                                                                borderBottom: darkSide,
-                                                            }}
+                                                            className={`h-[35px] flex items-center justify-center text-[14px] font-light text-[#333333] ${rowBg} border-r border-[#666666] ${
+                                                                isFirst ? "border-l" : ""
+                                                            }`}
                                                         >
                                                             {val}
                                                         </div>
                                                     );
                                                 })}
                                                 <div
-                                                    className={`h-[45px] flex items-center justify-center text-[14px] font-normal text-[#707070] ${rowBg}`}
-                                                    style={{
-                                                        borderRight: darkSide,
-                                                        borderBottom: darkSide,
-                                                    }}
+                                                    className={`h-[35px] flex items-center justify-center text-[14px] font-normal text-[#333333] ${rowBg}`}
                                                 >
-                                                    {totalCor || "-"}
+                                                    {""}
                                                 </div>
                                             </React.Fragment>
                                         );
                                     })
                                 ) : (
-                                    <div
-                                        className="py-4 text-center text-[13px] text-[#888] bg-white"
-                                        style={{ gridColumn: `1 / span ${colunasGrid + 2}` }}
-                                    >
-                                        Nenhuma cor vinculada a esta nota.
-                                    </div>
+                                    <>
+                                        <div className="h-[35px] flex items-center pl-4 bg-white text-[13px] text-[#555555]">
+                                            Nenhuma cor vinculada
+                                        </div>
+                                        {tamanhos.map((tam, tIdx) => (
+                                            <div
+                                                key={`empty-${tam}`}
+                                                className={`h-[35px] bg-white border-r border-[#666666] ${
+                                                    tIdx === 0 ? "border-l" : ""
+                                                }`}
+                                            />
+                                        ))}
+                                        <div className="h-[35px] bg-white" />
+                                    </>
                                 )}
 
-                                {/* Rodapé */}
-                                <div
-                                    className="h-[45px] flex items-center justify-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
-                                    style={{
-                                        borderBottomLeftRadius: "8px",
-                                        borderLeft: darkSide,
-                                        borderBottom: darkSide,
-                                    }}
-                                >
+                                {/* RODAPÉ — TOTAIS */}
+                                <div className="h-[35px] flex items-center px-4 text-[14px] font-medium text-[#2c6e80] bg-[#C9EAF6] rounded-l-[8px]">
                                     Total (tamanho)
                                 </div>
-                                {tamanhos.map((tam) => (
-                                    <div
-                                        key={`total-rodape-${tam}`}
-                                        className={`h-[45px] flex items-center justify-center text-[14px] font-normal text-[#707070] ${footerRowBg}`}
-                                        style={{
-                                            borderRight: darkSide,
-                                            borderBottom: darkSide,
-                                        }}
-                                    >
-                                        {totaisPorTamanho[tam]}
-                                    </div>
-                                ))}
-                                <div
-                                    className="h-[45px] flex items-center justify-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
-                                    style={{
-                                        borderBottomRightRadius: "8px",
-                                        borderRight: darkSide,
-                                        borderBottom: darkSide,
-                                    }}
-                                >
-                                    {totalGeral}
-                                </div>
-                            </div>
-
-                            {/* divisórias verticais */}
-                            <div
-                                className="absolute left-0 right-0 pointer-events-none"
-                                style={{ top: "40px", bottom: 0 }}
-                            >
-                                <div
-                                    style={{
-                                        display: "grid",
-                                        gridTemplateColumns: `160px repeat(${colunasGrid}, 1fr) 80px`,
-                                        height: "100%",
-                                    }}
-                                >
-                                    <div />
-                                    {tamanhos.map((tam, i) => (
+                                {tamanhos.map((tam, index) => {
+                                    const isFirst = index === 0;
+                                    const isLast = index === tamanhos.length - 1;
+                                    return (
                                         <div
-                                            key={`divider-${tam}`}
-                                            style={{
-                                                borderLeft: i === 0 ? darkSide : "none",
-                                                borderRight: darkSide,
-                                            }}
-                                        />
-                                    ))}
-                                    <div />
+                                            key={`total-rodape-${tam}`}
+                                            className={`h-[35px] flex items-center justify-center text-[14px] font-normal text-[#333333] ${footerRowBg} border-b border-r border-[#666666] ${
+                                                isFirst ? "border-l rounded-bl-[8px]" : ""
+                                            } ${isLast ? "rounded-br-[8px]" : ""}`}
+                                        >
+                                            {totaisPorTamanho[tam] || ""}
+                                        </div>
+                                    );
+                                })}
+                                <div className="h-[35px] flex items-center justify-center text-[14px] font-medium text-[#2c6e80] bg-[#C9EAF6] rounded-r-[8px]">
+                                    {totalGeral || ""}
                                 </div>
                             </div>
-
-                            {/* moldura externa */}
-                            <div
-                                className="absolute left-0 right-0 top-[26px] bottom-0 pointer-events-none rounded-[8px]"
-                                style={{ border: shellSide }}
-                            />
                         </div>
                     </div>
 
                     {/* ANOTAÇÕES */}
                     <div className="mx-[30px] relative mt-5 break-inside-avoid">
-                        <fieldset className="border border-[#D9D9D9] rounded-[10px] p-4 bg-white min-h-[200px]">
-                            <legend className="px-2 text-[12px] text-[#898C8F] ml-2 font-light bg-white">
+                        <fieldset className="border border-[#666666] rounded-[10px] p-4 bg-white min-h-[200px]">
+                            <legend className="px-2 text-[12px] text-[#555555] ml-2 font-light bg-white">
                                 Anotações
                             </legend>
-                            <p className="text-[13px] text-[#707070] whitespace-pre-line font-light px-2 pt-1">
-                                {""}
+                            <p className="text-[13px] text-[#333333] whitespace-pre-line font-light px-2 pt-1">
+                                {dados.anotacoes}
                             </p>
                         </fieldset>
                     </div>
+
                     {/* FOOTER */}
                     <div className="mt-6 pb-4 break-inside-avoid">
                         <div className="mx-[30px] flex items-end justify-between">
