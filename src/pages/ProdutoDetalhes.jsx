@@ -174,6 +174,7 @@ export default function ProdutoDetalhes() {
                 isOpen={modalExclusaoAberto}
                 onClose={() => setModalExclusaoAberto(false)}
                 onConfirm={handleConfirmarExclusao}
+                titulo="Excluir produto"
                 nomeItem={produto?.nome}
                 tipoItem="o produto"
                 loading={excluindo}

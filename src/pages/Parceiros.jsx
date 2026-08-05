@@ -288,6 +288,7 @@ const Parceiros = () => {
                 isOpen={modalExclusaoAberto}
                 onClose={() => setModalExclusaoAberto(false)}
                 onConfirm={handleConfirmarExclusao}
+                titulo="Excluir parceiro"
                 nomeItem={parceiroSelecionado?.nome}
                 tipoItem="um parceiro"
                 loading={excluindo}
