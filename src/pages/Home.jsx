@@ -367,7 +367,7 @@ export default function Home() {
                                                                 className={`flex justify-between text-base font-normal ${corPrincipal}`}
                                                             >
                                                                 <span className="pointer-events-none break-words max-w-[180px]">
-                                                                    {ficha.id}
+                                                                    {ficha.numero}
                                                                     {`${ficha.pedido?.cliente?.nome ? ` - ${ficha.pedido?.cliente?.nome}` : ""}`}
                                                                 </span>
                                                                 <span className="font-light text-xs pointer-events-none">

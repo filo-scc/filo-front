@@ -120,7 +120,7 @@ export default function FichaTecnicaModal({ isOpen, onClose, fichaId }) {
                             className="w-[30px] h-[30px] object-contain"
                         />
                         <h2 className="text-[26px] font-light text-[#404040]">
-                            Ficha Técnica {fichaId}
+                            Ficha Técnica {ficha?.numero}
                         </h2>
                     </div>
 
@@ -423,11 +423,7 @@ export default function FichaTecnicaModal({ isOpen, onClose, fichaId }) {
                     }}
                 />
             )}
-            <FichaTecnicaPrintView
-                dadosFicha={ficha}
-                fichaId={fichaId}
-                referencia={referenciaCliente}
-            />
+            <FichaTecnicaPrintView dadosFicha={ficha} referencia={referenciaCliente} />
         </div>
     );
 }
