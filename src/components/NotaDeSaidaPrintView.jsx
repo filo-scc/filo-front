@@ -87,7 +87,7 @@ export default function NotaDeSaidaPrintView({
 
         return {
             numeroNota: ficha.numero ? String(ficha.numero).padStart(4, "0") : "-",
-            numeroPedido: ficha.pedido?.id || "-",
+            numeroPedido: ficha.pedido?.numero || "-",
             fornecedor,
             data: dataFormatada,
             referenciaInterna: ficha.produto?.nome || "-",
