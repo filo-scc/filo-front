@@ -30,6 +30,7 @@ export default function NotaDeSaidaPrintView({
     const [fabricoInfo, setFabricoInfo] = useState(null);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsMounted(true);
     }, []);
 
