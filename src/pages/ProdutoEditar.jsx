@@ -31,9 +31,7 @@ import {
 import { upload } from "../services/utilsService";
 import { getAllEtapasByFabricoId } from "../services/etapaService";
 import { getParceirosByFabrico } from "../services/parceiroService";
-import {
-    getVinculoParceiroProduto,
-} from "../services/parceiroProdutoService";
+import { getVinculoParceiroProduto } from "../services/parceiroProdutoService";
 import { CadastrarTecidoModal } from "../components/produtos/CadastrarTecidoModal";
 
 function formatarUnidadeDeMedida(unidade) {

@@ -665,18 +665,11 @@ export default function ProdutoCadastar() {
                     const precoInformado = etapa.custo;
 
                     // 1. Verifica no banco se o vínculo já existe
-                    const vinculoExistente = await getVinculoParceiroProduto(
-                        parceiroId,
-                        produtoId,
-                    );
+                    const vinculoExistente = await getVinculoParceiroProduto(parceiroId, produtoId);
 
                     if (vinculoExistente) {
                         // 2. Se já existe, atualiza (PUT)
-                        await atualizarParceiroProduto(
-                            parceiroId,
-                            produtoId,
-                            precoInformado,
-                        );
+                        await atualizarParceiroProduto(parceiroId, produtoId, precoInformado);
                         console.log(`Vínculo atualizado para o parceiro ${parceiroId}`);
                     } else {
                         // 3. Se não existe, cria um novo (POST)
@@ -685,7 +678,6 @@ export default function ProdutoCadastar() {
                     }
                 }),
             );
-
         } catch (error) {
             console.error("Erro ao salvar custos de parceiros no banco:", error);
         }

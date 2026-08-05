@@ -10,10 +10,7 @@ import {
 import { getFabricoById } from "../services/fabricoService";
 import { getAllEtapasByFabricoId } from "../services/etapaService";
 import { getParceirosByFabrico } from "../services/parceiroService";
-import {
-    getVinculoParceiroProduto,
-}
-from "../services/parceiroProdutoService";
+import { getVinculoParceiroProduto } from "../services/parceiroProdutoService";
 
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
 import SecaoDadosProduto from "../components/produtos/SecaoDadosProduto";
