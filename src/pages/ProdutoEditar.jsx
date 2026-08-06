@@ -579,6 +579,12 @@ export default function ProdutoEditar() {
                     })
                     .filter(Boolean);
 
+                const gradeSelecionada = gradesMapeadas.find(
+                    (grade) =>
+                        grade.grade_versao_id ===
+                        (dadosProduto.grade_versao_id || dadosProduto.grade_versao?.id),
+                );
+
                 const tecidosMapeados = (resTecidos || []).map((tecido) => ({
                     id: tecido?.id || tecido?.tecido?.id,
                     nome: tecido?.nome || tecido?.tecido?.nome || "Sem nome",
@@ -640,8 +646,8 @@ export default function ProdutoEditar() {
                     tecido: getTecidoNome(dadosProduto),
                     tecido_id: dadosProduto.tecido_id || dadosProduto.tecido?.id,
                     quantidade_tecido: dadosProduto.quantidade_tecido || "",
-                    grade: getGradeNome(dadosProduto),
                     grade_versao_id: dadosProduto.grade_versao_id || dadosProduto.grade_versao?.id,
+                    grade: gradeSelecionada?.nome || getGradeNome(dadosProduto),
                     aviamentos: aviamentosVinculados,
                     custo_operacional:
                         dadosProduto.custo_operacional !== undefined &&
