@@ -622,6 +622,13 @@ export default function ProdutoCadastar() {
         }).format(valor);
     };
 
+    const extrairNumeroMoeda = (texto) => {
+        const apenasNumeros = texto.replace(/\D/g, "");
+        if (!apenasNumeros) return "";
+
+        return (Number(apenasNumeros) / 100).toString();
+    };
+
     // Atualiza os custos fixos do produto (Operacional e Outros)
     const handleProdutoCustoChange = (campo, valor) => {
         setProduto((prev) => ({
@@ -833,6 +840,7 @@ export default function ProdutoCadastar() {
                                             }
                                             maxVisibleOptions={6}
                                             loading={carregandoGrades}
+                                            actionButtonPosition="start"
                                             actionButton={{
                                                 label: "Novo tecido",
                                                 onClick: () => {
@@ -897,7 +905,15 @@ export default function ProdutoCadastar() {
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td className="bg-[#FFFFFF] py-3 px-4 border-l-[0.5px] border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] first:rounded-bl-[10px] text-center">
+                                        <td
+                                            onClick={(e) => {
+                                                
+                                                const input =
+                                                    e.currentTarget.querySelector("input");
+                                                if (input) input.focus();
+                                            }}
+                                            className="bg-[#FFFFFF] py-3 px-4 border-l-[0.5px] border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] first:rounded-bl-[10px] text-center cursor-text"
+                                        >
                                             <div className="flex items-center justify-center gap-1 w-full bg-transparent">
                                                 <input
                                                     type="text"
@@ -980,7 +996,12 @@ export default function ProdutoCadastar() {
                                                 key={etapa.id || index}
                                                 className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] text-center border-none"
                                             >
-                                                {etapa.nome}
+                                                <div
+                                                    title={etapa.nome}
+                                                    className="max-w-[150px] truncate mx-auto cursor-pointer"
+                                                >
+                                                    {etapa.nome}
+                                                </div>
                                             </th>
                                         ))}
 
@@ -1008,18 +1029,23 @@ export default function ProdutoCadastar() {
                                                 className="bg-[#FFFFFF] p-1 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center text-[16px] font-light text-[#404040]"
                                             >
                                                 <input
-                                                    type="number"
-                                                    step="0.01"
-                                                    min="0"
+                                                    type="text"
                                                     placeholder="R$ 0,00"
-                                                    value={etapa.custo || ""}
-                                                    onChange={(e) =>
-                                                        handleEtapaCustoChange(
-                                                            etapa.id, // <-- Mude de 'index' para 'etapa.id'
-                                                            e.target.value,
-                                                        )
+                                                    value={
+                                                        etapa.custo
+                                                            ? formatarMoeda(etapa.custo)
+                                                            : ""
                                                     }
-                                                    className="w-full h-full py-2 px-3 text-center bg-transparent outline-none focus:bg-gray-50 rounded-[4px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                    onChange={(e) => {
+                                                        const valorNumerico = extrairNumeroMoeda(
+                                                            e.target.value,
+                                                        );
+                                                        handleEtapaCustoChange(
+                                                            etapa.id,
+                                                            valorNumerico,
+                                                        );
+                                                    }}
+                                                    className="w-full h-full py-2 px-3 text-center bg-transparent outline-none text-[#404040] placeholder:text-[#404040] rounded-[4px]"
                                                 />
                                             </td>
                                         ))}
@@ -1027,36 +1053,46 @@ export default function ProdutoCadastar() {
                                         {/* Valor Operacional (Preenchível) */}
                                         <td className="bg-[#FFFFFF] p-1 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center text-[16px] font-light text-[#404040]">
                                             <input
-                                                type="number"
-                                                step="0.01"
-                                                min="0"
+                                                type="text"
                                                 placeholder="R$ 0,00"
-                                                value={produto.custo_operacional || ""}
-                                                onChange={(e) =>
+                                                value={
+                                                    produto.custo_operacional
+                                                        ? formatarMoeda(produto.custo_operacional)
+                                                        : ""
+                                                }
+                                                onChange={(e) => {
+                                                    const valorNumerico = extrairNumeroMoeda(
+                                                        e.target.value,
+                                                    );
                                                     handleProdutoCustoChange(
                                                         "custo_operacional",
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                className="w-full h-full py-2 px-3 text-center bg-transparent outline-none focus:bg-gray-50 rounded-[4px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                        valorNumerico,
+                                                    );
+                                                }}
+                                                className="w-full h-full py-2 px-3 text-center bg-transparent outline-none text-[#404040] placeholder:text-[#404040] rounded-[4px]"
                                             />
                                         </td>
 
                                         {/* Valor Outros (Preenchível) */}
                                         <td className="bg-[#FFFFFF] p-1 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center text-[16px] font-light text-[#404040]">
                                             <input
-                                                type="number"
-                                                step="0.01"
-                                                min="0"
+                                                type="text"
                                                 placeholder="R$ 0,00"
-                                                value={produto.outros_custos || ""}
-                                                onChange={(e) =>
+                                                value={
+                                                    produto.outros_custos
+                                                        ? formatarMoeda(produto.outros_custos)
+                                                        : ""
+                                                }
+                                                onChange={(e) => {
+                                                    const valorNumerico = extrairNumeroMoeda(
+                                                        e.target.value,
+                                                    );
                                                     handleProdutoCustoChange(
                                                         "outros_custos",
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                className="w-full h-full py-2 px-3 text-center bg-transparent outline-none focus:bg-gray-50 rounded-[4px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                        valorNumerico,
+                                                    );
+                                                }}
+                                                className="w-full h-full py-2 px-3 text-center bg-transparent outline-none text-[#404040] placeholder:text-[#404040] rounded-[4px]"
                                             />
                                         </td>
 

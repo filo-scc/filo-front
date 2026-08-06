@@ -742,9 +742,26 @@ export default function ProdutoEditar() {
         }));
     };
 
-    const handleCustoMonetarioChange = (field) => (event) => {
-        const apenasNumeros = event.target.value.replace(/[^0-9.,]/g, "");
-        setFormData((prev) => ({ ...prev, [field]: apenasNumeros }));
+    // Exemplo de como a função manipuladora deve processar o evento:
+    const handleCustoMonetarioChange = (campo) => (e) => {
+        const valorPuro = e.target.value.replace(/\D/g, ""); // Remove tudo que não é dígito
+
+        // Converte para decimal dividindo por 100 (para considerar centavos)
+        const valorDecimal = valorPuro ? (Number(valorPuro) / 100).toFixed(2) : "";
+
+        setFormData((prev) => ({
+            ...prev,
+            [campo]: valorDecimal,
+        }));
+    };
+
+    // Função auxiliar para exibir corretamente a vírgula na tela sem o "R$" (já que o R$ está no span HTML)
+    const formatarMoedaSimples = (valor) => {
+        const numero = Number(valor) || 0;
+        return numero.toLocaleString("pt-BR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
     };
 
     const toggleDropdown = (field) => {
@@ -1144,7 +1161,14 @@ export default function ProdutoEditar() {
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td className="bg-[#FFFFFF] py-3 px-4 border-l-[0.5px] border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] first:rounded-bl-[10px] text-center">
+                                        <td
+                                            onClick={(e) => {
+                                                const input =
+                                                    e.currentTarget.querySelector("input");
+                                                if (input) input.focus();
+                                            }}
+                                            className="bg-[#FFFFFF] py-3 px-4 border-l-[0.5px] border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] first:rounded-bl-[10px] text-center cursor-text"
+                                        >
                                             <div className="flex items-center justify-center gap-1 w-full bg-transparent">
                                                 <input
                                                     type="text"
@@ -1223,9 +1247,14 @@ export default function ProdutoEditar() {
                                         {colunasFlexiveis.map((etapa, index) => (
                                             <th
                                                 key={etapa.id || index}
-                                                className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] text-center border-none capitalize"
+                                                className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] text-center border-none"
                                             >
-                                                {etapa.nome}
+                                                <div
+                                                    title={etapa.nome}
+                                                    className="max-w-[150px] truncate mx-auto cursor-pointer"
+                                                >
+                                                    {etapa.nome}
+                                                </div>
                                             </th>
                                         ))}
                                         <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] text-center border-none">
@@ -1250,7 +1279,7 @@ export default function ProdutoEditar() {
                                         {colunasFlexiveis.map((etapa, index) => (
                                             <td
                                                 key={etapa.id || index}
-                                                className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center text-[16px] font-light text-[#404040]"
+                                                className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center text-[16px] font-light text-[#404040 cursor-not-allowed"
                                             >
                                                 {formatarPreco(etapa.custo || 0)}
                                             </td>
@@ -1264,14 +1293,20 @@ export default function ProdutoEditar() {
                                                 </span>
                                                 <input
                                                     type="text"
-                                                    value={formData.custo_operacional || ""}
+                                                    value={
+                                                        formData.custo_operacional
+                                                            ? formatarMoedaSimples(
+                                                                  formData.custo_operacional,
+                                                              )
+                                                            : ""
+                                                    }
                                                     onChange={handleCustoMonetarioChange(
                                                         "custo_operacional",
                                                     )}
                                                     placeholder="0,00"
                                                     className="text-left bg-transparent focus:outline-none placeholder-[#898C8F] text-[16px] font-light text-[#404040]"
                                                     style={{
-                                                        width: `${Math.max(3, String(formData.custo_operacional).length)}ch`,
+                                                        width: `${Math.max(4, String(formData.custo_operacional || "").length)}ch`,
                                                     }}
                                                 />
                                             </div>
@@ -1285,14 +1320,20 @@ export default function ProdutoEditar() {
                                                 </span>
                                                 <input
                                                     type="text"
-                                                    value={formData.outros_custos || ""}
+                                                    value={
+                                                        formData.outros_custos
+                                                            ? formatarMoedaSimples(
+                                                                  formData.outros_custos,
+                                                              )
+                                                            : ""
+                                                    }
                                                     onChange={handleCustoMonetarioChange(
                                                         "outros_custos",
                                                     )}
                                                     placeholder="0,00"
                                                     className="text-left bg-transparent focus:outline-none placeholder-[#898C8F] text-[16px] font-light text-[#404040]"
                                                     style={{
-                                                        width: `${Math.max(3, String(formData.outros_custos).length)}ch`,
+                                                        width: `${Math.max(4, String(formData.outros_custos || "").length)}ch`,
                                                     }}
                                                 />
                                             </div>

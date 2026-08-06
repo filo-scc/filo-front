@@ -324,7 +324,12 @@ export default function ProdutoDetalhes() {
                                                         key={etapa.id || index}
                                                         className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] text-center border-none"
                                                     >
-                                                        {etapa.nome}
+                                                        <div
+                                                            title={etapa.nome}
+                                                            className="max-w-[150px] truncate mx-auto cursor-pointer"
+                                                        >
+                                                            {etapa.nome}
+                                                        </div>
                                                     </th>
                                                 ))}
                                                 <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] text-center border-none">
