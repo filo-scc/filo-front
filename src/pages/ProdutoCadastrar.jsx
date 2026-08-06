@@ -8,6 +8,7 @@ import {
     atualizarParceiroProduto,
 } from "../services/parceiroProdutoService.js";
 import { CadastrarTecidoModal } from "../components/produtos/CadastrarTecidoModal";
+import AviamentoModal from "../components/aviamentos/AviamentoModal";
 import {
     criarProduto,
     getAviamentosByFabrico,
@@ -240,6 +241,7 @@ export default function ProdutoCadastar() {
     const [modalModeloAberto, setModalModeloAberto] = useState(false);
     const [fabrico, setFabrico] = useState(null);
     const [isModalTecidoOpen, setIsModalTecidoOpen] = useState(false);
+    const [modalAviamentoAberto, setModalAviamentoAberto] = useState(false);
     const [formData, setFormData] = useState({
         referencia: "",
         modelo: "",
@@ -406,6 +408,8 @@ export default function ProdutoCadastar() {
     };
 
     const handleToggleAviamento = (aviamentoObj) => {
+        if (!aviamentoObj?.id) return;
+
         setFormData((prev) => {
             const jaSelecionado = prev.aviamentos.some((a) => a.id === aviamentoObj.id);
             return {
@@ -471,6 +475,28 @@ export default function ProdutoCadastar() {
             modelo: novoModelo.nome,
             tipo_produto_id: novoModelo.id,
         }));
+    };
+
+    const handleAviamentoCriado = (aviamentoCriado) => {
+        if (!aviamentoCriado?.id) return;
+
+        const novoAviamento = {
+            id: aviamentoCriado.id,
+            nome: aviamentoCriado.nome,
+        };
+
+        setAviamentosDisponiveis((prev) => {
+            if (prev.some((aviamento) => aviamento.id === aviamentoCriado.id)) return prev;
+            return [...prev, novoAviamento];
+        });
+
+        setFormData((prev) => {
+            if (prev.aviamentos.some((aviamento) => aviamento.id === novoAviamento.id)) return prev;
+            return {
+                ...prev,
+                aviamentos: [...prev.aviamentos, novoAviamento],
+            };
+        });
     };
 
     const handleImagemChange = (event) => {
@@ -822,8 +848,10 @@ export default function ProdutoCadastar() {
                                                 label: "Novo aviamento",
                                                 onClick: () => {
                                                     setOpenDropdown(null);
+                                                    setModalAviamentoAberto(true);
                                                 },
                                             }}
+                                            actionButtonPosition="start"
                                         />
                                     </div>
 
@@ -907,7 +935,6 @@ export default function ProdutoCadastar() {
                                     <tr>
                                         <td
                                             onClick={(e) => {
-                                                
                                                 const input =
                                                     e.currentTarget.querySelector("input");
                                                 if (input) input.focus();
@@ -1140,6 +1167,14 @@ export default function ProdutoCadastar() {
                 isOpen={modalModeloAberto}
                 onClose={() => setModalModeloAberto(false)}
                 onSuccess={handleModeloCriado}
+            />
+
+            <AviamentoModal
+                isOpen={modalAviamentoAberto}
+                onClose={() => setModalAviamentoAberto(false)}
+                onSuccess={handleAviamentoCriado}
+                mode="create"
+                fabricoId={fabricoId}
             />
         </div>
     );

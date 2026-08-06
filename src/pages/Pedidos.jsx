@@ -196,7 +196,7 @@ const Pedidos = () => {
                                             return (
                                                 <tr
                                                     key={pedido.id}
-                                                    className="border-b border-[#E8E8E8] last:border-none even:bg-[#E8E8E8] transition-colors text-center"
+                                                    className="border-b border-[#E8E8E8] last:border-none even:bg-[#F4F4F4] transition-colors text-center"
                                                 >
                                                     <td className="py-4 px-6">{pedido.id}</td>
 
@@ -252,7 +252,8 @@ const Pedidos = () => {
                 isOpen={modalExclusaoAberto}
                 onClose={() => setModalExclusaoAberto(false)}
                 onConfirm={handleConfirmarExclusao}
-                nomeItem={pedidoSelecionado?.nome}
+                titulo="Excluir pedido"
+                nomeItem={pedidoSelecionado?.id.toString()}
                 tipoItem="o pedido"
                 loading={excluindo}
             />

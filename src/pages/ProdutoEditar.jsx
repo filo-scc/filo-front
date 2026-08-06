@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
 import TabelaClientesDoProduto from "../components/produtos/TabelaClientesDoProduto";
+import AviamentoModal from "../components/aviamentos/AviamentoModal";
 import ModalAtencao from "../components/geral/ModalAtencao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import ModalExclusao from "../components/geral/ModalExclusao";
@@ -14,13 +15,15 @@ import {
 import {
     atualizarProduto,
     excluirProduto,
+    desvincularProdutoAviamento,
+    getAviamentosByFabrico,
+    getAviamentosDoProduto,
     getClientesDoProduto,
     getGradesByFabrico,
     getProdutoById,
     getTecidosByFabrico,
     getTiposProdutoByFabrico,
-    getAviamentosByFabrico,
-    getAviamentosDoProduto,
+    vincularProdutoAviamento,
 } from "../services/produtoService";
 import { getFabricoById } from "../services/fabricoService";
 import {
@@ -114,24 +117,22 @@ function DropdownField({
                         onClick={onToggle}
                         className="fixed inset-0 z-10 cursor-default"
                     />
-                    <div className="absolute left-0 right-0 top-[calc(100%+2px)] z-20 overflow-y-auto max-h-[250px] scrollbar-sutil rounded-[14px] border border-[#D3D3D3] bg-white shadow-sm">
-                        {/* Renderização do Action Button no mesmo estilo dos itens */}
+                    <div className="absolute left-0 right-0 top-[calc(100%+2px)] z-20 overflow-hidden rounded-[14px] border border-[#D3D3D3] bg-white shadow-sm">
                         {actionButton && (
                             <button
                                 type="button"
-                                onClick={(e) => {
-                                    e.stopPropagation();
+                                onClick={(event) => {
+                                    event.stopPropagation();
                                     actionButton.onClick();
                                 }}
-                                className="relative flex w-full items-center pl-[12px] pr-3 py-3 border-l-[3px] border-transparent text-left text-[15px] text-[#707070] bg-white hover:bg-[#FAFAFA] transition-colors"
+                                className="relative flex w-full items-center pl-[12px] pr-3 py-3 border-l-[3px] border-transparent text-left text-[15px] text-[#7B7D80] transition-colors bg-white hover:bg-[#FAFAFA]"
                             >
                                 <span>{actionButton.label}</span>
-                                <span className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center text-[#8B8B8B]">
+                                <span className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center text-[#898C8F] font-light text-[20px]">
                                     +
                                 </span>
                             </button>
                         )}
-
                         {options.map((option) => {
                             const selected = isSelectedOption(option);
 
@@ -262,6 +263,29 @@ function enriquecerClientesAssociados(clientesAssociados, clientesDoFabrico) {
                       },
         };
     });
+}
+
+function normalizarAviamentoDisponivel(item) {
+    const aviamento = item?.aviamento || item;
+    const id = aviamento?.id ?? item?.aviamento_id;
+    const nome = aviamento?.nome || item?.nome;
+
+    if (!id || !nome) return null;
+
+    return {
+        id,
+        nome,
+    };
+}
+
+function normalizarAviamentoRelacionado(item) {
+    const aviamento = normalizarAviamentoDisponivel(item);
+    if (!aviamento) return null;
+
+    return {
+        ...aviamento,
+        relacao_id: item?.id ?? item?.relacao_id,
+    };
 }
 
 function ModalClientesDoProduto({
@@ -485,12 +509,14 @@ export default function ProdutoEditar() {
     const [aviamentosDisponiveis, setAviamentosDisponiveis] = useState([]);
     const [modelosDisponiveis, setModelosDisponiveis] = useState([]);
     const [modalClientesAberto, setModalClientesAberto] = useState(false);
+    const [modalAviamentoAberto, setModalAviamentoAberto] = useState(false);
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
     const [modalAtencaoAberto, setModalAtencaoAberto] = useState(false);
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
     const [modalExcluidoAberto, setModalExcluidoAberto] = useState(false);
     const [excluindo, setExcluindo] = useState(false);
     const [isModalTecidoOpen, setIsModalTecidoOpen] = useState(false);
+    const [aviamentosOriginais, setAviamentosOriginais] = useState([]);
     const [formData, setFormData] = useState({
         referencia: "",
         modelo: "",
@@ -533,7 +559,7 @@ export default function ProdutoEditar() {
                     clientesDoFabrico,
                     resGrades,
                     resTecidos,
-                    resAviamentosFabrico,
+                    resAviamentos,
                     resAviamentosProduto,
                     resTiposProduto,
                     dadosFabrico,
@@ -595,13 +621,6 @@ export default function ProdutoEditar() {
                         tecido?.unidade_de_medida || tecido?.tecido?.unidade_de_medida || "",
                 }));
 
-                const aviamentosMapeados = (resAviamentosFabrico || []).map((a) => ({
-                    id: a.id,
-                    nome: a.nome,
-                    custo_unitario: Number(a.custo_unitario || 0),
-                    unidade_de_medida: a.unidade_de_medida || "",
-                }));
-
                 const aviamentosVinculados = (resAviamentosProduto || []).map((pivot) => ({
                     id: pivot.aviamento?.id,
                     nome: pivot.aviamento?.nome,
@@ -609,6 +628,14 @@ export default function ProdutoEditar() {
                     unidade_de_medida: pivot.aviamento?.unidade_de_medida || "und",
                     quantidade: pivot.quantidade || null,
                 }));
+
+                const aviamentosSelecionados = (resAviamentosProduto || [])
+                    .map(normalizarAviamentoRelacionado)
+                    .filter(Boolean);
+
+                const aviamentosMapeados = (resAviamentos || [])
+                    .map(normalizarAviamentoDisponivel)
+                    .filter(Boolean);
 
                 const modelosMapeados = (resTiposProduto || [])
                     .map((tipo) => ({
@@ -639,6 +666,7 @@ export default function ProdutoEditar() {
                 setAviamentosDisponiveis(aviamentosMapeados);
                 setModelosDisponiveis(modelosMapeados);
                 setImagemPreview(dadosProduto.foto || "");
+                setAviamentosOriginais(aviamentosSelecionados);
                 setFormData({
                     referencia: dadosProduto.nome || "",
                     modelo: nomeModelo,
@@ -807,16 +835,82 @@ export default function ProdutoEditar() {
         setOpenDropdown(null);
     };
 
-    const handleToggleAviamento = (aviamentoObj) => {
+    const handleAviamentoCriado = (aviamentoCriado) => {
+        const novoAviamento = normalizarAviamentoDisponivel(aviamentoCriado);
+        if (!novoAviamento) return;
+
+        setAviamentosDisponiveis((prev) => {
+            if (prev.some((aviamento) => aviamento.id === novoAviamento.id)) return prev;
+            return [...prev, novoAviamento];
+        });
+
         setFormData((prev) => {
-            const jaSelecionado = prev.aviamentos.some((a) => a.id === aviamentoObj.id);
+            if (prev.aviamentos.some((aviamento) => aviamento.id === novoAviamento.id)) {
+                return prev;
+            }
             return {
                 ...prev,
-                aviamentos: jaSelecionado
-                    ? prev.aviamentos.filter((a) => a.id !== aviamentoObj.id)
-                    : [...prev.aviamentos, { ...aviamentoObj, quantidade: "" }],
+                aviamentos: [...prev.aviamentos, novoAviamento],
             };
         });
+    };
+
+    const handleToggleAviamento = (aviamento) => {
+        const aviamentoSelecionado = formData.aviamentos.find((item) => item.id === aviamento.id);
+
+        if (aviamentoSelecionado) {
+            setFormData((prev) => ({
+                ...prev,
+                aviamentos: prev.aviamentos.filter((item) => item.id !== aviamento.id),
+            }));
+            return;
+        }
+
+        setFormData((prev) => ({
+            ...prev,
+            aviamentos: [...prev.aviamentos, aviamento],
+        }));
+    };
+
+    const sincronizarAviamentosProduto = async () => {
+        const idsAtuais = new Set(
+            formData.aviamentos.map((aviamento) => normalizarId(aviamento.id)),
+        );
+        const idsOriginais = new Set(
+            aviamentosOriginais.map((aviamento) => normalizarId(aviamento.id)),
+        );
+
+        const aviamentosRemovidos = aviamentosOriginais.filter(
+            (aviamento) => !idsAtuais.has(normalizarId(aviamento.id)) && aviamento.relacao_id,
+        );
+        const aviamentosAdicionados = formData.aviamentos.filter(
+            (aviamento) => !idsOriginais.has(normalizarId(aviamento.id)),
+        );
+
+        await Promise.all(
+            aviamentosRemovidos.map((aviamento) =>
+                desvincularProdutoAviamento(aviamento.relacao_id),
+            ),
+        );
+        await Promise.all(
+            aviamentosAdicionados.map((aviamento) =>
+                vincularProdutoAviamento({
+                    produto_id: Number(id),
+                    aviamento_id: aviamento.id,
+                }),
+            ),
+        );
+
+        const aviamentosAtualizados = await getAviamentosDoProduto(id);
+        const aviamentosSelecionados = (aviamentosAtualizados || [])
+            .map(normalizarAviamentoRelacionado)
+            .filter(Boolean);
+
+        setAviamentosOriginais(aviamentosSelecionados);
+        setFormData((prev) => ({
+            ...prev,
+            aviamentos: aviamentosSelecionados,
+        }));
     };
 
     const handleImagemChange = (event) => {
@@ -911,10 +1005,11 @@ export default function ProdutoEditar() {
                 custo_tecido:
                     custoTecidoCalculado > 0 ? Number(custoTecidoCalculado.toFixed(2)) : null,
                 grade_versao_id: formData.grade_versao_id,
-                aviamentos: formData.aviamentos,
                 custo_operacional: custoOperacionalFormatado,
                 outros_custos: outrosCustosFormatado,
             });
+
+            await sincronizarAviamentosProduto();
 
             setModalConfirmacaoAberto(true);
         } catch (error) {
@@ -1074,15 +1169,36 @@ export default function ProdutoEditar() {
                                             onSelect={(nomeSelecionado) => {
                                                 const aviamentoCompleto =
                                                     aviamentosDisponiveis.find(
-                                                        (a) => a.nome === nomeSelecionado,
+                                                        (aviamento) =>
+                                                            aviamento.nome === nomeSelecionado,
                                                     );
-                                                handleToggleAviamento(aviamentoCompleto);
+                                                if (aviamentoCompleto) {
+                                                    handleToggleAviamento(aviamentoCompleto);
+                                                }
                                             }}
-                                            isSelectedOption={(nome) =>
-                                                formData.aviamentos.some((a) => a.nome === nome)
+                                            isSelectedOption={(option) =>
+                                                formData.aviamentos.some(
+                                                    (aviamento) => aviamento.nome === option,
+                                                )
                                             }
                                             showOptionIndicator
+                                            actionButton={{
+                                                label: "Novo aviamento",
+                                                onClick: () => {
+                                                    setOpenDropdown(null);
+                                                    setModalAviamentoAberto(true);
+                                                },
+                                            }}
                                         />
+                                        <div className="flex flex-wrap gap-2 mt-3">
+                                            {formData.aviamentos.map((item) => (
+                                                <SelectedAviamentoTag
+                                                    key={item.id}
+                                                    label={item.nome}
+                                                    onRemove={() => handleToggleAviamento(item)}
+                                                />
+                                            ))}
+                                        </div>
                                     </div>
 
                                     <div>
@@ -1406,6 +1522,14 @@ export default function ProdutoEditar() {
                 onSuccess={carregarClientesDoProduto}
             />
 
+            <AviamentoModal
+                isOpen={modalAviamentoAberto}
+                onClose={() => setModalAviamentoAberto(false)}
+                onSuccess={handleAviamentoCriado}
+                mode="create"
+                fabricoId={fabricoId}
+            />
+
             <CadastrarTecidoModal
                 isOpen={isModalTecidoOpen}
                 onClose={() => setIsModalTecidoOpen(false)}
@@ -1430,6 +1554,7 @@ export default function ProdutoEditar() {
                 isOpen={modalExclusaoAberto}
                 onClose={() => setModalExclusaoAberto(false)}
                 onConfirm={handleConfirmarExclusao}
+                titulo="Excluir produto"
                 nomeItem={produto?.nome}
                 tipoItem="o produto"
                 loading={excluindo}
