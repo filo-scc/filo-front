@@ -91,6 +91,11 @@ export const desvincularProdutoAviamento = async (produtoAviamentoId) => {
     return response.data;
 };
 
+export const atualizarProdutoAviamento = async (produtoAviamentoId, data) => {
+    const response = await api.patch(`/produto-aviamento/${produtoAviamentoId}`, data);
+    return response.data;
+};
+
 export const getAviamentosDoProduto = async (produtoId) => {
     try {
         const response = await api.get(`/produto-aviamento/produto/${produtoId}`);
