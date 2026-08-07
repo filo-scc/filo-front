@@ -24,6 +24,7 @@ import {
     getTecidosByFabrico,
     getTiposProdutoByFabrico,
     vincularProdutoAviamento,
+    atualizarProdutoAviamento,
 } from "../services/produtoService";
 import { getFabricoById } from "../services/fabricoService";
 import {
@@ -886,21 +887,47 @@ export default function ProdutoEditar() {
         const aviamentosAdicionados = formData.aviamentos.filter(
             (aviamento) => !idsOriginais.has(normalizarId(aviamento.id)),
         );
+        const aviamentosMantidos = formData.aviamentos.filter((aviamento) =>
+            idsOriginais.has(normalizarId(aviamento.id)),
+        );
 
+        // 1. Desvincula aviamentos removidos
         await Promise.all(
             aviamentosRemovidos.map((aviamento) =>
                 desvincularProdutoAviamento(aviamento.relacao_id),
             ),
         );
+
+        // 2. Vincula novos aviamentos já enviando a quantidade
         await Promise.all(
             aviamentosAdicionados.map((aviamento) =>
                 vincularProdutoAviamento({
                     produto_id: Number(id),
                     aviamento_id: aviamento.id,
+                    quantidade: Number(String(aviamento.quantidade || 0).replace(",", ".")) || null,
                 }),
             ),
         );
 
+        // 3. Atualiza a quantidade dos aviamentos já existentes (PATCH)
+        await Promise.all(
+            aviamentosMantidos.map((aviamento) => {
+                const original = aviamentosOriginais.find(
+                    (o) => normalizarId(o.id) === normalizarId(aviamento.id),
+                );
+                const relacaoId = aviamento.relacao_id || original?.relacao_id;
+                const qtdNum = Number(String(aviamento.quantidade || 0).replace(",", ".")) || null;
+
+                if (relacaoId) {
+                    return atualizarProdutoAviamento(relacaoId, {
+                        quantidade: qtdNum,
+                    });
+                }
+                return Promise.resolve();
+            }),
+        );
+
+        // 4. Recarrega os dados do banco para manter o estado sincronizado
         const aviamentosAtualizados = await getAviamentosDoProduto(id);
         const aviamentosSelecionados = (aviamentosAtualizados || [])
             .map(normalizarAviamentoRelacionado)
@@ -1190,15 +1217,6 @@ export default function ProdutoEditar() {
                                                 },
                                             }}
                                         />
-                                        <div className="flex flex-wrap gap-2 mt-3">
-                                            {formData.aviamentos.map((item) => (
-                                                <SelectedAviamentoTag
-                                                    key={item.id}
-                                                    label={item.nome}
-                                                    onRemove={() => handleToggleAviamento(item)}
-                                                />
-                                            ))}
-                                        </div>
                                     </div>
 
                                     <div>
@@ -1314,7 +1332,12 @@ export default function ProdutoEditar() {
                                         {formData.aviamentos.map((av) => (
                                             <td
                                                 key={av.id}
-                                                className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center"
+                                                onClick={(e) => {
+                                                    const input =
+                                                        e.currentTarget.querySelector("input");
+                                                    if (input) input.focus();
+                                                }}
+                                                className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center cursor-text"
                                             >
                                                 <div className="flex items-center justify-center gap-1 w-full bg-transparent">
                                                     <input
@@ -1401,14 +1424,21 @@ export default function ProdutoEditar() {
                                         {colunasFlexiveis.map((etapa, index) => (
                                             <td
                                                 key={etapa.id || index}
-                                                className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center text-[16px] font-light text-[#404040 cursor-not-allowed"
+                                                className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center text-[16px] font-light text-[#404040] cursor-not-allowed"
                                             >
                                                 {formatarPreco(etapa.custo || 0)}
                                             </td>
                                         ))}
 
                                         {/* Operacional (EDITÁVEL) */}
-                                        <td className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center">
+                                        <td
+                                            onClick={(e) => {
+                                                const input =
+                                                    e.currentTarget.querySelector("input");
+                                                if (input) input.focus();
+                                            }}
+                                            className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center cursor-text"
+                                        >
                                             <div className="flex items-center justify-center gap-1 w-full bg-transparent">
                                                 <span className="text-[16px] font-light text-[#404040]">
                                                     R$
@@ -1435,7 +1465,14 @@ export default function ProdutoEditar() {
                                         </td>
 
                                         {/* Outros (EDITÁVEL) */}
-                                        <td className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center">
+                                        <td
+                                            onClick={(e) => {
+                                                const input =
+                                                    e.currentTarget.querySelector("input");
+                                                if (input) input.focus();
+                                            }}
+                                            className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center cursor-text"
+                                        >
                                             <div className="flex items-center justify-center gap-1 w-full bg-transparent">
                                                 <span className="text-[16px] font-light text-[#404040]">
                                                     R$
