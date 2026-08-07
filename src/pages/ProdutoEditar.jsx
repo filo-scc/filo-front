@@ -276,6 +276,8 @@ function normalizarAviamentoDisponivel(item) {
     return {
         id,
         nome,
+        custo_unitario: parseNumber(aviamento?.custo_unitario ?? item?.custo_unitario),
+        unidade_de_medida: aviamento?.unidade_de_medida || item?.unidade_de_medida || "und",
     };
 }
 
@@ -286,6 +288,7 @@ function normalizarAviamentoRelacionado(item) {
     return {
         ...aviamento,
         relacao_id: item?.id ?? item?.relacao_id,
+        quantidade: item?.quantidade ?? null,
     };
 }
 
@@ -480,9 +483,15 @@ function ModalClientesDoProduto({
     );
 }
 
+function parseNumber(valor) {
+    if (valor === null || valor === undefined || valor === "") return 0;
+    const num = Number(String(valor).replace(",", "."));
+    return isNaN(num) ? 0 : num;
+}
+
 function formatarPreco(valor) {
-    if (valor === undefined || valor === null) return "R$ 0,00";
-    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor);
+    const num = parseNumber(valor);
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(num);
 }
 
 export default function ProdutoEditar() {
@@ -950,21 +959,25 @@ export default function ProdutoEditar() {
     };
 
     const tecidoSelecionado = tecidosDisponiveis.find((t) => t.id === formData.tecido_id);
-    const qtdTecidoCalculo = Number(String(formData.quantidade_tecido).replace(",", ".") || 0);
-    const custoTecidoCalculado = qtdTecidoCalculo * (tecidoSelecionado?.custo_unitario || 0);
+    const qtdTecidoCalculo = parseNumber(formData.quantidade_tecido);
+    const custoTecidoCalculado = qtdTecidoCalculo * parseNumber(tecidoSelecionado?.custo_unitario);
 
-    const custoAviamentosCalculado = formData.aviamentos.reduce((acc, av) => {
-        const qtd = Number(String(av.quantidade).replace(",", ".") || 0);
-        return acc + qtd * (av.custo_unitario || 0);
+    const custoAviamentosCalculado = (formData.aviamentos || []).reduce((acc, av) => {
+        const qtd = parseNumber(av.quantidade);
+        const custoUnit = parseNumber(av.custo_unitario);
+        return acc + qtd * custoUnit;
     }, 0);
 
     const valorTotalGasto = custoTecidoCalculado + custoAviamentosCalculado;
 
     // --- CÁLCULO DOS CUSTOS DA SEGUNDA TABELA ---
-    const custoOperacionalNum = Number(String(formData.custo_operacional).replace(",", ".") || 0);
-    const outrosCustosNum = Number(String(formData.outros_custos).replace(",", ".") || 0);
+    const custoOperacionalNum = parseNumber(formData.custo_operacional);
+    const outrosCustosNum = parseNumber(formData.outros_custos);
 
-    const somaEtapas = colunasFlexiveis.reduce((acc, item) => acc + Number(item.custo || 0), 0);
+    const somaEtapas = (colunasFlexiveis || []).reduce(
+        (acc, item) => acc + parseNumber(item.custo),
+        0,
+    );
     const totalGeralCustoPeca =
         valorTotalGasto + somaEtapas + custoOperacionalNum + outrosCustosNum;
 
@@ -1416,7 +1429,7 @@ export default function ProdutoEditar() {
                                 <tbody>
                                     <tr>
                                         {/* Aviamentos (Calculado a partir da seleção de aviamentos acima) */}
-                                        <td className="bg-[#FFFFFF] py-3 px-4 border-l-[0.5px] border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] first:rounded-bl-[10px] text-center text-[16px] font-light text-[#404040]">
+                                        <td className="bg-[#FFFFFF] py-3 px-4 border-l-[0.5px] border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] first:rounded-bl-[10px] text-center text-[16px] font-light text-[#404040] cursor-not-allowed">
                                             {formatarPreco(custoAviamentosCalculado)}
                                         </td>
 
