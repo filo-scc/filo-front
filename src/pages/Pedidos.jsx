@@ -117,7 +117,7 @@ const Pedidos = () => {
 
                         <button
                             onClick={() => navigate("/pedidos/cadastrar")}
-                            className="w-[169px] h-[39px] bg-[#AEE5E8] text-[#FFFFFF] font-normal text-[16px] rounded-full flex items-center justify-center gap-2 hover:bg-[#9cdfe2] transition-colors shrink-0"
+                            className="w-[169px] h-[39px] bg-[#A9E2F2] text-[#FFFFFF] font-normal text-[16px] rounded-full flex items-center justify-center gap-2 hover:bg-[#8acbdc] transition-colors shrink-0"
                         >
                             <img
                                 src="/pedido-adicionar.png"
@@ -196,7 +196,7 @@ const Pedidos = () => {
                                             return (
                                                 <tr
                                                     key={pedido.id}
-                                                    className="border-b border-[#E8E8E8] last:border-none even:bg-[#E8E8E8] transition-colors text-center"
+                                                    className="border-b border-[#E8E8E8] last:border-none even:bg-[#F4F4F4] transition-colors text-center"
                                                 >
                                                     <td className="py-4 px-6">{pedido.id}</td>
 
@@ -252,7 +252,8 @@ const Pedidos = () => {
                 isOpen={modalExclusaoAberto}
                 onClose={() => setModalExclusaoAberto(false)}
                 onConfirm={handleConfirmarExclusao}
-                nomeItem={pedidoSelecionado?.nome}
+                titulo="Excluir pedido"
+                nomeItem={pedidoSelecionado?.id.toString()}
                 tipoItem="o pedido"
                 loading={excluindo}
             />

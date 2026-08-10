@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
 import TabelaClientesDoProduto from "../components/produtos/TabelaClientesDoProduto";
+import AviamentoModal from "../components/aviamentos/AviamentoModal";
 import ModalAtencao from "../components/geral/ModalAtencao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import ModalExclusao from "../components/geral/ModalExclusao";
@@ -14,11 +15,16 @@ import {
 import {
     atualizarProduto,
     excluirProduto,
+    desvincularProdutoAviamento,
+    getAviamentosByFabrico,
+    getAviamentosDoProduto,
     getClientesDoProduto,
     getGradesByFabrico,
     getProdutoById,
     getTecidosByFabrico,
     getTiposProdutoByFabrico,
+    vincularProdutoAviamento,
+    atualizarProdutoAviamento,
 } from "../services/produtoService";
 import { getFabricoById } from "../services/fabricoService";
 import {
@@ -27,8 +33,23 @@ import {
     vincularProdutoAoCliente,
 } from "../services/clientesService";
 import { upload } from "../services/utilsService";
+import { getAllEtapasByFabricoId } from "../services/etapaService";
+import { getParceirosByFabrico } from "../services/parceiroService";
+import { getVinculoParceiroProduto } from "../services/parceiroProdutoService";
+import { CadastrarTecidoModal } from "../components/produtos/CadastrarTecidoModal";
 
-const aviamentosDisponiveis = ["Viés", "Bojo", "Elástico", "Argola"];
+function formatarUnidadeDeMedida(unidade) {
+    if (!unidade) return "";
+    const unidadesMapeadas = {
+        METRO: "m",
+        CENTIMETRO: "cm",
+        GRAMA: "g",
+        QUILOGRAMA: "kg",
+        UNIDADE: "und",
+        PAR: "par",
+    };
+    return unidadesMapeadas[unidade.toUpperCase()] || unidade.toLowerCase();
+}
 
 function FieldLabel({ children, className = "" }) {
     return (
@@ -62,6 +83,7 @@ function DropdownField({
     onSelect,
     isSelectedOption,
     showOptionIndicator = false,
+    actionButton,
 }) {
     return (
         <div className={`relative ${isOpen ? "z-50" : "z-10"}`}>
@@ -97,6 +119,21 @@ function DropdownField({
                         className="fixed inset-0 z-10 cursor-default"
                     />
                     <div className="absolute left-0 right-0 top-[calc(100%+2px)] z-20 overflow-hidden rounded-[14px] border border-[#D3D3D3] bg-white shadow-sm">
+                        {actionButton && (
+                            <button
+                                type="button"
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    actionButton.onClick();
+                                }}
+                                className="relative flex w-full items-center pl-[12px] pr-3 py-3 border-l-[3px] border-transparent text-left text-[15px] text-[#7B7D80] transition-colors bg-white hover:bg-[#FAFAFA]"
+                            >
+                                <span>{actionButton.label}</span>
+                                <span className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center text-[#898C8F] font-light text-[20px]">
+                                    +
+                                </span>
+                            </button>
+                        )}
                         {options.map((option) => {
                             const selected = isSelectedOption(option);
 
@@ -227,6 +264,32 @@ function enriquecerClientesAssociados(clientesAssociados, clientesDoFabrico) {
                       },
         };
     });
+}
+
+function normalizarAviamentoDisponivel(item) {
+    const aviamento = item?.aviamento || item;
+    const id = aviamento?.id ?? item?.aviamento_id;
+    const nome = aviamento?.nome || item?.nome;
+
+    if (!id || !nome) return null;
+
+    return {
+        id,
+        nome,
+        custo_unitario: parseNumber(aviamento?.custo_unitario ?? item?.custo_unitario),
+        unidade_de_medida: aviamento?.unidade_de_medida || item?.unidade_de_medida || "und",
+    };
+}
+
+function normalizarAviamentoRelacionado(item) {
+    const aviamento = normalizarAviamentoDisponivel(item);
+    if (!aviamento) return null;
+
+    return {
+        ...aviamento,
+        relacao_id: item?.id ?? item?.relacao_id,
+        quantidade: item?.quantidade ?? null,
+    };
 }
 
 function ModalClientesDoProduto({
@@ -420,6 +483,17 @@ function ModalClientesDoProduto({
     );
 }
 
+function parseNumber(valor) {
+    if (valor === null || valor === undefined || valor === "") return 0;
+    const num = Number(String(valor).replace(",", "."));
+    return isNaN(num) ? 0 : num;
+}
+
+function formatarPreco(valor) {
+    const num = parseNumber(valor);
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(num);
+}
+
 export default function ProdutoEditar() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -442,23 +516,31 @@ export default function ProdutoEditar() {
     const [openDropdown, setOpenDropdown] = useState(null);
     const [gradesDisponiveis, setGradesDisponiveis] = useState([]);
     const [tecidosDisponiveis, setTecidosDisponiveis] = useState([]);
+    const [aviamentosDisponiveis, setAviamentosDisponiveis] = useState([]);
     const [modelosDisponiveis, setModelosDisponiveis] = useState([]);
     const [modalClientesAberto, setModalClientesAberto] = useState(false);
+    const [modalAviamentoAberto, setModalAviamentoAberto] = useState(false);
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
     const [modalAtencaoAberto, setModalAtencaoAberto] = useState(false);
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
     const [modalExcluidoAberto, setModalExcluidoAberto] = useState(false);
     const [excluindo, setExcluindo] = useState(false);
+    const [isModalTecidoOpen, setIsModalTecidoOpen] = useState(false);
+    const [aviamentosOriginais, setAviamentosOriginais] = useState([]);
     const [formData, setFormData] = useState({
         referencia: "",
         modelo: "",
         tipo_produto_id: undefined,
         tecido: "",
         tecido_id: undefined,
+        quantidade_tecido: "",
         grade: "",
         grade_versao_id: undefined,
         aviamentos: [],
+        custo_operacional: "",
+        outros_custos: "",
     });
+    const [colunasFlexiveis, setColunasFlexiveis] = useState([]);
 
     const carregarClientesDoProduto = async () => {
         const [dadosClientes, clientesDoFabrico] = await Promise.all([
@@ -487,8 +569,12 @@ export default function ProdutoEditar() {
                     clientesDoFabrico,
                     resGrades,
                     resTecidos,
+                    resAviamentos,
+                    resAviamentosProduto,
                     resTiposProduto,
                     dadosFabrico,
+                    todasEtapas,
+                    parceirosDisponiveis,
                 ] = await Promise.all([
                     getProdutoById(id),
                     getClientesDoProduto(id),
@@ -499,8 +585,14 @@ export default function ProdutoEditar() {
                     Number.isFinite(fabricoId)
                         ? getTecidosByFabrico(fabricoId)
                         : Promise.resolve([]),
+                    Number.isFinite(fabricoId)
+                        ? getAviamentosByFabrico(fabricoId)
+                        : Promise.resolve([]),
+                    getAviamentosDoProduto(id).catch(() => []),
                     getTiposProdutoByFabrico().catch(() => []),
                     Number.isFinite(fabricoId) ? getFabricoById(fabricoId) : Promise.resolve(null),
+                    getAllEtapasByFabricoId(fabricoId).catch(() => []),
+                    getParceirosByFabrico(fabricoId).catch(() => []),
                 ]);
 
                 if (ignorar) return;
@@ -523,10 +615,37 @@ export default function ProdutoEditar() {
                     })
                     .filter(Boolean);
 
+                const gradeSelecionada = gradesMapeadas.find(
+                    (grade) =>
+                        grade.grade_versao_id ===
+                        (dadosProduto.grade_versao_id || dadosProduto.grade_versao?.id),
+                );
+
                 const tecidosMapeados = (resTecidos || []).map((tecido) => ({
                     id: tecido?.id || tecido?.tecido?.id,
-                    nome: tecido?.nome || tecido?.tecido?.nome || "Sem nome na API",
+                    nome: tecido?.nome || tecido?.tecido?.nome || "Sem nome",
+                    custo_unitario: Number(
+                        tecido?.custo_unitario || tecido?.tecido?.custo_unitario || 0,
+                    ),
+                    unidade_de_medida:
+                        tecido?.unidade_de_medida || tecido?.tecido?.unidade_de_medida || "",
                 }));
+
+                const aviamentosVinculados = (resAviamentosProduto || []).map((pivot) => ({
+                    id: pivot.aviamento?.id,
+                    nome: pivot.aviamento?.nome,
+                    custo_unitario: Number(pivot.aviamento?.custo_unitario || 0),
+                    unidade_de_medida: pivot.aviamento?.unidade_de_medida || "und",
+                    quantidade: pivot.quantidade || null,
+                }));
+
+                const aviamentosSelecionados = (resAviamentosProduto || [])
+                    .map(normalizarAviamentoRelacionado)
+                    .filter(Boolean);
+
+                const aviamentosMapeados = (resAviamentos || [])
+                    .map(normalizarAviamentoDisponivel)
+                    .filter(Boolean);
 
                 const modelosMapeados = (resTiposProduto || [])
                     .map((tipo) => ({
@@ -554,22 +673,85 @@ export default function ProdutoEditar() {
                 );
                 setGradesDisponiveis(gradesMapeadas);
                 setTecidosDisponiveis(tecidosMapeados);
+                setAviamentosDisponiveis(aviamentosMapeados);
                 setModelosDisponiveis(modelosMapeados);
                 setImagemPreview(dadosProduto.foto || "");
+                setAviamentosOriginais(aviamentosSelecionados);
                 setFormData({
                     referencia: dadosProduto.nome || "",
                     modelo: nomeModelo,
                     tipo_produto_id: tipoProdutoId,
                     tecido: getTecidoNome(dadosProduto),
                     tecido_id: dadosProduto.tecido_id || dadosProduto.tecido?.id,
-                    grade: getGradeNome(dadosProduto),
+                    quantidade_tecido: dadosProduto.quantidade_tecido || "",
                     grade_versao_id: dadosProduto.grade_versao_id || dadosProduto.grade_versao?.id,
-                    aviamentos: Array.isArray(dadosProduto.aviamentos)
-                        ? dadosProduto.aviamentos
-                        : dadosProduto.aviamentos
-                          ? [dadosProduto.aviamentos]
-                          : [],
+                    grade: gradeSelecionada?.nome || getGradeNome(dadosProduto),
+                    aviamentos: aviamentosVinculados,
+                    custo_operacional:
+                        dadosProduto.custo_operacional !== undefined &&
+                        dadosProduto.custo_operacional !== null
+                            ? String(dadosProduto.custo_operacional).replace(".", ",")
+                            : "",
+                    outros_custos:
+                        dadosProduto.outros_custos !== undefined &&
+                        dadosProduto.outros_custos !== null
+                            ? String(dadosProduto.outros_custos).replace(".", ",")
+                            : "",
                 });
+
+                // 1. Mapeamento inicial das etapas com o parceiro correspondente
+                const etapasPreMapeadas = (todasEtapas || []).map((etapa) => {
+                    const parceiroMapeado = (parceirosDisponiveis || []).find((p) => {
+                        const categoriaParceiro = (p?.categoria || "").trim().toLowerCase();
+                        const nomeEtapa = (etapa?.nome || "").trim().toLowerCase();
+                        return categoriaParceiro === nomeEtapa;
+                    });
+
+                    return {
+                        ...etapa,
+                        parceiro_id: parceiroMapeado ? parceiroMapeado.id : null,
+                    };
+                });
+
+                // 2. 🌟 Busca dinâmica na tabela intermediária (parceiro_produto) para cada vínculo encontrado
+                const etapasVinculadasComCustos = await Promise.all(
+                    etapasPreMapeadas.map(async (etapa) => {
+                        let custoFinal = 0;
+
+                        // Se houver um parceiro associado a esta etapa, buscamos o preço customizado
+                        if (etapa.parceiro_id) {
+                            try {
+                                const vinculo = await getVinculoParceiroProduto(
+                                    etapa.parceiro_id,
+                                    id,
+                                );
+                                if (vinculo && vinculo.preco !== undefined) {
+                                    custoFinal = vinculo.preco;
+                                }
+                            } catch (err) {
+                                console.error(
+                                    `Erro ao buscar vínculo para parceiro ${etapa.parceiro_id} e produto ${id}:`,
+                                    err,
+                                );
+                            }
+                        }
+
+                        // Fallback: Se não achou na tabela intermediária, tenta pegar do etapas_produto antigo (como backup)
+                        if (custoFinal === 0) {
+                            const custoExistente = dadosProduto?.etapas_produto?.find(
+                                (ep) => ep.etapa_id === etapa.id,
+                            )?.custo;
+                            custoFinal = custoExistente || 0;
+                        }
+
+                        return {
+                            ...etapa,
+                            custo: custoFinal,
+                        };
+                    }),
+                );
+
+                setColunasFlexiveis(etapasVinculadasComCustos);
             } catch (error) {
                 console.error("Erro ao carregar produto:", error);
                 setModalAtencaoAberto(true);
@@ -589,6 +771,43 @@ export default function ProdutoEditar() {
         setFormData((prev) => ({ ...prev, [field]: event.target.value }));
     };
 
+    const handleQuantidadeTecido = (event) => {
+        const apenasNumeros = event.target.value.replace(/[^0-9.,]/g, "");
+        setFormData((prev) => ({ ...prev, quantidade_tecido: apenasNumeros }));
+    };
+
+    const handleQuantidadeAviamento = (aviamentoId, value) => {
+        const apenasNumeros = value.replace(/[^0-9.,]/g, "");
+        setFormData((prev) => ({
+            ...prev,
+            aviamentos: prev.aviamentos.map((a) =>
+                a.id === aviamentoId ? { ...a, quantidade: apenasNumeros } : a,
+            ),
+        }));
+    };
+
+    // Exemplo de como a função manipuladora deve processar o evento:
+    const handleCustoMonetarioChange = (campo) => (e) => {
+        const valorPuro = e.target.value.replace(/\D/g, ""); // Remove tudo que não é dígito
+
+        // Converte para decimal dividindo por 100 (para considerar centavos)
+        const valorDecimal = valorPuro ? (Number(valorPuro) / 100).toFixed(2) : "";
+
+        setFormData((prev) => ({
+            ...prev,
+            [campo]: valorDecimal,
+        }));
+    };
+
+    // Função auxiliar para exibir corretamente a vírgula na tela sem o "R$" (já que o R$ está no span HTML)
+    const formatarMoedaSimples = (valor) => {
+        const numero = Number(valor) || 0;
+        return numero.toLocaleString("pt-BR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+    };
+
     const toggleDropdown = (field) => {
         setOpenDropdown((prev) => (prev === field ? null : field));
     };
@@ -605,7 +824,7 @@ export default function ProdutoEditar() {
     };
 
     const handleTecidoSelect = (nomeTecido) => {
-        const tecidoSelecionado = tecidosDisponiveis.find((tecido) => tecido.nome === nomeTecido);
+        const tecidoSelecionado = tecidosDisponiveis.find((t) => t.nome === nomeTecido);
 
         setFormData((prev) => ({
             ...prev,
@@ -626,12 +845,107 @@ export default function ProdutoEditar() {
         setOpenDropdown(null);
     };
 
-    const handleToggleAviamento = (item) => {
+    const handleAviamentoCriado = (aviamentoCriado) => {
+        const novoAviamento = normalizarAviamentoDisponivel(aviamentoCriado);
+        if (!novoAviamento) return;
+
+        setAviamentosDisponiveis((prev) => {
+            if (prev.some((aviamento) => aviamento.id === novoAviamento.id)) return prev;
+            return [...prev, novoAviamento];
+        });
+
+        setFormData((prev) => {
+            if (prev.aviamentos.some((aviamento) => aviamento.id === novoAviamento.id)) {
+                return prev;
+            }
+            return {
+                ...prev,
+                aviamentos: [...prev.aviamentos, novoAviamento],
+            };
+        });
+    };
+
+    const handleToggleAviamento = (aviamento) => {
+        const aviamentoSelecionado = formData.aviamentos.find((item) => item.id === aviamento.id);
+
+        if (aviamentoSelecionado) {
+            setFormData((prev) => ({
+                ...prev,
+                aviamentos: prev.aviamentos.filter((item) => item.id !== aviamento.id),
+            }));
+            return;
+        }
+
         setFormData((prev) => ({
             ...prev,
-            aviamentos: prev.aviamentos.includes(item)
-                ? prev.aviamentos.filter((aviamento) => aviamento !== item)
-                : [...prev.aviamentos, item],
+            aviamentos: [...prev.aviamentos, aviamento],
+        }));
+    };
+
+    const sincronizarAviamentosProduto = async () => {
+        const idsAtuais = new Set(
+            formData.aviamentos.map((aviamento) => normalizarId(aviamento.id)),
+        );
+        const idsOriginais = new Set(
+            aviamentosOriginais.map((aviamento) => normalizarId(aviamento.id)),
+        );
+
+        const aviamentosRemovidos = aviamentosOriginais.filter(
+            (aviamento) => !idsAtuais.has(normalizarId(aviamento.id)) && aviamento.relacao_id,
+        );
+        const aviamentosAdicionados = formData.aviamentos.filter(
+            (aviamento) => !idsOriginais.has(normalizarId(aviamento.id)),
+        );
+        const aviamentosMantidos = formData.aviamentos.filter((aviamento) =>
+            idsOriginais.has(normalizarId(aviamento.id)),
+        );
+
+        // 1. Desvincula aviamentos removidos
+        await Promise.all(
+            aviamentosRemovidos.map((aviamento) =>
+                desvincularProdutoAviamento(aviamento.relacao_id),
+            ),
+        );
+
+        // 2. Vincula novos aviamentos já enviando a quantidade
+        await Promise.all(
+            aviamentosAdicionados.map((aviamento) =>
+                vincularProdutoAviamento({
+                    produto_id: Number(id),
+                    aviamento_id: aviamento.id,
+                    quantidade: Number(String(aviamento.quantidade || 0).replace(",", ".")) || null,
+                }),
+            ),
+        );
+
+        // 3. Atualiza a quantidade dos aviamentos já existentes (PATCH)
+        await Promise.all(
+            aviamentosMantidos.map((aviamento) => {
+                const original = aviamentosOriginais.find(
+                    (o) => normalizarId(o.id) === normalizarId(aviamento.id),
+                );
+                const relacaoId = aviamento.relacao_id || original?.relacao_id;
+                const qtdNum = Number(String(aviamento.quantidade || 0).replace(",", ".")) || null;
+
+                if (relacaoId) {
+                    return atualizarProdutoAviamento(relacaoId, {
+                        quantidade: qtdNum,
+                    });
+                }
+                return Promise.resolve();
+            }),
+        );
+
+        // 4. Recarrega os dados do banco para manter o estado sincronizado
+        const aviamentosAtualizados = await getAviamentosDoProduto(id);
+        const aviamentosSelecionados = (aviamentosAtualizados || [])
+            .map(normalizarAviamentoRelacionado)
+            .filter(Boolean);
+
+        setAviamentosOriginais(aviamentosSelecionados);
+        setFormData((prev) => ({
+            ...prev,
+            aviamentos: aviamentosSelecionados,
         }));
     };
 
@@ -642,6 +956,44 @@ export default function ProdutoEditar() {
         setArquivoImagem(arquivo);
         setImagemPreview(URL.createObjectURL(arquivo));
         setErro("");
+    };
+
+    const tecidoSelecionado = tecidosDisponiveis.find((t) => t.id === formData.tecido_id);
+    const qtdTecidoCalculo = parseNumber(formData.quantidade_tecido);
+    const custoTecidoCalculado = qtdTecidoCalculo * parseNumber(tecidoSelecionado?.custo_unitario);
+
+    const custoAviamentosCalculado = (formData.aviamentos || []).reduce((acc, av) => {
+        const qtd = parseNumber(av.quantidade);
+        const custoUnit = parseNumber(av.custo_unitario);
+        return acc + qtd * custoUnit;
+    }, 0);
+
+    const valorTotalGasto = custoTecidoCalculado + custoAviamentosCalculado;
+
+    // --- CÁLCULO DOS CUSTOS DA SEGUNDA TABELA ---
+    const custoOperacionalNum = parseNumber(formData.custo_operacional);
+    const outrosCustosNum = parseNumber(formData.outros_custos);
+
+    const somaEtapas = (colunasFlexiveis || []).reduce(
+        (acc, item) => acc + parseNumber(item.custo),
+        0,
+    );
+    const totalGeralCustoPeca =
+        valorTotalGasto + somaEtapas + custoOperacionalNum + outrosCustosNum;
+
+    const recarregarTecidos = async () => {
+        try {
+            const dados = await getTecidosByFabrico(fabricoId);
+            const tecidosTratados = (dados || []).map((t) => ({
+                id: t?.id || t?.tecido?.id,
+                nome: t?.nome || t?.tecido?.nome || "Sem nome na API",
+                custo_unitario: Number(t?.custo_unitario || t?.tecido?.custo_unitario || 0),
+                unidade_de_medida: t?.unidade_de_medida || t?.tecido?.unidade_de_medida || "",
+            }));
+            setTecidosDisponiveis(tecidosTratados);
+        } catch (err) {
+            console.error("Erro ao recarregar tecidos:", err);
+        }
     };
 
     const handleSalvar = async (event) => {
@@ -658,6 +1010,11 @@ export default function ProdutoEditar() {
             return;
         }
 
+        if (!formData.grade || !formData.grade_versao_id) {
+            setErro("Selecione a grade de tamanhos do produto.");
+            return;
+        }
+
         try {
             setSalvando(true);
             let urlFoto = produto?.foto;
@@ -670,15 +1027,29 @@ export default function ProdutoEditar() {
                 if (responseUpload?.url) urlFoto = responseUpload.url;
             }
 
+            const custoOperacionalFormatado = formData.custo_operacional
+                ? Number(String(formData.custo_operacional).replace(",", "."))
+                : 0;
+
+            const outrosCustosFormatado = formData.outros_custos
+                ? Number(String(formData.outros_custos).replace(",", "."))
+                : 0;
+
             await atualizarProduto(id, {
                 foto: urlFoto,
                 nome: formData.referencia.trim(),
                 tipo_produto_id: formData.tipo_produto_id,
                 fabrico_id: fabricoId,
-                tecido_id: formData.tecido_id,
+                tecido_id: formData.tecido_id || null,
+                quantidade_tecido: qtdTecidoCalculo || null,
+                custo_tecido:
+                    custoTecidoCalculado > 0 ? Number(custoTecidoCalculado.toFixed(2)) : null,
                 grade_versao_id: formData.grade_versao_id,
-                aviamentos: formData.aviamentos,
+                custo_operacional: custoOperacionalFormatado,
+                outros_custos: outrosCustosFormatado,
             });
+
+            await sincronizarAviamentosProduto();
 
             setModalConfirmacaoAberto(true);
         } catch (error) {
@@ -780,7 +1151,7 @@ export default function ProdutoEditar() {
                             <button
                                 type="button"
                                 onClick={() => inputFileRef.current?.click()}
-                                className="w-[260px] h-[170px] rounded-[10px] overflow-hidden bg-[#D9D9D9] hover:opacity-90 transition-opacity"
+                                className="w-[260px] h-[170px] rounded-[10px] overflow-hidden bg-[#D9D9D9] hover:opacity-90 transition-opacity flex items-center justify-center border border-dashed border-[#898C8F]"
                             >
                                 {imagemPreview ? (
                                     <img
@@ -832,42 +1203,58 @@ export default function ProdutoEditar() {
                                         <DropdownField
                                             value=""
                                             placeholder="Aviamentos"
-                                            options={aviamentosDisponiveis}
+                                            options={aviamentosDisponiveis.map((a) => a.nome)}
                                             isOpen={openDropdown === "aviamentos"}
                                             onToggle={() => toggleDropdown("aviamentos")}
-                                            onSelect={(value) => handleToggleAviamento(value)}
+                                            onSelect={(nomeSelecionado) => {
+                                                const aviamentoCompleto =
+                                                    aviamentosDisponiveis.find(
+                                                        (aviamento) =>
+                                                            aviamento.nome === nomeSelecionado,
+                                                    );
+                                                if (aviamentoCompleto) {
+                                                    handleToggleAviamento(aviamentoCompleto);
+                                                }
+                                            }}
                                             isSelectedOption={(option) =>
-                                                formData.aviamentos.includes(option)
+                                                formData.aviamentos.some(
+                                                    (aviamento) => aviamento.nome === option,
+                                                )
                                             }
                                             showOptionIndicator
+                                            actionButton={{
+                                                label: "Novo aviamento",
+                                                onClick: () => {
+                                                    setOpenDropdown(null);
+                                                    setModalAviamentoAberto(true);
+                                                },
+                                            }}
                                         />
-                                        <div className="flex flex-wrap gap-2 mt-3">
-                                            {formData.aviamentos.map((item) => (
-                                                <SelectedAviamentoTag
-                                                    key={item}
-                                                    label={item}
-                                                    onRemove={() => handleToggleAviamento(item)}
-                                                />
-                                            ))}
-                                        </div>
                                     </div>
 
                                     <div>
                                         <span className="block text-[13px] font-light text-[#4696AD] mb-1">
-                                            Tecido
+                                            Tecidos
                                         </span>
                                         <DropdownField
                                             value={formData.tecido}
                                             placeholder="Tecido"
-                                            options={tecidosDisponiveis.map(
-                                                (tecido) => tecido.nome,
-                                            )}
+                                            options={tecidosDisponiveis.map((t) => t.nome)}
                                             isOpen={openDropdown === "tecido"}
                                             onToggle={() => toggleDropdown("tecido")}
                                             onSelect={handleTecidoSelect}
                                             isSelectedOption={(option) =>
                                                 formData.tecido === option
                                             }
+                                            maxVisibleOptions={6}
+                                            loading={loading}
+                                            actionButton={{
+                                                label: "Novo tecido",
+                                                onClick: () => {
+                                                    setOpenDropdown(null);
+                                                    setIsModalTecidoOpen(true);
+                                                },
+                                            }}
                                         />
                                     </div>
 
@@ -886,11 +1273,255 @@ export default function ProdutoEditar() {
                                         />
                                     </div>
                                 </div>
+                                {formData.aviamentos.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mt-4 w-full">
+                                        {formData.aviamentos.map((item) => (
+                                            <SelectedAviamentoTag
+                                                key={item.id}
+                                                label={item.nome}
+                                                onRemove={() => handleToggleAviamento(item)}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
 
-                    <div className="mt-8 w-full">
+                    <div className="mt-6 w-full">
+                        <h3 className="text-[20px] font-light text-[#404040] mb-4">
+                            Quantidade por aviamento
+                        </h3>
+                        <div className="w-full overflow-x-auto">
+                            <table className="w-full table-fixed border-separate border-spacing-0">
+                                <thead>
+                                    <tr>
+                                        <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] first:rounded-tl-[10px] last:rounded-tr-[10px] text-center border-none">
+                                            Tecido
+                                        </th>
+                                        {formData.aviamentos.map((av) => (
+                                            <th
+                                                key={av.id}
+                                                className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] text-center capitalize border-none"
+                                            >
+                                                {av.nome}
+                                            </th>
+                                        ))}
+                                        <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] first:rounded-tl-[10px] last:rounded-tr-[10px] text-center border-none">
+                                            Total
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td
+                                            onClick={(e) => {
+                                                const input =
+                                                    e.currentTarget.querySelector("input");
+                                                if (input) input.focus();
+                                            }}
+                                            className="bg-[#FFFFFF] py-3 px-4 border-l-[0.5px] border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] first:rounded-bl-[10px] text-center cursor-text"
+                                        >
+                                            <div className="flex items-center justify-center gap-1 w-full bg-transparent">
+                                                <input
+                                                    type="text"
+                                                    value={formData.quantidade_tecido}
+                                                    onChange={handleQuantidadeTecido}
+                                                    placeholder="-"
+                                                    className="text-right bg-transparent focus:outline-none placeholder-[#404040] text-[16px] font-light text-[#404040]"
+                                                    style={{
+                                                        width: `${Math.max(1, String(formData.quantidade_tecido).length)}ch`,
+                                                    }}
+                                                />
+                                                <span className="text-[16px] font-light text-[#404040]">
+                                                    (
+                                                    {formatarUnidadeDeMedida(
+                                                        tecidoSelecionado?.unidade_de_medida,
+                                                    ) || ""}
+                                                    )
+                                                </span>
+                                            </div>
+                                        </td>
+                                        {formData.aviamentos.map((av) => (
+                                            <td
+                                                key={av.id}
+                                                onClick={(e) => {
+                                                    const input =
+                                                        e.currentTarget.querySelector("input");
+                                                    if (input) input.focus();
+                                                }}
+                                                className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center cursor-text"
+                                            >
+                                                <div className="flex items-center justify-center gap-1 w-full bg-transparent">
+                                                    <input
+                                                        type="text"
+                                                        value={av.quantidade}
+                                                        onChange={(e) =>
+                                                            handleQuantidadeAviamento(
+                                                                av.id,
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        placeholder="-"
+                                                        className="text-right bg-transparent focus:outline-none placeholder-[#404040] text-[16px] font-light text-[#404040]"
+                                                        style={{
+                                                            width: `${Math.max(1, String(av.quantidade).length)}ch`,
+                                                        }}
+                                                    />
+                                                    <span className="text-[16px] font-light text-[#404040]">
+                                                        (
+                                                        {formatarUnidadeDeMedida(
+                                                            av.unidade_de_medida,
+                                                        ) || ""}
+                                                        )
+                                                    </span>
+                                                </div>
+                                            </td>
+                                        ))}
+                                        <td className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] last:rounded-br-[10px] text-center text-[16px] font-light text-[#404040]">
+                                            {new Intl.NumberFormat("pt-BR", {
+                                                style: "currency",
+                                                currency: "BRL",
+                                            }).format(valorTotalGasto)}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Bloco Inferior: Tabela de Custo por Peça */}
+                    <div className="mt-6 w-full">
+                        <h3 className="text-[20px] font-light text-[#404040] mb-4">
+                            Custo por peça
+                        </h3>
+                        <div className="w-full overflow-x-auto">
+                            <table className="w-full table-fixed border-separate border-spacing-0">
+                                <thead>
+                                    <tr>
+                                        <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] first:rounded-tl-[10px] text-center border-none">
+                                            Aviamentos
+                                        </th>
+                                        {colunasFlexiveis.map((etapa, index) => (
+                                            <th
+                                                key={etapa.id || index}
+                                                className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] text-center border-none"
+                                            >
+                                                <div
+                                                    title={etapa.nome}
+                                                    className="max-w-[150px] truncate mx-auto cursor-pointer"
+                                                >
+                                                    {etapa.nome}
+                                                </div>
+                                            </th>
+                                        ))}
+                                        <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] text-center border-none">
+                                            Operacional
+                                        </th>
+                                        <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] text-center border-none">
+                                            Outros
+                                        </th>
+                                        <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] last:rounded-tr-[10px] text-center border-none">
+                                            Total
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        {/* Aviamentos (Calculado a partir da seleção de aviamentos acima) */}
+                                        <td className="bg-[#FFFFFF] py-3 px-4 border-l-[0.5px] border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] first:rounded-bl-[10px] text-center text-[16px] font-light text-[#404040] cursor-not-allowed">
+                                            {formatarPreco(custoAviamentosCalculado)}
+                                        </td>
+
+                                        {/* Colunas Flexíveis (Etapas fixas do produto) */}
+                                        {colunasFlexiveis.map((etapa, index) => (
+                                            <td
+                                                key={etapa.id || index}
+                                                className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center text-[16px] font-light text-[#404040] cursor-not-allowed"
+                                            >
+                                                {formatarPreco(etapa.custo || 0)}
+                                            </td>
+                                        ))}
+
+                                        {/* Operacional (EDITÁVEL) */}
+                                        <td
+                                            onClick={(e) => {
+                                                const input =
+                                                    e.currentTarget.querySelector("input");
+                                                if (input) input.focus();
+                                            }}
+                                            className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center cursor-text"
+                                        >
+                                            <div className="flex items-center justify-center gap-1 w-full bg-transparent">
+                                                <span className="text-[16px] font-light text-[#404040]">
+                                                    R$
+                                                </span>
+                                                <input
+                                                    type="text"
+                                                    value={
+                                                        formData.custo_operacional
+                                                            ? formatarMoedaSimples(
+                                                                  formData.custo_operacional,
+                                                              )
+                                                            : ""
+                                                    }
+                                                    onChange={handleCustoMonetarioChange(
+                                                        "custo_operacional",
+                                                    )}
+                                                    placeholder="0,00"
+                                                    className="text-left bg-transparent focus:outline-none placeholder-[#898C8F] text-[16px] font-light text-[#404040]"
+                                                    style={{
+                                                        width: `${Math.max(4, String(formData.custo_operacional || "").length)}ch`,
+                                                    }}
+                                                />
+                                            </div>
+                                        </td>
+
+                                        {/* Outros (EDITÁVEL) */}
+                                        <td
+                                            onClick={(e) => {
+                                                const input =
+                                                    e.currentTarget.querySelector("input");
+                                                if (input) input.focus();
+                                            }}
+                                            className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center cursor-text"
+                                        >
+                                            <div className="flex items-center justify-center gap-1 w-full bg-transparent">
+                                                <span className="text-[16px] font-light text-[#404040]">
+                                                    R$
+                                                </span>
+                                                <input
+                                                    type="text"
+                                                    value={
+                                                        formData.outros_custos
+                                                            ? formatarMoedaSimples(
+                                                                  formData.outros_custos,
+                                                              )
+                                                            : ""
+                                                    }
+                                                    onChange={handleCustoMonetarioChange(
+                                                        "outros_custos",
+                                                    )}
+                                                    placeholder="0,00"
+                                                    className="text-left bg-transparent focus:outline-none placeholder-[#898C8F] text-[16px] font-light text-[#404040]"
+                                                    style={{
+                                                        width: `${Math.max(4, String(formData.outros_custos || "").length)}ch`,
+                                                    }}
+                                                />
+                                            </div>
+                                        </td>
+
+                                        {/* Total Geral */}
+                                        <td className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] last:rounded-br-[10px] text-center text-[16px] font-light text-[#404040]">
+                                            {formatarPreco(totalGeralCustoPeca)}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div className="mt-12 w-full">
                         <TabelaClientesDoProduto
                             clientes={clientesAssociados}
                             referenciaInterna={formData.referencia}
@@ -941,10 +1572,39 @@ export default function ProdutoEditar() {
                 onSuccess={carregarClientesDoProduto}
             />
 
+            <AviamentoModal
+                isOpen={modalAviamentoAberto}
+                onClose={() => setModalAviamentoAberto(false)}
+                onSuccess={handleAviamentoCriado}
+                mode="create"
+                fabricoId={fabricoId}
+            />
+
+            <CadastrarTecidoModal
+                isOpen={isModalTecidoOpen}
+                onClose={() => setIsModalTecidoOpen(false)}
+                fabricoId={fabricoId}
+                onSuccess={(novoTecido) => {
+                    recarregarTecidos();
+
+                    if (novoTecido) {
+                        const idCriado = novoTecido.id || novoTecido.tecido?.id;
+                        const nomeCriado = novoTecido.nome || novoTecido.tecido?.nome;
+
+                        setFormData((prev) => ({
+                            ...prev,
+                            tecido: nomeCriado,
+                            tecido_id: idCriado,
+                        }));
+                    }
+                }}
+            />
+
             <ModalExclusao
                 isOpen={modalExclusaoAberto}
                 onClose={() => setModalExclusaoAberto(false)}
                 onConfirm={handleConfirmarExclusao}
+                titulo="Excluir produto"
                 nomeItem={produto?.nome}
                 tipoItem="o produto"
                 loading={excluindo}

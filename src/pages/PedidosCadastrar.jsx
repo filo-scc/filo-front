@@ -570,7 +570,7 @@ export default function PedidosCadastrar() {
                 }
             }
 
-            // === 6. CRIAR AS FICHAS TÉCNICAS E RELAÇÕES ===
+            // === 5. CRIAR AS FICHAS TÉCNICAS E RELAÇÕES ===
             for (const ficha of fichas) {
                 const pId = ficha.produtoId || ficha.produto_id;
                 if (
