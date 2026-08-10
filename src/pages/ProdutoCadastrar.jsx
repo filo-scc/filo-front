@@ -20,7 +20,10 @@ import {
 import { upload } from "../services/utilsService";
 import { DropdownOptionsSkeleton, LoadingButton, SkeletonBox } from "../components/geral/Loading";
 import { getAllEtapasByFabricoId } from "../services/etapaService.js";
-import { getParceirosByFabrico } from "../services/parceiroService.js";
+import {
+    getParceirosByFabrico,
+    getParceirosByFabricoECategoria,
+} from "../services/parceiroService.js";
 
 // Função adicionada para formatar as unidades de medida
 function formatarUnidadeDeMedida(unidade) {
@@ -613,7 +616,7 @@ export default function ProdutoCadastar() {
             }
 
             if (produtoId) {
-                await salvarCustosNoBanco(produtoId);
+                await salvarCustosNoBanco(produtoId, fabricoId);
             }
 
             navigate("/produtos");
@@ -682,33 +685,60 @@ export default function ProdutoCadastar() {
         });
     };
 
-    const salvarCustosNoBanco = async (produtoId) => {
-        try {
-            // 🔍 LINHA DE DIAGNÓSTICO: Vamos ver o que há dentro de colunasFlexiveis
-            console.log("Conteúdo das colunas flexíveis antes do filtro:", colunasFlexiveis);
-            // Filtramos apenas as colunas/etapas que possuem valor e um parceiro atrelado
-            const etapasParaSalvar = colunasFlexiveis.filter(
-                (etapa) => etapa.parceiro_id && etapa.custo > 0,
-            );
+    // ProdutoCadastrar.jsx
 
-            // Executa as verificações e salvamentos em paralelo
+    const salvarCustosNoBanco = async (produtoId, fabricoId) => {
+        try {
+            console.log("Conteúdo das colunas flexíveis antes do filtro:", colunasFlexiveis);
+
+            const etapasParaSalvar = colunasFlexiveis.filter((etapa) => etapa.custo > 0);
+
+            // Se o fabricoId não veio como parâmetro, tenta pegar do objeto produto ou do usuário logado
+            const fabricoIdEfetivo = fabricoId || produto?.fabrico_id;
+
+            if (!fabricoIdEfetivo) {
+                console.error("Fabrico ID não encontrado ao tentar salvar os custos.");
+                return;
+            }
+
+            // ... resto da sua função ...
             await Promise.all(
                 etapasParaSalvar.map(async (etapa) => {
-                    const parceiroId = etapa.parceiro_id;
                     const precoInformado = etapa.custo;
+                    const categoriaNome = etapa.nome;
 
-                    // 1. Verifica no banco se o vínculo já existe
-                    const vinculoExistente = await getVinculoParceiroProduto(parceiroId, produtoId);
+                    const parceirosDaEtapa = await getParceirosByFabricoECategoria(
+                        fabricoIdEfetivo,
+                        categoriaNome,
+                    );
 
-                    if (vinculoExistente) {
-                        // 2. Se já existe, atualiza (PUT)
-                        await atualizarParceiroProduto(parceiroId, produtoId, precoInformado);
-                        console.log(`Vínculo atualizado para o parceiro ${parceiroId}`);
-                    } else {
-                        // 3. Se não existe, cria um novo (POST)
-                        await criarParceiroProduto(parceiroId, produtoId, precoInformado);
-                        console.log(`Novo vínculo criado para o parceiro ${parceiroId}`);
+                    if (!parceirosDaEtapa || parceirosDaEtapa.length === 0) {
+                        console.warn(
+                            `Nenhum parceiro encontrado para a categoria '${categoriaNome}' no fabrico ${fabricoIdEfetivo}`,
+                        );
+                        return;
                     }
+
+                    await Promise.all(
+                        parceirosDaEtapa.map(async (parceiro) => {
+                            const parceiroId = parceiro.id;
+
+                            const vinculoExistente = await getVinculoParceiroProduto(
+                                parceiroId,
+                                produtoId,
+                            );
+
+                            if (vinculoExistente) {
+                                await atualizarParceiroProduto(
+                                    parceiroId,
+                                    produtoId,
+                                    precoInformado,
+                                );
+                            } else {
+                                await criarParceiroProduto(parceiroId, produtoId, precoInformado);
+                            }
+                        }),
+                    );
                 }),
             );
         } catch (error) {
