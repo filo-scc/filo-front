@@ -17,7 +17,7 @@ import {
     updateParceiroProdutoPrice,
     createParceiroProduto,
 } from "../services/fichaTecnicaItemService";
-import { iniciarFichaEtapa, getFichaTecnicaByFabrico } from "../services/fichasTecnicasService";
+import { iniciarFichaEtapa } from "../services/fichasTecnicasService";
 import { createFichaParceiro } from "../services/fichaParceiroService";
 import { createPedido } from "../services/pedidoService";
 import { getPedidosByFabricoId } from "../services/pedidoService";
@@ -570,29 +570,6 @@ export default function PedidosCadastrar() {
                 }
             }
 
-            // === 5. BUSCAR O MAIOR NÚMERO DE FICHA TÉCNICA E INCREMENTAR ===
-            let proximoNumeroFicha = 1;
-
-            try {
-                const fichasDoFabrico = await getFichaTecnicaByFabrico(fabricoId);
-
-                const listaFichas = Array.isArray(fichasDoFabrico)
-                    ? fichasDoFabrico
-                    : fichasDoFabrico?.data || [];
-
-                if (listaFichas.length > 0) {
-                    const numerosExistentes = listaFichas
-                        .map((f) => Number(f.numero))
-                        .filter((n) => !isNaN(n));
-
-                    if (numerosExistentes.length > 0) {
-                        proximoNumeroFicha = Math.max(...numerosExistentes) + 1;
-                    }
-                }
-            } catch (err) {
-                console.error("Erro ao buscar números das fichas técnicas existentes:", err);
-            }
-
             // === 6. CRIAR AS FICHAS TÉCNICAS E RELAÇÕES ===
             for (const ficha of fichas) {
                 const pId = ficha.produtoId || ficha.produto_id;
@@ -606,9 +583,6 @@ export default function PedidosCadastrar() {
                     });
                 }
 
-                const numeroParaNovaFicha = proximoNumeroFicha;
-                proximoNumeroFicha++;
-
                 const novaFicha = await createFichaTecnica({
                     pedido_id: novoPedido.id,
                     produto_id: pId,
@@ -617,7 +591,6 @@ export default function PedidosCadastrar() {
                     quantidade: Number(ficha.quantidade) || 0,
                     concluida: false,
                     fabrico_id: fabricoId,
-                    numero: numeroParaNovaFicha,
                 });
 
                 if (ficha.selectedColorIds?.length > 0) {
