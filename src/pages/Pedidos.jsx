@@ -193,7 +193,6 @@ const Pedidos = () => {
                                                 }
                                             }
 
-<<<<<<< HEAD
                                         return (
                                             <tr
                                                 key={pedido.id}
@@ -202,14 +201,6 @@ const Pedidos = () => {
                                                 <td className="py-4 px-6">
                                                     {pedido.numero ?? pedido.id}
                                                 </td>
-=======
-                                            return (
-                                                <tr
-                                                    key={pedido.id}
-                                                    className="border-b border-[#E8E8E8] last:border-none even:bg-[#F4F4F4] transition-colors text-center"
-                                                >
-                                                    <td className="py-4 px-6">{pedido.id}</td>
->>>>>>> develop
 
                                                     <td className="py-4 px-6">
                                                         {pedido.cliente?.nome || "-"}
