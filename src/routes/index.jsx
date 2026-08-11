@@ -17,6 +17,7 @@ import ParceiroCadastro from "../pages/ParceiroCadastro";
 import ProdutoCadastar from "../pages/ProdutoCadastrar";
 import PedidosCadastar from "../pages/PedidosCadastrar";
 import Pedidos from "../pages/Pedidos";
+import Aviamentos from "../pages/Aviamentos";
 
 function AppRoutes() {
     return (
@@ -172,6 +173,30 @@ function AppRoutes() {
                     }
                 />
 
+                <Route
+                    path="/aviamentos"
+                    element={
+                        <PrivateRoute>
+                            <Layout>
+                                <Aviamentos />
+                            </Layout>
+                        </PrivateRoute>
+                    }
+                />
+
+                <Route
+                    path="/aviamentos/editar/:id"
+                    element={
+                        <PrivateRoute>
+                            <Layout>
+                                <div className="flex justify-center items-center h-full text-gray-500 text-2xl font-light">
+                                    Página de edição de aviamento em construção...
+                                </div>
+                            </Layout>
+                        </PrivateRoute>
+                    }
+                />
+
                 {/* Telas provisórias */}
 
                 <Route
@@ -180,19 +205,6 @@ function AppRoutes() {
                         <PrivateRoute>
                             <Layout>
                                 <Produtos />
-                            </Layout>
-                        </PrivateRoute>
-                    }
-                />
-
-                <Route
-                    path="/estoque"
-                    element={
-                        <PrivateRoute>
-                            <Layout>
-                                <div className="flex justify-center items-center h-full text-gray-500 text-2xl font-light">
-                                    Página de Estoque em construção...
-                                </div>
                             </Layout>
                         </PrivateRoute>
                     }

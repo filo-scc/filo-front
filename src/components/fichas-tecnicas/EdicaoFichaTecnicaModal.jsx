@@ -530,7 +530,7 @@ export default function EdicaoFichaTecnicaModal({
                                 className="w-[28px] h-[28px] object-contain opacity-70"
                             />
                             <h2 className="text-[26px] font-light text-[#404040]">
-                                Editar Ficha Técnica {fichaId}
+                                Editar Ficha Técnica {dadosFicha?.numero}
                             </h2>
                         </div>
                         <button onClick={onClose}>
