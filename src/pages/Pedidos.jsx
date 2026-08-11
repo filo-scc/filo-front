@@ -28,7 +28,7 @@ const Pedidos = () => {
             try {
                 setLoading(true);
 
-                const data = await getPedidosByFabricoId();
+                const data = await getPedidosByFabricoId(fabrico_id);
                 setPedidos(data);
             } catch (error) {
                 console.error("Erro ao carregar os pedids", error);
