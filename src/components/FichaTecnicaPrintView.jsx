@@ -11,13 +11,18 @@ const calcularProporcao = (totaisPorTamanho) => {
 const darkSide = "0.5px solid #7B7D80";
 const shellSide = "0.5px solid #D9D9D9";
 
-export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia }) {
+export default function FichaTecnicaPrintView({ dadosFicha, referencia, onReadyToPrint }) {
     const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsMounted(true);
     }, []);
+
+    useEffect(() => {
+        if (!isMounted) return undefined;
+        onReadyToPrint?.();
+    }, [isMounted, onReadyToPrint]);
 
     if (!dadosFicha || !isMounted) return null;
 
@@ -108,16 +113,16 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                             display: none !important;
                         }
 
-                        #portal-impressao {
+                        #portal-impressao-ficha {
                             display: block !important;
                             position: relative !important; 
                             width: 100% !important;
                             margin: 0 !important;
                             padding: 0 !important;
-
                         }
 
-                        #ficha-print-view, #ficha-print-view * {
+                        #ficha-print-view,
+                        #ficha-print-view * {
                             visibility: visible;
                             -webkit-print-color-adjust: exact !important;
                             print-color-adjust: exact !important;
@@ -145,7 +150,7 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                                     Nº
                                 </span>
                                 <span className="text-[15px] font-medium text-[#4696AD]">
-                                    {fichaId}
+                                    {dadosFicha?.numero}
                                 </span>
                             </div>
                             <div className="border border-[#4696AD] rounded-[20px] h-[38px] min-w-[70px] relative flex items-center justify-center px-4">
@@ -242,7 +247,7 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                                     return (
                                         <div
                                             key={`prop-${s.id}`}
-                                            className="h-[30px] flex items-center justify-center text-[13px] font-light bg-[#F4F4F4]"
+                                            className="h-[25px] flex items-center justify-center text-[13px] font-light bg-[#F4F4F4]"
                                             style={{
                                                 borderTop: darkSide,
                                                 borderBottom: darkSide,
@@ -263,7 +268,7 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                                 <div className="bg-transparent" />
 
                                 <div
-                                    className="h-[40px] flex items-center px-4 font-normal bg-[#C9EAF6] text-[#4696AD]"
+                                    className="h-[35px] flex items-center px-4 font-normal bg-[#C9EAF6] text-[#4696AD]"
                                     style={{
                                         borderTopLeftRadius: "8px",
                                     }}
@@ -273,13 +278,13 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                                 {sizeItems.map((s) => (
                                     <div
                                         key={`header-${s.id}`}
-                                        className="h-[40px] flex items-center justify-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
+                                        className="h-[35px] flex items-center justify-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
                                     >
                                         {s.tamanho?.codigo || "-"}
                                     </div>
                                 ))}
                                 <div
-                                    className="h-[40px] flex items-center justify-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
+                                    className="h-[35px] flex items-center justify-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
                                     style={{
                                         borderTopRightRadius: "8px",
                                     }}
@@ -295,7 +300,7 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                                         return (
                                             <React.Fragment key={cor.id}>
                                                 <div
-                                                    className={`h-[45px] flex items-center gap-3 pl-4 pr-4 ${rowBg}`}
+                                                    className={`h-[35px] flex items-center gap-3 pl-4 pr-4 ${rowBg}`}
                                                 >
                                                     <span
                                                         className="w-[18px] h-[18px] rounded-[4px] shrink-0 shadow-sm border border-black/10"
@@ -320,14 +325,14 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                                                     return (
                                                         <div
                                                             key={`qty-${cor.id}-${s.id}`}
-                                                            className={`h-[45px] flex items-center justify-center text-[14px] font-light text-[#707070] ${rowBg}`}
+                                                            className={`h-[35px] flex items-center justify-center text-[14px] font-light text-[#707070] ${rowBg}`}
                                                         >
                                                             {val || "-"}
                                                         </div>
                                                     );
                                                 })}
                                                 <div
-                                                    className={`h-[45px] flex items-center justify-center text-[14px] font-normal text-[#707070] ${rowBg}`}
+                                                    className={`h-[35px] flex items-center justify-center text-[14px] font-normal text-[#707070] ${rowBg}`}
                                                 >
                                                     {totalCor || "-"}
                                                 </div>
@@ -345,7 +350,7 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
 
                                 {/* Rodapé */}
                                 <div
-                                    className="h-[45px] flex items-center justify-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
+                                    className="h-[35px] flex items-center justify-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
                                     style={{ borderBottomLeftRadius: "8px" }}
                                 >
                                     Total (tamanho)
@@ -353,14 +358,14 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                                 {sizeItems.map((s) => (
                                     <div
                                         key={`total-rodape-${s.id}`}
-                                        className={`h-[45px] flex items-center justify-center text-[14px] font-normal text-[#707070] ${totalRowBg}`}
+                                        className={`h-[35px] flex items-center justify-center text-[14px] font-normal text-[#707070] ${totalRowBg}`}
                                         style={{ borderBottom: shellSide }}
                                     >
                                         {totaisPorTamanho[s.id] || "-"}
                                     </div>
                                 ))}
                                 <div
-                                    className="h-[45px] flex items-center justify-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
+                                    className="h-[35px] flex items-center justify-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
                                     style={{ borderBottomRightRadius: "8px" }}
                                 >
                                     {totalGeral || "-"}
@@ -370,7 +375,7 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                             {/* divisórias verticais (header + corpo + rodapé) */}
                             <div
                                 className="absolute left-0 right-0 pointer-events-none"
-                                style={{ top: "30px", bottom: 0 }}
+                                style={{ top: "25px", bottom: 0 }}
                             >
                                 <div
                                     style={{
@@ -411,18 +416,18 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                                 <thead className="bg-[#F4F4F4] text-[#737373]">
                                     <tr>
                                         <th
-                                            className="py-3 font-normal w-1/3"
+                                            className="py-1.5 font-normal w-1/3"
                                             style={{ borderRight: darkSide }}
                                         >
                                             Facção
                                         </th>
                                         <th
-                                            className="py-3 font-normal w-1/3"
+                                            className="py-1.5 font-normal w-1/3"
                                             style={{ borderRight: darkSide }}
                                         >
                                             Operação
                                         </th>
-                                        <th className="py-3 font-normal ">Quantidade</th>
+                                        <th className="py-1.5 font-normal ">Quantidade</th>
                                     </tr>
                                 </thead>
                                 <tbody className="text-[#707070]">
@@ -436,18 +441,18 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                                             return (
                                                 <tr key={vinculo.id || index}>
                                                     <td
-                                                        className="py-3"
+                                                        className="py-1.5"
                                                         style={{ borderRight: darkSide }}
                                                     >
                                                         {nome}
                                                     </td>
                                                     <td
-                                                        className="py-3 text-[#D3D3D3]"
+                                                        className="py-1.5 text-[#D3D3D3]"
                                                         style={{ borderRight: darkSide }}
                                                     >
                                                         {operacao}
                                                     </td>
-                                                    <td className="py-3">{quantidade}</td>
+                                                    <td className="py-1.5">{quantidade}</td>
                                                 </tr>
                                             );
                                         })
@@ -455,7 +460,7 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                                         <tr>
                                             <td
                                                 colSpan="3"
-                                                className="py-4 text-center text-[13px] text-[#888]"
+                                                className="py-1.5 text-center text-[13px] text-[#888]"
                                             >
                                                 Nenhuma facção vinculada a esta ficha.
                                             </td>
@@ -476,32 +481,32 @@ export default function FichaTecnicaPrintView({ dadosFicha, fichaId, referencia 
                                 <thead>
                                     <tr className="bg-[#F4F4F4] text-[#898C8F]">
                                         <th
-                                            className="py-2.5 font-normal w-1/4"
+                                            className="py-1.5 font-normal w-1/4"
                                             style={{ borderRight: darkSide }}
                                         >
                                             Defeito de costura
                                         </th>
                                         <th
-                                            className="py-2.5 font-normal w-1/4"
+                                            className="py-1.5 font-normal w-1/4"
                                             style={{ borderRight: darkSide }}
                                         >
                                             Defeito no tecido
                                         </th>
                                         <th
-                                            className="py-2.5 font-normal w-1/4"
+                                            className="py-1.5 font-normal w-1/4"
                                             style={{ borderRight: darkSide }}
                                         >
                                             Retiradas
                                         </th>
-                                        <th className="py-2.5 font-normal w-1/4">Sobras</th>
+                                        <th className="py-1.5 font-normal w-1/4">Sobras</th>
                                     </tr>
                                 </thead>
                                 <tbody className="text-[#707070] font-light bg-white">
                                     <tr>
-                                        <td className="py-4" style={{ borderRight: darkSide }}></td>
-                                        <td className="py-4" style={{ borderRight: darkSide }}></td>
-                                        <td className="py-4" style={{ borderRight: darkSide }}></td>
-                                        <td className="py-4"></td>
+                                        <td className="py-3" style={{ borderRight: darkSide }}></td>
+                                        <td className="py-3" style={{ borderRight: darkSide }}></td>
+                                        <td className="py-3" style={{ borderRight: darkSide }}></td>
+                                        <td className="py-3"></td>
                                     </tr>
                                 </tbody>
                             </table>

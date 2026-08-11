@@ -156,6 +156,7 @@ export default function ClienteDetalhes() {
                 isOpen={modalExclusaoAberto}
                 onClose={() => setModalExclusaoAberto(false)}
                 onConfirm={handleConfirmarExclusao}
+                titulo="Excluir cliente"
                 nomeItem={cliente?.nome}
                 tipoItem="o cliente"
                 loading={excluindo}

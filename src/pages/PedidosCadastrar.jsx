@@ -244,8 +244,14 @@ export default function PedidosCadastrar() {
                 // Guarda a lista para uso posterior no restante do componente
                 setPedidosExistentes(pedidos_do_fabrico);
 
-                // Objetivo: Contar o número de pedidos atuais e somar 1 para o próximo
-                const proximoNumero = pedidos_do_fabrico.length + 1;
+                // Próximo número = maior número do fabrico + 1 (ou 1 se não houver pedidos)
+                // Ignora null/undefined (Number(null) === 0 e poluiria o max)
+                const numeros = pedidos_do_fabrico
+                    .map((p) => p.numero)
+                    .filter((n) => n != null && n !== "")
+                    .map((n) => Number(n))
+                    .filter((n) => Number.isFinite(n));
+                const proximoNumero = numeros.length > 0 ? Math.max(...numeros) + 1 : 1;
 
                 setNumeroPedido(String(proximoNumero));
             } catch (error) {
@@ -521,20 +527,6 @@ export default function PedidosCadastrar() {
                 0,
             );
 
-            // === 3. SELEÇÃO DO NÚMERO DO PEDIDO ===
-            let numeroFinal = parseInt(numeroPedido);
-
-            if (
-                !numeroFinal &&
-                typeof pedidosExistentes !== "undefined" &&
-                pedidosExistentes?.length > 0
-            ) {
-                const maioresNumeros = pedidosExistentes
-                    .map((p) => Number(p.numero))
-                    .filter((n) => !isNaN(n));
-                numeroFinal = maioresNumeros.length > 0 ? Math.max(...maioresNumeros) + 1 : 1;
-            }
-
             // === AJUSTE DA DATA PARA O BACKEND (ISO-8601) ===
             let dataFormatadaBackend = undefined;
             if (dataPrevista && dataPrevista.length === 10) {
@@ -544,9 +536,7 @@ export default function PedidosCadastrar() {
             }
 
             const novoPedido = await createPedido({
-                fabrico_id: fabricoId,
                 cliente_id: clienteSelecionado?.id || null,
-                numero: numeroFinal,
                 finalizado: false,
                 data_prevista: dataFormatadaBackend,
                 observacoes: null,

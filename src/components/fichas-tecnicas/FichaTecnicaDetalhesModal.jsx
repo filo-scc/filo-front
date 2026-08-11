@@ -2,8 +2,10 @@ import { useEffect, useState, useCallback } from "react";
 import { findOne } from "../../services/fichasTecnicasService";
 import { getProdutosDoCliente } from "../../services/clientesService";
 import EdicaoFichaTecnicaModal from "./EdicaoFichaTecnicaModal";
+import NotaDeSaidaPrintView from "../NotaDeSaidaPrintView";
 import { useNavigate } from "react-router-dom";
 import FichaTecnicaPrintView from "../FichaTecnicaPrintView";
+import OpcoesImpressaoModal from "./OpcoesImpressaoModal";
 
 const CampoDetalhe = ({ label, valor }) => (
     <div className="relative border border-[#898C8F] rounded-[10px] h-[39px] px-3 flex items-center mt-2 w-full bg-white">
@@ -24,13 +26,16 @@ const calcularProporcao = (totaisPorTamanho) => {
 const BORDER_DARK_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#7B7D80" };
 const BORDER_SHELL_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#D9D9D9" };
 
-export default function FichaTecnicaModal({ isOpen, onClose, fichaId }) {
+export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) {
     const [ficha, setFicha] = useState(null);
     const [loading, setLoading] = useState(false);
     const [referenciaCliente, setReferenciaCliente] = useState("-");
     const navigate = useNavigate();
 
+    // Estados dos Modais
     const [modalEdicaoAberto, setModalEdicaoAberto] = useState(false);
+    const [modalImpressaoAberto, setModalImpressaoAberto] = useState(false);
+    const [printMode, setPrintMode] = useState(null);
 
     const carregarDados = useCallback(async () => {
         try {
@@ -57,6 +62,28 @@ export default function FichaTecnicaModal({ isOpen, onClose, fichaId }) {
             carregarDados();
         }
     }, [isOpen, fichaId, carregarDados]);
+
+    useEffect(() => {
+        if (!printMode) return undefined;
+
+        const handleAfterPrint = () => {
+            document.body.classList.remove("print-mode-ficha", "print-mode-nota");
+            setPrintMode(null);
+        };
+
+        window.addEventListener("afterprint", handleAfterPrint);
+
+        return () => {
+            window.removeEventListener("afterprint", handleAfterPrint);
+            document.body.classList.remove("print-mode-ficha", "print-mode-nota");
+        };
+    }, [printMode]);
+
+    const handlePrintMode = useCallback((mode) => {
+        document.body.classList.add(`print-mode-${mode}`);
+        setPrintMode(mode);
+        window.print();
+    }, []);
 
     const handleContentClick = (e) => {
         e.stopPropagation();
@@ -120,7 +147,7 @@ export default function FichaTecnicaModal({ isOpen, onClose, fichaId }) {
                             className="w-[30px] h-[30px] object-contain"
                         />
                         <h2 className="text-[26px] font-light text-[#404040]">
-                            Ficha Técnica {fichaId}
+                            Ficha Técnica {ficha?.numero}
                         </h2>
                     </div>
 
@@ -377,10 +404,11 @@ export default function FichaTecnicaModal({ isOpen, onClose, fichaId }) {
                 </div>
 
                 <div className="px-8 py-5 border-t border-gray-100 flex justify-between items-center shrink-0">
+                    {/* Botão de Impressora -> Agora abre o Modal de Opções */}
                     <button
                         type="button"
-                        onClick={() => window.print()}
-                        className="w-[71px] h-[39px] bg-[#A9E2F2] rounded-full flex items-center justify-center hover:bg-[#97D8EA] transition-colors shadow-sm"
+                        onClick={() => setModalImpressaoAberto(true)}
+                        className="w-[71px] h-[39px] bg-[#A9E2F2] rounded-full flex items-center justify-center hover:bg-[#97D8EA] transition-colors shadow-sm focus:outline-none"
                     >
                         <img
                             src="/impressora-azul.png"
@@ -409,25 +437,41 @@ export default function FichaTecnicaModal({ isOpen, onClose, fichaId }) {
                 </div>
             </div>
 
+            {/* Modal de Escolha do Tipo de Impressão */}
+            <OpcoesImpressaoModal
+                isOpen={modalImpressaoAberto}
+                onClose={() => setModalImpressaoAberto(false)}
+                onSelectFichaTecnica={() => {
+                    setModalImpressaoAberto(false);
+                    handlePrintMode("ficha");
+                }}
+                onSelectNotaSaida={() => {
+                    setModalImpressaoAberto(false);
+                    handlePrintMode("nota");
+                }}
+            />
+
+            {/* Modal de Edição */}
             {modalEdicaoAberto && (
                 <EdicaoFichaTecnicaModal
                     isOpen={modalEdicaoAberto}
                     fichaId={fichaId}
                     dadosFicha={ficha}
-                    onClose={() => {
-                        setModalEdicaoAberto(false);
-                    }}
+                    onClose={() => setModalEdicaoAberto(false)}
                     onSuccess={() => {
                         setModalEdicaoAberto(false);
                         carregarDados();
                     }}
                 />
             )}
+
+            {/* Layout de Impressão Oculto da Ficha Técnica */}
             <FichaTecnicaPrintView
                 dadosFicha={ficha}
                 fichaId={fichaId}
                 referencia={referenciaCliente}
             />
+            <NotaDeSaidaPrintView ficha={ficha} referenciaCliente={referenciaCliente} />
         </div>
     );
 }

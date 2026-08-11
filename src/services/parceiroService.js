@@ -38,3 +38,15 @@ export const updateParceiro = async (id, data) => {
 export const excluirParceiro = async (id) => {
     await api.delete(`/parceiros/${id}`);
 };
+
+export const getParceirosByFabricoECategoria = async (fabricoId, categoria) => {
+    try {
+        const response = await api.get(
+            `/parceiros/fabrico/${fabricoId}/categoria/${encodeURIComponent(categoria)}`,
+        );
+        return response.data;
+    } catch (error) {
+        console.error("Erro ao buscar parceiros por fabrico e categoria:", error);
+        throw error;
+    }
+};
