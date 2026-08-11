@@ -23,6 +23,7 @@ import { createPedido } from "../services/pedidoService";
 import { getPedidosByFabricoId } from "../services/pedidoService";
 
 import { getAllEtapasByFabricoId } from "../services/etapaService";
+import { DropdownOptionsSkeleton, LoadingButton, SkeletonBox } from "../components/geral/Loading";
 
 const sectionTitleClass = "text-[20px] font-light text-[#404040] mb-4 font-['Outfit',_sans-serif]";
 
@@ -36,10 +37,12 @@ function DropdownField({
     isSelectedOption,
     disabled = false,
     className = "",
+    loading = false,
 }) {
     const [termoBusca, setTermoBusca] = useState("");
     const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
     const inputRef = useRef(null);
+    const fieldDisabled = disabled || loading;
 
     if (isOpen !== prevIsOpen) {
         setPrevIsOpen(isOpen);
@@ -62,33 +65,37 @@ function DropdownField({
         <div className={`relative ${isOpen ? "z-50" : "z-10"} ${className}`}>
             <div
                 onClick={() => {
-                    if (disabled) return;
+                    if (fieldDisabled) return;
                     if (!isOpen) onToggle();
                     inputRef.current?.focus();
                 }}
                 className={`w-full h-[39px] border border-[#898C8F] rounded-[10px] px-3 text-sm bg-white flex items-center justify-between transition-opacity ${
-                    disabled ? "opacity-60 cursor-not-allowed" : "cursor-text"
+                    fieldDisabled ? "opacity-60 cursor-not-allowed" : "cursor-text"
                 }`}
             >
-                <input
-                    ref={inputRef}
-                    type="text"
-                    disabled={disabled}
-                    value={isOpen ? termoBusca : value || ""}
-                    onChange={(e) => {
-                        setTermoBusca(e.target.value);
-                        if (!isOpen) onToggle();
-                    }}
-                    placeholder={isOpen && value ? value : placeholder}
-                    className="w-full bg-transparent outline-none text-[#707070] placeholder:text-[#898C8F] truncate disabled:cursor-not-allowed"
-                />
+                {loading ? (
+                    <SkeletonBox className="h-[14px] w-36 rounded-[7px]" />
+                ) : (
+                    <input
+                        ref={inputRef}
+                        type="text"
+                        disabled={fieldDisabled}
+                        value={isOpen ? termoBusca : value || ""}
+                        onChange={(e) => {
+                            setTermoBusca(e.target.value);
+                            if (!isOpen) onToggle();
+                        }}
+                        placeholder={isOpen && value ? value : placeholder}
+                        className="w-full bg-transparent outline-none text-[#707070] placeholder:text-[#898C8F] truncate disabled:cursor-not-allowed"
+                    />
+                )}
 
                 <button
                     type="button"
-                    disabled={disabled}
+                    disabled={fieldDisabled}
                     onClick={(e) => {
                         e.stopPropagation();
-                        if (!disabled) onToggle();
+                        if (!fieldDisabled) onToggle();
                     }}
                     className="ml-2 py-2 shrink-0 outline-none"
                 >
@@ -110,7 +117,7 @@ function DropdownField({
                 </button>
             </div>
 
-            {isOpen && !disabled && (
+            {isOpen && !fieldDisabled && (
                 <>
                     <button
                         type="button"
@@ -119,8 +126,10 @@ function DropdownField({
                         className="fixed inset-0 z-10 cursor-default outline-none"
                     />
 
-                    <div className="absolute left-0 right-0 top-[calc(100%+2px)] z-20 overflow-hidden rounded-[14px] border border-[#898C8F] bg-white max-h-[240px] overflow-y-auto scrollbar-sutil">
-                        {opcoesFiltradas.length === 0 ? (
+                    <div className="absolute left-0 right-0 top-[calc(100%+2px)] z-20 overflow-hidden rounded-[14px] border border-[#898C8F] bg-white max-h-[240px] overflow-y-auto scrollbar-sutil py-1">
+                        {loading ? (
+                            <DropdownOptionsSkeleton />
+                        ) : opcoesFiltradas.length === 0 ? (
                             <p className="px-3 py-3 text-sm text-[#898C8F] font-light">
                                 Nenhuma opção encontrada
                             </p>
@@ -768,11 +777,7 @@ export default function PedidosCadastrar() {
                                         <div className="w-full max-w-[320px]">
                                             <DropdownField
                                                 value={clienteSelecionado?.nome || ""}
-                                                placeholder={
-                                                    carregandoClientes
-                                                        ? "Carregando clientes..."
-                                                        : "Selecionar cliente"
-                                                }
+                                                placeholder="Selecionar cliente"
                                                 options={opcoesClientes}
                                                 isOpen={openDropdown === "cliente"}
                                                 onToggle={() => toggleDropdown("cliente")}
@@ -781,6 +786,7 @@ export default function PedidosCadastrar() {
                                                     String(clienteSelecionado?.id) === option.value
                                                 }
                                                 disabled={carregandoClientes || salvandoPedido}
+                                                loading={carregandoClientes}
                                             />
                                         </div>
                                     )}
@@ -792,9 +798,7 @@ export default function PedidosCadastrar() {
                                             placeholder={
                                                 isSobDemanda && !clienteSelecionado
                                                     ? "Adicionar referência*"
-                                                    : carregandoReferencias
-                                                      ? "Carregando referências..."
-                                                      : "Adicionar referência*"
+                                                    : "Adicionar referência*"
                                             }
                                             options={opcoesReferencias}
                                             isOpen={openDropdown === "referencia"}
@@ -808,6 +812,7 @@ export default function PedidosCadastrar() {
                                                 carregandoReferencias ||
                                                 salvandoPedido
                                             }
+                                            loading={carregandoReferencias}
                                         />
                                     </div>
                                 </div>
@@ -848,18 +853,15 @@ export default function PedidosCadastrar() {
                         >
                             Cancelar
                         </button>
-                        <button
+                        <LoadingButton
                             type="button"
-                            disabled={salvandoPedido}
+                            loading={salvandoPedido}
+                            loadingText="Salvando..."
                             onClick={handleConcluirPedido}
                             className="bg-[#A9E2F2] hover:bg-[#94d6eb] text-white h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px] disabled:opacity-50 flex items-center justify-center"
                         >
-                            {salvandoPedido
-                                ? "Salvando..."
-                                : isSobDemanda
-                                  ? "Concluir pedido"
-                                  : "Concluir ordem"}
-                        </button>
+                            {isSobDemanda ? "Concluir pedido" : "Concluir ordem"}
+                        </LoadingButton>
                     </div>
 
                     {/* 5. MENSAGEM DE ERRO GERAL */}

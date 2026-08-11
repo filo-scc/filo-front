@@ -1,7 +1,7 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getParceiroByProduto } from "../../services/produtoService";
+import { ModalTableRowsSkeleton } from "../geral/Loading";
 
 function normalizePreco(preco) {
     if (preco === null || preco === undefined || preco === "") return null;
@@ -17,6 +17,7 @@ function normalizeParceiro(item) {
             id: item.parceiro.id,
             nome: item.parceiro.nome,
             preco: normalizePreco(item.preco),
+            categoria: item.parceiro.categoria,
             possuiPedido: Boolean(item.possuiPedido ?? item.parceiro.possuiPedido ?? false),
         };
     }
@@ -25,6 +26,7 @@ function normalizeParceiro(item) {
         id: item.id,
         nome: item.nome,
         preco: normalizePreco(item.preco),
+        categoria: item.categoria, // corrigido: item, não item.parceiro
         possuiPedido: Boolean(item.possuiPedido ?? false),
     };
 }
@@ -38,6 +40,7 @@ const ProdutoParceiros = ({
     onSelectParceiro,
 }) => {
     const [parceiros, setParceiros] = useState([]);
+    const [loading, setLoading] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [ordenacao, setOrdenacao] = useState("nome");
 
@@ -57,17 +60,22 @@ const ProdutoParceiros = ({
 
     useEffect(() => {
         if (!isOpen) return;
+        let ignorar = false;
 
         const fromProp = Array.isArray(parceirosProp) ? filterSelected(parceirosProp) : [];
 
         if (Array.isArray(parceirosProp) && parceirosProp.length > 0) {
             setParceiros(fromProp);
+            setLoading(false);
             return;
         }
 
         const fetchData = async () => {
+            setLoading(true);
             try {
                 const response = await getParceiroByProduto(produtoId);
+
+                if (ignorar) return;
 
                 const rawList = Array.isArray(response)
                     ? response
@@ -79,12 +87,19 @@ const ProdutoParceiros = ({
 
                 setParceiros(filterSelected(rawList));
             } catch (error) {
+                if (ignorar) return;
                 console.error("Erro ao buscar parceiros:", error);
                 setParceiros([]);
+            } finally {
+                if (!ignorar) setLoading(false);
             }
         };
 
         fetchData();
+
+        return () => {
+            ignorar = true;
+        };
     }, [isOpen, produtoId, parceirosProp, filterSelected]);
 
     const parceirosOrdenadas = useMemo(() => {
@@ -129,7 +144,10 @@ const ProdutoParceiros = ({
         <>
             <div
                 className="fixed inset-0 bg-black/35 backdrop-blur-sm flex items-center justify-center z-[999]"
-                onClick={onClose}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    if (onClose) onClose();
+                }}
             >
                 <div
                     className="w-[900px] bg-white rounded-[24px] px-10 pt-10 pb-8 relative"
@@ -235,15 +253,22 @@ const ProdutoParceiros = ({
                         </div>
 
                         {/* ROWS */}
-                        <div className="max-h-[360px] overflow-y-auto overflow-x-hidden scrollbar-sutil rounded-b-[10px]">
-                            {parceirosOrdenadas.map((parceiro, index) => (
-                                <div
-                                    key={parceiro.id}
-                                    onClick={() => {
-                                        onSelectParceiro?.(parceiro);
-                                        onClose?.();
-                                    }}
-                                    className={`
+                        {loading ? (
+                            <ModalTableRowsSkeleton />
+                        ) : parceirosOrdenadas.length === 0 ? (
+                            <div className="border-x-[0.5px] border-b border-[#D9D9D9] rounded-b-[10px] bg-white py-12 text-center font-Outfit text-[16px] font-light text-[#898C8F]">
+                                Nenhuma facção disponível.
+                            </div>
+                        ) : (
+                            <div className="max-h-[360px] overflow-y-auto overflow-x-hidden scrollbar-sutil rounded-b-[10px]">
+                                {parceirosOrdenadas.map((parceiro, index) => (
+                                    <div
+                                        key={parceiro.id}
+                                        onClick={() => {
+                                            onSelectParceiro?.(parceiro);
+                                            onClose?.();
+                                        }}
+                                        className={`
                                         cursor-pointer
                                         grid grid-cols-3 px-6 py-5 items-center transition-colors border-x-[0.5px] border-[#D9D9D9]
                                         ${index % 2 === 0 ? "bg-white" : "bg-[#F4F4F4]"}
@@ -253,27 +278,28 @@ const ProdutoParceiros = ({
                                                 : "border-b border-[#D9D9D9] rounded-b-[10px]"
                                         }
                                     `}
-                                >
-                                    <div className="flex justify-center items-center text-center font-Outfit text-[16px] font-light text-[#404040] px-2">
-                                        <span className="max-w-[180px] break-words">
-                                            {parceiro.nome}
-                                        </span>
-                                    </div>
+                                    >
+                                        <div className="flex justify-center items-center text-center font-Outfit text-[16px] font-light text-[#404040] px-2">
+                                            <span className="max-w-[180px] break-words">
+                                                {parceiro.nome}
+                                            </span>
+                                        </div>
 
-                                    <div className="flex justify-center font-Outfit text-[16px] font-light text-[#404040]">
-                                        {parceiro.preco !== null
-                                            ? `R$ ${Number(parceiro.preco).toFixed(2).replace(".", ",")}`
-                                            : "-"}
-                                    </div>
+                                        <div className="flex justify-center font-Outfit text-[16px] font-light text-[#404040]">
+                                            {parceiro.preco !== null
+                                                ? `R$ ${Number(parceiro.preco).toFixed(2).replace(".", ",")}`
+                                                : "-"}
+                                        </div>
 
-                                    <div className="flex justify-center">
-                                        <span className="bg-[#D9D9D9] rounded-full w-[109px] h-[19px] text-[12px] font-Outfit font-light text-[#404040] inline-flex items-center justify-center">
-                                            {parceiro.possuiPedido ? "Sim" : "Não"}
-                                        </span>
+                                        <div className="flex justify-center">
+                                            <span className="bg-[#D9D9D9] rounded-full w-[109px] h-[19px] text-[12px] font-Outfit font-light text-[#404040] inline-flex items-center justify-center">
+                                                {parceiro.possuiPedido ? "Sim" : "Não"}
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

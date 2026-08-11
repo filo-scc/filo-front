@@ -9,6 +9,7 @@ import {
     vincularProdutoAoCliente,
 } from "../services/clientesService";
 import { apenasNumeros, formatarCep, formatarCnpj, formatarTelefone } from "../utils/formatters";
+import { LoadingButton, ReferenceCardsSkeleton } from "../components/geral/Loading";
 
 const sectionTitleClass = "text-[20px] font-light text-[#404040] mb-4 font-['Outfit',_sans-serif]";
 
@@ -262,11 +263,12 @@ export default function ClientesCadastrar() {
                 const clientes = await getClientes(fabricoIdNumerico);
                 const clienteRecemCriado = [...(clientes || [])].reverse().find((cliente) => {
                     const cnpjCliente = valorOuUndefined(apenasNumeros(cliente?.cnpj));
-                    return (
-                        cnpjCliente &&
-                        cnpjCliente === cnpjNumerico &&
-                        String(cliente?.nome || "").trim() === nome
-                    );
+
+                    const correspondenciaCnpj = cnpjCliente === cnpjNumerico;
+
+                    const mesmoNome = String(cliente?.nome || "").trim() === nome;
+
+                    return correspondenciaCnpj && mesmoNome;
                 });
 
                 clienteId = primeiroNumeroValido(
@@ -428,14 +430,15 @@ export default function ClientesCadastrar() {
                     >
                         Cancelar
                     </button>
-                    <button
+                    <LoadingButton
                         type="button"
                         onClick={handleCadastrar}
-                        disabled={salvando}
+                        loading={salvando}
+                        loadingText="Salvando..."
                         className="bg-[#A9E2F2] hover:bg-[#94d6eb] disabled:opacity-60 disabled:cursor-not-allowed text-white h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px]"
                     >
-                        {salvando ? "Salvando..." : "Concluir cadastro"}
-                    </button>
+                        Concluir cadastro
+                    </LoadingButton>
                 </div>
                 {erroCadastro ? (
                     <p className="pt-4 text-sm text-[#D75757] text-right">{erroCadastro}</p>
@@ -489,9 +492,7 @@ export default function ClientesCadastrar() {
 
                         <div className="max-h-[280px] overflow-y-auto pr-2 scrollbar-sutil">
                             {loadingReferencias ? (
-                                <div className="flex justify-center items-center h-[150px] text-[#4696AD]">
-                                    Buscando produtos...
-                                </div>
+                                <ReferenceCardsSkeleton />
                             ) : produtosDisponiveis.length === 0 ? (
                                 <div className="flex justify-center items-center h-[150px] text-gray-500 font-light font-Outfit">
                                     Nenhuma nova referência encontrada.

@@ -1,6 +1,4 @@
-function SkeletonBox({ className }) {
-    return <div className={`bg-[#E8E9F0] rounded-[12px] animate-pulse ${className}`} />;
-}
+import { SkeletonBox } from "../geral/Loading";
 
 export default function ProdutoDetalhesSkeleton() {
     return (
@@ -11,7 +9,7 @@ export default function ProdutoDetalhesSkeleton() {
                 <div className="flex flex-col shrink-0">
                     <SkeletonBox className="h-[28px] w-24 mb-4 rounded-[8px]" />{" "}
                     {/* título "Imagem" */}
-                    <SkeletonBox className="w-[260px] h-[170px] rounded-[10px]" />
+                    <SkeletonBox className="w-[248px] h-[187px] rounded-[10px]" />
                 </div>
 
                 {/* Bloco de Dados */}
@@ -52,18 +50,56 @@ export default function ProdutoDetalhesSkeleton() {
 
             {/* Espelho de TabelaClientesDoProduto */}
             <section>
-                <SkeletonBox className="h-[28px] w-72 mb-4 rounded-[8px]" /> {/* título da seção */}
-                <div className="w-full rounded-[10px] overflow-hidden">
-                    {/* Cabeçalho */}
-                    <SkeletonBox className="h-[46px] w-full rounded-none rounded-t-[10px]" />
-                    {/* Linhas */}
-                    {[...Array(3)].map((_, i) => (
-                        <SkeletonBox
-                            key={i}
-                            className={`h-[46px] w-full rounded-none ${i === 2 ? "rounded-b-[10px]" : ""}`}
-                            style={{ opacity: 1 - i * 0.15 }}
-                        />
-                    ))}
+                <SkeletonBox className="h-[28px] w-72 mb-4 rounded-[8px]" />
+                <div className="flex flex-col w-full">
+                    <div className="flex flex-row items-stretch gap-4 w-full">
+                        <div className="flex-1 rounded-t-[10px] border border-[#D9D9D9] overflow-hidden">
+                            <div className="grid grid-cols-4 bg-[#D9D9D9] h-[52px] items-center">
+                                {[0, 1, 2, 3].map((item) => (
+                                    <div
+                                        key={item}
+                                        className={`h-full flex items-center justify-center px-4 ${
+                                            item > 0 ? "border-l border-[#D9D9D9]" : ""
+                                        }`}
+                                    >
+                                        <SkeletonBox className="h-[16px] w-28 rounded-[8px] bg-white/70" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-row items-stretch gap-4 w-full">
+                        <div className="flex-1 border-l border-r border-b rounded-b-[10px] overflow-hidden border-[#D9D9D9]">
+                            <div className="grid grid-cols-4 w-full text-[16px]">
+                                <div className="flex items-center justify-center px-4 bg-white">
+                                    <SkeletonBox className="h-[16px] w-32 rounded-[8px]" />
+                                </div>
+
+                                <div className="col-span-3 border-l border-[#D9D9D9]">
+                                    {[0, 1, 2].map((row) => (
+                                        <div
+                                            key={row}
+                                            className={`grid grid-cols-3 min-h-[64px] items-stretch ${
+                                                row % 2 === 0 ? "bg-white" : "bg-[#F4F4F4]"
+                                            } ${row !== 2 ? "border-b border-[#D9D9D9]" : ""}`}
+                                        >
+                                            {[0, 1, 2].map((cell) => (
+                                                <div
+                                                    key={cell}
+                                                    className={`flex items-center justify-center px-4 ${
+                                                        cell > 0 ? "border-l border-[#D9D9D9]" : ""
+                                                    }`}
+                                                >
+                                                    <SkeletonBox className="h-[16px] w-28 rounded-[8px]" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
         </div>

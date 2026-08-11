@@ -5,6 +5,7 @@ import { excluirParceiro, getParceirosByFabrico } from "../services/parceiroServ
 import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import MenuOpcoes from "../components/geral/MenuOpcoes";
+import { ParceirosTableSkeleton } from "../components/geral/Loading";
 
 const Parceiros = () => {
     const userString = localStorage.getItem("user");
@@ -17,6 +18,7 @@ const Parceiros = () => {
     const [parceiroSelecionado, setParceiroSelecionado] = useState(null);
 
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
+    const [excluindo, setExcluindo] = useState(false);
 
     const navigate = useNavigate();
 
@@ -64,9 +66,10 @@ const Parceiros = () => {
     };
 
     const handleConfirmarExclusao = async () => {
-        if (!parceiroSelecionado) return;
+        if (!parceiroSelecionado || excluindo) return;
 
         try {
+            setExcluindo(true);
             await excluirParceiro(parceiroSelecionado.id);
 
             setParceiros((prev) => prev.filter((c) => c.id !== parceiroSelecionado.id));
@@ -77,6 +80,8 @@ const Parceiros = () => {
         } catch (error) {
             console.error("Erro ao excluir parceiro:", error);
             alert("Erro ao excluir parceiro.");
+        } finally {
+            setExcluindo(false);
         }
     };
 
@@ -198,11 +203,7 @@ const Parceiros = () => {
 
                                 <tbody className="bg-white text-[#404040]">
                                     {loading ? (
-                                        <tr className="h-[64px]">
-                                            <td colSpan="5" className="text-gray-400">
-                                                Carregando parceiros...
-                                            </td>
-                                        </tr>
+                                        <ParceirosTableSkeleton rows={5} />
                                     ) : parceiros.length === 0 ? (
                                         <tr className="h-[64px]">
                                             <td colSpan="5" className="text-gray-400">
@@ -289,6 +290,7 @@ const Parceiros = () => {
                 onConfirm={handleConfirmarExclusao}
                 nomeItem={parceiroSelecionado?.nome}
                 tipoItem="um parceiro"
+                loading={excluindo}
             />
 
             {/* Modal confirmação */}

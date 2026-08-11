@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import MenuOpcoes from "../components/geral/MenuOpcoes";
+import { PedidosTableSkeleton } from "../components/geral/Loading";
 
 const Pedidos = () => {
     const navigate = useNavigate();
@@ -18,6 +19,7 @@ const Pedidos = () => {
     const [pedidoSelecionado, setPedidoSelecionado] = useState(null);
 
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
+    const [excluindo, setExcluindo] = useState(false);
 
     useEffect(() => {
         const fetchPedidos = async () => {
@@ -57,9 +59,10 @@ const Pedidos = () => {
     };
 
     const handleConfirmarExclusao = async () => {
-        if (!pedidoSelecionado) return;
+        if (!pedidoSelecionado || excluindo) return;
 
         try {
+            setExcluindo(true);
             await deletPedido(pedidoSelecionado.id);
 
             setPedidos(pedidos.filter((c) => c.id !== pedidoSelecionado.id));
@@ -69,6 +72,8 @@ const Pedidos = () => {
         } catch (error) {
             console.error("Erro ao excluir pedido:", error);
             alert("Erro ao excluir pedido.");
+        } finally {
+            setExcluindo(false);
         }
     };
 
@@ -125,74 +130,68 @@ const Pedidos = () => {
                 </div>
 
                 {/* Tabela de Pedidos */}
-                {loading ? (
-                    <div className="flex-1 flex items-center justify-center text-gray-400">
-                        Carregando pedidos...
-                    </div>
-                ) : (
-                    <div className="w-full overflow-visible">
-                        <div className="min-w-max border border-[#D9D9D9] rounded-xl font-light text-[16px] overflow-hidden">
-                            <table className="w-full text-left border-collapse relative z-10">
-                                <thead>
-                                    <tr className="bg-[#C9EAF6] text-[#4696AD]">
-                                        <th className="py-4 px-6 text-center font-normal">
-                                            Pedido
-                                        </th>
-                                        <th className="py-4 px-6 text-center font-normal">
-                                            Cliente
-                                        </th>
-                                        <th className="py-4 px-6 text-center font-normal">
-                                            Total de peças
-                                        </th>
-                                        <th className="py-4 px-6 text-center font-normal">Valor</th>
-                                        <th className="py-4 px-6 text-center font-normal">
-                                            Criado
-                                        </th>
-                                        <th className="py-4 px-6 text-center font-normal">
-                                            Finalizado
-                                        </th>
-                                        <th className="py-4 px-6 text-center font-normal">
-                                            Opções
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="text-[#404040]">
-                                    {pedidos.map((pedido, index) => {
-                                        const totalPecas =
-                                            pedido.fichas_tecnicas?.reduce(
-                                                (acc, ficha) => acc + ficha.quantidade,
-                                                0,
-                                            ) || 0;
+                <div className="w-full overflow-visible">
+                    <div className="min-w-max border border-[#D9D9D9] rounded-xl font-light text-[16px] overflow-hidden">
+                        <table className="w-full text-left border-collapse relative z-10">
+                            <thead>
+                                <tr className="bg-[#C9EAF6] text-[#4696AD]">
+                                    <th className="py-4 px-6 text-center font-normal">Pedido</th>
+                                    <th className="py-4 px-6 text-center font-normal">Cliente</th>
+                                    <th className="py-4 px-6 text-center font-normal">
+                                        Total de peças
+                                    </th>
+                                    <th className="py-4 px-6 text-center font-normal">Valor</th>
+                                    <th className="py-4 px-6 text-center font-normal">Criado</th>
+                                    <th className="py-4 px-6 text-center font-normal">
+                                        Finalizado
+                                    </th>
+                                    <th className="py-4 px-6 text-center font-normal">Opções</th>
+                                </tr>
+                            </thead>
+                            <tbody className="text-[#404040]">
+                                {loading ? (
+                                    <PedidosTableSkeleton rows={5} />
+                                ) : (
+                                    <>
+                                        {pedidos.map((pedido, index) => {
+                                            const totalPecas =
+                                                pedido.fichas_tecnicas?.reduce(
+                                                    (acc, ficha) => acc + ficha.quantidade,
+                                                    0,
+                                                ) || 0;
 
-                                        let textoDataFinalizado = "-";
+                                            let textoDataFinalizado = "-";
 
-                                        const isLast = index === pedidos.length - 1;
+                                            const isLast = index === pedidos.length - 1;
 
-                                        if (pedido.finalizado) {
-                                            let ultimaDataFim = null;
+                                            if (pedido.finalizado) {
+                                                let ultimaDataFim = null;
 
-                                            pedido.fichas_tecnicas?.forEach((ficha) => {
-                                                ficha.fichas_etapas?.forEach((etapa) => {
-                                                    if (etapa.data_fim) {
-                                                        const dataAtual = new Date(etapa.data_fim);
-                                                        if (
-                                                            !ultimaDataFim ||
-                                                            dataAtual > ultimaDataFim
-                                                        ) {
-                                                            ultimaDataFim = dataAtual;
+                                                pedido.fichas_tecnicas?.forEach((ficha) => {
+                                                    ficha.fichas_etapas?.forEach((etapa) => {
+                                                        if (etapa.data_fim) {
+                                                            const dataAtual = new Date(
+                                                                etapa.data_fim,
+                                                            );
+                                                            if (
+                                                                !ultimaDataFim ||
+                                                                dataAtual > ultimaDataFim
+                                                            ) {
+                                                                ultimaDataFim = dataAtual;
+                                                            }
                                                         }
-                                                    }
+                                                    });
                                                 });
-                                            });
 
-                                            if (ultimaDataFim) {
-                                                textoDataFinalizado = formatarData(ultimaDataFim);
-                                            } else {
-                                                textoDataFinalizado = formatarData(
-                                                    pedido.updated_at,
-                                                );
+                                                if (ultimaDataFim) {
+                                                    textoDataFinalizado =
+                                                        formatarData(ultimaDataFim);
+                                                } else {
+                                                    textoDataFinalizado = formatarData(
+                                                        pedido.updated_at,
+                                                    );
+                                                }
                                             }
-                                        }
 
                                         return (
                                             <tr
@@ -203,48 +202,53 @@ const Pedidos = () => {
                                                     {pedido.numero ?? pedido.id}
                                                 </td>
 
-                                                <td className="py-4 px-6">
-                                                    {pedido.cliente?.nome || "-"}
-                                                </td>
-                                                <td className="py-4 px-6 ">{totalPecas}</td>
-                                                <td className="py-4 px-6 ">
-                                                    {!pedido.cliente
-                                                        ? "-"
-                                                        : pedido.valor_total != null
-                                                          ? `R$ ${pedido.valor_total.toFixed(2).replace(".", ",")}`
-                                                          : "R$ 0,00"}
-                                                </td>
+                                                    <td className="py-4 px-6">
+                                                        {pedido.cliente?.nome || "-"}
+                                                    </td>
+                                                    <td className="py-4 px-6 ">{totalPecas}</td>
+                                                    <td className="py-4 px-6 ">
+                                                        {!pedido.cliente
+                                                            ? "-"
+                                                            : pedido.valor_total != null
+                                                              ? `R$ ${pedido.valor_total.toFixed(2).replace(".", ",")}`
+                                                              : "R$ 0,00"}
+                                                    </td>
 
-                                                <td className="py-4 px-6">
-                                                    {formatarData(pedido.created_at)}
-                                                </td>
-                                                <td className="py-4 px-6">{textoDataFinalizado}</td>
-                                                <td className="py-4 px-6">
-                                                    <MenuOpcoes
-                                                        onEdit={() => handleEdit(pedido.id)}
-                                                        onDelete={() => abrirModalExclusao(pedido)}
-                                                        isLast={isLast}
-                                                    />
+                                                    <td className="py-4 px-6">
+                                                        {formatarData(pedido.created_at)}
+                                                    </td>
+                                                    <td className="py-4 px-6">
+                                                        {textoDataFinalizado}
+                                                    </td>
+                                                    <td className="py-4 px-6">
+                                                        <MenuOpcoes
+                                                            onEdit={() => handleEdit(pedido.id)}
+                                                            onDelete={() =>
+                                                                abrirModalExclusao(pedido)
+                                                            }
+                                                            isLast={isLast}
+                                                        />
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+
+                                        {pedidos.length === 0 && (
+                                            <tr>
+                                                <td
+                                                    colSpan="7"
+                                                    className="text-center py-10 text-gray-400"
+                                                >
+                                                    Nenhum pedido encontrado.
                                                 </td>
                                             </tr>
-                                        );
-                                    })}
-
-                                    {pedidos.length === 0 && (
-                                        <tr>
-                                            <td
-                                                colSpan="7"
-                                                className="text-center py-10 text-gray-400"
-                                            >
-                                                Nenhum pedido encontrado.
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                                        )}
+                                    </>
+                                )}
+                            </tbody>
+                        </table>
                     </div>
-                )}
+                </div>
             </div>
             <ModalExclusao
                 isOpen={modalExclusaoAberto}
@@ -252,6 +256,7 @@ const Pedidos = () => {
                 onConfirm={handleConfirmarExclusao}
                 nomeItem={pedidoSelecionado?.nome}
                 tipoItem="o pedido"
+                loading={excluindo}
             />
 
             <ModalConfirmacao

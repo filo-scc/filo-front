@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { createParceiro } from "../services/parceiroService";
 import { getAllEtapasByFabricoId } from "../services/etapaService";
+import { LoadingButton, SkeletonBox } from "../components/geral/Loading";
 
 const FloatingInput = ({ label, name, value, onChange, containerClass, ...rest }) => (
     <div className={`relative group ${containerClass}`}>
@@ -31,6 +32,7 @@ const ParceiroCadastro = () => {
     const [dropdownAberto, setDropdownAberto] = useState(false);
     const [dropdownEtapaAberto, setDropdownEtapaAberto] = useState(false);
     const [etapas, setEtapas] = useState([]);
+    const [loadingEtapas, setLoadingEtapas] = useState(true);
 
     const [formData, setFormData] = useState({
         categoria: "",
@@ -56,6 +58,7 @@ const ParceiroCadastro = () => {
     // Buscar as etapas de produção ao montar o componente
     useEffect(() => {
         const fetchEtapas = async () => {
+            setLoadingEtapas(true);
             try {
                 const userString = localStorage.getItem("user");
                 if (userString) {
@@ -63,11 +66,14 @@ const ParceiroCadastro = () => {
                     const fabricoId = usuarioLogado.fabrico_id;
                     if (fabricoId) {
                         const dados = await getAllEtapasByFabricoId(fabricoId);
-                        setEtapas(dados || []);
+                        const etapasAtivas = (dados || []).filter((etapa) => etapa.ativa === true);
+                        setEtapas(etapasAtivas);
                     }
                 }
             } catch (err) {
                 console.error("Erro ao buscar etapas de produção:", err);
+            } finally {
+                setLoadingEtapas(false);
             }
         };
         fetchEtapas();
@@ -198,16 +204,30 @@ const ParceiroCadastro = () => {
                             <h2 className="text-[#404040] font-light mb-4">Etapa de produção</h2>
                             <div className="relative w-full">
                                 <div
-                                    className={`${inputClass} bg-white flex justify-between items-center cursor-pointer`}
-                                    onClick={() => setDropdownEtapaAberto(!dropdownEtapaAberto)}
-                                >
-                                    <span
-                                        className={
-                                            formData.categoria ? "text-gray-600" : "text-gray-400"
+                                    className={`${inputClass} bg-white flex justify-between items-center ${
+                                        loadingEtapas
+                                            ? "cursor-not-allowed opacity-60"
+                                            : "cursor-pointer"
+                                    }`}
+                                    onClick={() => {
+                                        if (!loadingEtapas) {
+                                            setDropdownEtapaAberto(!dropdownEtapaAberto);
                                         }
-                                    >
-                                        {formData.categoria || "Selecionar"}
-                                    </span>
+                                    }}
+                                >
+                                    {loadingEtapas ? (
+                                        <SkeletonBox className="h-[14px] w-24 rounded-[7px]" />
+                                    ) : (
+                                        <span
+                                            className={
+                                                formData.categoria
+                                                    ? "text-gray-600"
+                                                    : "text-gray-400"
+                                            }
+                                        >
+                                            {formData.categoria || "Selecionar"}
+                                        </span>
+                                    )}
                                     <svg
                                         className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
                                             dropdownEtapaAberto ? "rotate-180" : ""
@@ -489,13 +509,14 @@ const ParceiroCadastro = () => {
 
                     {/* Botão Concluir */}
                     <div className="flex justify-end pt-4">
-                        <button
+                        <LoadingButton
                             type="submit"
-                            disabled={loading}
+                            loading={loading}
+                            loadingText="Salvando..."
                             className="bg-[#A9E2F2] hover:bg-[#8acbdc] text-[#4696ad] justify-center items-center rounded-full text-sm font-medium transition-colors disabled:opacity-50 shadow-sm w-[189px] h-[39px]"
                         >
-                            {loading ? "Salvando..." : "Concluir cadastro"}
-                        </button>
+                            Concluir cadastro
+                        </LoadingButton>
                     </div>
                 </form>
             </div>
