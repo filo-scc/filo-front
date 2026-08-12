@@ -118,9 +118,10 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
             return;
         }
 
-        const sourceElement =
-            document.getElementById("nota-print-view") ||
-            document.getElementById("portal-impressao-nota");
+        const portalElement = document.getElementById("portal-impressao-nota");
+        const printViewElement = document.getElementById("nota-print-view");
+        const sourceElement = portalElement || printViewElement;
+
         if (!sourceElement) {
             console.error("Elemento de nota de saída não encontrado para gerar PDF.");
             return;
@@ -128,16 +129,29 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
 
         const snapshot = sourceElement.cloneNode(true);
         snapshot.id = "nota-print-view-pdf-snapshot";
-        snapshot.style.position = "absolute";
+        snapshot.className = snapshot.className
+            .split(" ")
+            .filter((cls) => cls !== "hidden" && cls !== "print:block")
+            .join(" ");
+        snapshot.style.position = "fixed";
         snapshot.style.left = "0";
         snapshot.style.top = "0";
+        snapshot.style.margin = "0";
+        snapshot.style.padding = "0";
+        snapshot.style.boxSizing = "border-box";
         snapshot.style.width = "210mm";
+        snapshot.style.maxWidth = "210mm";
+        snapshot.style.minWidth = "210mm";
         snapshot.style.visibility = "visible";
         snapshot.style.zIndex = "99999";
         snapshot.style.pointerEvents = "none";
         snapshot.style.opacity = "1";
         snapshot.style.display = "block";
         snapshot.style.backgroundColor = "white";
+        snapshot.style.overflow = "visible";
+        snapshot.style.transform = "none";
+        snapshot.style.transition = "none";
+
         document.body.appendChild(snapshot);
 
         await new Promise((resolve) => window.setTimeout(resolve, 150));
@@ -150,6 +164,10 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                 backgroundColor: "#ffffff",
                 scrollX: 0,
                 scrollY: 0,
+                windowWidth: snapshot.offsetWidth,
+                windowHeight: snapshot.offsetHeight,
+                width: snapshot.offsetWidth,
+                height: snapshot.offsetHeight,
             });
 
             const imgData = canvas.toDataURL("image/png");

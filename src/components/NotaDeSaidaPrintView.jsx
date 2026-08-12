@@ -380,7 +380,7 @@ export default function NotaDeSaidaPrintView({
                                                                 item.hexColor || "#E5E5E5",
                                                         }}
                                                     />
-                                                    <span className="text-[14px] font-light text-[#333333] truncate">
+                                                    <span className="flex-1 -translate-y-[6px] print:translate-y-0 h-full flex items-center text-[14px] font-light text-[#333333] ">
                                                         {item.corNome}
                                                     </span>
                                                 </div>
