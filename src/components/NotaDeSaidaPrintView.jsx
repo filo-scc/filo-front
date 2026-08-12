@@ -25,6 +25,7 @@ export default function NotaDeSaidaPrintView({
     referenciaCliente,
     dados: dadosProp,
     onReadyToPrint,
+    forceVisibleForPdf = false,
 }) {
     const [isMounted, setIsMounted] = useState(false);
     const [fabricoInfo, setFabricoInfo] = useState(null);
@@ -235,7 +236,25 @@ export default function NotaDeSaidaPrintView({
                 `}
             </style>
 
-            <div id="portal-impressao-nota" className="hidden print:block w-full">
+            <div
+                id="portal-impressao-nota"
+                className={`${forceVisibleForPdf ? "block" : "hidden print:block"} w-full`}
+                style={
+                    forceVisibleForPdf
+                        ? {
+                              position: "absolute",
+                              left: 0,
+                              top: "-10000px",
+                              width: "210mm",
+                              visibility: "visible",
+                              zIndex: 99999,
+                              pointerEvents: "none",
+                              opacity: 1,
+                              display: "block",
+                          }
+                        : undefined
+                }
+            >
                 <div
                     id="nota-print-view"
                     className="bg-white text-black p-5 w-full max-w-[260mm] mx-auto font-['Outfit',_sans-serif]"
