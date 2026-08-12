@@ -75,8 +75,8 @@ export function Sidebar() {
                 className="w-[169px] h-[39px] min-h-[39px] bg-[#A9E2F2] rounded-[18.5px] flex items-center justify-start px-4 gap-3 transition-all duration-200 shadow-sm hover:bg-[#8ecce0]"
                 onClick={() => navigate("/pedidos/cadastrar")}
             >
-                <img src="/nova-ficha.png" alt="" className="w-5 h-5" />
-                <span className="text-[#FFFFFF] font-normal text-sm">{labelNovaFicha}</span>
+                <img src="/pedidos-azul.png" alt="" className="w-5 h-5" />
+                <span className="text-[#4696AD] font-normal text-sm">{labelNovaFicha}</span>
             </button>
 
             {/* 2. Menu Itens */}
