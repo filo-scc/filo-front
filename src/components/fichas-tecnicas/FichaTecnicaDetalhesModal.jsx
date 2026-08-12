@@ -7,6 +7,8 @@ import NotaDeSaidaPrintView from "../NotaDeSaidaPrintView";
 import { useNavigate } from "react-router-dom";
 import FichaTecnicaPrintView from "../FichaTecnicaPrintView";
 import OpcoesImpressaoModal from "./OpcoesImpressaoModal";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 const CampoDetalhe = ({ label, valor }) => (
     <div className="relative border border-[#898C8F] rounded-[10px] h-[39px] px-3 flex items-center mt-2 w-full bg-white">
@@ -109,6 +111,96 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
         setPrintMode(mode);
         window.print();
     }, []);
+
+    const handleDownloadNotaSaidaPdf = useCallback(async () => {
+        if (!ficha) {
+            console.error("[PDF] ficha não definida");
+            return;
+        }
+
+        const portalElement = document.getElementById("portal-impressao-nota");
+        const printViewElement = document.getElementById("nota-print-view");
+        const sourceElement = portalElement || printViewElement;
+
+        if (!sourceElement) {
+            console.error("Elemento de nota de saída não encontrado para gerar PDF.");
+            return;
+        }
+
+        const snapshot = sourceElement.cloneNode(true);
+        snapshot.id = "nota-print-view-pdf-snapshot";
+        snapshot.className = snapshot.className
+            .split(" ")
+            .filter((cls) => cls !== "hidden" && cls !== "print:block")
+            .join(" ");
+        snapshot.style.position = "fixed";
+        snapshot.style.left = "0";
+        snapshot.style.top = "0";
+        snapshot.style.margin = "0";
+        snapshot.style.padding = "0";
+        snapshot.style.boxSizing = "border-box";
+        snapshot.style.width = "210mm";
+        snapshot.style.maxWidth = "210mm";
+        snapshot.style.minWidth = "210mm";
+        snapshot.style.visibility = "visible";
+        snapshot.style.zIndex = "99999";
+        snapshot.style.pointerEvents = "none";
+        snapshot.style.opacity = "1";
+        snapshot.style.display = "g";
+        snapshot.style.backgroundColor = "white";
+        snapshot.style.overflow = "visible";
+        snapshot.style.transform = "none";
+        snapshot.style.transition = "none";
+
+        document.body.appendChild(snapshot);
+
+        await new Promise((resolve) => window.setTimeout(resolve, 150));
+
+        try {
+            const canvas = await html2canvas(snapshot, {
+                useCORS: true,
+                allowTaint: true,
+                scale: 2,
+                backgroundColor: "#ffffff",
+                scrollX: 0,
+                scrollY: 0,
+                windowWidth: snapshot.offsetWidth,
+                windowHeight: snapshot.offsetHeight,
+                width: snapshot.offsetWidth,
+                height: snapshot.offsetHeight,
+            });
+
+            const imgData = canvas.toDataURL("image/png");
+            const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const imgProps = pdf.getImageProperties(imgData);
+            const imgWidth = pageWidth;
+            const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+
+            pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+
+            let heightLeft = imgHeight - pageHeight;
+            let pageNumber = 1;
+
+            while (heightLeft > 0) {
+                pdf.addPage();
+                pdf.addImage(imgData, "PNG", 0, -pageHeight * pageNumber, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+                pageNumber += 1;
+            }
+
+            const fileName = `nota-de-saida-${ficha.numero || "export"}.pdf`;
+            pdf.save(fileName);
+        } catch (error) {
+            console.error("Erro ao gerar PDF da nota de saída", error);
+        } finally {
+            const snapshotElement = document.getElementById("nota-print-view-pdf-snapshot");
+            if (snapshotElement && snapshotElement.parentNode) {
+                snapshotElement.parentNode.removeChild(snapshotElement);
+            }
+        }
+    }, [ficha]);
 
     const handleContentClick = (e) => {
         e.stopPropagation();
@@ -449,9 +541,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                         })}
                                     </div>
                                 ) : (
-                                    <div className="mt-1 text-[13px] text-[#888]">
-                                        Nenhum material vinculado a este produto.
-                                    </div>
+                                    <div className="mt-1 text-[13px] text-[#888]"></div>
                                 )}
                             </div>
                         </>
@@ -499,9 +589,15 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                     setModalImpressaoAberto(false);
                     handlePrintMode("ficha");
                 }}
-                onSelectNotaSaida={() => {
+                onSelectNotaSaida={async () => {
                     setModalImpressaoAberto(false);
+                    if (ficha?.fabrico?.id === 3 || ficha?.fabrico_id === 3) {
+                        await handleDownloadNotaSaidaPdf();
+                        return false;
+                    }
+
                     handlePrintMode("nota");
+                    return true;
                 }}
             />
 
@@ -525,7 +621,11 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                 fichaId={fichaId}
                 referencia={referenciaCliente}
             />
-            <NotaDeSaidaPrintView ficha={ficha} referenciaCliente={referenciaCliente} />
+            <NotaDeSaidaPrintView
+                ficha={ficha}
+                referenciaCliente={referenciaCliente}
+                forceVisibleForPdf={Boolean(ficha?.fabrico?.id === 3 || ficha?.fabrico_id === 3)}
+            />
         </div>
     );
 }
