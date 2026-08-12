@@ -980,7 +980,7 @@ export default function TransferenciaEtapaModal({
                                 className={`h-[39px] w-[200px] rounded-full px-10 text-[15px] font-normal transition-all ${
                                     !quantidadeValida || !precoUnitarioValido
                                         ? "cursor-not-allowed border border-[#D9D9D9] bg-[#F5F5F5] text-[#898C8F]"
-                                        : "bg-[#A9E2F2] text-[#4696AD] hover:bg-[#8ECCE0] active:scale-95"
+                                        : "bg-[#A9E2F2] text-[#4696AD] hover:bg-[#A2DCED] active:scale-95"
                                 }`}
                             >
                                 {submitting ? "Processando..." : "Transferir"}

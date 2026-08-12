@@ -72,7 +72,7 @@ export function Sidebar() {
 
             {/* 1. Botão Nova Ficha */}
             <button
-                className="w-[169px] h-[39px] min-h-[39px] bg-[#A9E2F2] rounded-[18.5px] flex items-center justify-start px-4 gap-3 transition-all duration-200 shadow-sm hover:bg-[#8ecce0]"
+                className="w-[169px] h-[39px] min-h-[39px] bg-[#A9E2F2] rounded-[18.5px] flex items-center justify-start px-4 gap-3 transition-all duration-200 shadow-sm hover:bg-[#A2DCED]"
                 onClick={() => navigate("/pedidos/cadastrar")}
             >
                 <img src="/pedidos-azul.png" alt="" className="w-5 h-5" />
