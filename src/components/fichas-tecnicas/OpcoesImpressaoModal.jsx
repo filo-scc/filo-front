@@ -25,8 +25,8 @@ export default function OpcoesImpressaoModal({
                 {/* Botões de Ação */}
                 <div className="flex items-center justify-center gap-4 w-full">
                     <button
-                        onClick={() => {
-                            if (onSelectFichaTecnica) onSelectFichaTecnica();
+                        onClick={async () => {
+                            if (onSelectFichaTecnica) await onSelectFichaTecnica();
                             onClose();
                             window.location.href = "/";
                         }}
@@ -36,10 +36,14 @@ export default function OpcoesImpressaoModal({
                     </button>
 
                     <button
-                        onClick={() => {
-                            if (onSelectNotaSaida) onSelectNotaSaida();
+                        onClick={async () => {
+                            const shouldNavigate = onSelectNotaSaida
+                                ? await onSelectNotaSaida()
+                                : true;
                             onClose();
-                            window.location.href = "/";
+                            if (shouldNavigate) {
+                                window.location.href = "/";
+                            }
                         }}
                         className="bg-[#AEE2F3] hover:bg-[#99D9EB] text-[#3B92A7] font-medium py-2.5 px-6 rounded-full text-[15px] transition-colors focus:outline-none"
                     >
