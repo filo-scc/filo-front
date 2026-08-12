@@ -5,6 +5,7 @@ import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import MenuOpcoes from "../components/geral/MenuOpcoes";
 import { PedidosTableSkeleton } from "../components/geral/Loading";
+import { getFabricoById } from "../services/fabricoService";
 
 const Pedidos = () => {
     const navigate = useNavigate();
@@ -20,6 +21,7 @@ const Pedidos = () => {
 
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
     const [excluindo, setExcluindo] = useState(false);
+    const [labelBotao, setLabelBotao] = useState("Novo pedido");
 
     useEffect(() => {
         const fetchPedidos = async () => {
@@ -32,6 +34,10 @@ const Pedidos = () => {
 
                 const data = await getPedidosByFabricoId(fabrico_id);
                 setPedidos(data);
+
+                const fabricoData = await getFabricoById(fabrico_id);
+
+                setLabelBotao(fabricoData.fabricacao_sob_demanda ? "Novo pedido" : "Nova produção");
             } catch (error) {
                 console.error("Erro ao carregar os pedids", error);
             } finally {
@@ -124,7 +130,7 @@ const Pedidos = () => {
                                 alt="Adicionar pedido ícone"
                                 className="w-6 h-6 object-contain"
                             />
-                            Novo pedido
+                            {labelBotao}
                         </button>
                     </div>
                 </div>
