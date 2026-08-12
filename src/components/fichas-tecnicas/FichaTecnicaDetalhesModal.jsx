@@ -113,7 +113,6 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
     }, []);
 
     const handleDownloadNotaSaidaPdf = useCallback(async () => {
-        console.log("[PDF] start handleDownloadNotaSaidaPdf", { ficha });
         if (!ficha) {
             console.error("[PDF] ficha não definida");
             return;
@@ -122,7 +121,6 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
         const sourceElement =
             document.getElementById("nota-print-view") ||
             document.getElementById("portal-impressao-nota");
-        console.log("[PDF] source element", sourceElement);
         if (!sourceElement) {
             console.error("Elemento de nota de saída não encontrado para gerar PDF.");
             return;
@@ -145,14 +143,6 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
         await new Promise((resolve) => window.setTimeout(resolve, 150));
 
         try {
-            const rect = snapshot.getBoundingClientRect();
-            console.log("[PDF] rendering canvas...", {
-                width: rect.width,
-                height: rect.height,
-                x: rect.x,
-                y: rect.y,
-            });
-
             const canvas = await html2canvas(snapshot, {
                 useCORS: true,
                 allowTaint: true,
@@ -161,7 +151,6 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                 scrollX: 0,
                 scrollY: 0,
             });
-            console.log("[PDF] canvas generated", { width: canvas.width, height: canvas.height });
 
             const imgData = canvas.toDataURL("image/png");
             const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
@@ -184,12 +173,10 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
             }
 
             const fileName = `nota-de-saida-${ficha.numero || "export"}.pdf`;
-            console.log("[PDF] saving file", fileName);
             pdf.save(fileName);
         } catch (error) {
             console.error("Erro ao gerar PDF da nota de saída", error);
         } finally {
-            console.log("[PDF] cleanup styles");
             const snapshotElement = document.getElementById("nota-print-view-pdf-snapshot");
             if (snapshotElement && snapshotElement.parentNode) {
                 snapshotElement.parentNode.removeChild(snapshotElement);
