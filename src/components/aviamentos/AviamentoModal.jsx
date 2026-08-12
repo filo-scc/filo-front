@@ -360,7 +360,7 @@ export default function AviamentoModal({
                             type="button"
                             disabled={submitting}
                             onClick={handleSubmit}
-                            className="h-[39px] shrink-0 rounded-full bg-[#A9E2F2] px-6 text-[15px] font-light text-[#4696AD] transition hover:bg-[#94d6eb] disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
+                            className="h-[39px] shrink-0 rounded-full bg-[#A9E2F2] px-6 text-[15px] font-light text-[#4696AD] transition hover:bg-[#A2DCED] disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
                         >
                             {submitting ? "Salvando..." : textoBotao}
                         </button>
