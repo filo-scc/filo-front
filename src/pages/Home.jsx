@@ -1,7 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import React, { useEffect, useRef, useState } from "react";
 import { getAllEtapasByFabricoId } from "../services/etapaService";
-import { getFabricoById } from "../services/fabricoService";
 import { getFichaTecnicaByFabrico } from "../services/fichasTecnicasService";
 import { getMe } from "../services/authService";
 import TransferenciaEtapaModal from "../components/fichas-tecnicas/TransferenciaEtapaModal";
@@ -20,8 +19,6 @@ export default function Home() {
 
     const [mostrarSetaEsquerda, setMostrarSetaEsquerda] = useState(null);
     const [mostrarSetaDireita, setMostrarSetaDireita] = useState(null);
-
-    const [producaoSobDemanda, setProducaoSobDemanda] = useState(null);
     const [transferenciaAtiva, setTransferenciaAtiva] = useState(null);
     const [fabricoId, setFabricoId] = useState(null);
 
@@ -29,8 +26,6 @@ export default function Home() {
     const [fichaSelecionadaId, setFichaSelecionadaId] = useState(null);
 
     const mensagem = location.state?.error;
-    const labelNovaFicha =
-        producaoSobDemanda === null ? "" : producaoSobDemanda ? "Novo pedido" : "Nova produção";
 
     useEffect(() => {
         if (mostrarErro) {
@@ -52,9 +47,6 @@ export default function Home() {
             if (!fId) {
                 throw new Error("Usuário não possui um fabrico associado");
             }
-
-            const fabrico = await getFabricoById(fId);
-            setProducaoSobDemanda(fabrico?.fabricacao_sob_demanda === true);
 
             const [etapas, fichasTecnicas] = await Promise.all([
                 getAllEtapasByFabricoId(fId),
@@ -213,21 +205,6 @@ export default function Home() {
                                 </span>
                                 Quadro de produção
                             </h1>
-                            <button
-                                onClick={() => navigate("/pedidos/cadastrar")}
-                                disabled={producaoSobDemanda === null}
-                                aria-busy={producaoSobDemanda === null}
-                                className="w-[169px] h-[39px] bg-[#A9E2F2] text-[#4696AD] font-normal text-base rounded-full flex items-center justify-center gap-2 shrink-0"
-                            >
-                                <span className="flex items-center w-4 h-4 relative">
-                                    <img
-                                        src="nova-ficha-azul.png"
-                                        alt="Ícone Nova ficha"
-                                        className="w-full h-full object-contain"
-                                    />
-                                </span>
-                                <span className="min-w-[103px]">{labelNovaFicha}</span>
-                            </button>
                         </div>
 
                         <div className="relative flex-1 min-h-0 min-w-0 overflow-hidden">
