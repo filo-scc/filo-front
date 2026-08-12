@@ -523,9 +523,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                         })}
                                     </div>
                                 ) : (
-                                    <div className="mt-1 text-[13px] text-[#888]">
-                                        Nenhum material vinculado a este produto.
-                                    </div>
+                                    <div className="mt-1 text-[13px] text-[#888]"></div>
                                 )}
                             </div>
                         </>
