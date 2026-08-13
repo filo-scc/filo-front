@@ -31,7 +31,10 @@ const Pedidos = () => {
                 setLoading(true);
 
                 const data = await getPedidosByFabricoId(fabrico_id);
-                setPedidos(data);
+                const pedidosOrdenados = [...data].sort(
+                    (a, b) => (Number(a.numero) || a.id) - (Number(b.numero) || b.id),
+                );
+                setPedidos(pedidosOrdenados);
             } catch (error) {
                 console.error("Erro ao carregar os pedids", error);
             } finally {
