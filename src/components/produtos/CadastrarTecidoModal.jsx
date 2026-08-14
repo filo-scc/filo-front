@@ -6,12 +6,12 @@ import { criarTecido } from "../../services/tecidoService";
 function formatarUnidadeDeMedida(unidade) {
     if (!unidade) return "";
     const unidadesMapeadas = {
-        METRO: "m",
-        CENTIMETRO: "cm",
-        GRAMA: "g",
-        QUILOGRAMA: "kg",
-        UNIDADE: "und",
-        PAR: "par",
+        METRO: "Metro (m)",
+        CENTIMETRO: "Centímetro (cm)",
+        GRAMA: "Grama (g)",
+        QUILOGRAMA: "Quilograma (kg)",
+        UNIDADE: "Unidade (un)",
+        PAR: "Par (par)",
     };
     return unidadesMapeadas[unidade.toUpperCase()] || unidade.toLowerCase();
 }
