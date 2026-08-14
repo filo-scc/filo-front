@@ -27,13 +27,6 @@ const UNIDADES_LABELS = {
     PAR: "Par (par)",
 };
 
-const normalizarUnidade = (unidade) => String(unidade || "").toUpperCase();
-
-// const formatarUnidadeDeMedida = (unidade) => {
-//     const unidadeNormalizada = normalizarUnidade(unidade);
-//     return UNIDADES_LABELS[unidadeNormalizada] || unidade || "";
-// };
-
 const parseNumero = (valor) => {
     const numero = Number(String(valor || "").replace(",", "."));
     return Number.isFinite(numero) ? numero : 0;
@@ -127,7 +120,7 @@ export function CadastrarTecidoModal({ isOpen, onClose, onSuccess, fabricoId }) 
 
     const handleSubmit = async () => {
         const nomeTrim = nome.trim();
-        const unidadeNormalizada = normalizarUnidade(unidadeMedida);
+        const unidadeNormalizada = formatarUnidadeDeMedida(unidadeMedida);
 
         if (!nomeTrim) {
             setError("Informe o nome do tecido.");
