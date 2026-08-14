@@ -120,14 +120,16 @@ export function CadastrarTecidoModal({ isOpen, onClose, onSuccess, fabricoId }) 
 
     const handleSubmit = async () => {
         const nomeTrim = nome.trim();
-        const unidadeNormalizada = formatarUnidadeDeMedida(unidadeMedida);
+        const unidadeNormalizada = String(unidadeMedida || "")
+            .trim()
+            .toUpperCase();
 
         if (!nomeTrim) {
             setError("Informe o nome do tecido.");
             return;
         }
 
-        if (!unidadeNormalizada) {
+        if (!UNIDADES_OPCOES.includes(unidadeNormalizada)) {
             setError("Selecione uma unidade de medida.");
             return;
         }
