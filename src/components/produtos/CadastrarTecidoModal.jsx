@@ -29,10 +29,10 @@ const UNIDADES_LABELS = {
 
 const normalizarUnidade = (unidade) => String(unidade || "").toUpperCase();
 
-const formatarUnidadeDeMedida = (unidade) => {
-    const unidadeNormalizada = normalizarUnidade(unidade);
-    return UNIDADES_LABELS[unidadeNormalizada] || unidade || "";
-};
+// const formatarUnidadeDeMedida = (unidade) => {
+//     const unidadeNormalizada = normalizarUnidade(unidade);
+//     return UNIDADES_LABELS[unidadeNormalizada] || unidade || "";
+// };
 
 const parseNumero = (valor) => {
     const numero = Number(String(valor || "").replace(",", "."));
