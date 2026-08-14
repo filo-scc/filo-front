@@ -328,7 +328,7 @@ export default function ClientesEditar() {
                                 onClick={handleFinalizar}
                                 loading={salvando}
                                 loadingText="Salvando..."
-                                className="bg-[#A9E2F2] hover:bg-[#94d6eb] text-white h-[42px] px-8 rounded-full min-w-[180px]"
+                                className="bg-[#A9E2F2] hover:bg-[#A2DCED] text-[#4696AD] h-[42px] px-8 rounded-full min-w-[180px]"
                             >
                                 Concluir edição
                             </LoadingButton>

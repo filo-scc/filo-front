@@ -584,7 +584,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                     <button
                         type="button"
                         onClick={() => setModalImpressaoAberto(true)}
-                        className="w-[71px] h-[39px] bg-[#A9E2F2] rounded-full flex items-center justify-center hover:bg-[#97D8EA] transition-colors shadow-sm focus:outline-none"
+                        className="w-[71px] h-[39px] bg-[#A9E2F2] rounded-full flex items-center justify-center hover:bg-[#A2DCED] transition-colors shadow-sm focus:outline-none"
                     >
                         <img
                             src="/impressora-azul.png"
@@ -605,7 +605,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                 onClose();
                                 navigate("/");
                             }}
-                            className="px-10 h-[39px] rounded-full bg-[#A9E2F2] text-[#4696AD] hover:bg-[#97D8EA] transition-colors text-sm"
+                            className="px-10 h-[39px] rounded-full bg-[#A9E2F2] text-[#4696AD] hover:bg-[#A2DCED] transition-colors text-sm"
                         >
                             Concluir
                         </button>
