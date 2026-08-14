@@ -615,7 +615,7 @@ export default function NotaDeSaidaPrintView({
                     </div>
 
                     {/* FOOTER */}
-                    <div className="print-footer mt-auto pt-6 pb-2 opacity-70">
+                    <div className="print-footer mt-auto pt-6 pb-2">
                         <div className="mx-[30px] flex items-end justify-between">
                             {fabricoInfo?.foto_de_perfil ? (
                                 <img
