@@ -190,7 +190,7 @@ export default function EstampaModal({ isOpen, onClose, fabricoId, onSuccess }) 
                         loading={submitting}
                         loadingText="Salvando..."
                         onClick={handleSubmit}
-                        className="h-[39px] rounded-full bg-[#A9E2F2] px-8 text-[15px] font-light text-[#4696AD] transition hover:bg-[#94d6eb] disabled:opacity-60"
+                        className="h-[39px] rounded-full bg-[#A9E2F2] px-8 text-[15px] font-light text-[#4696AD] transition hover:bg-[#A2DCED] disabled:opacity-60"
                     >
                         Concluir cadastro
                     </LoadingButton>

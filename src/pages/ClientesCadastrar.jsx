@@ -435,7 +435,7 @@ export default function ClientesCadastrar() {
                         onClick={handleCadastrar}
                         loading={salvando}
                         loadingText="Salvando..."
-                        className="bg-[#A9E2F2] hover:bg-[#94d6eb] disabled:opacity-60 disabled:cursor-not-allowed text-white h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px]"
+                        className="bg-[#A9E2F2] hover:bg-[#A2DCED] disabled:opacity-60 disabled:cursor-not-allowed text-[#4696AD] h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px]"
                     >
                         Concluir cadastro
                     </LoadingButton>

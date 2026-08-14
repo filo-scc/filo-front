@@ -122,10 +122,10 @@ export default function Produtos() {
                             {/* Botão Cadastrar Produto */}
                             <button
                                 onClick={() => navigate("/produtos/cadastar")}
-                                className="bg-[#A9E2F2] hover:bg-[#8acbdc] text-white w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors"
+                                className="bg-[#A9E2F2] hover:bg-[#A2DCED] text-[#4696AD] w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors"
                             >
                                 <img
-                                    src="/adicionar-produtos.png"
+                                    src="/produtos-azul.png"
                                     alt="Adicionar produto"
                                     className="w-[20px] h-[20px]"
                                 />
