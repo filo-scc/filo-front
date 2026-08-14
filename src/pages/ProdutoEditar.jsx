@@ -1556,7 +1556,7 @@ export default function ProdutoEditar() {
                                 loadingText="Salvando..."
                                 className="w-[189px] h-[39px] rounded-[18.9px] bg-[#A9E2F2] text-[#4696AD] font-Outfit text-[16px] transition-colors hover:bg-[#A2DCED] disabled:opacity-60 disabled:cursor-not-allowed"
                             >
-                                Editar produto
+                                Concluir edição
                             </LoadingButton>
                         </div>
                     </div>

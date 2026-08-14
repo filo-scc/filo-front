@@ -877,17 +877,17 @@ export default function EdicaoFichaTecnicaModal({
                                 </legend>
                             </fieldset>
                         </div>
-                    </div>
 
-                    {/* FOOTER */}
-                    <div className="px-8 py-5 border-t border-gray-100 flex justify-end items-center shrink-0">
-                        <button
-                            onClick={handleConcluir}
-                            disabled={loading}
-                            className="px-10 h-[42px] rounded-full bg-[#A9E2F2] text-[#347A8A] font-normal text-[15px] hover:bg-[#97D8EA] transition-colors shadow-sm disabled:opacity-50"
-                        >
-                            {loading ? "Salvando..." : "Concluir"}
-                        </button>
+                        {/* FOOTER */}
+                        <div className="py-5  flex justify-end items-center shrink-0">
+                            <button
+                                onClick={handleConcluir}
+                                disabled={loading}
+                                className="px-10 h-[42px] rounded-full bg-[#A9E2F2] text-[#347A8A] font-normal text-[15px] hover:bg-[#97D8EA] transition-colors shadow-sm disabled:opacity-50"
+                            >
+                                {loading ? "Salvando..." : "Concluir edição"}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

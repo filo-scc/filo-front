@@ -330,7 +330,7 @@ export default function ClientesEditar() {
                                 loadingText="Salvando..."
                                 className="bg-[#A9E2F2] hover:bg-[#94d6eb] text-white h-[42px] px-8 rounded-full min-w-[180px]"
                             >
-                                Finalizar edição
+                                Concluir edição
                             </LoadingButton>
                         </div>
                         {erro && <p className="pt-4 text-sm text-[#D75757] text-right">{erro}</p>}
