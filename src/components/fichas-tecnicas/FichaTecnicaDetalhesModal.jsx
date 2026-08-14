@@ -150,6 +150,22 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
 
         document.body.appendChild(snapshot);
 
+        // A rotina do PDF captura tudo como uma única imagem. Para preservar a
+        // regra visual de impressão, empurramos as Anotações para a página
+        // seguinte quando o bloco não couber integralmente na página atual.
+        const observacoes = snapshot.querySelector(".nota-observacoes");
+        if (observacoes) {
+            const cssPageHeight = (297 / 25.4) * 96;
+            const observacoesTop = observacoes.offsetTop;
+            const observacoesHeight = observacoes.offsetHeight;
+            const pageOffset = observacoesTop % cssPageHeight;
+            const remainingPageSpace = cssPageHeight - pageOffset;
+
+            if (observacoesHeight > remainingPageSpace) {
+                observacoes.style.marginTop = `${parseFloat(getComputedStyle(observacoes).marginTop) + remainingPageSpace + 8}px`;
+            }
+        }
+
         const images = snapshot.querySelectorAll("img");
         await Promise.all(
             Array.from(images).map(
