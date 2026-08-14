@@ -612,30 +612,26 @@ export default function NotaDeSaidaPrintView({
                                 </p>
                             </fieldset>
                         </div>
-                    </div>
 
-                    {/* FOOTER */}
-                    <div className="print-footer mt-auto pt-6 pb-2">
-                        <div className="mx-[30px] flex items-end justify-between">
-                            {fabricoInfo?.foto_de_perfil ? (
-                                <img
-                                    src={fabricoInfo.foto_de_perfil}
-                                    alt="Logo do fabrico"
-                                    className="h-[35px] object-contain"
-                                />
-                            ) : (
-                                <span className="text-[24px] font-bold text-[#4696AD]">Filo</span>
-                            )}
+                        {/* FOOTER */}
+                        <div className="print-footer mt-auto pt-6 pb-2 w-full">
+                            <div className="mx-[50px] flex items-end justify-between">
+                                {fabricoInfo?.foto_de_perfil ? (
+                                    <img
+                                        src={fabricoInfo.foto_de_perfil}
+                                        alt="Logo do fabrico"
+                                        className="h-[35px] object-contain"
+                                    />
+                                ) : (
+                                    <span className="text-[24px] font-bold text-[#4696AD]"></span>
+                                )}
 
-                            {dados.logoDireitaUrl ? (
                                 <img
-                                    src={dados.logoDireitaUrl}
+                                    src="/logo-FILO.png"
                                     alt="Logo filo"
                                     className="w-[59px] h-[35px] object-contain"
                                 />
-                            ) : (
-                                <span className="text-[24px] font-bold text-[#4696AD]">Filo</span>
-                            )}
+                            </div>
                         </div>
                     </div>
                 </div>
