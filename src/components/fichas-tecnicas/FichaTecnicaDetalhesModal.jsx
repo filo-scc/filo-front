@@ -488,19 +488,24 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                 </div>
                             </div>
 
-                            <div className="border border-[#E8E8E8] rounded-[10px] overflow-hidden">
-                                <table className="w-full text-center text-sm">
+                            <div className="overflow-hidden">
+                                <table className="w-full table-fixed border-separate border-spacing-0 text-center text-sm">
                                     <thead className="bg-[#C9EAF6] text-[#4696AD]">
                                         <tr>
-                                            <th className="py-3 border-r border-white/50 font-normal">
+                                            <th className="w-1/3 rounded-tl-[10px] py-3 border-r border-[#7B7D80] font-normal">
                                                 Facção
                                             </th>
-                                            <th className="py-3 border-r border-white/50 font-normal">
+
+                                            <th className="w-1/3 py-3 border-r border-[#7B7D80] font-normal">
                                                 Operação
                                             </th>
-                                            <th className="py-3 font-normal">Preço Unitário</th>
+
+                                            <th className="w-1/3 rounded-tr-[10px] py-3 font-normal">
+                                                Preço Unitário
+                                            </th>
                                         </tr>
                                     </thead>
+
                                     <tbody className="text-[#707070]">
                                         {parceirosFiltrados.length > 0 ? (
                                             parceirosFiltrados.map((vinculo, index) => {
@@ -513,19 +518,65 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
 
                                                 const precoFormatado =
                                                     preco !== undefined && preco !== null
-                                                        ? `R$ ${Number(preco).toFixed(2).replace(".", ",")}`
+                                                        ? `R$ ${Number(preco)
+                                                              .toFixed(2)
+                                                              .replace(".", ",")}`
                                                         : "-";
+
+                                                const isLastRow =
+                                                    index === parceirosFiltrados.length - 1;
 
                                                 return (
                                                     <tr
                                                         key={vinculo.id || index}
-                                                        className="border-t border-[#E8E8E8] first:border-t-0"
+                                                        className="odd:bg-[#FFFFFF] even:bg-[#F4F4F4]"
                                                     >
-                                                        <td className="py-3">{nome}</td>
-                                                        <td className="py-3 text-[#D3D3D3]">
-                                                            {operacao}
+                                                        {/* FACÇÃO */}
+                                                        <td
+                                                            className={`
+                                    w-1/3
+                                    py-3
+                                    border-l border-[#D9D9D9]
+                                    border-r border-r-[#7B7D80]
+                                    ${
+                                        isLastRow
+                                            ? "rounded-bl-[10px] border-b border-[#D9D9D9]"
+                                            : ""
+                                    }
+                                `}
+                                                        >
+                                                            {nome}
                                                         </td>
-                                                        <td className="py-3">{precoFormatado}</td>
+
+                                                        {/* OPERAÇÃO */}
+                                                        <td
+                                                            className={`
+                                    w-1/3
+                                    py-3
+                                    border-r border-[#7B7D80]
+                                    ${isLastRow ? "border-b border-b-[#D9D9D9]" : ""}
+                                `}
+                                                        >
+                                                            <span className="text-[#D3D3D3]">
+                                                                {operacao}
+                                                            </span>
+                                                        </td>
+
+                                                        {/* PREÇO UNITÁRIO */}
+                                                        <td
+                                                            className={`
+                                    w-1/3
+                                    py-3
+                                    border-r border-[#D9D9D9]
+                                    ${
+                                        isLastRow
+                                            ? "rounded-br-[10px] border-b border-[#D9D9D9]"
+                                            : ""
+                                    }
+                                `}
+                                                        >
+                                                            {precoFormatado}
+                                                        </td>
                                                     </tr>
                                                 );
                                             })
@@ -533,7 +584,18 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                             <tr>
                                                 <td
                                                     colSpan="3"
-                                                    className="py-4 text-center text-[13px] text-[#888]"
+                                                    className="
+                            rounded-bl-[10px]
+                            rounded-br-[10px]
+                            border-l
+                            border-r
+                            border-b
+                            border-[#D9D9D9]
+                            py-4
+                            text-center
+                            text-[13px]
+                            text-[#888]
+                        "
                                                 >
                                                     Nenhuma facção vinculada a esta ficha.
                                                 </td>
