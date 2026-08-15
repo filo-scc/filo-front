@@ -1170,7 +1170,7 @@ export default function ProdutoCadastar() {
                             loadingText="Salvando..."
                             className="w-[189px] h-[39px] rounded-[18.9px] bg-[#A9E2F2] text-[#4696AD] text-sm font-medium transition-colors hover:bg-[#A2DCED] disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                            Finalizar cadastro
+                            Concluir cadastro
                         </LoadingButton>
                     </div>
                 </form>

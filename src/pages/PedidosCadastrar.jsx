@@ -860,7 +860,7 @@ export default function PedidosCadastrar() {
                             onClick={handleConcluirPedido}
                             className="bg-[#A9E2F2] hover:bg-[#A2DCED] text-[#4696AD] h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px] disabled:opacity-50 flex items-center justify-center"
                         >
-                            {isSobDemanda ? "Concluir pedido" : "Concluir ordem"}
+                            Concluir cadastro
                         </LoadingButton>
                     </div>
 
