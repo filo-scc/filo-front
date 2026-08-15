@@ -630,8 +630,11 @@ export default function ProdutoCadastar() {
         }
     };
 
-    const etapasAtivas = fabrico?.etapas?.filter((etapa) => etapa.ativa) || [];
-    const colunasFlexiveis = etapasAtivas.slice(0, -1);
+    const etapasAtivasOrdenadas =
+        fabrico?.etapas
+            ?.filter((etapa) => etapa?.ativa === true)
+            .sort((a, b) => (a.ordem || 0) - (b.ordem || 0)) || [];
+    const colunasFlexiveis = etapasAtivasOrdenadas.slice(0, -1);
 
     const custoAviamentos = valorTotalGasto || 0;
     const custoOperacional = produto?.custo_operacional || 0;

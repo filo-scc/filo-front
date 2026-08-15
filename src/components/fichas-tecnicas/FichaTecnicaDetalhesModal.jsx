@@ -716,16 +716,22 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                 />
             )}
 
-            <FichaTecnicaPrintView
-                dadosFicha={ficha}
-                fichaId={fichaId}
-                referencia={referenciaCliente}
-            />
-            <NotaDeSaidaPrintView
-                ficha={ficha}
-                referenciaCliente={referenciaCliente}
-                forceVisibleForPdf={Boolean(ficha?.fabrico?.id === 3 || ficha?.fabrico_id === 3)}
-            />
+            {ficha && (
+                <>
+                    <FichaTecnicaPrintView
+                        dadosFicha={ficha}
+                        fichaId={fichaId}
+                        referencia={referenciaCliente}
+                    />
+                    <NotaDeSaidaPrintView
+                        ficha={ficha}
+                        referenciaCliente={referenciaCliente}
+                        forceVisibleForPdf={Boolean(
+                            ficha?.fabrico?.id === 3 || ficha?.fabrico_id === 3,
+                        )}
+                    />
+                </>
+            )}
         </div>
     );
 }

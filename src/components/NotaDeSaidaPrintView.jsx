@@ -321,7 +321,7 @@ export default function NotaDeSaidaPrintView({
                                             />
                                             <Campo
                                                 label="Modelo"
-                                                valor={ficha.produto.tipo_produto.nome}
+                                                valor={ficha?.produto?.tipo_produto?.nome}
                                             />
                                         </div>
 
@@ -350,7 +350,7 @@ export default function NotaDeSaidaPrintView({
                                             <Campo label="Tecido" valor={dados.tecido} />
                                             <Campo
                                                 label="Modelo"
-                                                valor={ficha.produto.tipo_produto.nome}
+                                                valor={ficha?.produto?.tipo_produto?.nome}
                                             />
                                         </div>
                                     </>
