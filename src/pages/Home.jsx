@@ -7,6 +7,39 @@ import TransferenciaEtapaModal from "../components/fichas-tecnicas/Transferencia
 import FichaTecnicaDetalhesModal from "../components/fichas-tecnicas/FichaTecnicaDetalhesModal";
 import HomeSkeleton from "../components/home/HomeSkeleton";
 
+const CATEGORIAS_DE_COSTURA = ["costur", "faccao", "confeccao", "costura"];
+
+const normalizarCategoria = (categoria) =>
+    String(categoria || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .toLowerCase();
+
+const ehCategoriaDeCostura = (categoria) => {
+    const categoriaNormalizada = normalizarCategoria(categoria);
+
+    return CATEGORIAS_DE_COSTURA.some((categoriaAceita) =>
+        categoriaNormalizada.includes(categoriaAceita),
+    );
+};
+
+const formatarParceirosDeCostura = (ficha) => {
+    const parceirosDeCostura = (ficha?.ficha_parceiro || [])
+        .map((vinculo) => vinculo?.parceiro)
+        .filter((parceiro) => parceiro?.nome && ehCategoriaDeCostura(parceiro?.categoria))
+        .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+
+    if (parceirosDeCostura.length === 0) return "Não designado";
+
+    const [primeiroParceiro] = parceirosDeCostura;
+    const quantidadeAdicional = parceirosDeCostura.length - 1;
+
+    return quantidadeAdicional > 0
+        ? `${primeiroParceiro.nome} +${quantidadeAdicional}`
+        : primeiroParceiro.nome;
+};
+
 export default function Home() {
     const location = useLocation();
     const navigate = useNavigate();
@@ -259,44 +292,8 @@ export default function Home() {
 
                                             <div className="flex-1 overflow-y-auto pr-1 pb-2 flex flex-col gap-1 min-h-0 scrollbar-sutil">
                                                 {coluna.fichas.map((ficha) => {
-                                                    const parceirosVinculados =
-                                                        ficha.produto?.parceiro_produto || [];
-                                                    let textoParceiro = "Não designado";
-
-                                                    const categoriaAceitas = [
-                                                        "Costura",
-                                                        "costura",
-                                                        "Facção",
-                                                        "facção",
-                                                        "Facçao",
-                                                        "facçao",
-                                                        "Faccão",
-                                                        "faccão",
-                                                        "Faccao",
-                                                        "faccao",
-                                                        "Confecção",
-                                                        "confecção",
-                                                        "Confecçao",
-                                                        "confecçao",
-                                                        "Confeccão",
-                                                        "confeccão",
-                                                        "Confeccao",
-                                                        "confeccao",
-                                                    ];
-                                                    const parceiroPrioridade =
-                                                        parceirosVinculados.find((pv) =>
-                                                            categoriaAceitas.includes(
-                                                                pv.parceiro?.categoria,
-                                                            ),
-                                                        );
-
-                                                    if (parceiroPrioridade) {
-                                                        if (parceirosVinculados.length === 1) {
-                                                            textoParceiro = `${parceiroPrioridade.parceiro?.nome}`;
-                                                        } else {
-                                                            textoParceiro = `${parceiroPrioridade.parceiro?.nome} +${parceirosVinculados.length - 1}`;
-                                                        }
-                                                    }
+                                                    const textoParceiro =
+                                                        formatarParceirosDeCostura(ficha);
 
                                                     let isAtrasado = false;
                                                     if (ficha.pedido?.data_prevista) {
