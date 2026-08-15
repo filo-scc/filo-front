@@ -19,6 +19,8 @@ import FichaTecnicaPrintView from "../FichaTecnicaPrintView";
 import { getParceiroByProduto } from "../../services/produtoService";
 import { updateFichaTecnica } from "../../services/fichasTecnicasService";
 import { getParceirosByFabrico } from "../../services/parceiroService";
+import CorModal from "./CorModal";
+import EstampaModal from "./EstampaModal";
 
 const FloatingInput = ({
     label,
@@ -59,7 +61,13 @@ const calcularProporcao = (totaisPorTamanho) => {
     return totaisPorTamanho.map((t) => (t > 0 ? Math.round(t / base) : 0));
 };
 
-const ColorDropdown = ({ coresDisponiveis, coresSelecionadas, onToggleCor }) => {
+const ColorDropdown = ({
+    coresDisponiveis,
+    coresSelecionadas,
+    onToggleCor,
+    onCreateCor,
+    onCreateEstampa,
+}) => {
     const [aberto, setAberto] = useState(false);
     const dropdownRef = useRef(null);
 
@@ -93,51 +101,85 @@ const ColorDropdown = ({ coresDisponiveis, coresSelecionadas, onToggleCor }) => 
             </div>
 
             {aberto && (
-                <div className="absolute top-full left-0 mt-1 w-full bg-white border border-[#D9D9D9] rounded-[10px] shadow-lg z-20 max-h-[180px] overflow-y-auto scrollbar-sutil py-2">
-                    {coresDisponiveis.length === 0 ? (
-                        <div className="px-4 py-2 text-sm text-gray-500">
-                            Nenhuma cor cadastrada.
-                        </div>
-                    ) : (
-                        coresDisponiveis.map((cor) => {
-                            const isSelected = coresSelecionadas.some((c) => c.id === cor.id);
-                            return (
-                                <button
-                                    type="button"
-                                    key={cor.id}
-                                    onClick={() => onToggleCor(cor)}
-                                    className={`flex w-full items-center border-l-[4px] px-4 py-2.5 transition bg-white text-[#707070] hover:bg-[#F4F4F4] ${
-                                        isSelected
-                                            ? "border-l-[3px] border-l-[#C4F042]"
-                                            : "border-l-transparent"
-                                    }`}
-                                >
-                                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                                        <span
-                                            className="w-[16px] h-[16px] rounded-[4px] border border-gray-300 shrink-0"
-                                            style={{ backgroundColor: cor.codigo_hex || "#E5E5E5" }}
-                                        />
-                                        <span className="flex-1 truncate text-left">
-                                            {cor.nome}
-                                        </span>
-                                    </div>
-                                    {isSelected ? (
-                                        <img
-                                            src="/check_cinza.png"
-                                            className="w-[12px] h-[8px] shrink-0"
-                                            alt=""
-                                        />
-                                    ) : (
-                                        <img
-                                            src="/mais_cinza.png"
-                                            className="w-[12px] h-[12px] shrink-0"
-                                            alt=""
-                                        />
-                                    )}
-                                </button>
-                            );
-                        })
-                    )}
+                <div className="absolute top-full left-0 mt-1 w-full bg-white border border-[#D9D9D9] rounded-[10px] shadow-lg z-20 overflow-hidden">
+                    <div className="max-h-[180px] overflow-y-auto scrollbar-sutil">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setAberto(false);
+                                onCreateCor();
+                            }}
+                            className="flex w-full items-center px-4 py-2.5 text-left text-[14px] font-medium text-[#4696AD] bg-white hover:bg-[#F4F4F4] transition-colors"
+                        >
+                            + Nova cor
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setAberto(false);
+                                onCreateEstampa();
+                            }}
+                            className="flex w-full items-center px-4 py-2.5 text-left text-[14px] font-medium text-[#4696AD] bg-white hover:bg-[#F4F4F4] transition-colors"
+                        >
+                            + Nova estampa
+                        </button>
+
+                        {coresDisponiveis.length === 0 ? (
+                            <div className="px-4 py-3 text-[14px] text-[#898C8F]">
+                                Nenhuma cor cadastrada.
+                            </div>
+                        ) : (
+                            coresDisponiveis.map((cor) => {
+                                const isSelected = coresSelecionadas.some((c) => c.id === cor.id);
+                                return (
+                                    <button
+                                        type="button"
+                                        key={cor.id}
+                                        onClick={() => onToggleCor(cor)}
+                                        className={`flex w-full items-center border-l-[4px] px-4 py-2.5 transition-colors bg-white text-[#707070] hover:bg-[#F4F4F4] ${
+                                            isSelected
+                                                ? "border-l-[3px] border-l-[#C4F042]"
+                                                : "border-l-transparent"
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                                            {String(cor.tipo).toUpperCase() === "ESTAMPA" ? (
+                                                <img
+                                                    src={cor.foto}
+                                                    alt={cor.nome}
+                                                    className="w-[20px] h-[20px] rounded-[6px] shrink-0 border border-[#D9D9D9] object-cover"
+                                                />
+                                            ) : (
+                                                <span
+                                                    className="w-[20px] h-[20px] rounded-[6px] border border-[#D9D9D9] shrink-0"
+                                                    style={{
+                                                        backgroundColor:
+                                                            cor.codigo_hex || "#E5E5E5",
+                                                    }}
+                                                />
+                                            )}
+                                            <span className="flex-1 truncate text-left font-light">
+                                                {cor.nome}
+                                            </span>
+                                        </div>
+                                        {isSelected ? (
+                                            <img
+                                                src="/check_cinza.png"
+                                                className="w-[12px] h-[8px] shrink-0"
+                                                alt=""
+                                            />
+                                        ) : (
+                                            <img
+                                                src="/mais_cinza.png"
+                                                className="w-[12px] h-[12px] shrink-0"
+                                                alt=""
+                                            />
+                                        )}
+                                    </button>
+                                );
+                            })
+                        )}
+                    </div>
                 </div>
             )}
         </div>
@@ -175,6 +217,8 @@ export default function EdicaoFichaTecnicaModal({
     const [referenciaCliente, setReferenciaCliente] = useState("-");
     const [isProdutoParceirosOpen, setIsProdutoParceirosOpen] = useState(false);
     const [parceirosDisponiveis, setParceirosDisponiveis] = useState([]);
+    const [corModalOpen, setCorModalOpen] = useState(false);
+    const [estampaModalOpen, setEstampaModalOpen] = useState(false);
 
     const sizeItems = useMemo(
         () => dadosFicha?.grade_versao?.itens || [],
@@ -318,6 +362,17 @@ export default function EdicaoFichaTecnicaModal({
             }
             return [...prev, cor];
         });
+    };
+
+    const handleCorCreated = (corCriada) => {
+        if (!corCriada?.id) return;
+
+        setTodasCoresDisponiveis((prev) =>
+            prev.some((cor) => cor.id === corCriada.id) ? prev : [...prev, corCriada],
+        );
+        setCoresSelecionadas((prev) =>
+            prev.some((cor) => cor.id === corCriada.id) ? prev : [...prev, corCriada],
+        );
     };
 
     const handleAddParceiroSelecionado = (novoParceiro) => {
@@ -522,7 +577,7 @@ export default function EdicaoFichaTecnicaModal({
                     className="bg-white rounded-[24px] w-full max-w-[850px] max-h-[95vh] flex flex-col shadow-2xl relative overflow-hidden font-['Outfit',_sans-serif]"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <div className="flex justify-between items-center px-8 py-6 border-b border-gray-100 shrink-0">
+                    <div className="flex justify-between items-center px-8 py-6 shrink-0">
                         <div className="flex items-center gap-3">
                             <img
                                 src="/etiqueta-preta.png"
@@ -582,6 +637,8 @@ export default function EdicaoFichaTecnicaModal({
                                     coresDisponiveis={todasCoresDisponiveis}
                                     coresSelecionadas={coresSelecionadas}
                                     onToggleCor={handleToggleCor}
+                                    onCreateCor={() => setCorModalOpen(true)}
+                                    onCreateEstampa={() => setEstampaModalOpen(true)}
                                 />
 
                                 <FloatingInput
@@ -604,7 +661,7 @@ export default function EdicaoFichaTecnicaModal({
                         </div>
 
                         <div className="mt-4">
-                            <div className="mb-2 text-center text-[15px] font-light text-[#737373]">
+                            <div className="mb-2 text-center text-[16px] font-light text-[#737373]">
                                 Grade
                             </div>
                             <div className="w-full">
@@ -614,7 +671,7 @@ export default function EdicaoFichaTecnicaModal({
                                         {sizeItems.map((s, i) => (
                                             <div
                                                 key={`total-${s.id}`}
-                                                className="bg-[#F4F4F4] flex-1 min-w-0 text-center text-[13px] font-light flex items-center justify-center text-[#D7D7D7]"
+                                                className="bg-[#F4F4F4] flex-1 min-w-0 text-center text-[14px] font-light flex items-center justify-center text-[#D7D7D7]"
                                                 style={{
                                                     borderColor: "#7B7D80",
                                                     borderLeftWidth: "0.5px",
@@ -652,6 +709,10 @@ export default function EdicaoFichaTecnicaModal({
                                                     borderLeftWidth: idx === 0 ? "0.5px" : "0px",
                                                     borderRightWidth: "0.5px",
                                                     borderColor: "#7B7D80",
+                                                    borderRightColor:
+                                                        idx === sizeItems.length - 1
+                                                            ? "#C9EAF6"
+                                                            : "#7B7D80",
                                                 }}
                                             >
                                                 {s.tamanho?.codigo || "-"}
@@ -662,21 +723,21 @@ export default function EdicaoFichaTecnicaModal({
 
                                 <div
                                     className="rounded-b-[10px] bg-white overflow-hidden"
-                                    style={BORDER_SHELL_05}
+                                    style={{ ...BORDER_SHELL_05, borderTopWidth: "0px" }}
                                 >
                                     <div className="flex flex-col w-full">
                                         {coresSelecionadas.length > 0 ? (
                                             coresSelecionadas.map((cor, index) => (
                                                 <div
                                                     key={cor.id}
-                                                    className={`flex w-full min-h-[45px] items-stretch ${
+                                                    className={`flex w-full min-h-[40px] items-stretch ${
                                                         index % 2 === 1
-                                                            ? "bg-[#F9F9F9]"
+                                                            ? "bg-[#F4F4F4]"
                                                             : "bg-[#FFFFFF]"
                                                     }`}
                                                 >
                                                     <div
-                                                        className="w-[160px] shrink-0 pl-4 pr-4 flex items-center gap-3"
+                                                        className="w-[160px] shrink-0 pl-2 pr-4 flex items-center gap-3"
                                                         style={{
                                                             ...BORDER_DARK_05,
                                                             borderTopWidth: "0px",
@@ -685,14 +746,23 @@ export default function EdicaoFichaTecnicaModal({
                                                             borderRightWidth: "0.5px",
                                                         }}
                                                     >
-                                                        <span
-                                                            className="w-[18px] h-[18px] rounded-[4px] shrink-0 shadow-sm border border-black/10"
-                                                            style={{
-                                                                backgroundColor:
-                                                                    cor.codigo_hex || "#E5E5E5",
-                                                            }}
-                                                        />
-                                                        <span className="flex-1 text-[14px] font-light text-[#707070] truncate">
+                                                        {String(cor.tipo).toUpperCase() ===
+                                                        "ESTAMPA" ? (
+                                                            <img
+                                                                src={cor.foto}
+                                                                alt={cor.nome}
+                                                                className="w-[20px] h-[20px] rounded-[6px] shrink-0 border border-[#D9D9D9] object-cover"
+                                                            />
+                                                        ) : (
+                                                            <span
+                                                                className="w-[20px] h-[20px] rounded-[6px] shrink-0 border border-[#D9D9D9]"
+                                                                style={{
+                                                                    backgroundColor:
+                                                                        cor.codigo_hex || "#E5E5E5",
+                                                                }}
+                                                            />
+                                                        )}
+                                                        <span className="flex-1 text-center text-[14px] font-light text-[#898C8F] truncate leading-none">
                                                             {cor.nome}
                                                         </span>
                                                     </div>
@@ -734,7 +804,7 @@ export default function EdicaoFichaTecnicaModal({
                                                                             e.target.value,
                                                                         )
                                                                     }
-                                                                    className="w-full h-full text-center text-[14px] text-[#707070] bg-transparent outline-none placeholder:text-[#D7D7D7] [&::-webkit-inner-spin-button]:appearance-none"
+                                                                    className="w-full h-full text-center text-[14px] font-light text-[#898C8F] bg-transparent outline-none placeholder:text-[#D7D7D7] [&::-webkit-inner-spin-button]:appearance-none"
                                                                 />
                                                             </div>
                                                         );
@@ -742,7 +812,7 @@ export default function EdicaoFichaTecnicaModal({
                                                 </div>
                                             ))
                                         ) : (
-                                            <div className="px-4 py-4 text-[13px] text-center text-[#888]">
+                                            <div className="px-4 py-4 text-[13px] text-center text-[#888] bg-white w-full rounded-b-[10px]">
                                                 Nenhuma cor selecionada.
                                             </div>
                                         )}
@@ -751,36 +821,47 @@ export default function EdicaoFichaTecnicaModal({
                             </div>
                         </div>
 
-                        <div className="border border-[#E8E8E8] rounded-[10px]">
-                            <table className="w-full text-center text-sm">
+                        <div className="overflow-visible">
+                            <table className="w-full table-fixed border-separate border-spacing-0 text-center text-sm">
                                 <thead className="bg-[#C9EAF6] text-[#4696AD]">
                                     <tr>
-                                        <th className="py-3 border-r border-white/50 font-normal w-1/3 rounded-tl-[9px]">
+                                        <th className="w-1/3 rounded-tl-[10px] py-3 border-r border-[#7B7D80] font-normal">
                                             Facção
                                         </th>
-                                        <th className="py-3 border-r border-white/50 font-normal w-1/3">
+                                        <th className="w-1/3 py-3 border-r border-[#7B7D80] font-normal">
                                             Operação
                                         </th>
-                                        <th className="py-3 font-normal w-1/3 rounded-tr-[9px]">
+                                        <th className="w-1/3 rounded-tr-[10px] py-3 font-normal">
                                             Preço Unitário
                                         </th>
                                     </tr>
                                 </thead>
                                 <tbody className="text-[#707070]">
-                                    {parceiros.map((vinculo, index) => {
-                                        const isLastRow = index === parceiros.length - 1;
+                                    {parceiros.length > 0 ? (
+                                        parceiros.map((vinculo, index) => {
+                                            const isLastRow = index === parceiros.length - 1;
 
-                                        return (
-                                            <tr
-                                                key={vinculo.id || index}
-                                                className="group border-t border-[#E8E8E8] transition-colors hover:bg-[#F9F9F9]"
-                                            >
+                                            return (
+                                                <tr
+                                                    key={vinculo.id || index}
+                                                    className="group odd:bg-[#FFFFFF] even:bg-[#F4F4F4]"
+                                                >
                                                 <td
-                                                    className={`py-3 ${isLastRow ? "rounded-bl-[9px]" : ""}`}
+                                                    className={`w-1/3 py-3 border-l border-[#D9D9D9] border-r border-r-[#7B7D80] ${
+                                                        isLastRow
+                                                            ? "rounded-bl-[10px] border-b border-[#D9D9D9]"
+                                                            : ""
+                                                    }`}
                                                 >
                                                     {vinculo.parceiro?.nome || "-"}
                                                 </td>
-                                                <td className="p-0 border-r border-[#E8E8E8]">
+                                                <td
+                                                    className={`w-1/3 p-0 border-r border-[#7B7D80] ${
+                                                        isLastRow
+                                                            ? "border-b border-b-[#D9D9D9]"
+                                                            : ""
+                                                    }`}
+                                                >
                                                     <input
                                                         type="text"
                                                         value={vinculo.operacao || ""}
@@ -795,7 +876,13 @@ export default function EdicaoFichaTecnicaModal({
                                                         className="w-full h-full py-3 text-center bg-transparent outline-none placeholder-[#D3D3D3]"
                                                     />
                                                 </td>
-                                                <td className="p-0 relative">
+                                                <td
+                                                    className={`w-1/3 p-0 relative border-r border-[#D9D9D9] ${
+                                                        isLastRow
+                                                            ? "rounded-br-[10px] border-b border-[#D9D9D9]"
+                                                            : ""
+                                                    }`}
+                                                >
                                                     <div className="flex items-center justify-center w-full h-full">
                                                         <span className="text-[#707070]">R$</span>
                                                         <input
@@ -844,9 +931,19 @@ export default function EdicaoFichaTecnicaModal({
                                                         </button>
                                                     </div>
                                                 </td>
-                                            </tr>
-                                        );
-                                    })}
+                                                </tr>
+                                            );
+                                        })
+                                    ) : (
+                                        <tr>
+                                            <td
+                                                colSpan="3"
+                                                className="rounded-bl-[10px] rounded-br-[10px] border-l border-r border-b border-[#D9D9D9] py-4 text-center text-[13px] text-[#888]"
+                                            >
+                                                Nenhuma facção vinculada a esta ficha.
+                                            </td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
@@ -898,6 +995,18 @@ export default function EdicaoFichaTecnicaModal({
                 parceiros={parceirosFiltrados}
                 selectedParceiroIds={parceiros.map((p) => p.parceiro_id)}
                 onSelectParceiro={handleAddParceiroSelecionado}
+            />
+            <CorModal
+                isOpen={corModalOpen}
+                onClose={() => setCorModalOpen(false)}
+                fabricoId={dadosFicha?.fabrico_id}
+                onSuccess={handleCorCreated}
+            />
+            <EstampaModal
+                isOpen={estampaModalOpen}
+                onClose={() => setEstampaModalOpen(false)}
+                fabricoId={dadosFicha?.fabrico_id}
+                onSuccess={handleCorCreated}
             />
         </>
     );
