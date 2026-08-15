@@ -388,19 +388,16 @@ export default function FichaTecnicaModal({
         }
 
         // Construindo o array de itens para a matriz (cores/tamanhos x quantidades)
-        const itensPayload = selectedColorIds
-            .flatMap((corId) =>
-                currentSizeItems.map((s) => ({
-                    cor_id: corId,
-                    grade_versao_item_id: s.gradeVersaoItemId,
-                    quantidade: Number(matrix?.[corId]?.[s.tamanhoId] || 0),
-                })),
-            )
-            .filter((item) => item.quantidade > 0); // Só manda pro backend se a qtd for > 0!
+        const itensPayload = selectedColorIds.flatMap((corId) =>
+            currentSizeItems.map((s) => ({
+                cor_id: corId,
+                grade_versao_item_id: s.gradeVersaoItemId,
+                quantidade: Number(matrix?.[corId]?.[s.tamanhoId] || 0),
+            })),
+        );
 
         // Calculando a quantidade total para exibir na Tabela da tela de Pedidos
         const quantidadeTotal = itensPayload.reduce((acc, curr) => acc + curr.quantidade, 0);
-
         if (quantidadeTotal === 0) {
             setError(
                 "Informe a quantidade de pelo menos um tamanho/cor antes de adicionar a ficha.",
