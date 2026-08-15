@@ -11,7 +11,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
 const CampoDetalhe = ({ label, valor }) => (
-    <div className="relative border border-[#898C8F] rounded-[10px] h-[39px] px-3 flex items-center mt-2 w-full bg-white">
+    <div className="relative border border-[#898C8F] rounded-[10px] h-[39px] px-3 flex items-center mt-0.5 w-full bg-white">
         <span className="absolute -top-[9px] left-2 bg-white px-1 text-[12px] text-[#898C8F]">
             {label}
         </span>
@@ -39,7 +39,12 @@ const simplificarUnidade = (unidade) => {
 };
 
 const BORDER_DARK_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#7B7D80" };
-const BORDER_SHELL_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#D9D9D9" };
+const BORDER_SHELL_05 = {
+    borderWidth: "0.5px",
+    borderStyle: "solid",
+    borderColor: "#D9D9D9",
+    borderTopWidth: "0px",
+};
 
 export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) {
     const [ficha, setFicha] = useState(null);
@@ -325,7 +330,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                     />
                                 </div>
 
-                                <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-4 content-start pt-2">
+                                <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-4 content-start">
                                     <CampoDetalhe
                                         label="Referência Interna"
                                         valor={ficha?.produto?.nome}
@@ -398,6 +403,10 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                                             idx === 0 ? "0.5px" : "0px",
                                                         borderRightWidth: "0.5px",
                                                         borderColor: "#7B7D80",
+                                                        borderRightColor:
+                                                            idx === sizeItems.length - 1
+                                                                ? "#C9EAF6"
+                                                                : "#7B7D80",
                                                     }}
                                                 >
                                                     {s.tamanho?.codigo || "-"}
@@ -605,8 +614,8 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                 </table>
                             </div>
 
-                            <div className="relative bg-[#F4F4F4] border border-[#E2E2E2] rounded-[14px] p-5 pt-5 mt-6">
-                                <span className="absolute -top-[12px] left-4 bg-gradient-to-b from-white via-white via-[35%] to-[#F4F4F4] px-3 py-0.5 text-[15px] font-normal text-[#666666] leading-none">
+                            <div className="relative bg-[#F4F4F4] border border-[#D9D9D9] rounded-[14px] p-5 pt-5 mt-6">
+                                <span className="absolute -top-[12px] left-4 bg-gradient-to-b from-white via-white via-[35%] to-[#F4F4F4] px-3 py-0.5 text-[15px] font-normal text-[#898C8F] leading-none">
                                     Materiais necessários por peça:
                                 </span>
 
@@ -624,10 +633,10 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                                     key={item.aviamento?.id ?? index}
                                                     className="leading-relaxed"
                                                 >
-                                                    <span className="font-bold text-[#898C8F]">
+                                                    <span className="font-bold text-[#B0B4B8]">
                                                         {qtd} {unidade}
                                                     </span>{" "}
-                                                    <span className="text-[#A5A5AA] font-normal">
+                                                    <span className="text-[#B0B4B8] font-normal">
                                                         de {nome}
                                                     </span>
                                                 </div>
