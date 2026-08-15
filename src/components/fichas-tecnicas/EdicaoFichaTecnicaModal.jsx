@@ -219,6 +219,7 @@ export default function EdicaoFichaTecnicaModal({
     const [parceirosDisponiveis, setParceirosDisponiveis] = useState([]);
     const [corModalOpen, setCorModalOpen] = useState(false);
     const [estampaModalOpen, setEstampaModalOpen] = useState(false);
+    const [validacaoPrecoExibida, setValidacaoPrecoExibida] = useState(false);
 
     const sizeItems = useMemo(
         () => dadosFicha?.grade_versao?.itens || [],
@@ -301,6 +302,8 @@ export default function EdicaoFichaTecnicaModal({
         if (isOpen && dadosFicha) {
             carregarCoresDaFabrica();
             carregarParceirosDisponiveis();
+            setParceirosRemovidos([]);
+            setValidacaoPrecoExibida(false);
 
             const coresUnicasMap = {};
             dadosFicha.ficha_tecnica_itens?.forEach((item) => {
@@ -379,6 +382,12 @@ export default function EdicaoFichaTecnicaModal({
         const jaExiste = parceiros.some((p) => p.parceiro_id === novoParceiro.id);
         if (jaExiste) return;
 
+        const vinculoExistenteFoiRemovido = parceirosRemovidos.includes(novoParceiro.id);
+
+        if (vinculoExistenteFoiRemovido) {
+            setParceirosRemovidos((prev) => prev.filter((id) => id !== novoParceiro.id));
+        }
+
         const novoVinculo = {
             parceiro_id: novoParceiro.id,
             parceiro: {
@@ -388,7 +397,7 @@ export default function EdicaoFichaTecnicaModal({
             operacao: "",
             preco_editavel: novoParceiro.preco || 0,
             parceiroProdutoExiste: novoParceiro.preco !== null && novoParceiro.preco !== undefined,
-            isNovo: true,
+            isNovo: !vinculoExistenteFoiRemovido,
         };
 
         setParceiros((prev) => [...prev, novoVinculo]);
@@ -403,6 +412,15 @@ export default function EdicaoFichaTecnicaModal({
         });
         return total;
     }, [matrizQuantidades]);
+
+    const parceirosSemPreco = useMemo(
+        () =>
+            parceiros.filter((parceiro) => {
+                const preco = Number(parceiro.preco_editavel);
+                return !Number.isFinite(preco) || preco <= 0;
+            }),
+        [parceiros],
+    );
 
     const totaisPorTamanho = useMemo(() => {
         const totais = {};
@@ -447,13 +465,23 @@ export default function EdicaoFichaTecnicaModal({
 
     const handleRemoverParceiro = (index) => {
         const parceiroParaRemover = parceiros[index];
-        if (parceiroParaRemover.parceiro_id) {
-            setParceirosRemovidos((prev) => [...prev, parceiroParaRemover.parceiro_id]);
+        if (parceiroParaRemover.parceiro_id && !parceiroParaRemover.isNovo) {
+            setParceirosRemovidos((prev) =>
+                prev.includes(parceiroParaRemover.parceiro_id)
+                    ? prev
+                    : [...prev, parceiroParaRemover.parceiro_id],
+            );
         }
         setParceiros((prev) => prev.filter((_, i) => i !== index));
     };
 
     const handleConcluir = async () => {
+        setValidacaoPrecoExibida(true);
+
+        if (parceirosSemPreco.length > 0) {
+            return;
+        }
+
         setLoading(true);
         try {
             const coresIds = coresSelecionadas.map((c) => c.id);
@@ -599,7 +627,7 @@ export default function EdicaoFichaTecnicaModal({
 
                     <div className="flex-1 overflow-y-auto p-8 space-y-6 scrollbar-sutil">
                         <div className="flex flex-col md:flex-row gap-6">
-                            <div className="w-[209px] h-[160px] shrink-0 rounded-[10px] overflow-hidden border border-dashed border-[#898C8F]">
+                            <div className="w-[209px] h-[165px] shrink-0 rounded-[10px] overflow-hidden border border-dashed border-[#898C8F]">
                                 <img
                                     src={dadosFicha?.produto?.foto || "/image-placeholder.png"}
                                     alt="Foto do Produto"
@@ -821,6 +849,13 @@ export default function EdicaoFichaTecnicaModal({
                             </div>
                         </div>
 
+                        {validacaoPrecoExibida && parceirosSemPreco.length > 0 && (
+                            <div className="rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-[14px] font-light text-red-700">
+                                <span className="font-medium">Atenção:</span> cadastre o preço
+                                unitário de todas as facções antes de concluir a edição.
+                            </div>
+                        )}
+
                         <div className="overflow-visible">
                             <table className="w-full table-fixed border-separate border-spacing-0 text-center text-sm">
                                 <thead className="bg-[#C9EAF6] text-[#4696AD]">
@@ -846,91 +881,95 @@ export default function EdicaoFichaTecnicaModal({
                                                     key={vinculo.id || index}
                                                     className="group odd:bg-[#FFFFFF] even:bg-[#F4F4F4]"
                                                 >
-                                                <td
-                                                    className={`w-1/3 py-3 border-l border-[#D9D9D9] border-r border-r-[#7B7D80] ${
-                                                        isLastRow
-                                                            ? "rounded-bl-[10px] border-b border-[#D9D9D9]"
-                                                            : ""
-                                                    }`}
-                                                >
-                                                    {vinculo.parceiro?.nome || "-"}
-                                                </td>
-                                                <td
-                                                    className={`w-1/3 p-0 border-r border-[#7B7D80] ${
-                                                        isLastRow
-                                                            ? "border-b border-b-[#D9D9D9]"
-                                                            : ""
-                                                    }`}
-                                                >
-                                                    <input
-                                                        type="text"
-                                                        value={vinculo.operacao || ""}
-                                                        placeholder="Ex: Completa"
-                                                        onChange={(e) =>
-                                                            handleParceiroChange(
-                                                                index,
-                                                                "operacao",
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        className="w-full h-full py-3 text-center bg-transparent outline-none placeholder-[#D3D3D3]"
-                                                    />
-                                                </td>
-                                                <td
-                                                    className={`w-1/3 p-0 relative border-r border-[#D9D9D9] ${
-                                                        isLastRow
-                                                            ? "rounded-br-[10px] border-b border-[#D9D9D9]"
-                                                            : ""
-                                                    }`}
-                                                >
-                                                    <div className="flex items-center justify-center w-full h-full">
-                                                        <span className="text-[#707070]">R$</span>
+                                                    <td
+                                                        className={`w-1/3 py-3 border-l border-[#D9D9D9] border-r border-r-[#7B7D80] ${
+                                                            isLastRow
+                                                                ? "rounded-bl-[10px] border-b border-[#D9D9D9]"
+                                                                : ""
+                                                        }`}
+                                                    >
+                                                        {vinculo.parceiro?.nome || "-"}
+                                                    </td>
+                                                    <td
+                                                        className={`w-1/3 p-0 border-r border-[#7B7D80] ${
+                                                            isLastRow
+                                                                ? "border-b border-b-[#D9D9D9]"
+                                                                : ""
+                                                        }`}
+                                                    >
                                                         <input
                                                             type="text"
-                                                            inputMode="numeric"
-                                                            value={
-                                                                vinculo.preco_editavel
-                                                                    ? Number(vinculo.preco_editavel)
-                                                                          .toFixed(2)
-                                                                          .replace(".", ",")
-                                                                    : ""
-                                                            }
-                                                            onChange={(e) => {
-                                                                const numeros =
-                                                                    e.target.value.replace(
-                                                                        /\D/g,
-                                                                        "",
-                                                                    );
-                                                                const valorNumerico = numeros
-                                                                    ? Number(numeros) / 100
-                                                                    : 0;
+                                                            value={vinculo.operacao || ""}
+                                                            placeholder="Ex: Completa"
+                                                            onChange={(e) =>
                                                                 handleParceiroChange(
                                                                     index,
-                                                                    "preco_editavel",
-                                                                    valorNumerico,
-                                                                );
-                                                            }}
-                                                            className="w-[50px] py-3 pl-1 text-left bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                                        />
-                                                    </div>
-
-                                                    <div className="absolute top-0 -right-[30px] w-[30px] h-full flex items-center justify-center opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity z-20">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                handleRemoverParceiro(index)
+                                                                    "operacao",
+                                                                    e.target.value,
+                                                                )
                                                             }
-                                                            className="w-[18px] h-[18px] flex items-center justify-center hover:opacity-70 transition-opacity"
-                                                            title="Remover parceiro"
-                                                        >
-                                                            <img
-                                                                src="/excluir-cinza-claro.png"
-                                                                alt="Remover parceiro"
-                                                                className="w-full h-full object-contain"
+                                                            className="w-full h-full py-3 text-center bg-transparent outline-none placeholder-[#D3D3D3]"
+                                                        />
+                                                    </td>
+                                                    <td
+                                                        className={`w-1/3 p-0 relative border-r border-[#D9D9D9] ${
+                                                            isLastRow
+                                                                ? "rounded-br-[10px] border-b border-[#D9D9D9]"
+                                                                : ""
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-center justify-center w-full h-full">
+                                                            <span className="text-[#707070]">
+                                                                R$
+                                                            </span>
+                                                            <input
+                                                                type="text"
+                                                                inputMode="numeric"
+                                                                value={
+                                                                    vinculo.preco_editavel
+                                                                        ? Number(
+                                                                              vinculo.preco_editavel,
+                                                                          )
+                                                                              .toFixed(2)
+                                                                              .replace(".", ",")
+                                                                        : ""
+                                                                }
+                                                                onChange={(e) => {
+                                                                    const numeros =
+                                                                        e.target.value.replace(
+                                                                            /\D/g,
+                                                                            "",
+                                                                        );
+                                                                    const valorNumerico = numeros
+                                                                        ? Number(numeros) / 100
+                                                                        : 0;
+                                                                    handleParceiroChange(
+                                                                        index,
+                                                                        "preco_editavel",
+                                                                        valorNumerico,
+                                                                    );
+                                                                }}
+                                                                className="w-[50px] py-3 pl-1 text-left bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                             />
-                                                        </button>
-                                                    </div>
-                                                </td>
+                                                        </div>
+
+                                                        <div className="absolute top-0 -right-[30px] w-[30px] h-full flex items-center justify-center opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity z-20">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    handleRemoverParceiro(index)
+                                                                }
+                                                                className="w-[18px] h-[18px] flex items-center justify-center hover:opacity-70 transition-opacity"
+                                                                title="Remover parceiro"
+                                                            >
+                                                                <img
+                                                                    src="/excluir-cinza-claro.png"
+                                                                    alt="Remover parceiro"
+                                                                    className="w-full h-full object-contain"
+                                                                />
+                                                            </button>
+                                                        </div>
+                                                    </td>
                                                 </tr>
                                             );
                                         })
