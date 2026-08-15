@@ -56,7 +56,7 @@ const Pedidos = () => {
     };
 
     const handleEdit = (id) => {
-        navigate(`/pedidos/${id}`);
+        navigate(`/pedidos/editar/${id}`);
     };
 
     const abrirModalExclusao = (pedido) => {

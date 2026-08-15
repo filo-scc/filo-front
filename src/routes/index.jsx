@@ -174,6 +174,19 @@ function AppRoutes() {
                 />
 
                 <Route
+                    path="/pedidos/editar/:id"
+                    element={
+                        <PrivateRoute>
+                            <Layout>
+                                <div className="flex justify-center items-center h-full text-gray-500 text-2xl font-light">
+                                    Página de edição de pedido em construção...
+                                </div>
+                            </Layout>
+                        </PrivateRoute>
+                    }
+                />
+
+                <Route
                     path="/aviamentos"
                     element={
                         <PrivateRoute>
