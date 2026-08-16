@@ -630,8 +630,11 @@ export default function ProdutoCadastar() {
         }
     };
 
-    const etapasAtivas = fabrico?.etapas?.filter((etapa) => etapa.ativa) || [];
-    const colunasFlexiveis = etapasAtivas.slice(0, -1);
+    const etapasAtivasOrdenadas =
+        fabrico?.etapas
+            ?.filter((etapa) => etapa?.ativa === true)
+            .sort((a, b) => (a.ordem || 0) - (b.ordem || 0)) || [];
+    const colunasFlexiveis = etapasAtivasOrdenadas.slice(0, -1);
 
     const custoAviamentos = valorTotalGasto || 0;
     const custoOperacional = produto?.custo_operacional || 0;
@@ -1168,7 +1171,7 @@ export default function ProdutoCadastar() {
                             type="submit"
                             loading={salvando}
                             loadingText="Salvando..."
-                            className="w-[189px] h-[39px] rounded-[18.9px] bg-[#A9E2F2] text-[#4696AD] text-sm font-medium transition-colors hover:bg-[#8acbdc] disabled:opacity-60 disabled:cursor-not-allowed"
+                            className="w-[189px] h-[39px] rounded-[18.9px] bg-[#A9E2F2] text-[#4696AD] text-sm font-medium transition-colors hover:bg-[#A2DCED] disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                             Finalizar cadastro
                         </LoadingButton>

@@ -58,7 +58,6 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
             const dados = await findOne(fichaId);
             setFicha(dados);
 
-            // Carregar aviamentos do produto
             if (dados?.produto?.id) {
                 try {
                     const aviamentos = await getAviamentosDoProduto(dados.produto.id);
@@ -118,9 +117,9 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
             return;
         }
 
-        const portalElement = document.getElementById("portal-impressao-nota");
-        const printViewElement = document.getElementById("nota-print-view");
-        const sourceElement = portalElement || printViewElement;
+        const sourceElement =
+            document.getElementById("nota-print-view") ||
+            document.getElementById("portal-impressao-nota");
 
         if (!sourceElement) {
             console.error("Elemento de nota de saída não encontrado para gerar PDF.");
@@ -129,32 +128,57 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
 
         const snapshot = sourceElement.cloneNode(true);
         snapshot.id = "nota-print-view-pdf-snapshot";
+
         snapshot.className = snapshot.className
             .split(" ")
             .filter((cls) => cls !== "hidden" && cls !== "print:block")
             .join(" ");
-        snapshot.style.position = "fixed";
-        snapshot.style.left = "0";
-        snapshot.style.top = "0";
-        snapshot.style.margin = "0";
-        snapshot.style.padding = "0";
-        snapshot.style.boxSizing = "border-box";
-        snapshot.style.width = "210mm";
-        snapshot.style.maxWidth = "210mm";
-        snapshot.style.minWidth = "210mm";
-        snapshot.style.visibility = "visible";
-        snapshot.style.zIndex = "99999";
-        snapshot.style.pointerEvents = "none";
-        snapshot.style.opacity = "1";
-        snapshot.style.display = "g";
-        snapshot.style.backgroundColor = "white";
-        snapshot.style.overflow = "visible";
-        snapshot.style.transform = "none";
-        snapshot.style.transition = "none";
+
+        // Usamos absolute para garantir que o html2canvas capture toda a altura sem limitar pela janela
+        Object.assign(snapshot.style, {
+            position: "absolute",
+            top: "0",
+            left: "0",
+            width: "210mm",
+            boxSizing: "border-box",
+            backgroundColor: "#ffffff",
+            zIndex: "99999",
+            opacity: "1",
+            visibility: "visible",
+            pointerEvents: "none",
+        });
 
         document.body.appendChild(snapshot);
 
-        await new Promise((resolve) => window.setTimeout(resolve, 150));
+        // A rotina do PDF captura tudo como uma única imagem. Para preservar a
+        // regra visual de impressão, empurramos as Anotações para a página
+        // seguinte quando o bloco não couber integralmente na página atual.
+        const observacoes = snapshot.querySelector(".nota-observacoes");
+        if (observacoes) {
+            const cssPageHeight = (297 / 25.4) * 96;
+            const observacoesTop = observacoes.offsetTop;
+            const observacoesHeight = observacoes.offsetHeight;
+            const pageOffset = observacoesTop % cssPageHeight;
+            const remainingPageSpace = cssPageHeight - pageOffset;
+
+            if (observacoesHeight > remainingPageSpace) {
+                observacoes.style.marginTop = `${parseFloat(getComputedStyle(observacoes).marginTop) + remainingPageSpace + 8}px`;
+            }
+        }
+
+        const images = snapshot.querySelectorAll("img");
+        await Promise.all(
+            Array.from(images).map(
+                (img) =>
+                    new Promise((resolve) => {
+                        if (img.complete) resolve();
+                        else {
+                            img.onload = resolve;
+                            img.onerror = resolve;
+                        }
+                    }),
+            ),
+        );
 
         try {
             const canvas = await html2canvas(snapshot, {
@@ -164,30 +188,38 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                 backgroundColor: "#ffffff",
                 scrollX: 0,
                 scrollY: 0,
-                windowWidth: snapshot.offsetWidth,
-                windowHeight: snapshot.offsetHeight,
+                x: 0,
+                y: 0,
                 width: snapshot.offsetWidth,
                 height: snapshot.offsetHeight,
+                windowWidth: snapshot.offsetWidth,
+                windowHeight: snapshot.offsetHeight,
             });
 
             const imgData = canvas.toDataURL("image/png");
             const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const pageHeight = pdf.internal.pageSize.getHeight();
+
+            const pageWidth = pdf.internal.pageSize.getWidth(); // 210mm
+            const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
+
             const imgProps = pdf.getImageProperties(imgData);
-            const imgWidth = pageWidth;
-            const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+            const imgHeight = (imgProps.height * pageWidth) / imgProps.width;
 
-            pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+            if (imgHeight <= pageHeight + 20) {
+                pdf.addImage(imgData, "PNG", 0, 0, pageWidth, Math.min(imgHeight, pageHeight));
+            } else {
+                let heightLeft = imgHeight;
+                let position = 0;
 
-            let heightLeft = imgHeight - pageHeight;
-            let pageNumber = 1;
-
-            while (heightLeft > 0) {
-                pdf.addPage();
-                pdf.addImage(imgData, "PNG", 0, -pageHeight * pageNumber, imgWidth, imgHeight);
+                pdf.addImage(imgData, "PNG", 0, position, pageWidth, imgHeight);
                 heightLeft -= pageHeight;
-                pageNumber += 1;
+
+                while (heightLeft > 0) {
+                    position -= pageHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, "PNG", 0, position, pageWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
             }
 
             const fileName = `nota-de-saida-${ficha.numero || "export"}.pdf`;
@@ -510,7 +542,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                     </tbody>
                                 </table>
                             </div>
-                            {/* Materiais Necessários - Gradiente 100% Opaco para Cobrir a Borda */}
+
                             <div className="relative bg-[#F4F4F4] border border-[#E2E2E2] rounded-[14px] p-5 pt-5 mt-6">
                                 <span className="absolute -top-[12px] left-4 bg-gradient-to-b from-white via-white via-[35%] to-[#F4F4F4] px-3 py-0.5 text-[15px] font-normal text-[#666666] leading-none">
                                     Materiais necessários por peça:
@@ -552,7 +584,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                     <button
                         type="button"
                         onClick={() => setModalImpressaoAberto(true)}
-                        className="w-[71px] h-[39px] bg-[#A9E2F2] rounded-full flex items-center justify-center hover:bg-[#97D8EA] transition-colors shadow-sm focus:outline-none"
+                        className="w-[71px] h-[39px] bg-[#A9E2F2] rounded-full flex items-center justify-center hover:bg-[#A2DCED] transition-colors shadow-sm focus:outline-none"
                     >
                         <img
                             src="/impressora-azul.png"
@@ -573,7 +605,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                 onClose();
                                 navigate("/");
                             }}
-                            className="px-10 h-[39px] rounded-full bg-[#A9E2F2] text-[#4696AD] hover:bg-[#97D8EA] transition-colors text-sm"
+                            className="px-10 h-[39px] rounded-full bg-[#A9E2F2] text-[#4696AD] hover:bg-[#A2DCED] transition-colors text-sm"
                         >
                             Concluir
                         </button>
@@ -581,7 +613,6 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                 </div>
             </div>
 
-            {/* Modal de Escolha do Tipo de Impressão */}
             <OpcoesImpressaoModal
                 isOpen={modalImpressaoAberto}
                 onClose={() => setModalImpressaoAberto(false)}
@@ -601,7 +632,6 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                 }}
             />
 
-            {/* Modal de Edição */}
             {modalEdicaoAberto && (
                 <EdicaoFichaTecnicaModal
                     isOpen={modalEdicaoAberto}
@@ -615,17 +645,22 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                 />
             )}
 
-            {/* Layout de Impressão Oculto da Ficha Técnica */}
-            <FichaTecnicaPrintView
-                dadosFicha={ficha}
-                fichaId={fichaId}
-                referencia={referenciaCliente}
-            />
-            <NotaDeSaidaPrintView
-                ficha={ficha}
-                referenciaCliente={referenciaCliente}
-                forceVisibleForPdf={Boolean(ficha?.fabrico?.id === 3 || ficha?.fabrico_id === 3)}
-            />
+            {ficha && (
+                <>
+                    <FichaTecnicaPrintView
+                        dadosFicha={ficha}
+                        fichaId={fichaId}
+                        referencia={referenciaCliente}
+                    />
+                    <NotaDeSaidaPrintView
+                        ficha={ficha}
+                        referenciaCliente={referenciaCliente}
+                        forceVisibleForPdf={Boolean(
+                            ficha?.fabrico?.id === 3 || ficha?.fabrico_id === 3,
+                        )}
+                    />
+                </>
+            )}
         </div>
     );
 }

@@ -101,9 +101,14 @@ export default function ProdutoDetalhes() {
                 setClientesAssociados(dadosClientes);
                 setAviamentosProduto(dadosAviamentos);
 
+                const etapasParaCusto = [...(todasEtapas || [])]
+                    .filter((etapa) => etapa?.ativa === true)
+                    .sort((a, b) => (a.ordem || 0) - (b.ordem || 0))
+                    .slice(0, -1);
+
                 // 1. Mapeamento inicial das etapas com o parceiro correspondente
-                const etapasPreMapeadas = (todasEtapas || []).map((etapa) => {
-                    const parceiroMapeado = (parceirosDisponiveis || []).find((p) => {
+                const etapasPreMapeadas = etapasParaCusto.map((etapa) => {
+                    const parceirosMapeados = (parceirosDisponiveis || []).filter((p) => {
                         const categoriaParceiro = (p?.categoria || "").trim().toLowerCase();
                         const nomeEtapa = (etapa?.nome || "").trim().toLowerCase();
                         return categoriaParceiro === nomeEtapa;
@@ -111,7 +116,7 @@ export default function ProdutoDetalhes() {
 
                     return {
                         ...etapa,
-                        parceiro_id: parceiroMapeado ? parceiroMapeado.id : null,
+                        parceiros_ids: parceirosMapeados.map((parceiro) => parceiro.id),
                     };
                 });
 
@@ -120,21 +125,28 @@ export default function ProdutoDetalhes() {
                     etapasPreMapeadas.map(async (etapa) => {
                         let custoFinal = 0;
 
-                        // Se houver um parceiro associado a esta etapa, buscamos o preço customizado
-                        if (etapa.parceiro_id) {
-                            try {
-                                const vinculo = await getVinculoParceiroProduto(
-                                    etapa.parceiro_id,
-                                    id,
-                                );
-                                if (vinculo && vinculo.preco !== undefined) {
-                                    custoFinal = vinculo.preco;
-                                }
-                            } catch (err) {
-                                console.error(
-                                    `Erro ao buscar vínculo para parceiro ${etapa.parceiro_id} e produto ${id}:`,
-                                    err,
-                                );
+                        if (etapa.parceiros_ids.length > 0) {
+                            const vinculos = await Promise.all(
+                                etapa.parceiros_ids.map(async (parceiroId) => {
+                                    try {
+                                        return await getVinculoParceiroProduto(parceiroId, id);
+                                    } catch (err) {
+                                        console.error(
+                                            `Erro ao buscar vinculo para parceiro ${parceiroId} e produto ${id}:`,
+                                            err,
+                                        );
+                                        return null;
+                                    }
+                                }),
+                            );
+
+                            const precos = vinculos
+                                .map((vinculo) => Number(vinculo?.preco))
+                                .filter((preco) => Number.isFinite(preco));
+
+                            if (precos.length > 0) {
+                                custoFinal =
+                                    precos.reduce((acc, preco) => acc + preco, 0) / precos.length;
                             }
                         }
 

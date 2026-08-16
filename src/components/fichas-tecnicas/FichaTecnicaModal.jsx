@@ -1072,7 +1072,7 @@ export default function FichaTecnicaModal({
                                 <button
                                     type="button"
                                     onClick={handleSave}
-                                    className="rounded-[19px] bg-[#A9E2F2] px-10 h-[39px] text-[14px] font-medium text-[#4696AD] transition hover:bg-[#8acbdc]"
+                                    className="rounded-[19px] bg-[#A9E2F2] px-10 h-[39px] text-[14px] font-medium text-[#4696AD] transition hover:bg-[#A2DCED]"
                                 >
                                     Adicionar ficha
                                 </button>
