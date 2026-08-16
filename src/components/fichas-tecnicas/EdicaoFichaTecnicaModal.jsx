@@ -198,7 +198,6 @@ const ColorPill = ({ nome, onRemove }) => (
 );
 
 const BORDER_DARK_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#7B7D80" };
-const BORDER_SHELL_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#D9D9D9" };
 
 export default function EdicaoFichaTecnicaModal({
     isOpen,
@@ -435,6 +434,22 @@ export default function EdicaoFichaTecnicaModal({
         return totais;
     }, [sizeItems, coresSelecionadas, matrizQuantidades]);
 
+    const totaisPorCor = useMemo(() => {
+        const totais = {};
+        coresSelecionadas.forEach((cor) => {
+            totais[cor.id] = sizeItems.reduce(
+                (sum, size) => sum + Number(matrizQuantidades[cor.id]?.[size.id]?.quantidade || 0),
+                0,
+            );
+        });
+        return totais;
+    }, [sizeItems, coresSelecionadas, matrizQuantidades]);
+
+    const totalGeral = useMemo(
+        () => Object.values(totaisPorTamanho).reduce((sum, total) => sum + Number(total || 0), 0),
+        [totaisPorTamanho],
+    );
+
     const proporcoes = useMemo(() => {
         const arrayDeTotais = sizeItems.map((s) => totaisPorTamanho[s.id] || 0);
         const arrayDeProporcoes = calcularProporcao(arrayDeTotais);
@@ -625,7 +640,7 @@ export default function EdicaoFichaTecnicaModal({
                         </button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-8 space-y-6 scrollbar-sutil">
+                    <div className="flex-1 overflow-y-auto pb-8 px-8 pt-1 space-y-6 scrollbar-sutil">
                         <div className="flex flex-col md:flex-row gap-6">
                             <div className="w-[209px] h-[165px] shrink-0 rounded-[10px] overflow-hidden border border-dashed border-[#898C8F]">
                                 <img
@@ -722,6 +737,7 @@ export default function EdicaoFichaTecnicaModal({
                                             </div>
                                         ))}
                                     </div>
+                                    <div className="w-[90px] shrink-0" />
                                 </div>
 
                                 <div className="flex h-[40px] items-stretch">
@@ -729,30 +745,29 @@ export default function EdicaoFichaTecnicaModal({
                                         Cores
                                     </div>
                                     <div className="flex flex-1 min-w-0">
-                                        {sizeItems.map((s, idx) => (
+                                        {sizeItems.map((s, sizeIndex) => (
                                             <div
                                                 key={`header-${s.id}`}
                                                 className="flex-1 min-w-0 text-center text-[14px] font-normal text-[#4696AD] flex items-center justify-center bg-[#C9EAF6]"
                                                 style={{
-                                                    borderLeftWidth: idx === 0 ? "0.5px" : "0px",
-                                                    borderRightWidth: "0.5px",
+                                                    borderLeftWidth: "0.5px",
+                                                    borderRightWidth:
+                                                        sizeIndex === sizeItems.length - 1
+                                                            ? "0.5px"
+                                                            : "0px",
                                                     borderColor: "#7B7D80",
-                                                    borderRightColor:
-                                                        idx === sizeItems.length - 1
-                                                            ? "#C9EAF6"
-                                                            : "#7B7D80",
                                                 }}
                                             >
                                                 {s.tamanho?.codigo || "-"}
                                             </div>
                                         ))}
                                     </div>
+                                    <div className="w-[90px] shrink-0 rounded-tr-[10px] bg-[#C9EAF6] px-2 text-center text-[14px] font-normal text-[#4696AD] flex items-center justify-center">
+                                        Total (cor)
+                                    </div>
                                 </div>
 
-                                <div
-                                    className="rounded-b-[10px] bg-white overflow-hidden"
-                                    style={{ ...BORDER_SHELL_05, borderTopWidth: "0px" }}
-                                >
+                                <div className="rounded-b-[10px] bg-white overflow-hidden">
                                     <div className="flex flex-col w-full">
                                         {coresSelecionadas.length > 0 ? (
                                             coresSelecionadas.map((cor, index) => (
@@ -767,11 +782,8 @@ export default function EdicaoFichaTecnicaModal({
                                                     <div
                                                         className="w-[160px] shrink-0 pl-2 pr-4 flex items-center gap-3"
                                                         style={{
-                                                            ...BORDER_DARK_05,
-                                                            borderTopWidth: "0px",
-                                                            borderLeftWidth: "0px",
-                                                            borderBottomWidth: "0px",
-                                                            borderRightWidth: "0.5px",
+                                                            borderLeftWidth: "0.5px",
+                                                            borderLeftColor: "#D9D9D9",
                                                         }}
                                                     >
                                                         {String(cor.tipo).toUpperCase() ===
@@ -807,9 +819,9 @@ export default function EdicaoFichaTecnicaModal({
                                                                     ...BORDER_DARK_05,
                                                                     borderTopWidth: "0px",
                                                                     borderBottomWidth: "0px",
-                                                                    borderLeftWidth: "0px",
+                                                                    borderLeftWidth: "0.5px",
                                                                     borderRightWidth:
-                                                                        sizeIndex !==
+                                                                        sizeIndex ===
                                                                         sizeItems.length - 1
                                                                             ? "0.5px"
                                                                             : "0px",
@@ -837,11 +849,54 @@ export default function EdicaoFichaTecnicaModal({
                                                             </div>
                                                         );
                                                     })}
+                                                    <div
+                                                        className="w-[90px] shrink-0 px-2 flex items-center justify-center text-[14px] font-normal text-[#898C8F]"
+                                                        style={{
+                                                            borderRight: "0.5px solid #D9D9D9",
+                                                        }}
+                                                    >
+                                                        {totaisPorCor[cor.id] || "-"}
+                                                    </div>
                                                 </div>
                                             ))
                                         ) : (
                                             <div className="px-4 py-4 text-[13px] text-center text-[#888] bg-white w-full rounded-b-[10px]">
                                                 Nenhuma cor selecionada.
+                                            </div>
+                                        )}
+                                        {coresSelecionadas.length > 0 && (
+                                            <div className="flex w-full min-h-[40px] items-stretch">
+                                                <div className="w-[160px] shrink-0 bg-[#C9EAF6] px-3 text-center text-[14px] font-normal text-[#4696AD] flex items-center justify-center">
+                                                    Total (tamanho)
+                                                </div>
+                                                <div className="flex flex-1 min-w-0">
+                                                    {sizeItems.map((size, sizeIndex) => (
+                                                        <div
+                                                            key={`total-tamanho-${size.id}`}
+                                                            className={`flex-1 min-w-0 px-2 flex items-center justify-center text-[14px] font-normal text-[#898C8F] border-l-[0.5px] border-[#7B7D80] ${
+                                                                coresSelecionadas.length % 2 === 1
+                                                                    ? "bg-[#F4F4F4]"
+                                                                    : "bg-[#FFFFFF]"
+                                                            }`}
+                                                            style={{
+                                                                borderLeftWidth: "0.5px",
+                                                                borderRightWidth:
+                                                                    sizeIndex ===
+                                                                    sizeItems.length - 1
+                                                                        ? "0.5px"
+                                                                        : "0px",
+                                                                borderColor: "#7B7D80",
+                                                                borderBottomWidth: "0.5px",
+                                                                borderBottomColor: "#D9D9D9",
+                                                            }}
+                                                        >
+                                                            {totaisPorTamanho[size.id] || "-"}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <div className="w-[90px] shrink-0 bg-[#C9EAF6] px-2 flex items-center justify-center text-[14px] font-normal text-[#4696AD]">
+                                                    {totalGeral || "-"}
+                                                </div>
                                             </div>
                                         )}
                                     </div>
