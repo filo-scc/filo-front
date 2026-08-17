@@ -141,7 +141,9 @@ export default function ProdutoDetalhes() {
                             );
 
                             const precos = vinculos
-                                .map((vinculo) => Number(vinculo?.preco))
+                                .map((vinculo) => vinculo?.preco)
+                                .filter((preco) => preco !== null && preco !== undefined)
+                                .map((preco) => Number(preco))
                                 .filter((preco) => Number.isFinite(preco));
 
                             if (precos.length > 0) {

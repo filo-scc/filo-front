@@ -27,6 +27,18 @@ import { DropdownOptionsSkeleton, LoadingButton, SkeletonBox } from "../componen
 
 const sectionTitleClass = "text-[20px] font-light text-[#404040] mb-4 font-['Outfit',_sans-serif]";
 
+const normalizarPrecoOpcional = (preco) => {
+    if (preco === null || preco === undefined || preco === "") return null;
+
+    const valorNormalizado =
+        typeof preco === "string"
+            ? preco.replace("R$", "").replace(",", ".").trim()
+            : preco;
+    const valorNumerico = Number(valorNormalizado);
+
+    return Number.isFinite(valorNumerico) && valorNumerico > 0 ? valorNumerico : null;
+};
+
 function DropdownField({
     value,
     placeholder,
@@ -614,19 +626,7 @@ export default function PedidosCadastrar() {
                     const totalParceiros = ficha.parceiroRows.length;
 
                     for (const parceiro of ficha.parceiroRows) {
-                        let precoFormatado = 0;
-
-                        if (parceiro.preco) {
-                            precoFormatado =
-                                typeof parceiro.preco === "string"
-                                    ? parseFloat(
-                                          parceiro.preco
-                                              .replace(",", ".")
-                                              .replace("R$ ", "")
-                                              .trim(),
-                                      ) || 0
-                                    : Number(parceiro.preco);
-                        }
+                        const precoFormatado = normalizarPrecoOpcional(parceiro.preco);
 
                         const parceiroIdFinal = parceiro.parceiroId || parceiro.id;
                         const produtoIdFinal = pId;
@@ -657,31 +657,10 @@ export default function PedidosCadastrar() {
 
                             if (totalParceiros === 1) {
                                 quantidadeFinal = Number(ficha.quantidade);
-                                const calculo = quantidadeFinal * precoFormatado;
-                                valorFinal = Number(calculo.toFixed(2));
-                            }
-
-                            await createFichaParceiro(
-                                novaFicha.id,
-                                parceiroIdFinal,
-                                parceiro.operacao || null,
-                                valorFinal,
-                                quantidadeFinal,
-                            );
-                        } catch (err) {
-                            console.error(
-                                `Erro ao criar Ficha-Parceiro para o id ${parceiroIdFinal}`,
-                                err,
-                            );
-                        }
-                        try {
-                            let valorFinal = undefined;
-                            let quantidadeFinal = undefined;
-
-                            if (totalParceiros === 1) {
-                                quantidadeFinal = Number(ficha.quantidade);
-                                const calculo = quantidadeFinal * precoFormatado;
-                                valorFinal = Number(calculo.toFixed(2));
+                                if (precoFormatado !== null) {
+                                    const calculo = quantidadeFinal * precoFormatado;
+                                    valorFinal = Number(calculo.toFixed(2));
+                                }
                             }
 
                             await createFichaParceiro(
