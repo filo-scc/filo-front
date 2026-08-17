@@ -20,6 +20,7 @@ import { getAviamentosDoProduto, getParceiroByProduto } from "../../services/pro
 import { updateFichaTecnica } from "../../services/fichasTecnicasService";
 import { getParceirosByFabrico } from "../../services/parceiroService";
 import { isCancel } from "axios";
+import RelatorioDeAcabamento from "./RelatorioDeAcabamento";
 
 const FloatingInput = ({
     label,
@@ -884,6 +885,14 @@ export default function EdicaoFichaTecnicaModal({
                                 </tbody>
                             </table>
                         </div>
+
+                        {/* Relatório de acabamento - TODO: substituir valores fictícios quando a API expuser esses campos */}
+                        <RelatorioDeAcabamento
+                            defeitoCostura={2}
+                            defeitoTecido={1}
+                            retiradas={0}
+                            sobras={3}
+                        />
 
                         {/* Botão Atribuir Facção */}
                         <button
