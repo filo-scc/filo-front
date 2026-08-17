@@ -16,9 +16,10 @@ import {
 import { getProdutosDoCliente } from "../../services/clientesService";
 import ProdutoParceiros from "../produtos/ProdutoParceiros";
 import FichaTecnicaPrintView from "../FichaTecnicaPrintView";
-import { getParceiroByProduto } from "../../services/produtoService";
+import { getAviamentosDoProduto, getParceiroByProduto } from "../../services/produtoService";
 import { updateFichaTecnica } from "../../services/fichasTecnicasService";
 import { getParceirosByFabrico } from "../../services/parceiroService";
+import { isCancel } from "axios";
 
 const FloatingInput = ({
     label,
@@ -51,6 +52,18 @@ const FloatingInput = ({
         />
     </div>
 );
+
+const simplificarUnidade = (unidade) => {
+    const unidadesSimplificadas = {
+        METRO: "m",
+        CENTIMETRO: "cm",
+        GRAMA: "g",
+        QUILOGRAMA: "kg",
+        UNIDADE: "un",
+        PAR: "par",
+    };
+    return unidadesSimplificadas[unidade] || unidade;
+};
 
 const calcularProporcao = (totaisPorTamanho) => {
     const valoresValidos = totaisPorTamanho.map(Number).filter((t) => t > 0);
@@ -175,11 +188,32 @@ export default function EdicaoFichaTecnicaModal({
     const [referenciaCliente, setReferenciaCliente] = useState("-");
     const [isProdutoParceirosOpen, setIsProdutoParceirosOpen] = useState(false);
     const [parceirosDisponiveis, setParceirosDisponiveis] = useState([]);
+    const [aviamentos, setAviamentos] = useState([]);
 
     const sizeItems = useMemo(
         () => dadosFicha?.grade_versao?.itens || [],
         [dadosFicha?.grade_versao?.itens],
     );
+
+    const produtoId = dadosFicha?.produto?.id;
+    useEffect(() => {
+        let isCurent = true;
+
+        if (produtoId) {
+            getAviamentosDoProduto(produtoId)
+                .then((res) => {
+                    if (isCurent) setAviamentos(res || []);
+                })
+                .catch((err) => {
+                    console.error("Erro ao carregar aviamento para impressão", err);
+                    if (isCurent) setAviamentos([]);
+                });
+        }
+        return () => {
+            isCurent = false;
+        };
+    }, [produtoId]);
+    const listaAviamentos = produtoId ? aviamentos : [];
 
     const carregarParceirosDisponiveis = useCallback(async () => {
         if (!dadosFicha?.produto_id || !dadosFicha?.fabrico_id) return;
@@ -870,11 +904,39 @@ export default function EdicaoFichaTecnicaModal({
                             </span>
                         </button>
 
-                        <div className="relative mt-2">
-                            <fieldset className="border border-[#E8E8E8] rounded-[10px] p-4 bg-[#F9F9F9]">
-                                <legend className="px-2 text-[11px] text-[#898C8F] ml-2">
+                        <div className="max-[30px] relative mt-5 break-inside-avoid">
+                            <fieldset className="border border-[#E8E8E8] rounded-[10px] p-4 bg-[#F9F9F9] min-h-[80px]">
+                                <legend className="px-2 text-[12px] text-[#898C8F] ml-2 font-light bg-white">
                                     Materiais necessários por peça:
                                 </legend>
+                                {listaAviamentos.length > 0 ? (
+                                    <div className="flex flex-col gap-1 text-[13px] px-2 pt-1 font-light">
+                                        {listaAviamentos.map((item, index) => {
+                                            const quantidade = item.quantidade ?? "";
+                                            const unidade = simplificarUnidade(
+                                                item.aviamentos?.unidade_media ?? "",
+                                            );
+                                            const nome = item.aviamentos?.nome;
+                                            return (
+                                                <div
+                                                    key={item.aviamentos?.id ?? index}
+                                                    className="leading-relaxed"
+                                                >
+                                                    <span className="text-[#898C8F]">
+                                                        {quantidade} {unidade}
+                                                    </span>{" "}
+                                                    <span className="text-[#898C8F]">
+                                                        de {nome}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <p className="text-[13px] text-[#898C8F] font-light px-2 pt-1">
+                                        Nenhum material cadastrado.
+                                    </p>
+                                )}
                             </fieldset>
                         </div>
                     </div>
