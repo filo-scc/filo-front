@@ -31,9 +31,7 @@ const normalizarPrecoOpcional = (preco) => {
     if (preco === null || preco === undefined || preco === "") return null;
 
     const valorNormalizado =
-        typeof preco === "string"
-            ? preco.replace("R$", "").replace(",", ".").trim()
-            : preco;
+        typeof preco === "string" ? preco.replace("R$", "").replace(",", ".").trim() : preco;
     const valorNumerico = Number(valorNormalizado);
 
     return Number.isFinite(valorNumerico) && valorNumerico > 0 ? valorNumerico : null;
