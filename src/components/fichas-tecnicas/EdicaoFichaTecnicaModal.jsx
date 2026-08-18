@@ -378,25 +378,32 @@ export default function EdicaoFichaTecnicaModal({
     };
 
     const handleAddParceiroSelecionado = (novoParceiro) => {
-        const jaExiste = parceiros.some((p) => p.parceiro_id === novoParceiro.id);
+        const parceiroId = Number(novoParceiro.id);
+        const jaExiste = parceiros.some((p) => Number(p.parceiro_id) === parceiroId);
         if (jaExiste) return;
 
-        const vinculoExistenteFoiRemovido = parceirosRemovidos.includes(novoParceiro.id);
+        const vinculoRemovido = parceirosRemovidos.find(
+            (vinculo) => Number(vinculo.parceiro_id) === parceiroId,
+        );
 
-        if (vinculoExistenteFoiRemovido) {
-            setParceirosRemovidos((prev) => prev.filter((id) => id !== novoParceiro.id));
+        if (vinculoRemovido) {
+            setParceirosRemovidos((prev) =>
+                prev.filter((vinculo) => Number(vinculo.parceiro_id) !== parceiroId),
+            );
+            setParceiros((prev) => [...prev, vinculoRemovido]);
+            return;
         }
 
         const novoVinculo = {
-            parceiro_id: novoParceiro.id,
+            parceiro_id: parceiroId,
             parceiro: {
-                id: novoParceiro.id,
+                id: parceiroId,
                 nome: novoParceiro.nome,
             },
             operacao: "",
             preco_editavel: novoParceiro.preco || 0,
             parceiroProdutoExiste: novoParceiro.preco !== null && novoParceiro.preco !== undefined,
-            isNovo: !vinculoExistenteFoiRemovido,
+            isNovo: true,
         };
 
         setParceiros((prev) => [...prev, novoVinculo]);
@@ -482,9 +489,13 @@ export default function EdicaoFichaTecnicaModal({
         const parceiroParaRemover = parceiros[index];
         if (parceiroParaRemover.parceiro_id && !parceiroParaRemover.isNovo) {
             setParceirosRemovidos((prev) =>
-                prev.includes(parceiroParaRemover.parceiro_id)
+                prev.some(
+                    (vinculo) =>
+                        Number(vinculo.parceiro_id) ===
+                        Number(parceiroParaRemover.parceiro_id),
+                )
                     ? prev
-                    : [...prev, parceiroParaRemover.parceiro_id],
+                    : [...prev, parceiroParaRemover],
             );
         }
         setParceiros((prev) => prev.filter((_, i) => i !== index));
@@ -579,8 +590,8 @@ export default function EdicaoFichaTecnicaModal({
                 return Promise.all(requisicoesDoParceiro);
             });
 
-            const promessasDelecaoParceiros = parceirosRemovidos.map((parceiroId) =>
-                deleteFichaTecnicaParceiro(fichaId, parceiroId),
+            const promessasDelecaoParceiros = parceirosRemovidos.map((parceiroRemovido) =>
+                deleteFichaTecnicaParceiro(fichaId, parceiroRemovido.parceiro_id),
             );
 
             const promessaAtualizarQuantidade = updateFichaTecnica(fichaId, {
@@ -595,7 +606,7 @@ export default function EdicaoFichaTecnicaModal({
             ]);
             await syncFichaTecnicaCores(fichaId, coresIds);
 
-            onSuccess();
+            await onSuccess?.();
             onClose();
         } catch (error) {
             console.error("Erro ao salvar edição", error);

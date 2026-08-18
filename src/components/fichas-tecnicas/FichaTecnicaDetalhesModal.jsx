@@ -40,7 +40,12 @@ const simplificarUnidade = (unidade) => {
 
 const BORDER_DARK_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#7B7D80" };
 
-export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) {
+export default function FichaTecnicaDetalhesModal({
+    isOpen,
+    onClose,
+    fichaId,
+    onFichaAtualizada,
+}) {
     const [ficha, setFicha] = useState(null);
     const [aviamentosProduto, setAviamentosProduto] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -752,9 +757,8 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                     fichaId={fichaId}
                     dadosFicha={ficha}
                     onClose={() => setModalEdicaoAberto(false)}
-                    onSuccess={() => {
-                        setModalEdicaoAberto(false);
-                        carregarDados();
+                    onSuccess={async () => {
+                        await Promise.all([carregarDados(), onFichaAtualizada?.()]);
                     }}
                 />
             )}

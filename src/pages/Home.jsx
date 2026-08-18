@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { getAllEtapasByFabricoId } from "../services/etapaService";
 import { getFichaTecnicaByFabrico } from "../services/fichasTecnicasService";
 import { getMe } from "../services/authService";
@@ -70,7 +70,7 @@ export default function Home() {
         }
     }, [mostrarErro, location.pathname, navigate]);
 
-    const carregarDadosDoQuadro = async () => {
+    const carregarDadosDoQuadro = useCallback(async () => {
         setLoading(true);
         try {
             const dadosUsuario = await getMe();
@@ -103,11 +103,11 @@ export default function Home() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         carregarDadosDoQuadro();
-    }, []);
+    }, [carregarDadosDoQuadro]);
 
     const handleScroll = () => {
         if (scrollRef.current) {
@@ -471,6 +471,7 @@ export default function Home() {
                 <FichaTecnicaDetalhesModal
                     isOpen={modalDetalhesAberto}
                     fichaId={fichaSelecionadaId}
+                    onFichaAtualizada={carregarDadosDoQuadro}
                     onClose={() => {
                         setModalDetalhesAberto(false);
                         setFichaSelecionadaId(null);
