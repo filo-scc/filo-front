@@ -21,6 +21,7 @@ import { updateFichaTecnica } from "../../services/fichasTecnicasService";
 import { getParceirosByFabrico } from "../../services/parceiroService";
 import { isCancel } from "axios";
 import RelatorioDeAcabamento from "./RelatorioDeAcabamento";
+import { getAllEtapasByFabricoId } from "../../services/etapaService";
 
 const FloatingInput = ({
     label,
@@ -190,6 +191,13 @@ export default function EdicaoFichaTecnicaModal({
     const [isProdutoParceirosOpen, setIsProdutoParceirosOpen] = useState(false);
     const [parceirosDisponiveis, setParceirosDisponiveis] = useState([]);
     const [aviamentos, setAviamentos] = useState([]);
+    const [ultimaEtapaId, setUltimaEtapaId] = useState(null);
+    const [relatorioAcabamento, setRelatorioAcabamento] = useState({
+        defeitoCostura: 0,
+        defeitoTecido: 0,
+        retiradas: 0,
+        sobras: 0,
+    });
 
     const sizeItems = useMemo(
         () => dadosFicha?.grade_versao?.itens || [],
@@ -215,6 +223,30 @@ export default function EdicaoFichaTecnicaModal({
         };
     }, [produtoId]);
     const listaAviamentos = produtoId ? aviamentos : [];
+
+    useEffect(() => {
+        let isCurrent = true;
+
+        if (dadosFicha?.fabrico_id) {
+            getAllEtapasByFabricoId(dadosFicha.fabrico_id)
+                .then((etapas) => {
+                    if (!isCurrent) return;
+                    const etapasAtivas = (etapas || []).filter((e) => e.ativa);
+                    const etapasOrdenadas = etapasAtivas.sort((a, b) => a.ordem - b.ordem);
+                    const ultima = etapasOrdenadas[etapasOrdenadas.length - 1];
+                    setUltimaEtapaId(ultima?.id ?? null);
+                })
+                .catch((error) => {
+                    console.error("Erro ao verificar última etapa", error);
+                    setUltimaEtapaId(null);
+                });
+        }
+
+        return () => {
+            isCurrent = false;
+        };
+    }, [dadosFicha?.fabrico_id]);
+    const isUltimaEtapa = ultimaEtapaId != null && dadosFicha?.etapa_atual_id == ultimaEtapaId;
 
     const carregarParceirosDisponiveis = useCallback(async () => {
         if (!dadosFicha?.produto_id || !dadosFicha?.fabrico_id) return;
@@ -290,6 +322,13 @@ export default function EdicaoFichaTecnicaModal({
 
     useEffect(() => {
         if (isOpen && dadosFicha) {
+            setRelatorioAcabamento({
+                defeitoCostura: dadosFicha.defeitos_costura ?? 0,
+                defeitoTecido: dadosFicha.defeitos_tecido ?? 0,
+                retiradas: dadosFicha.retiradas ?? 0,
+                sobras: dadosFicha.sobras ?? 0,
+            });
+
             carregarCoresDaFabrica();
             carregarParceirosDisponiveis();
 
@@ -353,6 +392,10 @@ export default function EdicaoFichaTecnicaModal({
             }
             return [...prev, cor];
         });
+    };
+
+    const handleRelatorioAcabamentoChange = (campo, valor) => {
+        setRelatorioAcabamento((prev) => ({ ...prev, [campo]: valor }));
     };
 
     const handleAddParceiroSelecionado = (novoParceiro) => {
@@ -434,6 +477,7 @@ export default function EdicaoFichaTecnicaModal({
     };
 
     const handleConcluir = async () => {
+        if (loading) return;
         setLoading(true);
         try {
             const coresIds = coresSelecionadas.map((c) => c.id);
@@ -505,7 +549,16 @@ export default function EdicaoFichaTecnicaModal({
                             p.operacao,
                             payloadFichaParceiro.valor,
                             payloadFichaParceiro.quantidade,
-                        ),
+                        ).catch((error) => {
+                            if (error?.response?.status === 409) {
+                                return updateFichaTecnicaParceiro(
+                                    fichaId,
+                                    p.parceiro_id,
+                                    payloadFichaParceiro,
+                                );
+                            }
+                            throw error;
+                        }),
                     );
                 } else {
                     requisicoesDoParceiro.push(
@@ -522,6 +575,10 @@ export default function EdicaoFichaTecnicaModal({
 
             const promessaAtualizarQuantidade = updateFichaTecnica(fichaId, {
                 quantidade: quantidadeTotal,
+                defeitos_costura: relatorioAcabamento.defeitoCostura,
+                defeitos_tecido: relatorioAcabamento.defeitoTecido,
+                retiradas: relatorioAcabamento.retiradas,
+                sobras: relatorioAcabamento.sobras,
             });
 
             await Promise.all([
@@ -627,7 +684,6 @@ export default function EdicaoFichaTecnicaModal({
                                 />
                             </div>
                         </div>
-
                         <div className="flex flex-wrap gap-2 pt-2">
                             {coresSelecionadas.map((cor) => (
                                 <ColorPill
@@ -637,7 +693,6 @@ export default function EdicaoFichaTecnicaModal({
                                 />
                             ))}
                         </div>
-
                         <div className="mt-4">
                             <div className="mb-2 text-center text-[15px] font-light text-[#737373]">
                                 Grade
@@ -785,7 +840,6 @@ export default function EdicaoFichaTecnicaModal({
                                 </div>
                             </div>
                         </div>
-
                         <div className="border border-[#E8E8E8] rounded-[10px]">
                             <table className="w-full text-center text-sm">
                                 <thead className="bg-[#C9EAF6] text-[#4696AD]">
@@ -885,15 +939,6 @@ export default function EdicaoFichaTecnicaModal({
                                 </tbody>
                             </table>
                         </div>
-
-                        {/* Relatório de acabamento - TODO: substituir valores fictícios quando a API expuser esses campos */}
-                        <RelatorioDeAcabamento
-                            defeitoCostura={2}
-                            defeitoTecido={1}
-                            retiradas={0}
-                            sobras={3}
-                        />
-
                         {/* Botão Atribuir Facção */}
                         <button
                             type="button"
@@ -912,6 +957,17 @@ export default function EdicaoFichaTecnicaModal({
                                     : "Atribuir facção"}
                             </span>
                         </button>
+
+                        {/* Relatório de acabamento */}
+                        {isUltimaEtapa && (
+                            <RelatorioDeAcabamento
+                                defeitoCostura={relatorioAcabamento.defeitoCostura}
+                                defeitoTecido={relatorioAcabamento.defeitoTecido}
+                                retiradas={relatorioAcabamento.retiradas}
+                                sobras={relatorioAcabamento.sobras}
+                                onChange={handleRelatorioAcabamentoChange}
+                            />
+                        )}
 
                         <div className="max-[30px] relative mt-5 break-inside-avoid">
                             <fieldset className="border border-[#E8E8E8] rounded-[10px] p-4 bg-[#F9F9F9] min-h-[80px]">

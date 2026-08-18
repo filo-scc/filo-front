@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { getAviamentosDoProduto } from "../services/produtoService";
+import RelatorioDeAcabamento from "./fichas-tecnicas/RelatorioDeAcabamento";
 
 // Hook para verificar montagem no cliente sem causar renderizações em cascata
 const emptySubscribe = () => () => {};
@@ -500,46 +501,14 @@ export default function FichaTecnicaPrintView({ dadosFicha, referencia, onReadyT
                     </div>
 
                     {/* RELATÓRIO DE ACABAMENTO */}
-                    <div className="mb-4 mx-[30px] break-inside-avoid">
-                        <div className="text-center text-[15px] font-light text-[#737373] mb-2">
-                            Relatório de acabamento
-                        </div>
-                        <div className="rounded-[10px] border border-[#D9D9D9] overflow-hidden">
-                            <table className="w-full text-center text-sm border-collapse">
-                                <thead>
-                                    <tr className="bg-[#F4F4F4] text-[#898C8F]">
-                                        <th
-                                            className="py-1.5 font-normal w-1/4"
-                                            style={{ borderRight: darkSide }}
-                                        >
-                                            Defeito de costura
-                                        </th>
-                                        <th
-                                            className="py-1.5 font-normal w-1/4"
-                                            style={{ borderRight: darkSide }}
-                                        >
-                                            Defeito no tecido
-                                        </th>
-                                        <th
-                                            className="py-1.5 font-normal w-1/4"
-                                            style={{ borderRight: darkSide }}
-                                        >
-                                            Retiradas
-                                        </th>
-                                        <th className="py-1.5 font-normal w-1/4">Sobras</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="text-[#707070] font-light bg-white">
-                                    <tr>
-                                        <td className="py-3" style={{ borderRight: darkSide }}></td>
-                                        <td className="py-3" style={{ borderRight: darkSide }}></td>
-                                        <td className="py-3" style={{ borderRight: darkSide }}></td>
-                                        <td className="py-3"></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <RelatorioDeAcabamento
+                        defeitoCostura={dadosFicha?.defeitos_costura ?? 0}
+                        defeitoTecido={dadosFicha?.defeitos_tecido ?? 0}
+                        retiradas={dadosFicha?.retiradas ?? 0}
+                        sobras={dadosFicha?.sobras ?? 0}
+                        readonly
+                        variant="print"
+                    />
 
                     {/* MATERIAIS / AVIAMENTOS */}
                     <div className="mx-[30px] relative mt-5 break-inside-avoid">
