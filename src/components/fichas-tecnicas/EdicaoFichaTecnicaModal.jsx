@@ -491,8 +491,7 @@ export default function EdicaoFichaTecnicaModal({
             setParceirosRemovidos((prev) =>
                 prev.some(
                     (vinculo) =>
-                        Number(vinculo.parceiro_id) ===
-                        Number(parceiroParaRemover.parceiro_id),
+                        Number(vinculo.parceiro_id) === Number(parceiroParaRemover.parceiro_id),
                 )
                     ? prev
                     : [...prev, parceiroParaRemover],

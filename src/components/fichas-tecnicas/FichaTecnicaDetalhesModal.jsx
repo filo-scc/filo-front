@@ -40,12 +40,7 @@ const simplificarUnidade = (unidade) => {
 
 const BORDER_DARK_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#7B7D80" };
 
-export default function FichaTecnicaDetalhesModal({
-    isOpen,
-    onClose,
-    fichaId,
-    onFichaAtualizada,
-}) {
+export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, onFichaAtualizada }) {
     const [ficha, setFicha] = useState(null);
     const [aviamentosProduto, setAviamentosProduto] = useState([]);
     const [loading, setLoading] = useState(false);
