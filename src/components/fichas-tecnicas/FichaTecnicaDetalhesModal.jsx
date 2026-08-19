@@ -1,11 +1,14 @@
 import { useEffect, useState, useCallback } from "react";
 import { findOne } from "../../services/fichasTecnicasService";
 import { getProdutosDoCliente } from "../../services/clientesService";
+import { getAviamentosDoProduto } from "../../services/produtoService";
 import EdicaoFichaTecnicaModal from "./EdicaoFichaTecnicaModal";
 import NotaDeSaidaPrintView from "../NotaDeSaidaPrintView";
 import { useNavigate } from "react-router-dom";
 import FichaTecnicaPrintView from "../FichaTecnicaPrintView";
 import OpcoesImpressaoModal from "./OpcoesImpressaoModal";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 const CampoDetalhe = ({ label, valor }) => (
     <div className="relative border border-[#898C8F] rounded-[10px] h-[39px] px-3 flex items-center mt-2 w-full bg-white">
@@ -23,11 +26,24 @@ const calcularProporcao = (totaisPorTamanho) => {
     return totaisPorTamanho.map((t) => (t > 0 ? Math.round(t / base) : 0));
 };
 
+const simplificarUnidade = (unidade) => {
+    const unidadesSimplificadas = {
+        METRO: "m",
+        CENTIMETRO: "cm",
+        GRAMA: "g",
+        QUILOGRAMA: "kg",
+        UNIDADE: "un",
+        PAR: "par",
+    };
+    return unidadesSimplificadas[unidade] || unidade;
+};
+
 const BORDER_DARK_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#7B7D80" };
 const BORDER_SHELL_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#D9D9D9" };
 
 export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) {
     const [ficha, setFicha] = useState(null);
+    const [aviamentosProduto, setAviamentosProduto] = useState([]);
     const [loading, setLoading] = useState(false);
     const [referenciaCliente, setReferenciaCliente] = useState("-");
     const navigate = useNavigate();
@@ -41,6 +57,16 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
         try {
             const dados = await findOne(fichaId);
             setFicha(dados);
+
+            if (dados?.produto?.id) {
+                try {
+                    const aviamentos = await getAviamentosDoProduto(dados.produto.id);
+                    setAviamentosProduto(aviamentos);
+                } catch (error) {
+                    console.error("Erro ao carregar aviamentos do produto", error);
+                    setAviamentosProduto([]);
+                }
+            }
 
             if (dados?.pedido?.cliente?.id && dados?.produto?.id) {
                 const produtoDoCliente = await getProdutosDoCliente(dados.pedido.cliente.id);
@@ -84,6 +110,129 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
         setPrintMode(mode);
         window.print();
     }, []);
+
+    const handleDownloadNotaSaidaPdf = useCallback(async () => {
+        if (!ficha) {
+            console.error("[PDF] ficha não definida");
+            return;
+        }
+
+        const sourceElement =
+            document.getElementById("nota-print-view") ||
+            document.getElementById("portal-impressao-nota");
+
+        if (!sourceElement) {
+            console.error("Elemento de nota de saída não encontrado para gerar PDF.");
+            return;
+        }
+
+        const snapshot = sourceElement.cloneNode(true);
+        snapshot.id = "nota-print-view-pdf-snapshot";
+
+        snapshot.className = snapshot.className
+            .split(" ")
+            .filter((cls) => cls !== "hidden" && cls !== "print:block")
+            .join(" ");
+
+        // Usamos absolute para garantir que o html2canvas capture toda a altura sem limitar pela janela
+        Object.assign(snapshot.style, {
+            position: "absolute",
+            top: "0",
+            left: "0",
+            width: "210mm",
+            boxSizing: "border-box",
+            backgroundColor: "#ffffff",
+            zIndex: "99999",
+            opacity: "1",
+            visibility: "visible",
+            pointerEvents: "none",
+        });
+
+        document.body.appendChild(snapshot);
+
+        // A rotina do PDF captura tudo como uma única imagem. Para preservar a
+        // regra visual de impressão, empurramos as Anotações para a página
+        // seguinte quando o bloco não couber integralmente na página atual.
+        const observacoes = snapshot.querySelector(".nota-observacoes");
+        if (observacoes) {
+            const cssPageHeight = (297 / 25.4) * 96;
+            const observacoesTop = observacoes.offsetTop;
+            const observacoesHeight = observacoes.offsetHeight;
+            const pageOffset = observacoesTop % cssPageHeight;
+            const remainingPageSpace = cssPageHeight - pageOffset;
+
+            if (observacoesHeight > remainingPageSpace) {
+                observacoes.style.marginTop = `${parseFloat(getComputedStyle(observacoes).marginTop) + remainingPageSpace + 8}px`;
+            }
+        }
+
+        const images = snapshot.querySelectorAll("img");
+        await Promise.all(
+            Array.from(images).map(
+                (img) =>
+                    new Promise((resolve) => {
+                        if (img.complete) resolve();
+                        else {
+                            img.onload = resolve;
+                            img.onerror = resolve;
+                        }
+                    }),
+            ),
+        );
+
+        try {
+            const canvas = await html2canvas(snapshot, {
+                useCORS: true,
+                allowTaint: true,
+                scale: 2,
+                backgroundColor: "#ffffff",
+                scrollX: 0,
+                scrollY: 0,
+                x: 0,
+                y: 0,
+                width: snapshot.offsetWidth,
+                height: snapshot.offsetHeight,
+                windowWidth: snapshot.offsetWidth,
+                windowHeight: snapshot.offsetHeight,
+            });
+
+            const imgData = canvas.toDataURL("image/png");
+            const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+
+            const pageWidth = pdf.internal.pageSize.getWidth(); // 210mm
+            const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
+
+            const imgProps = pdf.getImageProperties(imgData);
+            const imgHeight = (imgProps.height * pageWidth) / imgProps.width;
+
+            if (imgHeight <= pageHeight + 20) {
+                pdf.addImage(imgData, "PNG", 0, 0, pageWidth, Math.min(imgHeight, pageHeight));
+            } else {
+                let heightLeft = imgHeight;
+                let position = 0;
+
+                pdf.addImage(imgData, "PNG", 0, position, pageWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                while (heightLeft > 0) {
+                    position -= pageHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, "PNG", 0, position, pageWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+            }
+
+            const fileName = `nota-de-saida-${ficha.numero || "export"}.pdf`;
+            pdf.save(fileName);
+        } catch (error) {
+            console.error("Erro ao gerar PDF da nota de saída", error);
+        } finally {
+            const snapshotElement = document.getElementById("nota-print-view-pdf-snapshot");
+            if (snapshotElement && snapshotElement.parentNode) {
+                snapshotElement.parentNode.removeChild(snapshotElement);
+            }
+        }
+    }, [ficha]);
 
     const handleContentClick = (e) => {
         e.stopPropagation();
@@ -394,21 +543,48 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                 </table>
                             </div>
 
-                            <div className="bg-[#F8F8F8] border border-[#E8E8E8] rounded-[10px] p-4 relative mt-6">
-                                <span className="absolute -top-[9px] left-4 bg-[#F8F8F8] px-1 text-[11px] text-[#898C8F]">
+                            <div className="relative bg-[#F4F4F4] border border-[#E2E2E2] rounded-[14px] p-5 pt-5 mt-6">
+                                <span className="absolute -top-[12px] left-4 bg-gradient-to-b from-white via-white via-[35%] to-[#F4F4F4] px-3 py-0.5 text-[15px] font-normal text-[#666666] leading-none">
                                     Materiais necessários por peça:
                                 </span>
+
+                                {aviamentosProduto && aviamentosProduto.length > 0 ? (
+                                    <div className="flex flex-col gap-1 text-[14px] mt-1">
+                                        {aviamentosProduto.map((item, index) => {
+                                            const qtd = item.quantidade ?? "";
+                                            const unidade = simplificarUnidade(
+                                                item.aviamento?.unidade_de_medida ?? "",
+                                            );
+                                            const nome = item.aviamento?.nome ?? "";
+
+                                            return (
+                                                <div
+                                                    key={item.aviamento?.id ?? index}
+                                                    className="leading-relaxed"
+                                                >
+                                                    <span className="font-bold text-[#898C8F]">
+                                                        {qtd} {unidade}
+                                                    </span>{" "}
+                                                    <span className="text-[#A5A5AA] font-normal">
+                                                        de {nome}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="mt-1 text-[13px] text-[#888]"></div>
+                                )}
                             </div>
                         </>
                     )}
                 </div>
 
                 <div className="px-8 py-5 border-t border-gray-100 flex justify-between items-center shrink-0">
-                    {/* Botão de Impressora -> Agora abre o Modal de Opções */}
                     <button
                         type="button"
                         onClick={() => setModalImpressaoAberto(true)}
-                        className="w-[71px] h-[39px] bg-[#A9E2F2] rounded-full flex items-center justify-center hover:bg-[#97D8EA] transition-colors shadow-sm focus:outline-none"
+                        className="w-[71px] h-[39px] bg-[#A9E2F2] rounded-full flex items-center justify-center hover:bg-[#A2DCED] transition-colors shadow-sm focus:outline-none"
                     >
                         <img
                             src="/impressora-azul.png"
@@ -429,7 +605,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                 onClose();
                                 navigate("/");
                             }}
-                            className="px-10 h-[39px] rounded-full bg-[#A9E2F2] text-[#4696AD] hover:bg-[#97D8EA] transition-colors text-sm"
+                            className="px-10 h-[39px] rounded-full bg-[#A9E2F2] text-[#4696AD] hover:bg-[#A2DCED] transition-colors text-sm"
                         >
                             Concluir
                         </button>
@@ -437,7 +613,6 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                 </div>
             </div>
 
-            {/* Modal de Escolha do Tipo de Impressão */}
             <OpcoesImpressaoModal
                 isOpen={modalImpressaoAberto}
                 onClose={() => setModalImpressaoAberto(false)}
@@ -445,13 +620,18 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                     setModalImpressaoAberto(false);
                     handlePrintMode("ficha");
                 }}
-                onSelectNotaSaida={() => {
+                onSelectNotaSaida={async () => {
                     setModalImpressaoAberto(false);
+                    if (ficha?.fabrico?.id === 3 || ficha?.fabrico_id === 3) {
+                        await handleDownloadNotaSaidaPdf();
+                        return false;
+                    }
+
                     handlePrintMode("nota");
+                    return true;
                 }}
             />
 
-            {/* Modal de Edição */}
             {modalEdicaoAberto && (
                 <EdicaoFichaTecnicaModal
                     isOpen={modalEdicaoAberto}
@@ -465,13 +645,22 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                 />
             )}
 
-            {/* Layout de Impressão Oculto da Ficha Técnica */}
-            <FichaTecnicaPrintView
-                dadosFicha={ficha}
-                fichaId={fichaId}
-                referencia={referenciaCliente}
-            />
-            <NotaDeSaidaPrintView ficha={ficha} referenciaCliente={referenciaCliente} />
+            {ficha && (
+                <>
+                    <FichaTecnicaPrintView
+                        dadosFicha={ficha}
+                        fichaId={fichaId}
+                        referencia={referenciaCliente}
+                    />
+                    <NotaDeSaidaPrintView
+                        ficha={ficha}
+                        referenciaCliente={referenciaCliente}
+                        forceVisibleForPdf={Boolean(
+                            ficha?.fabrico?.id === 3 || ficha?.fabrico_id === 3,
+                        )}
+                    />
+                </>
+            )}
         </div>
     );
 }

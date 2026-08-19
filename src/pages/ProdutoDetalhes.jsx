@@ -101,15 +101,24 @@ export default function ProdutoDetalhes() {
                 setClientesAssociados(dadosClientes);
                 setAviamentosProduto(dadosAviamentos);
 
+<<<<<<< HEAD
                 // Mesma regra do cadastro: só etapas ativas, sem a última (ex.: expedição)
                 const etapasParaCusto = (todasEtapas || [])
                     .filter((etapa) => etapa.ativa)
+=======
+                const etapasParaCusto = [...(todasEtapas || [])]
+                    .filter((etapa) => etapa?.ativa === true)
+>>>>>>> develop
                     .sort((a, b) => (a.ordem || 0) - (b.ordem || 0))
                     .slice(0, -1);
 
                 // 1. Mapeamento inicial das etapas com o parceiro correspondente
                 const etapasPreMapeadas = etapasParaCusto.map((etapa) => {
+<<<<<<< HEAD
                     const parceiroMapeado = (parceirosDisponiveis || []).find((p) => {
+=======
+                    const parceirosMapeados = (parceirosDisponiveis || []).filter((p) => {
+>>>>>>> develop
                         const categoriaParceiro = (p?.categoria || "").trim().toLowerCase();
                         const nomeEtapa = (etapa?.nome || "").trim().toLowerCase();
                         return categoriaParceiro === nomeEtapa;
@@ -117,7 +126,7 @@ export default function ProdutoDetalhes() {
 
                     return {
                         ...etapa,
-                        parceiro_id: parceiroMapeado ? parceiroMapeado.id : null,
+                        parceiros_ids: parceirosMapeados.map((parceiro) => parceiro.id),
                     };
                 });
 

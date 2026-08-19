@@ -884,7 +884,7 @@ export default function EdicaoFichaTecnicaModal({
                         <button
                             onClick={handleConcluir}
                             disabled={loading}
-                            className="px-10 h-[42px] rounded-full bg-[#A9E2F2] text-[#347A8A] font-normal text-[15px] hover:bg-[#97D8EA] transition-colors shadow-sm disabled:opacity-50"
+                            className="px-10 h-[42px] rounded-full bg-[#A9E2F2] text-[#4996AD] font-normal text-[15px] hover:bg-[#A2DCED] transition-colors shadow-sm disabled:opacity-50"
                         >
                             {loading ? "Salvando..." : "Concluir"}
                         </button>

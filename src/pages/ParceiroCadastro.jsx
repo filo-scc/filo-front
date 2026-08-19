@@ -513,7 +513,7 @@ const ParceiroCadastro = () => {
                             type="submit"
                             loading={loading}
                             loadingText="Salvando..."
-                            className="bg-[#A9E2F2] hover:bg-[#8acbdc] text-[#4696ad] justify-center items-center rounded-full text-sm font-medium transition-colors disabled:opacity-50 shadow-sm w-[189px] h-[39px]"
+                            className="bg-[#A9E2F2] hover:bg-[#A2DCED] text-[#4696ad] justify-center items-center rounded-full text-sm font-medium transition-colors disabled:opacity-50 shadow-sm w-[189px] h-[39px]"
                         >
                             Concluir cadastro
                         </LoadingButton>

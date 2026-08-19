@@ -715,7 +715,7 @@ export default function ProdutoEditar() {
 
                     return {
                         ...etapa,
-                        parceiro_id: parceiroMapeado ? parceiroMapeado.id : null,
+                        parceiros_ids: parceirosMapeados.map((parceiro) => parceiro.id),
                     };
                 });
 

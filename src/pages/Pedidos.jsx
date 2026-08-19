@@ -6,6 +6,7 @@ import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import MenuOpcoes from "../components/geral/MenuOpcoes";
 import { PedidosTableSkeleton } from "../components/geral/Loading";
+import { getFabricoById } from "../services/fabricoService";
 
 const Pedidos = () => {
     const navigate = useNavigate();
@@ -22,6 +23,7 @@ const Pedidos = () => {
 
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
     const [excluindo, setExcluindo] = useState(false);
+    const [labelBotao, setLabelBotao] = useState("Novo pedido");
 
     useEffect(() => {
         const fetchPedidos = async () => {
@@ -139,14 +141,22 @@ const Pedidos = () => {
 
                         <button
                             onClick={() => navigate("/pedidos/cadastrar")}
-                            className="w-[169px] h-[39px] bg-[#A9E2F2] text-[#FFFFFF] font-normal text-[16px] rounded-full flex items-center justify-center gap-2 hover:bg-[#8acbdc] transition-colors shrink-0"
+                            className="w-[169px] h-[39px] bg-[#A9E2F2] text-[#4696AD] font-normal text-[16px] rounded-full flex items-center justify-center gap-2 hover:bg-[#A2DCED] transition-colors shrink-0"
                         >
                             <img
+<<<<<<< HEAD
                                 src="/pedido-adicionar.png"
                                 alt=""
                                 className="w-6 h-6 object-contain"
                             />
                             {labelNova}
+=======
+                                src="/pedidos-azul.png"
+                                alt="Adicionar pedido ícone"
+                                className="w-6 h-6 object-contain"
+                            />
+                            {labelBotao}
+>>>>>>> develop
                         </button>
                     </div>
                 </div>
