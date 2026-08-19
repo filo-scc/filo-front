@@ -636,7 +636,9 @@ export default function ProdutoEditar() {
                     nome: pivot.aviamento?.nome,
                     custo_unitario: Number(pivot.aviamento?.custo_unitario || 0),
                     unidade_de_medida: pivot.aviamento?.unidade_de_medida || "und",
-                    quantidade: pivot.quantidade || null,
+                    quantidade: pivot.quantidade ?? "",
+                    custo: Number(pivot.custo) || 0,
+                    quantidadeOriginal: pivot.quantidade ?? "",
                 }));
 
                 const aviamentosSelecionados = (resAviamentosProduto || [])
@@ -690,17 +692,21 @@ export default function ProdutoEditar() {
                     custo_operacional:
                         dadosProduto.custo_operacional !== undefined &&
                         dadosProduto.custo_operacional !== null
-                            ? String(dadosProduto.custo_operacional).replace(".", ",")
+                            ? String(dadosProduto.custo_operacional)
                             : "",
                     outros_custos:
                         dadosProduto.outros_custos !== undefined &&
                         dadosProduto.outros_custos !== null
-                            ? String(dadosProduto.outros_custos).replace(".", ",")
+                            ? String(dadosProduto.outros_custos)
                             : "",
                 });
 
-                // 1. Mapeamento inicial das etapas com o parceiro correspondente
-                const etapasPreMapeadas = (todasEtapas || []).map((etapa) => {
+                const etapasParaCusto = (todasEtapas || [])
+                    .filter((etapa) => etapa.ativa)
+                    .sort((a, b) => (a.ordem || 0) - (b.ordem || 0))
+                    .slice(0, -1);
+
+                const etapasPreMapeadas = etapasParaCusto.map((etapa) => {
                     const parceiroMapeado = (parceirosDisponiveis || []).find((p) => {
                         const categoriaParceiro = (p?.categoria || "").trim().toLowerCase();
                         const nomeEtapa = (etapa?.nome || "").trim().toLowerCase();
@@ -713,13 +719,16 @@ export default function ProdutoEditar() {
                     };
                 });
 
-                // 2. 🌟 Busca dinâmica na tabela intermediária (parceiro_produto) para cada vínculo encontrado
                 const etapasVinculadasComCustos = await Promise.all(
                     etapasPreMapeadas.map(async (etapa) => {
                         let custoFinal = 0;
 
-                        // Se houver um parceiro associado a esta etapa, buscamos o preço customizado
-                        if (etapa.parceiro_id) {
+                        const custoExistente = dadosProduto?.etapas_produto?.find(
+                            (ep) => ep.etapa_id === etapa.id,
+                        )?.custo;
+                        if (custoExistente) {
+                            custoFinal = Number(custoExistente) || 0;
+                        } else if (etapa.parceiro_id) {
                             try {
                                 const vinculo = await getVinculoParceiroProduto(
                                     etapa.parceiro_id,
@@ -734,14 +743,6 @@ export default function ProdutoEditar() {
                                     err,
                                 );
                             }
-                        }
-
-                        // Fallback: Se não achou na tabela intermediária, tenta pegar do etapas_produto antigo (como backup)
-                        if (custoFinal === 0) {
-                            const custoExistente = dadosProduto?.etapas_produto?.find(
-                                (ep) => ep.etapa_id === etapa.id,
-                            )?.custo;
-                            custoFinal = custoExistente || 0;
                         }
 
                         return {
@@ -801,7 +802,7 @@ export default function ProdutoEditar() {
 
     // Função auxiliar para exibir corretamente a vírgula na tela sem o "R$" (já que o R$ está no span HTML)
     const formatarMoedaSimples = (valor) => {
-        const numero = Number(valor) || 0;
+        const numero = parseNumber(valor);
         return numero.toLocaleString("pt-BR", {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
@@ -958,19 +959,28 @@ export default function ProdutoEditar() {
         setErro("");
     };
 
-    const tecidoSelecionado = tecidosDisponiveis.find((t) => t.id === formData.tecido_id);
+    const tecidoSelecionado = tecidosDisponiveis.find(
+        (t) => String(t.id) === String(formData.tecido_id),
+    );
     const qtdTecidoCalculo = parseNumber(formData.quantidade_tecido);
-    const custoTecidoCalculado = qtdTecidoCalculo * parseNumber(tecidoSelecionado?.custo_unitario);
+    const tecidoIdOriginal = produto?.tecido_id || produto?.tecido?.id;
+    const tecidoNaoMudou =
+        String(formData.tecido_id || "") === String(tecidoIdOriginal || "") &&
+        qtdTecidoCalculo === parseNumber(produto?.quantidade_tecido);
+    const custoTecidoCalculado =
+        tecidoNaoMudou && produto?.custo_tecido != null
+            ? parseNumber(produto.custo_tecido)
+            : qtdTecidoCalculo * parseNumber(tecidoSelecionado?.custo_unitario);
 
     const custoAviamentosCalculado = (formData.aviamentos || []).reduce((acc, av) => {
         const qtd = parseNumber(av.quantidade);
-        const custoUnit = parseNumber(av.custo_unitario);
-        return acc + qtd * custoUnit;
+        const qtdOriginal = parseNumber(av.quantidadeOriginal ?? av.quantidade);
+        if (Number(av.custo) > 0 && qtd === qtdOriginal) return acc + Number(av.custo);
+        return acc + qtd * parseNumber(av.custo_unitario);
     }, 0);
 
     const valorTotalGasto = custoTecidoCalculado + custoAviamentosCalculado;
 
-    // --- CÁLCULO DOS CUSTOS DA SEGUNDA TABELA ---
     const custoOperacionalNum = parseNumber(formData.custo_operacional);
     const outrosCustosNum = parseNumber(formData.outros_custos);
 
@@ -978,8 +988,29 @@ export default function ProdutoEditar() {
         (acc, item) => acc + parseNumber(item.custo),
         0,
     );
-    const totalGeralCustoPeca =
+    const totalCalculado =
         valorTotalGasto + somaEtapas + custoOperacionalNum + outrosCustosNum;
+
+    const operacionalNaoMudou =
+        parseNumber(formData.custo_operacional) === parseNumber(produto?.custo_operacional);
+    const outrosNaoMudou =
+        parseNumber(formData.outros_custos) === parseNumber(produto?.outros_custos);
+    const aviamentosNaoMudaram =
+        (formData.aviamentos || []).length === (aviamentosOriginais || []).length &&
+        (formData.aviamentos || []).every(
+            (av) =>
+                parseNumber(av.quantidade) === parseNumber(av.quantidadeOriginal ?? av.quantidade),
+        );
+    const custoTotalSalvo = Number(produto?.custo_total);
+    const totalGeralCustoPeca =
+        tecidoNaoMudou &&
+        operacionalNaoMudou &&
+        outrosNaoMudou &&
+        aviamentosNaoMudaram &&
+        produto?.custo_total != null &&
+        Number.isFinite(custoTotalSalvo)
+            ? custoTotalSalvo
+            : totalCalculado;
 
     const recarregarTecidos = async () => {
         try {
@@ -1430,7 +1461,7 @@ export default function ProdutoEditar() {
                                     <tr>
                                         {/* Aviamentos (Calculado a partir da seleção de aviamentos acima) */}
                                         <td className="bg-[#FFFFFF] py-3 px-4 border-l-[0.5px] border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] first:rounded-bl-[10px] text-center text-[16px] font-light text-[#404040] cursor-not-allowed">
-                                            {formatarPreco(custoAviamentosCalculado)}
+                                            {formatarPreco(valorTotalGasto)}
                                         </td>
 
                                         {/* Colunas Flexíveis (Etapas fixas do produto) */}
