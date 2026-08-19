@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getPedidosByFabricoId, deletPedido } from "../services/pedidoService";
+import { getFabricoById } from "../services/fabricoService";
 import { useNavigate } from "react-router-dom";
 import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
@@ -14,6 +15,7 @@ const Pedidos = () => {
     const [pedidos, setPedidos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [busca, setBusca] = useState("");
+    const [producaoSobDemanda, setProducaoSobDemanda] = useState(null);
 
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
     const [pedidoSelecionado, setPedidoSelecionado] = useState(null);
@@ -30,7 +32,11 @@ const Pedidos = () => {
             try {
                 setLoading(true);
 
-                const data = await getPedidosByFabricoId(fabrico_id);
+                const [data, fabrico] = await Promise.all([
+                    getPedidosByFabricoId(fabrico_id),
+                    getFabricoById(fabrico_id),
+                ]);
+                setProducaoSobDemanda(fabrico?.fabricacao_sob_demanda === true);
                 const pedidosOrdenados = [...data].sort(
                     (a, b) => (Number(a.numero) || a.id) - (Number(b.numero) || b.id),
                 );
@@ -74,11 +80,24 @@ const Pedidos = () => {
             setModalConfirmacaoAberto(true);
         } catch (error) {
             console.error("Erro ao excluir pedido:", error);
-            alert("Erro ao excluir pedido.");
+            alert(
+                producaoSobDemanda
+                    ? "Erro ao excluir pedido."
+                    : "Erro ao excluir produção.",
+            );
         } finally {
             setExcluindo(false);
         }
     };
+
+    const tituloLista =
+        producaoSobDemanda == null ? "" : producaoSobDemanda ? "Pedidos" : "Produções";
+    const labelNova =
+        producaoSobDemanda == null ? "" : producaoSobDemanda ? "Novo pedido" : "Nova produção";
+    const labelItemColuna = producaoSobDemanda ? "Pedido" : "Produção";
+    const labelVazio = producaoSobDemanda
+        ? "Nenhum pedido encontrado."
+        : "Nenhuma produção encontrada.";
 
     return (
         <div className="p-6 pt-0 mt-6 relative flex justify-start w-full">
@@ -88,10 +107,10 @@ const Pedidos = () => {
                     <h1 className="ml-6 font-light text-[30px] text-[#404040] flex items-center gap-4">
                         <img
                             src="/pedidos-ativado.png"
-                            alt="Ícone Pedidos"
+                            alt=""
                             className="w-[34px] h-[34px] object-contain"
                         />
-                        Pedidos
+                        {tituloLista}
                     </h1>
 
                     <div className="flex items-center gap-4">
@@ -124,10 +143,10 @@ const Pedidos = () => {
                         >
                             <img
                                 src="/pedido-adicionar.png"
-                                alt="Adicionar pedido ícone"
+                                alt=""
                                 className="w-6 h-6 object-contain"
                             />
-                            Novo pedido
+                            {labelNova}
                         </button>
                     </div>
                 </div>
@@ -138,12 +157,20 @@ const Pedidos = () => {
                         <table className="w-full text-left border-collapse relative z-10">
                             <thead>
                                 <tr className="bg-[#C9EAF6] text-[#4696AD]">
-                                    <th className="py-4 px-6 text-center font-normal">Pedido</th>
-                                    <th className="py-4 px-6 text-center font-normal">Cliente</th>
+                                    <th className="py-4 px-6 text-center font-normal">
+                                        {labelItemColuna}
+                                    </th>
+                                    {producaoSobDemanda && (
+                                        <th className="py-4 px-6 text-center font-normal">
+                                            Cliente
+                                        </th>
+                                    )}
                                     <th className="py-4 px-6 text-center font-normal">
                                         Total de peças
                                     </th>
-                                    <th className="py-4 px-6 text-center font-normal">Valor</th>
+                                    <th className="py-4 px-6 text-center font-normal">
+                                        {producaoSobDemanda ? "Valor" : "Custo"}
+                                    </th>
                                     <th className="py-4 px-6 text-center font-normal">Criado</th>
                                     <th className="py-4 px-6 text-center font-normal">
                                         Finalizado
@@ -153,7 +180,10 @@ const Pedidos = () => {
                             </thead>
                             <tbody className="text-[#404040]">
                                 {loading ? (
-                                    <PedidosTableSkeleton rows={5} />
+                                    <PedidosTableSkeleton
+                                        rows={5}
+                                        mostrarCliente={producaoSobDemanda !== false}
+                                    />
                                 ) : (
                                     <>
                                         {pedidos.map((pedido, index) => {
@@ -205,15 +235,19 @@ const Pedidos = () => {
                                                         {pedido.numero ?? pedido.id}
                                                     </td>
 
-                                                    <td className="py-4 px-6">
-                                                        {pedido.cliente?.nome || "-"}
-                                                    </td>
+                                                    {producaoSobDemanda && (
+                                                        <td className="py-4 px-6">
+                                                            {pedido.cliente?.nome || "-"}
+                                                        </td>
+                                                    )}
                                                     <td className="py-4 px-6 ">{totalPecas}</td>
                                                     <td className="py-4 px-6 ">
-                                                        {!pedido.cliente
+                                                        {producaoSobDemanda && !pedido.cliente
                                                             ? "-"
                                                             : pedido.valor_total != null
-                                                              ? `R$ ${pedido.valor_total.toFixed(2).replace(".", ",")}`
+                                                              ? `R$ ${Number(pedido.valor_total)
+                                                                    .toFixed(2)
+                                                                    .replace(".", ",")}`
                                                               : "R$ 0,00"}
                                                     </td>
 
@@ -239,10 +273,10 @@ const Pedidos = () => {
                                         {pedidos.length === 0 && (
                                             <tr>
                                                 <td
-                                                    colSpan="7"
+                                                    colSpan={producaoSobDemanda ? 7 : 6}
                                                     className="text-center py-10 text-gray-400"
                                                 >
-                                                    Nenhum pedido encontrado.
+                                                    {labelVazio}
                                                 </td>
                                             </tr>
                                         )}
@@ -257,9 +291,9 @@ const Pedidos = () => {
                 isOpen={modalExclusaoAberto}
                 onClose={() => setModalExclusaoAberto(false)}
                 onConfirm={handleConfirmarExclusao}
-                titulo="Excluir pedido"
+                titulo={producaoSobDemanda ? "Excluir pedido" : "Excluir produção"}
                 nomeItem={pedidoSelecionado?.id.toString()}
-                tipoItem="o pedido"
+                tipoItem={producaoSobDemanda ? "o pedido" : "a produção"}
                 loading={excluindo}
             />
 
