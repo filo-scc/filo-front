@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { getAllEtapasByFabricoId } from "../../services/etapaService";
 import { getParceirosByFabrico } from "../../services/parceiroService";
+import { updateFichaTecnica } from "../../services/fichasTecnicasService";
 import {
     createParceiroProduto,
     getProdutoParceiro,
@@ -18,6 +19,7 @@ import {
     updateFichaTecnicaParceiro,
 } from "../../services/fichaParceiroService";
 import { createFichaEtapa } from "../../services/fichaEtapaService";
+import RelatorioDeAcabamento from "./RelatorioDeAcabamento.jsx";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -133,6 +135,14 @@ export default function TransferenciaEtapaModal({
     const [hoveredParceiroIndex, setHoveredParceiroIndex] = useState(null);
     const [tabelaScrollTop, setTabelaScrollTop] = useState(0);
 
+    // Estado do relatório de acabamento (perdas)
+    const [relatorioPerdas, setRelatorioPerdas] = useState({
+        defeitoCostura: 0,
+        defeitoTecido: 0,
+        retiradas: 0,
+        sobras: 0,
+    });
+
     // Refs
     const dropdownRef = useRef(null);
     const tabelaScrollRef = useRef(null);
@@ -146,6 +156,11 @@ export default function TransferenciaEtapaModal({
 
     const indiceProximaEtapa = useMemo(() => {
         return etapas.findIndex((e) => e.id === proximaEtapa?.id);
+    }, [etapas, proximaEtapa?.id]);
+
+    const isUltimaEtapa = useMemo(() => {
+        if (etapas.length === 0 || !proximaEtapa?.id) return false;
+        return etapas[etapas.length - 1]?.id === proximaEtapa.id;
     }, [etapas, proximaEtapa?.id]);
 
     const somaQuantidades = useMemo(() => {
@@ -264,6 +279,19 @@ export default function TransferenciaEtapaModal({
                     });
 
                 setLinhasTabela(jaVinculadosDestaEtapa);
+
+                // 4. Inicializar relatório de acabamento (perdas) a partir da Ficha Técnica,
+                // aceitando tanto snake_case quanto camelCase, conforme o que a API retornar.
+                setRelatorioPerdas({
+                    defeitoCostura: Number(
+                        fichaTecnica?.defeito_costura ?? fichaTecnica?.defeitoCostura ?? 0,
+                    ),
+                    defeitoTecido: Number(
+                        fichaTecnica?.defeito_tecido ?? fichaTecnica?.defeitoTecido ?? 0,
+                    ),
+                    retiradas: Number(fichaTecnica?.retiradas ?? 0),
+                    sobras: Number(fichaTecnica?.sobras ?? 0),
+                });
             } catch (err) {
                 console.error("Erro ao carregar dados do modal de transferência:", err);
             } finally {
@@ -402,6 +430,14 @@ export default function TransferenciaEtapaModal({
         );
     };
 
+    // --- Ação do Relatório de Acabamento (perdas) ---
+    const handleChangeRelatorioPerdas = (campo, valor) => {
+        setRelatorioPerdas((prev) => ({
+            ...prev,
+            [campo]: valor,
+        }));
+    };
+
     // --- Submit / Processamento da Transferência ---
     const handleTransferir = async () => {
         if (!quantidadeValida) {
@@ -410,6 +446,18 @@ export default function TransferenciaEtapaModal({
 
         setSubmitting(true);
         try {
+            if (isUltimaEtapa) {
+                const payloadRelatorio = {
+                    quantidade: Number(fichaTecnica?.quantidade || 0),
+                    defeitos_costura: Number(relatorioPerdas.defeitoCostura) || 0,
+                    defeitos_tecido: Number(relatorioPerdas.defeitoTecido) || 0,
+                    retiradas: Number(relatorioPerdas.retiradas) || 0,
+                    sobras: Number(relatorioPerdas.sobras) || 0,
+                };
+                console.log("Payload updateFichaTecnica:", payloadRelatorio);
+                await updateFichaTecnica(fichaTecnica.id, payloadRelatorio);
+            }
+
             if (linhasTabela.length > 0) {
                 for (const [, linha] of linhasTabela.entries()) {
                     const totalLinhas = linhasTabela.length;
@@ -954,9 +1002,21 @@ export default function TransferenciaEtapaModal({
                             </div>
                         </div>
 
+                        {/* RELATÓRIO DE ACABAMENTO (PERDAS) */}
+                        {isUltimaEtapa && (
+                            <RelatorioDeAcabamento
+                                defeitoCostura={relatorioPerdas.defeitoCostura}
+                                defeitoTecido={relatorioPerdas.defeitoTecido}
+                                retiradas={relatorioPerdas.retiradas}
+                                sobras={relatorioPerdas.sobras}
+                                onChange={handleChangeRelatorioPerdas}
+                                variant="modal"
+                            />
+                        )}
+
                         {/* MENSAGEM DE VALIDAÇÃO (SE QUANTIDADE NÃO BATER E > 1 COLABORADOR) */}
                         {!quantidadeValida && linhasTabela.length > 0 && (
-                            <div className="mb-6 rounded-[10px] border border-amber-200 bg-amber-50 p-4 text-[14px] font-light text-amber-800">
+                            <div className="mb-6 mt-6 rounded-[10px] border border-amber-200 bg-amber-50 p-4 text-[14px] font-light text-amber-800">
                                 <span className="font-medium">Atenção:</span> A soma das peças (
                                 {somaQuantidades}) não corresponde ao total da Ficha (
                                 {fichaTecnica.quantidade}).
@@ -964,7 +1024,7 @@ export default function TransferenciaEtapaModal({
                         )}
 
                         {!precoUnitarioValido && linhasTabela.length > 0 && (
-                            <div className="mb-6 rounded-[10px] border border-red-200 bg-red-50 p-4 text-[14px] font-light text-red-700">
+                            <div className="mb-6 mt-6 rounded-[10px] border border-red-200 bg-red-50 p-4 text-[14px] font-light text-red-700">
                                 <span className="font-medium">Atenção:</span> Para prosseguir com a
                                 transferência, cadastre o valor do(a){" "}
                                 {etapaConcluida.nome.toUpperCase()};
