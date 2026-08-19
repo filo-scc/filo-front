@@ -488,8 +488,7 @@ export default function PedidosCadastrar() {
                 0,
             );
 
-            const getFichaProdutoId = (ficha) =>
-                String(ficha.produtoId || ficha.produto_id || "");
+            const getFichaProdutoId = (ficha) => String(ficha.produtoId || ficha.produto_id || "");
 
             let valorTotalPedido = 0;
 
@@ -508,12 +507,8 @@ export default function PedidosCadastrar() {
                     return acc + quantidade * preco;
                 }, 0);
             } else {
-                const idsUnicos = [
-                    ...new Set(fichas.map(getFichaProdutoId).filter(Boolean)),
-                ];
-                const produtos = await Promise.all(
-                    idsUnicos.map((id) => getProdutoById(id)),
-                );
+                const idsUnicos = [...new Set(fichas.map(getFichaProdutoId).filter(Boolean))];
+                const produtos = await Promise.all(idsUnicos.map((id) => getProdutoById(id)));
                 const mapaCustos = new Map(
                     (produtos || []).map((produto) => [
                         String(produto?.id),

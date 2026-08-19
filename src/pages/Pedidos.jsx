@@ -6,7 +6,6 @@ import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import MenuOpcoes from "../components/geral/MenuOpcoes";
 import { PedidosTableSkeleton } from "../components/geral/Loading";
-import { getFabricoById } from "../services/fabricoService";
 
 const Pedidos = () => {
     const navigate = useNavigate();
@@ -82,11 +81,7 @@ const Pedidos = () => {
             setModalConfirmacaoAberto(true);
         } catch (error) {
             console.error("Erro ao excluir pedido:", error);
-            alert(
-                producaoSobDemanda
-                    ? "Erro ao excluir pedido."
-                    : "Erro ao excluir produção.",
-            );
+            alert(producaoSobDemanda ? "Erro ao excluir pedido." : "Erro ao excluir produção.");
         } finally {
             setExcluindo(false);
         }
@@ -144,19 +139,11 @@ const Pedidos = () => {
                             className="w-[169px] h-[39px] bg-[#A9E2F2] text-[#4696AD] font-normal text-[16px] rounded-full flex items-center justify-center gap-2 hover:bg-[#A2DCED] transition-colors shrink-0"
                         >
                             <img
-<<<<<<< HEAD
                                 src="/pedido-adicionar.png"
                                 alt=""
                                 className="w-6 h-6 object-contain"
                             />
                             {labelNova}
-=======
-                                src="/pedidos-azul.png"
-                                alt="Adicionar pedido ícone"
-                                className="w-6 h-6 object-contain"
-                            />
-                            {labelBotao}
->>>>>>> develop
                         </button>
                     </div>
                 </div>

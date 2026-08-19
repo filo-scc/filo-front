@@ -988,8 +988,7 @@ export default function ProdutoEditar() {
         (acc, item) => acc + parseNumber(item.custo),
         0,
     );
-    const totalCalculado =
-        valorTotalGasto + somaEtapas + custoOperacionalNum + outrosCustosNum;
+    const totalCalculado = valorTotalGasto + somaEtapas + custoOperacionalNum + outrosCustosNum;
 
     const operacionalNaoMudou =
         parseNumber(formData.custo_operacional) === parseNumber(produto?.custo_operacional);
