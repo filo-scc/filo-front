@@ -305,12 +305,18 @@ export default function TransferenciaEtapaModal({
     }, [
         isOpen,
         fabricoId,
-        fichaTecnica?.id,
+        fichaTecnica.id,
         fichaTecnica?.quantidade,
-        etapaConcluida?.id,
+        etapaConcluida.id,
         etapaConcluida?.nome,
-        proximaEtapa?.id,
-        proximaEtapa?.nome,
+        proximaEtapa.id,
+        proximaEtapa.nome,
+        fichaTecnica?.defeito_costura,
+        fichaTecnica?.defeitoCostura,
+        fichaTecnica?.defeito_tecido,
+        fichaTecnica?.defeitoTecido,
+        fichaTecnica?.retiradas,
+        fichaTecnica?.sobras,
     ]);
 
     useEffect(() => {

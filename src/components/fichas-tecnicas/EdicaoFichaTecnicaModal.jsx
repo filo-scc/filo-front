@@ -19,7 +19,6 @@ import FichaTecnicaPrintView from "../FichaTecnicaPrintView";
 import { getAviamentosDoProduto, getParceiroByProduto } from "../../services/produtoService";
 import { updateFichaTecnica } from "../../services/fichasTecnicasService";
 import { getParceirosByFabrico } from "../../services/parceiroService";
-import { isCancel } from "axios";
 import RelatorioDeAcabamento from "./RelatorioDeAcabamento";
 import { getAllEtapasByFabricoId } from "../../services/etapaService";
 
