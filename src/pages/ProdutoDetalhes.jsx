@@ -101,8 +101,14 @@ export default function ProdutoDetalhes() {
                 setClientesAssociados(dadosClientes);
                 setAviamentosProduto(dadosAviamentos);
 
+                // Mesma regra do cadastro: só etapas ativas, sem a última (ex.: expedição)
+                const etapasParaCusto = (todasEtapas || [])
+                    .filter((etapa) => etapa.ativa)
+                    .sort((a, b) => (a.ordem || 0) - (b.ordem || 0))
+                    .slice(0, -1);
+
                 // 1. Mapeamento inicial das etapas com o parceiro correspondente
-                const etapasPreMapeadas = (todasEtapas || []).map((etapa) => {
+                const etapasPreMapeadas = etapasParaCusto.map((etapa) => {
                     const parceiroMapeado = (parceirosDisponiveis || []).find((p) => {
                         const categoriaParceiro = (p?.categoria || "").trim().toLowerCase();
                         const nomeEtapa = (etapa?.nome || "").trim().toLowerCase();
@@ -120,8 +126,12 @@ export default function ProdutoDetalhes() {
                     etapasPreMapeadas.map(async (etapa) => {
                         let custoFinal = 0;
 
-                        // Se houver um parceiro associado a esta etapa, buscamos o preço customizado
-                        if (etapa.parceiro_id) {
+                        const custoExistente = dadosProduto?.etapas_produto?.find(
+                            (ep) => ep.etapa_id === etapa.id,
+                        )?.custo;
+                        if (custoExistente) {
+                            custoFinal = Number(custoExistente) || 0;
+                        } else if (etapa.parceiro_id) {
                             try {
                                 const vinculo = await getVinculoParceiroProduto(
                                     etapa.parceiro_id,
@@ -136,14 +146,6 @@ export default function ProdutoDetalhes() {
                                     err,
                                 );
                             }
-                        }
-
-                        // Fallback: Se não achou na tabela intermediária, tenta pegar do etapas_produto antigo (como backup)
-                        if (custoFinal === 0) {
-                            const custoExistente = dadosProduto?.etapas_produto?.find(
-                                (ep) => ep.etapa_id === etapa.id,
-                            )?.custo;
-                            custoFinal = custoExistente || 0;
                         }
 
                         return {
@@ -206,6 +208,9 @@ export default function ProdutoDetalhes() {
     );
 
     const custoAviamentos = aviamentosProduto.reduce((acc, pivot) => {
+        const custoSalvo = Number(pivot.custo);
+        if (Number.isFinite(custoSalvo) && custoSalvo > 0) return acc + custoSalvo;
+
         const qtd = Number(String(pivot.quantidade || 0).replace(",", "."));
         const custo = Number(pivot.aviamento?.custo_unitario || 0);
         return acc + qtd * custo;
@@ -218,11 +223,17 @@ export default function ProdutoDetalhes() {
         0,
     );
 
-    const totalGeral =
+    const totalCalculado =
         valorTotalGasto +
         totalCustosEtapas +
         (Number(produto?.custo_operacional) || 0) +
         (Number(produto?.outros_custos) || 0);
+
+    const custoTotalSalvo = Number(produto?.custo_total);
+    const totalGeral =
+        produto?.custo_total != null && Number.isFinite(custoTotalSalvo)
+            ? custoTotalSalvo
+            : totalCalculado;
 
     if (loading) {
         return (
@@ -347,7 +358,7 @@ export default function ProdutoDetalhes() {
                                             <tr>
                                                 {/* Aviamentos */}
                                                 <td className="bg-[#FFFFFF] py-3 px-4 border-l-[0.5px] border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] first:rounded-bl-[10px] text-center text-[16px] font-light text-[#404040]">
-                                                    {formatarPreco(custoAviamentos)}
+                                                    {formatarPreco(valorTotalGasto)}
                                                 </td>
 
                                                 {/* Colunas Flexíveis (Etapas) */}

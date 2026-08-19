@@ -9,7 +9,7 @@ import {
 import { getFabricoById } from "../services/fabricoService";
 import FichaTecnicaModal from "../components/fichas-tecnicas/FichaTecnicaModal";
 
-import { atualizarProduto } from "../services/produtoService";
+import { atualizarProduto, getProdutoById } from "../services/produtoService";
 import { createFichaTecnica } from "../services/fichaTecnicaService";
 import {
     syncFichaTecnicaCores,
@@ -488,6 +488,46 @@ export default function PedidosCadastrar() {
                 0,
             );
 
+            const getFichaProdutoId = (ficha) =>
+                String(ficha.produtoId || ficha.produto_id || "");
+
+            let valorTotalPedido = 0;
+
+            if (isSobDemanda && clienteSelecionado?.id) {
+                const produtosDoCliente = await getProdutosDoCliente(clienteSelecionado.id);
+                const mapaPrecos = new Map(
+                    (produtosDoCliente || []).map((item) => [
+                        String(getProdutoId(item)),
+                        Number(item.preco_padrao) || 0,
+                    ]),
+                );
+
+                valorTotalPedido = fichas.reduce((acc, ficha) => {
+                    const quantidade = Number(ficha.quantidade) || 0;
+                    const preco = mapaPrecos.get(getFichaProdutoId(ficha)) || 0;
+                    return acc + quantidade * preco;
+                }, 0);
+            } else {
+                const idsUnicos = [
+                    ...new Set(fichas.map(getFichaProdutoId).filter(Boolean)),
+                ];
+                const produtos = await Promise.all(
+                    idsUnicos.map((id) => getProdutoById(id)),
+                );
+                const mapaCustos = new Map(
+                    (produtos || []).map((produto) => [
+                        String(produto?.id),
+                        Number(produto?.custo_total) || 0,
+                    ]),
+                );
+
+                valorTotalPedido = fichas.reduce((acc, ficha) => {
+                    const quantidade = Number(ficha.quantidade) || 0;
+                    const custo = mapaCustos.get(getFichaProdutoId(ficha)) || 0;
+                    return acc + quantidade * custo;
+                }, 0);
+            }
+
             // === AJUSTE DA DATA PARA O BACKEND (ISO-8601) ===
             let dataFormatadaBackend = undefined;
             if (dataPrevista && dataPrevista.length === 10) {
@@ -502,6 +542,7 @@ export default function PedidosCadastrar() {
                 data_prevista: dataFormatadaBackend,
                 observacoes: null,
                 quantidade: quantidadeTotalPedido,
+                valor_total: Number(valorTotalPedido.toFixed(2)),
                 usarCorPaleta: fichas.length > 1,
             });
 
