@@ -65,21 +65,15 @@ export default function ProdutoDetalhes() {
                 const usuarioLogado = userString ? JSON.parse(userString) : null;
                 const fabricoId = usuarioLogado?.fabrico_id;
 
-                const [
-                    dadosProduto,
-                    dadosClientes,
-                    dadosAviamentos,
-                    dadosTipos,
-                    todasEtapas,
-                    parceirosDisponiveis,
-                ] = await Promise.all([
-                    getProdutoById(id),
-                    getClientesDoProduto(id),
-                    getAviamentosDoProduto(id),
-                    getTiposProdutoByFabrico().catch(() => []),
-                    getAllEtapasByFabricoId(fabricoId).catch(() => []),
-                    getParceirosByFabrico(fabricoId).catch(() => []),
-                ]);
+                const [dadosProduto, dadosClientes, dadosAviamentos, dadosTipos, todasEtapas] =
+                    await Promise.all([
+                        getProdutoById(id),
+                        getClientesDoProduto(id),
+                        getAviamentosDoProduto(id),
+                        getTiposProdutoByFabrico().catch(() => []),
+                        getAllEtapasByFabricoId(fabricoId).catch(() => []),
+                        getParceirosByFabrico(fabricoId).catch(() => []),
+                    ]);
 
                 if (usuarioLogado && dadosProduto.fabrico_id !== usuarioLogado.fabrico_id) {
                     setModalAtencaoAberto(true);
@@ -109,15 +103,8 @@ export default function ProdutoDetalhes() {
 
                 // 1. Mapeamento inicial das etapas com o parceiro correspondente
                 const etapasPreMapeadas = etapasParaCusto.map((etapa) => {
-                    const parceiroMapeado = (parceirosDisponiveis || []).find((p) => {
-                        const categoriaParceiro = (p?.categoria || "").trim().toLowerCase();
-                        const nomeEtapa = (etapa?.nome || "").trim().toLowerCase();
-                        return categoriaParceiro === nomeEtapa;
-                    });
-
                     return {
                         ...etapa,
-                        parceiros_ids: parceirosMapeados.map((parceiro) => parceiro.id),
                     };
                 });
 

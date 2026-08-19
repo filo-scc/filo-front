@@ -574,7 +574,6 @@ export default function ProdutoEditar() {
                     resTiposProduto,
                     dadosFabrico,
                     todasEtapas,
-                    parceirosDisponiveis,
                 ] = await Promise.all([
                     getProdutoById(id),
                     getClientesDoProduto(id),
@@ -707,15 +706,8 @@ export default function ProdutoEditar() {
                     .slice(0, -1);
 
                 const etapasPreMapeadas = etapasParaCusto.map((etapa) => {
-                    const parceiroMapeado = (parceirosDisponiveis || []).find((p) => {
-                        const categoriaParceiro = (p?.categoria || "").trim().toLowerCase();
-                        const nomeEtapa = (etapa?.nome || "").trim().toLowerCase();
-                        return categoriaParceiro === nomeEtapa;
-                    });
-
                     return {
                         ...etapa,
-                        parceiros_ids: parceirosMapeados.map((parceiro) => parceiro.id),
                     };
                 });
 

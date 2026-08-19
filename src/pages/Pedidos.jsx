@@ -22,7 +22,6 @@ const Pedidos = () => {
 
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
     const [excluindo, setExcluindo] = useState(false);
-    const [labelBotao, setLabelBotao] = useState("Novo pedido");
 
     useEffect(() => {
         const fetchPedidos = async () => {
