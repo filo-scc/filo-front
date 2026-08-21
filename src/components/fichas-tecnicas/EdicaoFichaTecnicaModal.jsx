@@ -1165,7 +1165,7 @@ export default function EdicaoFichaTecnicaModal({
                                 <legend className="px-2 text-[12px] text-[#898C8F] ml-2 font-light bg-white">
                                     Materiais necessários por peça:
                                 </legend>
-                                 {listaAviamentos.length > 0 ? (
+                                {listaAviamentos.length > 0 ? (
                                     <div className="flex flex-col gap-1 text-[13px] px-2 pt-1 font-light">
                                         {listaAviamentos.map((item, index) => {
                                             const quantidade = item.quantidade ?? "";
@@ -1189,8 +1189,7 @@ export default function EdicaoFichaTecnicaModal({
                                         })}
                                     </div>
                                 ) : (
-                                    <p className="text-[13px] text-[#898C8F] font-light px-2 pt-1">
-                                    </p>
+                                    <p className="text-[13px] text-[#898C8F] font-light px-2 pt-1"></p>
                                 )}
                             </fieldset>
                         </div>
