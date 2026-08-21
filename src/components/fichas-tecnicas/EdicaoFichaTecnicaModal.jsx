@@ -409,16 +409,6 @@ export default function EdicaoFichaTecnicaModal({
         setParceiros((prev) => [...prev, novoVinculo]);
     };
 
-    const quantidadeTotal = useMemo(() => {
-        let total = 0;
-        Object.values(matrizQuantidades).forEach((tamanhos) => {
-            Object.values(tamanhos).forEach((celula) => {
-                total += Number(celula.quantidade || 0);
-            });
-        });
-        return total;
-    }, [matrizQuantidades]);
-
     const parceirosSemPreco = useMemo(
         () =>
             parceiros.filter((parceiro) => {
@@ -565,10 +555,10 @@ export default function EdicaoFichaTecnicaModal({
 
                 const payloadFichaParceiro = {
                     operacao: p.operacao,
-                    quantidade: temMultiplosParceiros ? 0 : quantidadeTotal,
+                    quantidade: temMultiplosParceiros ? 0 : totalGeral,
                     valor: temMultiplosParceiros
                         ? undefined
-                        : Number((quantidadeTotal * Number(p.preco_editavel)).toFixed(2)),
+                        : Number((totalGeral * Number(p.preco_editavel)).toFixed(2)),
                 };
                 if (p.isNovo) {
                     requisicoesDoParceiro.push(
@@ -594,7 +584,7 @@ export default function EdicaoFichaTecnicaModal({
             );
 
             const promessaAtualizarQuantidade = updateFichaTecnica(fichaId, {
-                quantidade: quantidadeTotal,
+                quantidade: totalGeral,
             });
 
             await Promise.all([
