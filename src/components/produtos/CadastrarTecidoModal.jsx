@@ -2,6 +2,20 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import FloatingLabelInput from "../FloatingLabelInput";
 import { criarTecido } from "../../services/tecidoService";
 
+// Função para formatar as unidades de medida
+function formatarUnidadeDeMedida(unidade) {
+    if (!unidade) return "";
+    const unidadesMapeadas = {
+        METRO: "Metro (m)",
+        CENTIMETRO: "Centímetro (cm)",
+        GRAMA: "Grama (g)",
+        QUILOGRAMA: "Quilograma (kg)",
+        UNIDADE: "Unidade (un)",
+        PAR: "Par (par)",
+    };
+    return unidadesMapeadas[unidade.toUpperCase()] || unidade.toLowerCase();
+}
+
 const UNIDADES_OPCOES = ["METRO", "CENTIMETRO", "GRAMA", "QUILOGRAMA", "UNIDADE", "PAR"];
 
 const UNIDADES_LABELS = {
@@ -11,13 +25,6 @@ const UNIDADES_LABELS = {
     QUILOGRAMA: "Quilograma (kg)",
     UNIDADE: "Unidade (un)",
     PAR: "Par (par)",
-};
-
-const normalizarUnidade = (unidade) => String(unidade || "").toUpperCase();
-
-const formatarUnidadeDeMedida = (unidade) => {
-    const unidadeNormalizada = normalizarUnidade(unidade);
-    return UNIDADES_LABELS[unidadeNormalizada] || unidade || "";
 };
 
 const parseNumero = (valor) => {
@@ -113,14 +120,16 @@ export function CadastrarTecidoModal({ isOpen, onClose, onSuccess, fabricoId }) 
 
     const handleSubmit = async () => {
         const nomeTrim = nome.trim();
-        const unidadeNormalizada = normalizarUnidade(unidadeMedida);
+        const unidadeNormalizada = String(unidadeMedida || "")
+            .trim()
+            .toUpperCase();
 
         if (!nomeTrim) {
             setError("Informe o nome do tecido.");
             return;
         }
 
-        if (!unidadeNormalizada) {
+        if (!UNIDADES_OPCOES.includes(unidadeNormalizada)) {
             setError("Selecione uma unidade de medida.");
             return;
         }

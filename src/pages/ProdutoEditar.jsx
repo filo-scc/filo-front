@@ -1450,7 +1450,7 @@ export default function ProdutoEditar() {
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        {/* Aviamentos (Calculado a partir da seleção de aviamentos acima) */}
+                                        {/* Total de materiais (tecido + aviamentos) */}
                                         <td className="bg-[#FFFFFF] py-3 px-4 border-l-[0.5px] border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] first:rounded-bl-[10px] text-center text-[16px] font-light text-[#404040] cursor-not-allowed">
                                             {formatarPreco(valorTotalGasto)}
                                         </td>
@@ -1578,7 +1578,7 @@ export default function ProdutoEditar() {
                                 loadingText="Salvando..."
                                 className="w-[189px] h-[39px] rounded-[18.9px] bg-[#A9E2F2] text-[#4696AD] font-Outfit text-[16px] transition-colors hover:bg-[#A2DCED] disabled:opacity-60 disabled:cursor-not-allowed"
                             >
-                                Editar produto
+                                Concluir edição
                             </LoadingButton>
                         </div>
                     </div>

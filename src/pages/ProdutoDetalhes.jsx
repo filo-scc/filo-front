@@ -343,7 +343,7 @@ export default function ProdutoDetalhes() {
                                         </thead>
                                         <tbody>
                                             <tr>
-                                                {/* Aviamentos */}
+                                                {/* Total de materiais (tecido + aviamentos) */}
                                                 <td className="bg-[#FFFFFF] py-3 px-4 border-l-[0.5px] border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] first:rounded-bl-[10px] text-center text-[16px] font-light text-[#404040]">
                                                     {formatarPreco(valorTotalGasto)}
                                                 </td>

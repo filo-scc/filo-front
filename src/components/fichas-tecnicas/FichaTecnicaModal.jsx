@@ -136,7 +136,6 @@ function syncMatrix(prevMatrix, selectedColorIds, sizeItems) {
 
 const BORDER_DARK_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#7B7D80" };
 const BORDER_LIGHT_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#E0E0E0" };
-const BORDER_SHELL_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#D9D9D9" };
 const PARCEIRO_ROW_HEIGHT = 40;
 
 export default function FichaTecnicaModal({
@@ -212,6 +211,23 @@ export default function FichaTecnicaModal({
                 ),
             ),
         [currentSizeItems, selectedColorIds, matrix],
+    );
+
+    const totalsByColor = useMemo(
+        () =>
+            selectedColorIds.reduce((totals, corId) => {
+                totals[corId] = currentSizeItems.reduce(
+                    (sum, size) => sum + Number(matrix?.[corId]?.[size.tamanhoId] || 0),
+                    0,
+                );
+                return totals;
+            }, {}),
+        [currentSizeItems, selectedColorIds, matrix],
+    );
+
+    const totalGeral = useMemo(
+        () => totalsBySize.reduce((sum, total) => sum + Number(total || 0), 0),
+        [totalsBySize],
     );
 
     const proporcoes = useMemo(() => calcularProporcao(totalsBySize), [totalsBySize]);
@@ -388,19 +404,16 @@ export default function FichaTecnicaModal({
         }
 
         // Construindo o array de itens para a matriz (cores/tamanhos x quantidades)
-        const itensPayload = selectedColorIds
-            .flatMap((corId) =>
-                currentSizeItems.map((s) => ({
-                    cor_id: corId,
-                    grade_versao_item_id: s.gradeVersaoItemId,
-                    quantidade: Number(matrix?.[corId]?.[s.tamanhoId] || 0),
-                })),
-            )
-            .filter((item) => item.quantidade > 0); // Só manda pro backend se a qtd for > 0!
+        const itensPayload = selectedColorIds.flatMap((corId) =>
+            currentSizeItems.map((s) => ({
+                cor_id: corId,
+                grade_versao_item_id: s.gradeVersaoItemId,
+                quantidade: Number(matrix?.[corId]?.[s.tamanhoId] || 0),
+            })),
+        );
 
         // Calculando a quantidade total para exibir na Tabela da tela de Pedidos
         const quantidadeTotal = itensPayload.reduce((acc, curr) => acc + curr.quantidade, 0);
-
         if (quantidadeTotal === 0) {
             setError(
                 "Informe a quantidade de pelo menos um tamanho/cor antes de adicionar a ficha.",
@@ -746,38 +759,43 @@ export default function FichaTecnicaModal({
                                                 </div>
                                             ))}
                                         </div>
+                                        <div className="w-[90px] shrink-0" />
                                     </div>
                                     <div className="flex h-[40px] items-stretch">
                                         <div className="w-[160px] shrink-0 rounded-tl-[10px] font-normal bg-[#C9EAF6] px-4 text-[#4696AD] flex items-center justify-center overflow-hidden">
                                             Cores
                                         </div>
                                         <div className="flex flex-1 min-w-0">
-                                            {currentSizeItems.map((s, idx) => (
+                                            {currentSizeItems.map((s, sizeIndex) => (
                                                 <div
                                                     key={s.gradeVersaoItemId}
                                                     className="flex-1 min-w-0 text-center font-normal text-[#4696AD] flex items-center justify-center bg-[#C9EAF6]"
                                                     style={{
-                                                        borderLeftWidth:
-                                                            idx === 0 ? "0.5px" : "0px",
-                                                        borderRightWidth: "0.5px",
+                                                        borderLeftWidth: "0.5px",
+                                                        borderRightWidth:
+                                                            sizeIndex ===
+                                                            currentSizeItems.length - 1
+                                                                ? "0.5px"
+                                                                : "0px",
                                                         borderBottomWidth: "0px",
                                                         borderTopWidth: "0px",
                                                         borderColor: "#7B7D80",
-                                                        borderRightColor:
-                                                            idx === currentSizeItems.length - 1
-                                                                ? "#C9EAF6"
-                                                                : "#7B7D80",
                                                     }}
                                                 >
                                                     {s.codigo}
                                                 </div>
                                             ))}
                                         </div>
+                                        <div
+                                            className="w-[90px] shrink-0 rounded-tr-[10px] bg-[#C9EAF6] px-2 text-center text-[14px] font-normal text-[#4696AD] flex items-center justify-center"
+                                            style={{
+                                                borderRight: "0.5px solid #D9D9D9",
+                                            }}
+                                        >
+                                            Total (cor)
+                                        </div>
                                     </div>
-                                    <div
-                                        className="rounded-b-[10px] bg-white"
-                                        style={BORDER_SHELL_05}
-                                    >
+                                    <div className="rounded-b-[10px] bg-white overflow-hidden">
                                         <div className="flex flex-col w-full">
                                             {selectedColors.length > 0 ? (
                                                 selectedColors.map((color, index) => (
@@ -788,11 +806,8 @@ export default function FichaTecnicaModal({
                                                         <div
                                                             className="w-[160px] shrink-0 pl-2 pr-4 flex items-center"
                                                             style={{
-                                                                ...BORDER_DARK_05,
-                                                                borderTopWidth: "0px",
-                                                                borderLeftWidth: "0px",
-                                                                borderBottomWidth: "0px",
-                                                                borderRightWidth: "0.5px",
+                                                                borderLeftWidth: "0.5px",
+                                                                borderLeftColor: "#D9D9D9",
                                                             }}
                                                         >
                                                             {String(color.tipo).toUpperCase() ===
@@ -824,9 +839,9 @@ export default function FichaTecnicaModal({
                                                                     ...BORDER_DARK_05,
                                                                     borderTopWidth: "0px",
                                                                     borderBottomWidth: "0px",
-                                                                    borderLeftWidth: "0px",
+                                                                    borderLeftWidth: "0.5px",
                                                                     borderRightWidth:
-                                                                        sizeIndex !==
+                                                                        sizeIndex ===
                                                                         currentSizeItems.length - 1
                                                                             ? "0.5px"
                                                                             : "0px",
@@ -851,11 +866,55 @@ export default function FichaTecnicaModal({
                                                                 />
                                                             </div>
                                                         ))}
+                                                        <div
+                                                            className="w-[90px] shrink-0 px-2 flex items-center justify-center text-[14px] font-normal text-[#898C8F]"
+                                                            style={{
+                                                                borderRight: "0.5px solid #D9D9D9",
+                                                            }}
+                                                        >
+                                                            {totalsByColor[color.id] || "-"}
+                                                        </div>
                                                     </div>
                                                 ))
                                             ) : (
                                                 <div className="px-4 py-4 text-[13px] text-center text-[#888] bg-white w-full rounded-b-[10px]">
                                                     Nenhuma cor selecionada.
+                                                </div>
+                                            )}
+                                            {selectedColors.length > 0 && (
+                                                <div className="flex w-full min-h-[40px] items-stretch">
+                                                    <div className="w-[160px] shrink-0 bg-[#C9EAF6] px-3 text-center text-[14px] font-normal text-[#4696AD] flex items-center justify-center">
+                                                        Total (tamanho)
+                                                    </div>
+                                                    <div className="flex flex-1 min-w-0">
+                                                        {currentSizeItems.map((size, sizeIndex) => (
+                                                            <div
+                                                                key={`total-tamanho-${size.gradeVersaoItemId}`}
+                                                                className={`flex-1 min-w-0 px-2 flex items-center justify-center text-[14px] font-normal text-[#898C8F] border-l-[0.5px] border-[#7B7D80] ${
+                                                                    selectedColors.length % 2 === 1
+                                                                        ? "bg-[#F4F4F4]"
+                                                                        : "bg-[#FFFFFF]"
+                                                                }`}
+                                                                style={{
+                                                                    ...BORDER_DARK_05,
+                                                                    borderBottomColor: "#D9D9D9",
+                                                                    borderTopWidth: "0px",
+                                                                    borderBottomWidth: "0.5px",
+                                                                    borderLeftWidth: "0.5px",
+                                                                    borderRightWidth:
+                                                                        sizeIndex ===
+                                                                        currentSizeItems.length - 1
+                                                                            ? "0.5px"
+                                                                            : "0px",
+                                                                }}
+                                                            >
+                                                                {totalsBySize[sizeIndex] || "-"}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <div className="w-[90px] shrink-0 bg-[#C9EAF6] px-2 flex items-center justify-center text-[14px] font-normal text-[#4696AD]">
+                                                        {totalGeral || "-"}
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
