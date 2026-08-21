@@ -594,6 +594,7 @@ export default function ProdutoCadastar() {
                     ? Number(produto.custo_operacional)
                     : 0,
                 outros_custos: produto.outros_custos ? Number(produto.outros_custos) : 0,
+                custo_total: Number(totalGeral.toFixed(2)),
             };
 
             const produtoCriado = await criarProduto(payloadProduto);
@@ -636,7 +637,6 @@ export default function ProdutoCadastar() {
             .sort((a, b) => (a.ordem || 0) - (b.ordem || 0)) || [];
     const colunasFlexiveis = etapasAtivasOrdenadas.slice(0, -1);
 
-    const custoAviamentos = valorTotalGasto || 0;
     const custoOperacional = produto?.custo_operacional || 0;
     const custoOutros = produto?.outros_custos || 0;
 
@@ -645,7 +645,7 @@ export default function ProdutoCadastar() {
         0,
     );
 
-    const totalGeral = custoAviamentos + custoOperacional + custoOutros + custoEtapasFlexiveis;
+    const totalGeral = valorTotalGasto + custoOperacional + custoOutros + custoEtapasFlexiveis;
 
     const formatarMoeda = (valor) => {
         return new Intl.NumberFormat("pt-BR", {
@@ -997,7 +997,12 @@ export default function ProdutoCadastar() {
                                         {formData.aviamentos.map((av) => (
                                             <td
                                                 key={av.id}
-                                                className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center"
+                                                onClick={(e) => {
+                                                    const input =
+                                                        e.currentTarget.querySelector("input");
+                                                    if (input) input.focus();
+                                                }}
+                                                className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center cursor-text"
                                             >
                                                 <div className="flex items-center justify-center gap-1 w-full bg-transparent">
                                                     <input
@@ -1078,9 +1083,9 @@ export default function ProdutoCadastar() {
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        {/* Valor Aviamentos (Estático/Calculado) */}
+                                        {/* Total de materiais (tecido + aviamentos) */}
                                         <td className="bg-[#FFFFFF] py-3 px-4 border-l-[0.5px] border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] first:rounded-bl-[10px] text-center text-[16px] font-light text-[#404040]">
-                                            {formatarMoeda(custoAviamentos)}
+                                            {formatarMoeda(valorTotalGasto)}
                                         </td>
 
                                         {colunasFlexiveis.map((etapa, index) => (
@@ -1173,7 +1178,7 @@ export default function ProdutoCadastar() {
                             loadingText="Salvando..."
                             className="w-[189px] h-[39px] rounded-[18.9px] bg-[#A9E2F2] text-[#4696AD] text-sm font-medium transition-colors hover:bg-[#A2DCED] disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                            Finalizar cadastro
+                            Concluir cadastro
                         </LoadingButton>
                     </div>
                 </form>

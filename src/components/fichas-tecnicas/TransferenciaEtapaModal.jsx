@@ -577,7 +577,9 @@ export default function TransferenciaEtapaModal({
                                 fichaTecnica?.pedido?.numero
                                     ? `Nº${fichaTecnica.pedido.numero}`
                                     : null,
-                                fichaTecnica?.id ? `Ficha Técnica: ${fichaTecnica.id}` : null,
+                                fichaTecnica?.numero
+                                    ? `Ficha Técnica: ${fichaTecnica.numero}`
+                                    : null,
                                 fichaTecnica?.pedido?.cliente?.nome || null,
                             ]
                                 .filter(Boolean)
