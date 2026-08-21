@@ -594,6 +594,7 @@ export default function ProdutoCadastar() {
                     ? Number(produto.custo_operacional)
                     : 0,
                 outros_custos: produto.outros_custos ? Number(produto.outros_custos) : 0,
+                custo_total: Number(totalGeral.toFixed(2)),
             };
 
             const produtoCriado = await criarProduto(payloadProduto);
