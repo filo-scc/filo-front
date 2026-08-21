@@ -1,7 +1,7 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
-import { getFaccaoByProduto } from "../../services/produtoService";
+import { getParceiroByProduto } from "../../services/produtoService";
+import { ModalTableRowsSkeleton } from "../geral/Loading";
 
 function normalizePreco(preco) {
     if (preco === null || preco === undefined || preco === "") return null;
@@ -9,15 +9,16 @@ function normalizePreco(preco) {
     return Number.isFinite(parsed) ? parsed : null;
 }
 
-function normalizeFaccao(item) {
+function normalizeParceiro(item) {
     if (!item) return null;
 
-    if (item.faccao) {
+    if (item.parceiro) {
         return {
-            id: item.faccao.id,
-            nome: item.faccao.nome,
+            id: item.parceiro.id,
+            nome: item.parceiro.nome,
             preco: normalizePreco(item.preco),
-            possuiPedido: Boolean(item.possuiPedido ?? item.faccao.possuiPedido ?? false),
+            categoria: item.parceiro.categoria,
+            possuiPedido: Boolean(item.possuiPedido ?? item.parceiro.possuiPedido ?? false),
         };
     }
 
@@ -25,31 +26,33 @@ function normalizeFaccao(item) {
         id: item.id,
         nome: item.nome,
         preco: normalizePreco(item.preco),
+        categoria: item.categoria, // corrigido: item, não item.parceiro
         possuiPedido: Boolean(item.possuiPedido ?? false),
     };
 }
 
-const ProdutoFaccoes = ({
+const ProdutoParceiros = ({
     isOpen,
     onClose,
     produtoId,
-    faccoes: faccoesProp = [],
-    selectedFaccaoIds = [],
-    onSelectFaccao,
+    parceiros: parceirosProp = [],
+    selectedParceiroIds = [],
+    onSelectParceiro,
 }) => {
-    const [faccoes, setFaccoes] = useState([]);
+    const [parceiros, setParceiros] = useState([]);
+    const [loading, setLoading] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [ordenacao, setOrdenacao] = useState("nome");
 
     const selectedIdsSet = useMemo(
-        () => new Set((selectedFaccaoIds || []).map((id) => String(id))),
-        [selectedFaccaoIds],
+        () => new Set((selectedParceiroIds || []).map((id) => String(id))),
+        [selectedParceiroIds],
     );
 
     const filterSelected = useCallback(
         (list = []) =>
             list
-                .map(normalizeFaccao)
+                .map(normalizeParceiro)
                 .filter(Boolean)
                 .filter((item) => !selectedIdsSet.has(String(item.id))),
         [selectedIdsSet],
@@ -57,40 +60,50 @@ const ProdutoFaccoes = ({
 
     useEffect(() => {
         if (!isOpen) return;
+        let ignorar = false;
 
-        const fromProp = Array.isArray(faccoesProp) ? filterSelected(faccoesProp) : [];
+        const fromProp = Array.isArray(parceirosProp) ? filterSelected(parceirosProp) : [];
 
-        if (Array.isArray(faccoesProp) && faccoesProp.length > 0) {
-            setFaccoes(fromProp);
+        if (Array.isArray(parceirosProp) && parceirosProp.length > 0) {
+            setParceiros(fromProp);
+            setLoading(false);
             return;
         }
 
         const fetchData = async () => {
+            setLoading(true);
             try {
-                const response = await getFaccaoByProduto(produtoId);
+                const response = await getParceiroByProduto(produtoId);
 
-                console.log("Resposta da API de facções:", response);
+                if (ignorar) return;
 
                 const rawList = Array.isArray(response)
                     ? response
                     : Array.isArray(response?.data)
                       ? response.data
-                      : Array.isArray(response?.faccoes)
-                        ? response.faccoes
+                      : Array.isArray(response?.parceiros)
+                        ? response.parceiros
                         : [];
 
-                setFaccoes(filterSelected(rawList));
+                setParceiros(filterSelected(rawList));
             } catch (error) {
-                console.error("Erro ao buscar facções:", error);
-                setFaccoes([]);
+                if (ignorar) return;
+                console.error("Erro ao buscar parceiros:", error);
+                setParceiros([]);
+            } finally {
+                if (!ignorar) setLoading(false);
             }
         };
 
         fetchData();
-    }, [isOpen, produtoId, faccoesProp, filterSelected]);
 
-    const faccoesOrdenadas = useMemo(() => {
-        return [...faccoes].sort((a, b) => {
+        return () => {
+            ignorar = true;
+        };
+    }, [isOpen, produtoId, parceirosProp, filterSelected]);
+
+    const parceirosOrdenadas = useMemo(() => {
+        return [...parceiros].sort((a, b) => {
             if (ordenacao === "nome") {
                 return (a.nome || "").localeCompare(b.nome || "");
             }
@@ -105,7 +118,7 @@ const ProdutoFaccoes = ({
 
             return 0;
         });
-    }, [faccoes, ordenacao]);
+    }, [parceiros, ordenacao]);
 
     const handleSelectOrder = (value) => {
         setOrdenacao(value);
@@ -129,26 +142,12 @@ const ProdutoFaccoes = ({
 
     return (
         <>
-            <style>
-                {`
-                .scrollbar-sutil::-webkit-scrollbar {
-                    width: 4px;
-                }
-
-                .scrollbar-sutil::-webkit-scrollbar-track {
-                    background: transparent;
-                }
-
-                .scrollbar-sutil::-webkit-scrollbar-thumb {
-                    background-color: #d1d5db;
-                    border-radius: 10px;
-                }
-            `}
-            </style>
-
             <div
                 className="fixed inset-0 bg-black/35 backdrop-blur-sm flex items-center justify-center z-[999]"
-                onClick={onClose}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    if (onClose) onClose();
+                }}
             >
                 <div
                     className="w-[900px] bg-white rounded-[24px] px-10 pt-10 pb-8 relative"
@@ -254,45 +253,53 @@ const ProdutoFaccoes = ({
                         </div>
 
                         {/* ROWS */}
-                        <div className="max-h-[360px] overflow-y-auto overflow-x-hidden scrollbar-sutil rounded-b-[10px]">
-                            {faccoesOrdenadas.map((faccao, index) => (
-                                <div
-                                    key={faccao.id}
-                                    onClick={() => {
-                                        onSelectFaccao?.(faccao);
-                                        onClose?.();
-                                    }}
-                                    className={`
+                        {loading ? (
+                            <ModalTableRowsSkeleton />
+                        ) : parceirosOrdenadas.length === 0 ? (
+                            <div className="border-x-[0.5px] border-b border-[#D9D9D9] rounded-b-[10px] bg-white py-12 text-center font-Outfit text-[16px] font-light text-[#898C8F]">
+                                Nenhuma facção disponível.
+                            </div>
+                        ) : (
+                            <div className="max-h-[360px] overflow-y-auto overflow-x-hidden scrollbar-sutil rounded-b-[10px]">
+                                {parceirosOrdenadas.map((parceiro, index) => (
+                                    <div
+                                        key={parceiro.id}
+                                        onClick={() => {
+                                            onSelectParceiro?.(parceiro);
+                                            onClose?.();
+                                        }}
+                                        className={`
                                         cursor-pointer
                                         grid grid-cols-3 px-6 py-5 items-center transition-colors border-x-[0.5px] border-[#D9D9D9]
                                         ${index % 2 === 0 ? "bg-white" : "bg-[#F4F4F4]"}
                                         ${
-                                            index !== faccoesOrdenadas.length - 1
+                                            index !== parceirosOrdenadas.length - 1
                                                 ? ""
                                                 : "border-b border-[#D9D9D9] rounded-b-[10px]"
                                         }
                                     `}
-                                >
-                                    <div className="flex justify-center items-center text-center font-Outfit text-[16px] font-light text-[#404040] px-2">
-                                        <span className="max-w-[180px] break-words">
-                                            {faccao.nome}
-                                        </span>
-                                    </div>
+                                    >
+                                        <div className="flex justify-center items-center text-center font-Outfit text-[16px] font-light text-[#404040] px-2">
+                                            <span className="max-w-[180px] break-words">
+                                                {parceiro.nome}
+                                            </span>
+                                        </div>
 
-                                    <div className="flex justify-center font-Outfit text-[16px] font-light text-[#404040]">
-                                        {faccao.preco !== null
-                                            ? `R$ ${Number(faccao.preco).toFixed(2).replace(".", ",")}`
-                                            : "-"}
-                                    </div>
+                                        <div className="flex justify-center font-Outfit text-[16px] font-light text-[#404040]">
+                                            {parceiro.preco !== null
+                                                ? `R$ ${Number(parceiro.preco).toFixed(2).replace(".", ",")}`
+                                                : "-"}
+                                        </div>
 
-                                    <div className="flex justify-center">
-                                        <span className="bg-[#D9D9D9] rounded-full w-[109px] h-[19px] text-[12px] font-Outfit font-light text-[#404040] inline-flex items-center justify-center">
-                                            {faccao.possuiPedido ? "Sim" : "Não"}
-                                        </span>
+                                        <div className="flex justify-center">
+                                            <span className="bg-[#D9D9D9] rounded-full w-[109px] h-[19px] text-[12px] font-Outfit font-light text-[#404040] inline-flex items-center justify-center">
+                                                {parceiro.possuiPedido ? "Sim" : "Não"}
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -300,4 +307,4 @@ const ProdutoFaccoes = ({
     );
 };
 
-export default ProdutoFaccoes;
+export default ProdutoParceiros;

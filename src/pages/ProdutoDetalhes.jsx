@@ -5,7 +5,12 @@ import {
     getClientesDoProduto,
     excluirProduto,
     getAviamentosDoProduto,
+    getTiposProdutoByFabrico,
 } from "../services/produtoService";
+import { getFabricoById } from "../services/fabricoService";
+import { getAllEtapasByFabricoId } from "../services/etapaService";
+import { getParceirosByFabrico } from "../services/parceiroService";
+import { getVinculoParceiroProduto } from "../services/parceiroProdutoService";
 
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
 import SecaoDadosProduto from "../components/produtos/SecaoDadosProduto";
@@ -14,6 +19,27 @@ import ProdutoDetalhesSkeleton from "../components/produtos/ProdutoDetalhesSkele
 import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalAtencao from "../components/geral/ModalAtencao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
+
+// Função para deixar as unidades de medida mais bonitas visualmente
+function formatarUnidadeDeMedida(unidade) {
+    if (!unidade) return "";
+
+    const unidadesMapeadas = {
+        METRO: "m",
+        CENTIMETRO: "cm",
+        GRAMA: "g",
+        QUILOGRAMA: "kg",
+        UNIDADE: "und",
+        PAR: "par",
+    };
+
+    return unidadesMapeadas[unidade.toUpperCase()] || unidade.toLowerCase();
+}
+
+function formatarPreco(valor) {
+    if (valor === undefined || valor === null) return "R$ 0,00";
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor);
+}
 
 export default function ProdutoDetalhes() {
     const { id } = useParams();
@@ -26,6 +52,9 @@ export default function ProdutoDetalhes() {
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
     const [modalAtencaoAberto, setModalAtencaoAberto] = useState(false);
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
+    const [fabrico, setFabrico] = useState(null);
+    const [excluindo, setExcluindo] = useState(false);
+    const [colunasFlexiveis, setColunasFlexiveis] = useState([]);
 
     useEffect(() => {
         async function fetchData() {
@@ -34,11 +63,22 @@ export default function ProdutoDetalhes() {
 
                 const userString = localStorage.getItem("user");
                 const usuarioLogado = userString ? JSON.parse(userString) : null;
+                const fabricoId = usuarioLogado?.fabrico_id;
 
-                const [dadosProduto, dadosClientes, dadosAviamentos] = await Promise.all([
+                const [
+                    dadosProduto,
+                    dadosClientes,
+                    dadosAviamentos,
+                    dadosTipos,
+                    todasEtapas,
+                    parceirosDisponiveis,
+                ] = await Promise.all([
                     getProdutoById(id),
                     getClientesDoProduto(id),
                     getAviamentosDoProduto(id),
+                    getTiposProdutoByFabrico().catch(() => []),
+                    getAllEtapasByFabricoId(fabricoId).catch(() => []),
+                    getParceirosByFabrico(fabricoId).catch(() => []),
                 ]);
 
                 if (usuarioLogado && dadosProduto.fabrico_id !== usuarioLogado.fabrico_id) {
@@ -47,9 +87,87 @@ export default function ProdutoDetalhes() {
                     return;
                 }
 
-                setProduto(dadosProduto);
+                const tipoProdutoRelacionado =
+                    dadosProduto.tipo_produto ||
+                    dadosProduto.tipoProduto ||
+                    (Array.isArray(dadosTipos)
+                        ? dadosTipos.find((tipo) => tipo?.id === dadosProduto.tipo_produto_id)
+                        : null);
+
+                setProduto({
+                    ...dadosProduto,
+                    tipo_produto: tipoProdutoRelacionado || undefined,
+                });
                 setClientesAssociados(dadosClientes);
                 setAviamentosProduto(dadosAviamentos);
+
+                const etapasParaCusto = [...(todasEtapas || [])]
+                    .filter((etapa) => etapa?.ativa === true)
+                    .sort((a, b) => (a.ordem || 0) - (b.ordem || 0))
+                    .slice(0, -1);
+
+                // 1. Mapeamento inicial das etapas com o parceiro correspondente
+                const etapasPreMapeadas = etapasParaCusto.map((etapa) => {
+                    const parceirosMapeados = (parceirosDisponiveis || []).filter((p) => {
+                        const categoriaParceiro = (p?.categoria || "").trim().toLowerCase();
+                        const nomeEtapa = (etapa?.nome || "").trim().toLowerCase();
+                        return categoriaParceiro === nomeEtapa;
+                    });
+
+                    return {
+                        ...etapa,
+                        parceiros_ids: parceirosMapeados.map((parceiro) => parceiro.id),
+                    };
+                });
+
+                // 2. 🌟 Busca dinâmica na tabela intermediária (parceiro_produto) para cada vínculo encontrado
+                const etapasVinculadasComCustos = await Promise.all(
+                    etapasPreMapeadas.map(async (etapa) => {
+                        let custoFinal = 0;
+
+                        if (etapa.parceiros_ids.length > 0) {
+                            const vinculos = await Promise.all(
+                                etapa.parceiros_ids.map(async (parceiroId) => {
+                                    try {
+                                        return await getVinculoParceiroProduto(parceiroId, id);
+                                    } catch (err) {
+                                        console.error(
+                                            `Erro ao buscar vinculo para parceiro ${parceiroId} e produto ${id}:`,
+                                            err,
+                                        );
+                                        return null;
+                                    }
+                                }),
+                            );
+
+                            const precos = vinculos
+                                .map((vinculo) => vinculo?.preco)
+                                .filter((preco) => preco !== null && preco !== undefined)
+                                .map((preco) => Number(preco))
+                                .filter((preco) => Number.isFinite(preco));
+
+                            if (precos.length > 0) {
+                                custoFinal =
+                                    precos.reduce((acc, preco) => acc + preco, 0) / precos.length;
+                            }
+                        }
+
+                        // Fallback: Se não achou na tabela intermediária, tenta pegar do etapas_produto antigo (como backup)
+                        if (custoFinal === 0) {
+                            const custoExistente = dadosProduto?.etapas_produto?.find(
+                                (ep) => ep.etapa_id === etapa.id,
+                            )?.custo;
+                            custoFinal = custoExistente || 0;
+                        }
+
+                        return {
+                            ...etapa,
+                            custo: custoFinal,
+                        };
+                    }),
+                );
+
+                setColunasFlexiveis(etapasVinculadasComCustos);
             } catch (error) {
                 console.error("Erro ao carregar detalhes:", error);
                 setModalAtencaoAberto(true);
@@ -61,43 +179,226 @@ export default function ProdutoDetalhes() {
         fetchData();
     }, [id, navigate]);
 
+    useEffect(() => {
+        async function carregarDadosDoFabrico() {
+            if (produto && produto.fabrico_id) {
+                try {
+                    const dadosFabrico = await getFabricoById(produto.fabrico_id);
+                    setFabrico(dadosFabrico);
+                } catch (error) {
+                    console.error("Erro ao buscar dados do fabrico:", error);
+                }
+            }
+        }
+
+        carregarDadosDoFabrico();
+    }, [produto]);
+
     const handleAcessoNegadoConfirm = () => {
         setModalAtencaoAberto(false);
         navigate("/produtos", { replace: true });
     };
 
     const handleConfirmarExclusao = async () => {
+        if (excluindo) return;
         try {
+            setExcluindo(true);
             await excluirProduto(id);
             setModalExclusaoAberto(false);
             setModalConfirmacaoAberto(true);
         } catch {
             alert("Erro ao excluir produto.");
+        } finally {
+            setExcluindo(false);
         }
     };
 
+    const custoTecido = Number(
+        produto?.custo_tecido ||
+            Number(String(produto?.quantidade_tecido || 0).replace(",", ".")) *
+                Number(produto?.tecido?.custo_unitario || 0),
+    );
+
+    const custoAviamentos = aviamentosProduto.reduce((acc, pivot) => {
+        const qtd = Number(String(pivot.quantidade || 0).replace(",", "."));
+        const custo = Number(pivot.aviamento?.custo_unitario || 0);
+        return acc + qtd * custo;
+    }, 0);
+
+    const valorTotalGasto = custoTecido + custoAviamentos;
+
+    const totalCustosEtapas = colunasFlexiveis.reduce(
+        (acc, etapa) => acc + (Number(etapa.custo) || 0),
+        0,
+    );
+
+    const totalGeral =
+        valorTotalGasto +
+        totalCustosEtapas +
+        (Number(produto?.custo_operacional) || 0) +
+        (Number(produto?.outros_custos) || 0);
+
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-screen">
-                <p className="text-[#4696AD] font-Outfit">Carregando detalhes...</p>
+            <div className="p-6 pt-0 mt-6 w-full flex justify-center">
+                <div className="bg-white p-8 rounded-[24px] shadow-sm w-full min-h-[400px]">
+                    <ProdutoDetalhesHeader title="Detalhes de produto" />
+                    <ProdutoDetalhesSkeleton />
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="p-6 pt-0 w-full flex justify-center">
+        <div className="p-6 pt-0 mt-6 w-full flex justify-center">
             <div className="bg-white p-8 rounded-[24px] shadow-sm w-full min-h-[400px]">
                 <ProdutoDetalhesHeader title="Detalhes de produto" />
 
                 <div className="mt-8 space-y-8">
-                    {/* 👇 Guard: só renderiza se produto foi carregado */}
-                    {/* depois */}
                     {produto ? (
                         <>
                             <SecaoDadosProduto produto={produto} aviamentos={aviamentosProduto} />
+
+                            {/* Tabela de Quantidade por aviamento - Visualização */}
+                            <div className="mt-6 w-full">
+                                <h3 className="text-[20px] font-light text-[#404040] mb-4">
+                                    Quantidade por aviamento
+                                </h3>
+                                <div className="w-full overflow-x-auto">
+                                    <table className="w-full table-fixed border-separate border-spacing-0">
+                                        <thead>
+                                            <tr>
+                                                <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] first:rounded-tl-[10px] last:rounded-tr-[10px] text-center border-none">
+                                                    Tecido
+                                                </th>
+                                                {aviamentosProduto.map((pivot) => (
+                                                    <th
+                                                        key={pivot.id}
+                                                        className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] text-center capitalize border-none"
+                                                    >
+                                                        {pivot.aviamento?.nome}
+                                                    </th>
+                                                ))}
+                                                <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] first:rounded-tl-[10px] last:rounded-tr-[10px] text-center border-none">
+                                                    Total
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td className="bg-[#FFFFFF] py-3 px-4 border-l-[0.5px] border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] first:rounded-bl-[10px] text-center">
+                                                    <span className="text-[16px] font-light text-[#404040]">
+                                                        {produto?.quantidade_tecido || "-"} (
+                                                        {formatarUnidadeDeMedida(
+                                                            produto?.tecido?.unidade_de_medida,
+                                                        ) || ""}
+                                                        )
+                                                    </span>
+                                                </td>
+                                                {aviamentosProduto.map((pivot) => (
+                                                    <td
+                                                        key={pivot.id}
+                                                        className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center"
+                                                    >
+                                                        <span className="text-[16px] font-light text-[#404040]">
+                                                            {pivot.quantidade || "-"} (
+                                                            {formatarUnidadeDeMedida(
+                                                                pivot.aviamento?.unidade_de_medida,
+                                                            ) || ""}
+                                                            )
+                                                        </span>
+                                                    </td>
+                                                ))}
+                                                <td className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] last:rounded-br-[10px] text-center text-[16px] font-light text-[#404040]">
+                                                    {new Intl.NumberFormat("pt-BR", {
+                                                        style: "currency",
+                                                        currency: "BRL",
+                                                    }).format(valorTotalGasto)}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* Bloco Inferior: Tabela de Custo */}
+                            <div className="mt-6 w-full">
+                                <h3 className="text-[20px] font-light text-[#404040] mb-4">
+                                    Custo por peça
+                                </h3>
+                                <div className="w-full overflow-x-auto">
+                                    <table className="w-full table-fixed border-separate border-spacing-0">
+                                        <thead>
+                                            <tr>
+                                                <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] first:rounded-tl-[10px] text-center border-none">
+                                                    Aviamentos
+                                                </th>
+                                                {colunasFlexiveis.map((etapa, index) => (
+                                                    <th
+                                                        key={etapa.id || index}
+                                                        className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] text-center border-none"
+                                                    >
+                                                        <div
+                                                            title={etapa.nome}
+                                                            className="max-w-[150px] truncate mx-auto cursor-pointer"
+                                                        >
+                                                            {etapa.nome}
+                                                        </div>
+                                                    </th>
+                                                ))}
+                                                <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] text-center border-none">
+                                                    Operacional
+                                                </th>
+                                                <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] text-center border-none">
+                                                    Outros
+                                                </th>
+                                                <th className="bg-[#D9D9D9] py-3 px-4 text-[#898C8F] font-light text-[16px] last:rounded-tr-[10px] text-center border-none">
+                                                    Total
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                {/* Total de materiais (tecido + aviamentos) */}
+                                                <td className="bg-[#FFFFFF] py-3 px-4 border-l-[0.5px] border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] first:rounded-bl-[10px] text-center text-[16px] font-light text-[#404040]">
+                                                    {formatarPreco(valorTotalGasto)}
+                                                </td>
+
+                                                {/* Colunas Flexíveis (Etapas) */}
+                                                {colunasFlexiveis.map((etapa, index) => (
+                                                    <td
+                                                        key={etapa.id || index}
+                                                        className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center text-[16px] font-light text-[#404040]"
+                                                    >
+                                                        {formatarPreco(etapa.custo || 0)}
+                                                    </td>
+                                                ))}
+
+                                                {/* Operacional */}
+                                                <td className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center text-[16px] font-light text-[#404040]">
+                                                    {formatarPreco(produto.custo_operacional || 0)}
+                                                </td>
+
+                                                {/* Outros */}
+                                                <td className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center text-[16px] font-light text-[#404040]">
+                                                    {formatarPreco(produto.outros_custos || 0)}
+                                                </td>
+
+                                                {/* Total */}
+                                                <td className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] last:rounded-br-[10px] text-center text-[16px] font-light text-[#404040]">
+                                                    {formatarPreco(totalGeral)}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
                             <TabelaClientesDoProduto
                                 clientes={clientesAssociados}
+                                produtoId={id}
                                 referenciaInterna={produto.nome}
+                                fabricacao_sob_demanda={fabrico?.fabricacao_sob_demanda}
                             />
                         </>
                     ) : (
@@ -134,8 +435,10 @@ export default function ProdutoDetalhes() {
                 isOpen={modalExclusaoAberto}
                 onClose={() => setModalExclusaoAberto(false)}
                 onConfirm={handleConfirmarExclusao}
+                titulo="Excluir produto"
                 nomeItem={produto?.nome}
                 tipoItem="o produto"
+                loading={excluindo}
             />
 
             <ModalConfirmacao

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import FloatingLabelInput from "../FloatingLabelInput";
 import { createCor, getApiErrorMessage } from "../../services/corService";
+import { LoadingButton } from "../geral/Loading";
 
 function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
@@ -427,14 +428,15 @@ export default function CorModal({ isOpen, onClose, fabricoId, onSuccess }) {
                 </div>
 
                 <div className="mt-8 flex justify-end">
-                    <button
+                    <LoadingButton
                         type="button"
-                        disabled={submitting}
+                        loading={submitting}
+                        loadingText="Salvando..."
                         onClick={handleSubmit}
-                        className="h-[39px] rounded-full bg-[#A9E2F2] px-8 text-[15px] font-light text-[#4696AD] transition hover:bg-[#94d6eb] disabled:opacity-60"
+                        className="h-[39px] rounded-full bg-[#A9E2F2] px-8 text-[15px] font-light text-[#4696AD] transition hover:bg-[#A2DCED] disabled:opacity-60"
                     >
-                        {submitting ? "Salvando..." : "Concluir cadastro"}
-                    </button>
+                        Concluir cadastro
+                    </LoadingButton>
                 </div>
             </div>
         </div>

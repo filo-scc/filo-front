@@ -4,6 +4,7 @@ import TabelaReferencias from "../components/clientes/TabelaReferencias";
 import FloatingLabelInput from "../components/FloatingLabelInput";
 import ModalReferencias from "../components/clientes/ModalReferencias";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
+import { ClientEditPageSkeleton, LoadingButton } from "../components/geral/Loading";
 import {
     getClienteById,
     getProdutosDoCliente,
@@ -183,24 +184,19 @@ export default function ClientesEditar() {
     };
 
     const editarLinha = async (dadosEditados) => {
-        console.log("1. Chegou no editarLinha! Dados:", dadosEditados);
-
         const pId = dadosEditados.produto_id;
-        console.log("2. ID do Cliente:", id, "| ID do Produto:", pId);
 
         try {
-            const response = await atualizarClientesProdutos(id, pId, {
+            await atualizarClientesProdutos(id, pId, {
                 nome_para_cliente: dadosEditados.nome_para_cliente,
                 preco_padrao: dadosEditados.preco_padrao,
             });
 
-            console.log("3. Sucesso na API! Resposta:", response);
             setProdutosAssociados((listaAnterior) => {
                 const novaLista = listaAnterior.map((item) => {
                     const itemId = item?.produto?.id || item?.produto_id;
 
                     if (itemId === pId) {
-                        console.log("4. Encontrou o item na lista para atualizar!", item);
                         return {
                             ...item,
                             nome_para_cliente: dadosEditados.nome_para_cliente,
@@ -210,7 +206,6 @@ export default function ClientesEditar() {
                     return item;
                 });
 
-                console.log("5. Nova lista gerada:", novaLista);
                 return novaLista;
             });
         } catch (error) {
@@ -218,7 +213,7 @@ export default function ClientesEditar() {
         }
     };
     return (
-        <div className="w-full max-w-[1200px] xl:max-w-none mx-auto font-['Outfit',_sans-serif]">
+        <div className="p-6 pt-0 mt-6 w-full font-['Outfit',_sans-serif]">
             <div className="bg-white p-8 sm:p-10 rounded-[32px] shadow-[0_8px_40px_rgba(70,150,173,0.08)] border border-[#F0F4F6] w-full">
                 <div className="flex flex-wrap items-center gap-3 mb-10">
                     <img src="/star.png" alt="" className="w-8 h-8 shrink-0" />
@@ -228,7 +223,7 @@ export default function ClientesEditar() {
                 </div>
 
                 {loading ? (
-                    <p className="text-center py-12">Carregando...</p>
+                    <ClientEditPageSkeleton />
                 ) : (
                     <>
                         <section className="mb-10">
@@ -328,14 +323,15 @@ export default function ClientesEditar() {
                         </div>
 
                         <div className="flex flex-wrap justify-end gap-4 pt-2">
-                            <button
+                            <LoadingButton
                                 type="button"
                                 onClick={handleFinalizar}
-                                disabled={salvando}
-                                className="bg-[#A9E2F2] hover:bg-[#94d6eb] text-white h-[42px] px-8 rounded-full min-w-[180px]"
+                                loading={salvando}
+                                loadingText="Salvando..."
+                                className="bg-[#A9E2F2] hover:bg-[#A2DCED] text-[#4696AD] h-[42px] px-8 rounded-full min-w-[180px]"
                             >
-                                {salvando ? "Salvando..." : "Finalizar edição"}
-                            </button>
+                                Concluir edição
+                            </LoadingButton>
                         </div>
                         {erro && <p className="pt-4 text-sm text-[#D75757] text-right">{erro}</p>}
                     </>

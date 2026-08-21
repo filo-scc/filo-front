@@ -1,6 +1,12 @@
 import React from "react";
 
-export default function ModalConfirmacao({ isOpen, onClose, type }) {
+export default function ModalConfirmacao({
+    isOpen,
+    onClose,
+    type,
+    message,
+    compactButton = false,
+}) {
     if (!isOpen) return null;
 
     return (
@@ -21,15 +27,14 @@ export default function ModalConfirmacao({ isOpen, onClose, type }) {
                     <img src="/fechar-cinza.png" className="w-3 h-3" alt="Fechar" />
                 </button>
 
-                {/* Texto dinâmico utilizando o tipoItem */}
                 <p className="text-[18px] font-light text-[#404040] px-6 mb-8">
-                    Cadastro {type} com sucesso!
+                    {message || `Cadastro ${type} com sucesso!`}
                 </p>
 
                 <div className="flex gap-4 w-full">
                     <button
                         onClick={onClose}
-                        className="flex-1 h-[39px] rounded-[18.9px] bg-[#A9E2F2] text-[#4696AD] font-light text-[16px] transition-colors hover:bg-[#A2DCED]"
+                        className={`${compactButton ? "mx-auto w-[220px]" : "flex-1"} h-[39px] rounded-[18.9px] bg-[#A9E2F2] text-[#4696AD] font-light text-[16px] transition-colors hover:bg-[#A2DCED]`}
                     >
                         Ok
                     </button>

@@ -1,26 +1,44 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 
 export function Header() {
-    const { user, logout } = useAuth();
+    const { user, logout, loading } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef(null);
     const cargoMap = {
         GERENTE: "Gerente",
         PROPRIETARIO: "Proprietário",
         ADMIN: "Admin",
     };
 
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        }
+
+        document.addEventListener("mousedown", handleClickOutside);
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
+    if (loading) {
+        return <header className="w-full pt-8 pb-2 pr-10" />;
+    }
+
     return (
         <header className="w-full pt-8 pb-2 flex items-center justify-end bg-transparent relative z-50 pr-10">
-            <div className="relative">
-                {/* Acionador do Menu */}
+            <div className="relative" ref={dropdownRef}>
                 <div
                     className="flex items-center gap-3 cursor-pointer select-none"
                     onClick={() => setIsOpen(!isOpen)}
                 >
                     <div className="flex flex-col items-start">
                         <span className="text-[#404040] font-normal text-[17px] leading-tight">
-                            {user?.nome || "Mateus Marinho"}
+                            {user?.nome || "Usuario Sem Nome"}
                         </span>
                         <span className="text-[#7B7D80] font-normal text-[15px] leading-none">
                             {user?.cargo ? cargoMap[user.cargo] || user.cargo : "Gerente"}
@@ -29,7 +47,7 @@ export function Header() {
 
                     <div className="w-[48px] h-[48px] rounded-full border border-[#A9E2F2] p-[1px] overflow-hidden">
                         <img
-                            src={user?.avatar || "/filo-cliente.png"}
+                            src={user?.foto_de_perfil || "/no-user-image.png"}
                             alt="Perfil"
                             className="w-full h-full rounded-full object-cover"
                         />

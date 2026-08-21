@@ -14,15 +14,28 @@ import { createFichaTecnica } from "../services/fichaTecnicaService";
 import {
     syncFichaTecnicaCores,
     saveFichaTecnicaItens,
-    updateFaccaoProdutoPrice,
-    createFaccaoProduto,
+    updateParceiroProdutoPrice,
+    createParceiroProduto,
 } from "../services/fichaTecnicaItemService";
+import { iniciarFichaEtapa } from "../services/fichasTecnicasService";
+import { createFichaParceiro } from "../services/fichaParceiroService";
 import { createPedido } from "../services/pedidoService";
 import { getPedidosByFabricoId } from "../services/pedidoService";
 
 import { getAllEtapasByFabricoId } from "../services/etapaService";
+import { DropdownOptionsSkeleton, LoadingButton, SkeletonBox } from "../components/geral/Loading";
 
 const sectionTitleClass = "text-[20px] font-light text-[#404040] mb-4 font-['Outfit',_sans-serif]";
+
+const normalizarPrecoOpcional = (preco) => {
+    if (preco === null || preco === undefined || preco === "") return null;
+
+    const valorNormalizado =
+        typeof preco === "string" ? preco.replace("R$", "").replace(",", ".").trim() : preco;
+    const valorNumerico = Number(valorNormalizado);
+
+    return Number.isFinite(valorNumerico) && valorNumerico > 0 ? valorNumerico : null;
+};
 
 function DropdownField({
     value,
@@ -34,10 +47,12 @@ function DropdownField({
     isSelectedOption,
     disabled = false,
     className = "",
+    loading = false,
 }) {
     const [termoBusca, setTermoBusca] = useState("");
     const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
     const inputRef = useRef(null);
+    const fieldDisabled = disabled || loading;
 
     if (isOpen !== prevIsOpen) {
         setPrevIsOpen(isOpen);
@@ -60,33 +75,37 @@ function DropdownField({
         <div className={`relative ${isOpen ? "z-50" : "z-10"} ${className}`}>
             <div
                 onClick={() => {
-                    if (disabled) return;
+                    if (fieldDisabled) return;
                     if (!isOpen) onToggle();
                     inputRef.current?.focus();
                 }}
                 className={`w-full h-[39px] border border-[#898C8F] rounded-[10px] px-3 text-sm bg-white flex items-center justify-between transition-opacity ${
-                    disabled ? "opacity-60 cursor-not-allowed" : "cursor-text"
+                    fieldDisabled ? "opacity-60 cursor-not-allowed" : "cursor-text"
                 }`}
             >
-                <input
-                    ref={inputRef}
-                    type="text"
-                    disabled={disabled}
-                    value={isOpen ? termoBusca : value || ""}
-                    onChange={(e) => {
-                        setTermoBusca(e.target.value);
-                        if (!isOpen) onToggle();
-                    }}
-                    placeholder={isOpen && value ? value : placeholder}
-                    className="w-full bg-transparent outline-none text-[#707070] placeholder:text-[#898C8F] truncate disabled:cursor-not-allowed"
-                />
+                {loading ? (
+                    <SkeletonBox className="h-[14px] w-36 rounded-[7px]" />
+                ) : (
+                    <input
+                        ref={inputRef}
+                        type="text"
+                        disabled={fieldDisabled}
+                        value={isOpen ? termoBusca : value || ""}
+                        onChange={(e) => {
+                            setTermoBusca(e.target.value);
+                            if (!isOpen) onToggle();
+                        }}
+                        placeholder={isOpen && value ? value : placeholder}
+                        className="w-full bg-transparent outline-none text-[#707070] placeholder:text-[#898C8F] truncate disabled:cursor-not-allowed"
+                    />
+                )}
 
                 <button
                     type="button"
-                    disabled={disabled}
+                    disabled={fieldDisabled}
                     onClick={(e) => {
                         e.stopPropagation();
-                        if (!disabled) onToggle();
+                        if (!fieldDisabled) onToggle();
                     }}
                     className="ml-2 py-2 shrink-0 outline-none"
                 >
@@ -108,7 +127,7 @@ function DropdownField({
                 </button>
             </div>
 
-            {isOpen && !disabled && (
+            {isOpen && !fieldDisabled && (
                 <>
                     <button
                         type="button"
@@ -118,7 +137,9 @@ function DropdownField({
                     />
 
                     <div className="absolute left-0 right-0 top-[calc(100%+2px)] z-20 overflow-hidden rounded-[14px] border border-[#898C8F] bg-white max-h-[240px] overflow-y-auto scrollbar-sutil py-1">
-                        {opcoesFiltradas.length === 0 ? (
+                        {loading ? (
+                            <DropdownOptionsSkeleton />
+                        ) : opcoesFiltradas.length === 0 ? (
                             <p className="px-3 py-3 text-sm text-[#898C8F] font-light">
                                 Nenhuma opção encontrada
                             </p>
@@ -130,7 +151,7 @@ function DropdownField({
                                         key={option.value}
                                         type="button"
                                         onClick={() => onSelect(option)}
-                                        className={`relative overflow-hidden flex w-full items-center pl-[12px] pr-3 py-3 border-l-[3px] text-left text-[16px] transition-colors first:rounded-t-[13px] last:rounded-b-[13px] ${
+                                        className={`relative overflow-hidden flex w-full items-center pl-[12px] pr-3 py-3 border-l-[3px] text-left text-[16px] transition-colors ${
                                             selected
                                                 ? "border-[#C4F042] text-[#707070] bg-white"
                                                 : "border-transparent text-[#707070] bg-white hover:bg-[#FAFAFA]"
@@ -205,6 +226,7 @@ export default function PedidosCadastrar() {
     const [isSobDemanda, setIsSobDemanda] = useState(true);
     const [clienteSelecionado, setClienteSelecionado] = useState(null);
     const [referenciaSelecionada, setReferenciaSelecionada] = useState(null);
+    const [dataPrevista, setDataPrevista] = useState("");
 
     const [modalFichaAberto, setModalFichaAberto] = useState(false);
     const [referenciaParaModal, setReferenciaParaModal] = useState(null);
@@ -220,23 +242,28 @@ export default function PedidosCadastrar() {
 
         const carregarNumeroDoPedido = async () => {
             try {
-                const pedidos_do_fabrico = await getPedidosByFabricoId(fabricoId);
+                const resposta = await getPedidosByFabricoId(fabricoId);
 
                 if (ignorar) return;
 
-                setPedidosExistentes(pedidos_do_fabrico || []);
+                // Garante que extraímos o Array corretamente, mesmo se a API retornar dentro de .data
+                const pedidos_do_fabrico = Array.isArray(resposta)
+                    ? resposta
+                    : resposta?.data || resposta?.pedidos || [];
 
-                if (!pedidos_do_fabrico || pedidos_do_fabrico.length === 0) {
-                    setNumeroPedido("1");
-                    return;
-                }
+                // Guarda a lista para uso posterior no restante do componente
+                setPedidosExistentes(pedidos_do_fabrico);
 
-                const maiorNumero = pedidos_do_fabrico.reduce((maior, pedido) => {
-                    const numero = primeiroNumeroValido(pedido.numero);
-                    return numero > maior ? numero : maior;
-                }, 0);
+                // Próximo número = maior número do fabrico + 1 (ou 1 se não houver pedidos)
+                // Ignora null/undefined (Number(null) === 0 e poluiria o max)
+                const numeros = pedidos_do_fabrico
+                    .map((p) => p.numero)
+                    .filter((n) => n != null && n !== "")
+                    .map((n) => Number(n))
+                    .filter((n) => Number.isFinite(n));
+                const proximoNumero = numeros.length > 0 ? Math.max(...numeros) + 1 : 1;
 
-                setNumeroPedido(String(maiorNumero + 1));
+                setNumeroPedido(String(proximoNumero));
             } catch (error) {
                 console.error("Erro ao gerar o número do pedido:", error);
                 if (!ignorar) setNumeroPedido("-");
@@ -291,24 +318,35 @@ export default function PedidosCadastrar() {
         const carregarDados = async () => {
             setCarregandoClientes(true);
             try {
-                const [fabricoInfo, listaClientes] = await Promise.all([
-                    getFabricoById(fabricoId),
-                    getClientes(fabricoId),
-                ]);
+                const fabricoInfo = await getFabricoById(fabricoId);
                 if (ignorar) return;
 
-                const produzSobDemanda = Boolean(
-                    fabricoInfo?.fabricacao_sob_demanda ??
-                    fabricoInfo?.produz_sob_demanda ??
-                    fabricoInfo?.sob_demanda ??
-                    true,
-                );
+                const produzSobDemanda = fabricoInfo?.fabricacao_sob_demanda === true;
                 setIsSobDemanda(produzSobDemanda);
-                setClientes(listaClientes || []);
+
+                if (!produzSobDemanda) {
+                    setClientes([]);
+                    return;
+                }
+
+                try {
+                    const listaClientes = await getClientes(fabricoId);
+                    if (ignorar) return;
+
+                    setClientes(listaClientes || []);
+                } catch (error) {
+                    console.error("Erro ao carregar clientes:", error);
+                    if (!ignorar) {
+                        setClientes([]);
+                        setErro("Não foi possível carregar clientes.");
+                    }
+                }
             } catch (error) {
-                console.error("Erro ao carregar dados:", error);
+                console.error("Erro ao carregar configuração do fabrico:", error);
                 if (!ignorar) {
-                    setErro("Não foi possível carregar configurações e clientes.");
+                    setIsSobDemanda(false);
+                    setClientes([]);
+                    setErro("Não foi possível carregar configurações do fabrico.");
                 }
             } finally {
                 if (!ignorar) setCarregandoClientes(false);
@@ -433,6 +471,19 @@ export default function PedidosCadastrar() {
         setErro("");
     };
 
+    // Função de máscara de data dd/MM/yyyy em tempo real
+    const handleDataPrevistaChange = (e) => {
+        let v = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
+        if (v.length > 8) v = v.slice(0, 8); // Trava em 8 dígitos
+
+        if (v.length > 4) {
+            v = `${v.slice(0, 2)}/${v.slice(2, 4)}/${v.slice(4)}`;
+        } else if (v.length > 2) {
+            v = `${v.slice(0, 2)}/${v.slice(2)}`;
+        }
+        setDataPrevista(v);
+    };
+
     const fecharModalFicha = () => {
         setModalFichaAberto(false);
         setReferenciaParaModal(null);
@@ -453,6 +504,11 @@ export default function PedidosCadastrar() {
             return;
         }
 
+        if (dataPrevista && dataPrevista.length < 10) {
+            setErro("Por favor, insira uma data de previsão completa (dd/mm/aaaa).");
+            return;
+        }
+
         setSalvandoPedido(true);
         setErro(null);
 
@@ -466,7 +522,6 @@ export default function PedidosCadastrar() {
                 );
                 const coresEmUso = pedidosAtivos.map((p) => p.cor.toUpperCase());
 
-                // Resiliência: Usa PALETA_13_CORES
                 const paletaDisponivel = PALETA_13_CORES;
 
                 const corLivre = paletaDisponivel.find(
@@ -482,27 +537,18 @@ export default function PedidosCadastrar() {
                 0,
             );
 
-            // === 3. SELEÇÃO DO NÚMERO DO PEDIDO ===
-            let numeroFinal = parseInt(numeroPedido);
-
-            if (
-                !numeroFinal &&
-                typeof pedidosExistentes !== "undefined" &&
-                pedidosExistentes?.length > 0
-            ) {
-                const maioresNumeros = pedidosExistentes
-                    .map((p) => Number(p.numero))
-                    .filter((n) => !isNaN(n));
-                numeroFinal = maioresNumeros.length > 0 ? Math.max(...maioresNumeros) + 1 : 1;
+            // === AJUSTE DA DATA PARA O BACKEND (ISO-8601) ===
+            let dataFormatadaBackend = undefined;
+            if (dataPrevista && dataPrevista.length === 10) {
+                const [dia, mes, ano] = dataPrevista.split("/");
+                // Converte dd/MM/yyyy para ISO UTC meio-dia (evita bugs de fuso horário no banco de dados)
+                dataFormatadaBackend = new Date(`${ano}-${mes}-${dia}T12:00:00.000Z`).toISOString();
             }
 
-            // Criar o Pedido
             const novoPedido = await createPedido({
-                fabrico_id: fabricoId,
                 cliente_id: clienteSelecionado?.id || null,
-                numero: numeroFinal,
                 finalizado: false,
-                data_prevista: null,
+                data_prevista: dataFormatadaBackend,
                 observacoes: null,
                 quantidade: quantidadeTotalPedido,
                 cor: corDoPedido,
@@ -510,7 +556,6 @@ export default function PedidosCadastrar() {
 
             // === 4. ASSEGURAR ID DA ETAPA ATUAL ===
             let etapaIdFallback = primeiraEtapaId;
-            console.log("Etapa ID Fallback inicial:", etapaIdFallback);
             if (!etapaIdFallback && fabricoId) {
                 try {
                     const etapas = await getAllEtapasByFabricoId(fabricoId);
@@ -524,15 +569,9 @@ export default function PedidosCadastrar() {
                     console.error("Erro ao carregar etapas de segurança:", e);
                 }
             }
-            console.log("Etapa ID Fallback final:", etapaIdFallback);
 
             // === 5. CRIAR AS FICHAS TÉCNICAS E RELAÇÕES ===
             for (const ficha of fichas) {
-                console.log("----------------------");
-                console.log(ficha);
-                console.log("----------------------");
-
-                // Atualizar o produto se a versão da grade foi alterada
                 const pId = ficha.produtoId || ficha.produto_id;
                 if (
                     ficha.gradeVersaoIdNova &&
@@ -544,7 +583,6 @@ export default function PedidosCadastrar() {
                     });
                 }
 
-                // Criação da Ficha Técnica
                 const novaFicha = await createFichaTecnica({
                     pedido_id: novoPedido.id,
                     produto_id: pId,
@@ -555,7 +593,6 @@ export default function PedidosCadastrar() {
                     fabrico_id: fabricoId,
                 });
 
-                // Sincronizar Cores e Itens da Grade
                 if (ficha.selectedColorIds?.length > 0) {
                     await syncFichaTecnicaCores(novaFicha.id, ficha.selectedColorIds);
                 }
@@ -571,43 +608,69 @@ export default function PedidosCadastrar() {
                     await saveFichaTecnicaItens(novaFicha.id, itensParaSalvar);
                 }
 
-                // Sincronizar Facções atribuídas
-                if (ficha.faccaoRows?.length > 0) {
-                    for (const faccao of ficha.faccaoRows) {
+                const etapaIdAtual = ficha.etapa_atual_id || etapaIdFallback;
+                if (etapaIdAtual) {
+                    try {
+                        await iniciarFichaEtapa(novaFicha.id, etapaIdAtual);
+                    } catch (err) {
+                        if (err?.response?.status !== 409) {
+                            console.error("Erro ao registrar ficha_etapa:", err);
+                        }
+                    }
+                }
+
+                // Sincronizar Parceiros atribuídos
+                if (ficha.parceiroRows?.length > 0) {
+                    const totalParceiros = ficha.parceiroRows.length;
+
+                    for (const parceiro of ficha.parceiroRows) {
+                        const precoFormatado = normalizarPrecoOpcional(parceiro.preco);
+
+                        const parceiroIdFinal = parceiro.parceiroId || parceiro.id;
+                        const produtoIdFinal = pId;
+
                         try {
-                            let precoFormatado = 0;
-
-                            if (faccao.preco) {
-                                precoFormatado =
-                                    typeof faccao.preco === "string"
-                                        ? parseFloat(
-                                              faccao.preco
-                                                  .replace(",", ".")
-                                                  .replace("R$ ", "")
-                                                  .trim(),
-                                          ) || 0
-                                        : Number(faccao.preco);
-                            }
-
-                            const faccaoIdFinal = faccao.faccaoId || faccao.id;
-                            const produtoIdFinal = pId; // (Variável pId já extraída no início do seu loop de fichas)
-
-                            if (faccao.isNew === false) {
-                                await updateFaccaoProdutoPrice(
-                                    faccaoIdFinal,
+                            if (parceiro.isNew === false) {
+                                await updateParceiroProdutoPrice(
+                                    parceiroIdFinal,
                                     produtoIdFinal,
                                     precoFormatado,
                                 );
                             } else {
-                                await createFaccaoProduto(
-                                    faccaoIdFinal,
+                                await createParceiroProduto(
+                                    parceiroIdFinal,
                                     produtoIdFinal,
                                     precoFormatado,
                                 );
                             }
                         } catch (err) {
                             console.error(
-                                `Erro ao processar facção ${faccao.faccaoId || faccao.id}:`,
+                                `Erro ao processar parceiro ${parceiro.parceiroId || parceiro.id}:`,
+                                err,
+                            );
+                        }
+                        try {
+                            let valorFinal = undefined;
+                            let quantidadeFinal = undefined;
+
+                            if (totalParceiros === 1) {
+                                quantidadeFinal = Number(ficha.quantidade);
+                                if (precoFormatado !== null) {
+                                    const calculo = quantidadeFinal * precoFormatado;
+                                    valorFinal = Number(calculo.toFixed(2));
+                                }
+                            }
+
+                            await createFichaParceiro(
+                                novaFicha.id,
+                                parceiroIdFinal,
+                                parceiro.operacao || null,
+                                valorFinal,
+                                quantidadeFinal,
+                            );
+                        } catch (err) {
+                            console.error(
+                                `Erro ao criar Ficha-Parceiro para o id ${parceiroIdFinal}`,
                                 err,
                             );
                         }
@@ -627,27 +690,20 @@ export default function PedidosCadastrar() {
     return (
         <>
             <style>{`
-                /* ========================================================
-                   1. SCROLLBAR DA PÁGINA GLOBAL (Aplica na tela inteira)
-                   ======================================================== */
                 ::-webkit-scrollbar {
-                    width: 6px; /* Largura sutil, mas confortável para a página */
+                    width: 6px; 
                     height: 6px;
                 }
                 ::-webkit-scrollbar-track {
-                    background: transparent; /* Trilho invisível para um visual limpo */
+                    background: transparent; 
                 }
                 ::-webkit-scrollbar-thumb {
                     background-color: #d6d6d6;
                     border-radius: 999px;
                 }
                 ::-webkit-scrollbar-thumb:hover {
-                    background-color: #bcbcbc; /* Escurece sutilmente ao passar o mouse */
+                    background-color: #bcbcbc; 
                 }
-
-                /* ========================================================
-                   2. SCROLLBAR INTERNA DOS DROPDOWNS (.scrollbar-sutil)
-                   ======================================================== */
                 .scrollbar-sutil::-webkit-scrollbar { 
                     width: 4px; 
                     height: 4px; 
@@ -656,15 +712,13 @@ export default function PedidosCadastrar() {
                     background-color: #d6d6d6; 
                     border-radius: 999px; 
                 }
-                /* Recuo para o scroll do dropdown respeitar os cantos arredondados de 14px e não vazar */
                 .scrollbar-sutil::-webkit-scrollbar-track {
                     margin-top: 8px;
                     margin-bottom: 8px;
                 }
             `}</style>
-            {/* Contentor principal idêntico ao de Clientes (p-6 pt-0 w-full relative z-0) */}
-            <div className="p-6 pt-0 w-full relative z-0 font-['Outfit',_sans-serif]">
-                {/* Card de Fundo Branco com o mesmo arredondamento, sombra e comportamento responsivo de Clientes */}
+
+            <div className="p-6 pt-0 mt-6 w-full relative z-0 font-['Outfit',_sans-serif]">
                 <div className="bg-white p-10 rounded-[24px] shadow-sm w-full mx-auto">
                     {/* 1. CABEÇALHO: Título da tela e número do pedido */}
                     <div className="mb-6">
@@ -677,7 +731,7 @@ export default function PedidosCadastrar() {
 
                             <div className="flex flex-col gap-0 items-start">
                                 <h1 className="text-[28px] sm:text-[30px] font-light text-[#404040] tracking-tight leading-none">
-                                    {isSobDemanda ? "Novo Pedido" : "Nova Ordem de Produção"}
+                                    {isSobDemanda ? "Novo Pedido" : "Nova Produção"}
                                 </h1>
 
                                 <p className="text-[18px] font-light text-[#898C8F] mt-0.5 leading-none">
@@ -687,61 +741,77 @@ export default function PedidosCadastrar() {
                         </div>
                     </div>
 
-                    {/* 2. SEÇÃO DE INCLUSÃO: Dropdowns para selecionar cliente e referência (produto) */}
+                    {/* 2. SEÇÃO DE INCLUSÃO: Alinhamento horizontal com Dropdowns à esquerda e Previsão na extrema direita */}
+                    {/* 2. SEÇÃO DE INCLUSÃO */}
                     <section className="mb-4">
-                        <h2 className={sectionTitleClass}>Adicionar ficha técnica</h2>
-                        <div className="flex flex-wrap gap-4">
-                            {/* Dropdown de Cliente: Exibido apenas se a fábrica produzir sob demanda */}
-                            {isSobDemanda && (
-                                <div className="w-full max-w-[320px]">
-                                    <DropdownField
-                                        value={clienteSelecionado?.nome || ""}
-                                        placeholder={
-                                            carregandoClientes
-                                                ? "Carregando clientes..."
-                                                : "Selecionar cliente"
-                                        }
-                                        options={opcoesClientes}
-                                        isOpen={openDropdown === "cliente"}
-                                        onToggle={() => toggleDropdown("cliente")}
-                                        onSelect={handleSelecionarCliente}
-                                        isSelectedOption={(option) =>
-                                            String(clienteSelecionado?.id) === option.value
-                                        }
-                                        disabled={carregandoClientes || salvandoPedido}
-                                    />
-                                </div>
-                            )}
+                        <div className="flex flex-wrap gap-4 justify-between items-start">
+                            {/* BLOCO ESQUERDO: Título e Dropdowns de Ficha Técnica */}
+                            <div className="flex flex-col">
+                                <h2 className={sectionTitleClass}>Adicionar ficha técnica</h2>
+                                <div className="flex flex-wrap gap-4">
+                                    {/* Dropdown de Cliente */}
+                                    {isSobDemanda && (
+                                        <div className="w-full max-w-[320px]">
+                                            <DropdownField
+                                                value={clienteSelecionado?.nome || ""}
+                                                placeholder="Selecionar cliente"
+                                                options={opcoesClientes}
+                                                isOpen={openDropdown === "cliente"}
+                                                onToggle={() => toggleDropdown("cliente")}
+                                                onSelect={handleSelecionarCliente}
+                                                isSelectedOption={(option) =>
+                                                    String(clienteSelecionado?.id) === option.value
+                                                }
+                                                disabled={carregandoClientes || salvandoPedido}
+                                                loading={carregandoClientes}
+                                            />
+                                        </div>
+                                    )}
 
-                            {/* Dropdown de Referência: Abre o modal da Ficha Técnica ao selecionar uma opção */}
-                            <div className="w-full max-w-[320px]">
-                                <DropdownField
-                                    value={referenciaSelecionada?.label || ""}
-                                    placeholder={
-                                        isSobDemanda && !clienteSelecionado
-                                            ? "Adicionar referência*"
-                                            : carregandoReferencias
-                                              ? "Carregando referências..."
-                                              : "Adicionar referência*"
-                                    }
-                                    options={opcoesReferencias}
-                                    isOpen={openDropdown === "referencia"}
-                                    onToggle={() => toggleDropdown("referencia")}
-                                    onSelect={handleSelecionarReferencia}
-                                    isSelectedOption={(option) =>
-                                        referenciaSelecionada?.value === option.value
-                                    }
-                                    disabled={
-                                        (isSobDemanda && !clienteSelecionado) ||
-                                        carregandoReferencias ||
-                                        salvandoPedido
-                                    }
+                                    {/* Dropdown de Referência */}
+                                    <div className="w-full max-w-[320px]">
+                                        <DropdownField
+                                            value={referenciaSelecionada?.label || ""}
+                                            placeholder={
+                                                isSobDemanda && !clienteSelecionado
+                                                    ? "Adicionar referência*"
+                                                    : "Adicionar referência*"
+                                            }
+                                            options={opcoesReferencias}
+                                            isOpen={openDropdown === "referencia"}
+                                            onToggle={() => toggleDropdown("referencia")}
+                                            onSelect={handleSelecionarReferencia}
+                                            isSelectedOption={(option) =>
+                                                referenciaSelecionada?.value === option.value
+                                            }
+                                            disabled={
+                                                (isSobDemanda && !clienteSelecionado) ||
+                                                carregandoReferencias ||
+                                                salvandoPedido
+                                            }
+                                            loading={carregandoReferencias}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* BLOCO DIREITO: Título e Input de Previsão de Entrega */}
+                            <div className="flex flex-col w-fit max-w-full">
+                                <h2 className={sectionTitleClass}>Previsão de entrega</h2>
+                                <input
+                                    type="text"
+                                    disabled={salvandoPedido}
+                                    value={dataPrevista}
+                                    onChange={handleDataPrevistaChange}
+                                    placeholder="Data"
+                                    className={`w-full h-[39px] border border-[#898C8F] rounded-[10px] px-3 bg-white outline-none text-[#707070] placeholder:text-[#898C8F]/60 text-sm font-['Outfit',_sans-serif] transition-opacity ${
+                                        salvandoPedido ? "opacity-60 cursor-not-allowed" : ""
+                                    }`}
                                 />
                             </div>
                         </div>
                     </section>
-
-                    {/* 3. TABELA DE RASCUNHOS: Lista todas as fichas técnicas adicionadas neste pedido */}
+                    {/* 3. TABELA DE RASCUNHOS */}
                     <div className="mb-10">
                         <TabelaFichaTecnica
                             fichas={fichas}
@@ -750,7 +820,7 @@ export default function PedidosCadastrar() {
                         />
                     </div>
 
-                    {/* 4. RODAPÉ / AÇÕES DO PEDIDO: Botões de Cancelar e Concluir */}
+                    {/* 4. RODAPÉ / AÇÕES DO PEDIDO */}
                     <div className="flex flex-wrap justify-end gap-4 pt-2">
                         <button
                             type="button"
@@ -760,21 +830,18 @@ export default function PedidosCadastrar() {
                         >
                             Cancelar
                         </button>
-                        <button
+                        <LoadingButton
                             type="button"
-                            disabled={salvandoPedido}
+                            loading={salvandoPedido}
+                            loadingText="Salvando..."
                             onClick={handleConcluirPedido}
-                            className="bg-[#A9E2F2] hover:bg-[#94d6eb] text-white h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px] disabled:opacity-50 flex items-center justify-center"
+                            className="bg-[#A9E2F2] hover:bg-[#A2DCED] text-[#4696AD] h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px] disabled:opacity-50 flex items-center justify-center"
                         >
-                            {salvandoPedido
-                                ? "Salvando..."
-                                : isSobDemanda
-                                  ? "Concluir pedido"
-                                  : "Concluir ordem"}
-                        </button>
+                            Concluir cadastro
+                        </LoadingButton>
                     </div>
 
-                    {/* 5. MENSAGEM DE ERRO GERAL: Exibida caso a orquestração falhe */}
+                    {/* 5. MENSAGEM DE ERRO GERAL */}
                     {erro ? <p className="pt-4 text-sm text-[#D75757] text-right">{erro}</p> : null}
                 </div>
             </div>

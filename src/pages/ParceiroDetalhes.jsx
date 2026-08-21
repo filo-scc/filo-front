@@ -1,54 +1,56 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { excluirFaccao, getFaccaoById } from "../services/faccaoService";
+import { excluirParceiro, getParceiroById } from "../services/parceiroService";
 import { formatarTelefone } from "../utils/formatters";
 
 // Sub-components
-import SecaoEndereco from "../components/faccoes/SecaoEndereco";
+import SecaoEndereco from "../components/parceiros/SecaoEndereco";
 import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import ModalAtencao from "../components/geral/ModalAtencao";
+import { DetailPageSkeleton } from "../components/geral/Loading";
 
-const FaccaoDetalhes = () => {
+const ParceiroDetalhes = () => {
     const { id } = useParams();
     const navigate = useNavigate();
 
-    const [faccao, setFaccao] = useState(null);
+    const [parceiro, setParceiro] = useState(null);
     const [loading, setLoading] = useState(true);
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
     const [modalAtencaoAberto, setModalAtencaoAberto] = useState(false);
+    const [excluindo, setExcluindo] = useState(false);
 
     useEffect(() => {
-        const fetchFaccao = async () => {
+        const fetchParceiro = async () => {
             try {
                 setLoading(true);
                 const userString = localStorage.getItem("user");
                 const usuarioLogado = userString ? JSON.parse(userString) : null;
 
-                const data = await getFaccaoById(id);
+                const data = await getParceiroById(id);
 
-                // Verifica se a facção pertence ao fabrico do usuário
+                // Verifica se o parceiro pertence ao fabrico do usuário
                 if (usuarioLogado && data.fabrico_id !== usuarioLogado.fabrico_id) {
                     setModalAtencaoAberto(true);
-                    return; // Interrompe para não setar a facção no estado
+                    return; // Interrompe para não setar o parceiro no estado
                 }
 
-                setFaccao(data);
+                setParceiro(data);
             } catch (error) {
-                console.error("Erro ao buscar facção", error);
+                console.error("Erro ao buscar parceiro", error);
                 setModalAtencaoAberto(true);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchFaccao();
+        fetchParceiro();
     }, [id]);
 
     const handleAcessoNegadoConfirm = () => {
         setModalAtencaoAberto(false);
-        navigate("/faccoes", { replace: true });
+        navigate("/Parceiros", { replace: true });
     };
 
     const abrirModalExclusao = () => {
@@ -56,36 +58,49 @@ const FaccaoDetalhes = () => {
     };
 
     const handleConfirmarExclusao = async () => {
-        if (!faccao) return;
+        if (!parceiro || excluindo) return;
         try {
-            await excluirFaccao(faccao.id);
+            setExcluindo(true);
+            await excluirParceiro(parceiro.id);
             setModalExclusaoAberto(false);
             setModalConfirmacaoAberto(true);
         } catch (error) {
-            console.error("Erro ao excluir facção:", error);
-            alert("Erro ao excluir facção.");
+            console.error("Erro ao excluir parceiro:", error);
+            alert("Erro ao excluir parceiro.");
+        } finally {
+            setExcluindo(false);
         }
     };
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-screen">
-                <p className="text-[#4696AD] font-Outfit">Carregando detalhes...</p>
+            <div className="p-6 pt-0 mt-6 w-full">
+                <div className="bg-white p-8 rounded-[24px] shadow-sm w-full mx-auto">
+                    <h1 className="flex items-center gap-3 text-[28px] font-light mb-6">
+                        <img
+                            src="/maquina-costura-preta.png"
+                            alt="Ícone"
+                            className="w-[30px] h-[30px]"
+                        />
+                        Detalhes do parceiro
+                    </h1>
+                    <DetailPageSkeleton variant="parceiro" />
+                </div>
             </div>
         );
     }
 
-    if (!faccao && !modalAtencaoAberto) {
+    if (!parceiro && !modalAtencaoAberto) {
         return (
             <div className="p-6">
-                <p>Facção não encontrada.</p>
-                <button onClick={() => navigate("/faccoes")}>Voltar</button>
+                <p>Parceiro não encontrado.</p>
+                <button onClick={() => navigate("/Parceiros")}>Voltar</button>
             </div>
         );
     }
 
     return (
-        <div className="p-6 pt-0 w-full">
+        <div className="p-6 pt-0 mt-6 w-full">
             <div className="bg-white p-8 rounded-[24px] shadow-sm w-full mx-auto">
                 <h1 className="flex items-center gap-3 text-[28px] font-light mb-6">
                     <img
@@ -93,47 +108,63 @@ const FaccaoDetalhes = () => {
                         alt="Ícone"
                         className="w-[30px] h-[30px]"
                     />
-                    Detalhes de facção
+                    Detalhes do parceiro
                 </h1>
 
-                {/* Dados gerais */}
+                {/* Etapa de Produção + Dados gerais */}
                 <div className="mb-6">
-                    <h3 className="text-[20px] font-Outfit font-light text-[#404040] mb-4">
-                        Dados gerais
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        <div>
+                    <div className="flex">
+                        <div className="w-[250px] shrink-0">
+                            <h3 className="text-[20px] font-Outfit font-light text-[#404040] mb-4">
+                                Etapa de Produção
+                            </h3>
                             <p className="text-[20px] font-Outfit font-light text-[#4696AD] block">
-                                Nome
+                                Etapa
                             </p>
                             <p className="text-[16px] font-Outfit font-light text-[#898c8f] leading-none">
-                                {faccao.nome}
+                                {parceiro.categoria}
                             </p>
                         </div>
 
-                        <div>
-                            <p className="text-[20px] font-Outfit font-light text-[#4696AD] block">
-                                Nome do responsável
-                            </p>
-                            <p className="text-[16px] font-Outfit font-light text-[#898c8f] leading-none">
-                                {faccao.responsavel || "Não informado"}
-                            </p>
-                        </div>
+                        <div className="flex-1">
+                            <h3 className="text-[20px] font-Outfit font-light text-[#404040] mb-4">
+                                Dados gerais
+                            </h3>
+                            <div className="flex gap-6">
+                                <div className="w-[200px] shrink-0">
+                                    <p className="text-[20px] font-Outfit font-light text-[#4696AD] block">
+                                        Nome
+                                    </p>
+                                    <p className="text-[16px] font-Outfit font-light text-[#898c8f] leading-none">
+                                        {parceiro.nome}
+                                    </p>
+                                </div>
 
-                        <div>
-                            <p className="text-[20px] font-Outfit font-light text-[#4696AD] block">
-                                Telefone
-                            </p>
-                            <p className="text-[16px] font-Outfit font-light text-[#898c8f] leading-none">
-                                {faccao.telefone
-                                    ? formatarTelefone(faccao.telefone)
-                                    : "Não informado"}
-                            </p>
+                                <div className="w-[250px] shrink-0">
+                                    <p className="text-[20px] font-Outfit font-light text-[#4696AD] block">
+                                        Nome do responsável
+                                    </p>
+                                    <p className="text-[16px] font-Outfit font-light text-[#898c8f] leading-none">
+                                        {parceiro.responsavel || "Não informado"}
+                                    </p>
+                                </div>
+
+                                <div className="ml-10">
+                                    <p className="text-[20px] font-Outfit font-light text-[#4696AD] block">
+                                        Telefone
+                                    </p>
+                                    <p className="text-[16px] font-Outfit font-light text-[#898c8f] leading-none">
+                                        {parceiro.telefone
+                                            ? formatarTelefone(parceiro.telefone)
+                                            : "Não informado"}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <SecaoEndereco endereco={faccao.endereco} />
+                <SecaoEndereco endereco={parceiro.endereco} />
 
                 {/* financeiro */}
                 <div className="mt-7 mb-6">
@@ -143,34 +174,34 @@ const FaccaoDetalhes = () => {
 
                     <div>
                         <p className="text-[20px] font-Outfit font-light text-[#4696AD] block">
-                            {faccao.forma_pagamento || "Forma de pagamento"}
+                            {parceiro.forma_pagamento || "Forma de pagamento"}
                         </p>
 
                         {/* Lógica para PIX */}
-                        {faccao.forma_pagamento === "PIX" && (
+                        {parceiro.forma_pagamento === "PIX" && (
                             <p className="text-[16px] font-Outfit font-light text-[#898c8f] leading-none">
-                                {faccao.chave_pix || "Chave pix não informada"}
+                                {parceiro.chave_pix || "Chave pix não informada"}
                             </p>
                         )}
 
                         {/* Lógica para TED */}
-                        {faccao.forma_pagamento === "TED" && (
+                        {parceiro.forma_pagamento === "TED" && (
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                                 <p className="text-[16px] font-Outfit font-light text-[#898c8f]">
-                                    <strong>Banco:</strong> {faccao.banco}
+                                    <strong>Banco:</strong> {parceiro.banco}
                                 </p>
                                 <p className="text-[16px] font-Outfit font-light text-[#898c8f]">
-                                    <strong>Agência:</strong> {faccao.agencia}
+                                    <strong>Agência:</strong> {parceiro.agencia}
                                 </p>
                                 <p className="text-[16px] font-Outfit font-light text-[#898c8f]">
-                                    <strong>Conta:</strong> {faccao.conta}
+                                    <strong>Conta:</strong> {parceiro.conta}
                                 </p>
                             </div>
                         )}
                     </div>
 
                     {/* Lógica para quando NÃO for nem PIX nem TED */}
-                    {faccao.forma_pagamento !== "PIX" && faccao.forma_pagamento !== "TED" && (
+                    {parceiro.forma_pagamento !== "PIX" && parceiro.forma_pagamento !== "TED" && (
                         <p className="text-[16px] font-Outfit font-light text-[#898c8f]">
                             Forma de pagamento não informada
                         </p>
@@ -180,7 +211,7 @@ const FaccaoDetalhes = () => {
                 {/* Ações */}
                 <div className="flex justify-between items-center mt-10 w-full">
                     <button
-                        onClick={() => navigate("/faccoes")}
+                        onClick={() => navigate("/parceiros")}
                         className="w-[147px] h-[39px] rounded-[18.9px] bg-[#F3F4FA] border border-[#4696ad] text-[#4696ad] font-Outfit text-[16px] transition-colors hover:bg-[#E1F1F6]"
                     >
                         Voltar
@@ -191,14 +222,14 @@ const FaccaoDetalhes = () => {
                             onClick={() => abrirModalExclusao()}
                             className="w-[189px] h-[39px] rounded-[18.9px] bg-[#D75757] text-white font-Outfit text-[16px] transition-colors hover:bg-[#d74646]"
                         >
-                            Excluir Facção
+                            Excluir Parceiro
                         </button>
 
                         <button
-                            onClick={() => navigate(`/faccoes/editar/${id}`)}
+                            onClick={() => navigate(`/parceiros/editar/${id}`)}
                             className="w-[189px] h-[39px] rounded-[18.9px] bg-[#a9e2f2] text-[#4696ad] font-Outfit text-[16px] transition-colors hover:bg-[#A2DCED]"
                         >
-                            Editar Facção
+                            Editar Parceiro
                         </button>
                     </div>
                 </div>
@@ -208,13 +239,15 @@ const FaccaoDetalhes = () => {
                 isOpen={modalExclusaoAberto}
                 onClose={() => setModalExclusaoAberto(false)}
                 onConfirm={handleConfirmarExclusao}
-                nomeItem={faccao?.nome}
-                tipoItem="a facção"
+                titulo="Excluir parceiro"
+                nomeItem={parceiro?.nome}
+                tipoItem="o parceiro"
+                loading={excluindo}
             />
 
             <ModalConfirmacao
                 isOpen={modalConfirmacaoAberto}
-                onClose={() => navigate("/faccoes", { replace: true })}
+                onClose={() => navigate("/Parceiros", { replace: true })}
                 type="excluído"
             />
 
@@ -222,10 +255,10 @@ const FaccaoDetalhes = () => {
                 isOpen={modalAtencaoAberto}
                 onConfirm={handleAcessoNegadoConfirm}
                 titulo="Atenção!"
-                mensagem="Esta facção não pertence ou não existe no seu fabrico. Você será redirecionado para a lista de facções."
+                mensagem="Este parceiro não pertence ou não existe no seu fabrico. Você será redirecionado para a lista de parceiros."
             />
         </div>
     );
 };
 
-export default FaccaoDetalhes;
+export default ParceiroDetalhes;

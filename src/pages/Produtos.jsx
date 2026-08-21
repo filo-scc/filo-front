@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { getProdutosByFabrico } from "../services/produtoService";
 import { useNavigate } from "react-router-dom";
+import { ProductGridSkeleton } from "../components/geral/Loading";
 
 // Componente do Card
 const ProdutoCard = ({ id, nome, tipo, data, foto }) => {
@@ -13,7 +14,18 @@ const ProdutoCard = ({ id, nome, tipo, data, foto }) => {
         >
             {/* Contêiner da Imagem */}
             <div className="relative w-full h-[155px] bg-white rounded-t-[14px] rounded-b-[4px] overflow-hidden">
-                <img src={foto} alt={nome} className="w-full h-full object-cover" />
+                {/* VALIDAÇÃO DA IMAGEM */}
+                {foto ? (
+                    <img src={foto} alt={nome} className="w-full h-full object-cover" />
+                ) : (
+                    <div className="w-full h-full bg-[#E5E7EB] flex items-center justify-center text-center p-4">
+                        <img
+                            src="/image-delete-02-2.png"
+                            alt="Sem imagem"
+                            className="w-[65px] h-[65px] mb-2 object-contain"
+                        />
+                    </div>
+                )}
 
                 {/* Overlay Gradiente: Azul do ModalReferencias (40% opacidade) */}
                 <div className="absolute inset-0 z-10 bg-gradient-to-t from-[#4696AD]/40 via-transparent via-50% to-transparent" />
@@ -23,6 +35,7 @@ const ProdutoCard = ({ id, nome, tipo, data, foto }) => {
                     <img
                         src="/etiqueta-branca.png"
                         className="w-[14px] h-[14px] shrink-0 object-contain"
+                        alt="Etiqueta"
                     />
                     <span className="text-white text-[14px] font-normal tracking-wide drop-shadow-sm truncate block">
                         {nome}
@@ -70,7 +83,7 @@ export default function Produtos() {
     }, [fabricoId]);
 
     return (
-        <div className="p-6 pt-0 font-['Outfit',_sans-serif]">
+        <div className="p-6 pt-0 mt-6 font-['Outfit',_sans-serif]">
             {/* Container Branco Principal */}
             <div className="bg-white rounded-[24px] shadow-sm min-h-[400px] w-full overflow-hidden pb-8">
                 {/* Cabeçalho */}
@@ -109,10 +122,10 @@ export default function Produtos() {
                             {/* Botão Cadastrar Produto */}
                             <button
                                 onClick={() => navigate("/produtos/cadastar")}
-                                className="bg-[#A9E2F2] hover:bg-[#8acbdc] text-white w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors"
+                                className="bg-[#A9E2F2] hover:bg-[#A2DCED] text-[#4696AD] w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors"
                             >
                                 <img
-                                    src="/adicionar-produtos.png"
+                                    src="/produtos-azul.png"
                                     alt="Adicionar produto"
                                     className="w-[20px] h-[20px]"
                                 />
@@ -128,9 +141,7 @@ export default function Produtos() {
                      grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
                 >
                     {loading ? (
-                        <div className="col-span-full flex justify-center py-10 text-[#4696AD]">
-                            Carregando produtos...
-                        </div>
+                        <ProductGridSkeleton />
                     ) : produtos.length === 0 ? (
                         <div className="col-span-full flex justify-center py-10 text-gray-400 font-light">
                             Nenhum produto encontrado.
@@ -148,7 +159,7 @@ export default function Produtos() {
                                         ? `Criado em ${new Date(produto.created_at).toLocaleDateString()}`
                                         : "Sem data"
                                 }
-                                foto={produto.foto || "https://via.placeholder.com/400x300"}
+                                foto={produto.foto}
                             />
                         ))
                     )}

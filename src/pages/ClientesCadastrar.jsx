@@ -9,6 +9,7 @@ import {
     vincularProdutoAoCliente,
 } from "../services/clientesService";
 import { apenasNumeros, formatarCep, formatarCnpj, formatarTelefone } from "../utils/formatters";
+import { LoadingButton, ReferenceCardsSkeleton } from "../components/geral/Loading";
 
 const sectionTitleClass = "text-[20px] font-light text-[#404040] mb-4 font-['Outfit',_sans-serif]";
 
@@ -112,14 +113,14 @@ export default function ClientesCadastrar() {
         usuarioLogado?.fabrico?.id,
     );
 
-    const faccaoId = primeiroNumeroValido(
-        usuarioLogado?.faccao_id,
-        usuarioLogado?.faccaoId,
-        usuarioLogado?.faccao?.id,
-        usuarioLogado?.faccao?.faccao_id,
-        usuarioLogado?.faccao?.[0]?.id,
-        usuarioLogado?.faccao?.[0]?.faccao_id,
-        usuarioLogado?.usuario?.faccao_id,
+    const parceiroId = primeiroNumeroValido(
+        usuarioLogado?.parceiro_id,
+        usuarioLogado?.parceiroId,
+        usuarioLogado?.parceiro?.id,
+        usuarioLogado?.parceiro?.parceiro_id,
+        usuarioLogado?.parceiro?.[0]?.id,
+        usuarioLogado?.parceiro?.[0]?.parceiro_id,
+        usuarioLogado?.usuario?.parceiro_id,
     );
 
     useEffect(() => {
@@ -227,7 +228,7 @@ export default function ClientesCadastrar() {
             complemento: valorOuUndefined(form.complemento),
             cidade: valorOuUndefined(form.cidade),
             estado: valorOuUndefined(form.estado),
-            faccao_id: numeroOuUndefined(faccaoId),
+            parceiro_id: numeroOuUndefined(parceiroId),
         };
 
         const payload = {
@@ -262,11 +263,12 @@ export default function ClientesCadastrar() {
                 const clientes = await getClientes(fabricoIdNumerico);
                 const clienteRecemCriado = [...(clientes || [])].reverse().find((cliente) => {
                     const cnpjCliente = valorOuUndefined(apenasNumeros(cliente?.cnpj));
-                    return (
-                        cnpjCliente &&
-                        cnpjCliente === cnpjNumerico &&
-                        String(cliente?.nome || "").trim() === nome
-                    );
+
+                    const correspondenciaCnpj = cnpjCliente === cnpjNumerico;
+
+                    const mesmoNome = String(cliente?.nome || "").trim() === nome;
+
+                    return correspondenciaCnpj && mesmoNome;
                 });
 
                 clienteId = primeiroNumeroValido(
@@ -315,9 +317,9 @@ export default function ClientesCadastrar() {
     };
 
     return (
-        <div className="w-full max-w-[1200px] xl:max-w-none mx-auto font-['Outfit',_sans-serif]">
-            <div className="bg-white p-8 sm:p-10 rounded-[32px] shadow-[0_8px_40px_rgba(70,150,173,0.08)] border border-[#F0F4F6] w-full">
-                <div className="flex items-center gap-3 mb-10">
+        <div className="p-6 pt-0 mt-6 w-full">
+            <div className="bg-white p-8 rounded-[24px] shadow-sm w-full mx-auto">
+                <div className="flex items-center gap-3 mb-8 pl-6 font-['Outfit',_sans-serif]">
                     <img
                         src="/add-star-preto.png"
                         alt=""
@@ -428,14 +430,15 @@ export default function ClientesCadastrar() {
                     >
                         Cancelar
                     </button>
-                    <button
+                    <LoadingButton
                         type="button"
                         onClick={handleCadastrar}
-                        disabled={salvando}
-                        className="bg-[#A9E2F2] hover:bg-[#94d6eb] disabled:opacity-60 disabled:cursor-not-allowed text-white h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px]"
+                        loading={salvando}
+                        loadingText="Salvando..."
+                        className="bg-[#A9E2F2] hover:bg-[#A2DCED] disabled:opacity-60 disabled:cursor-not-allowed text-[#4696AD] h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px]"
                     >
-                        {salvando ? "Salvando..." : "Concluir cadastro"}
-                    </button>
+                        Concluir cadastro
+                    </LoadingButton>
                 </div>
                 {erroCadastro ? (
                     <p className="pt-4 text-sm text-[#D75757] text-right">{erroCadastro}</p>
@@ -487,11 +490,9 @@ export default function ClientesCadastrar() {
                             </div>
                         </div>
 
-                        <div className="max-h-[280px] overflow-y-auto pr-2">
+                        <div className="max-h-[280px] overflow-y-auto pr-2 scrollbar-sutil">
                             {loadingReferencias ? (
-                                <div className="flex justify-center items-center h-[150px] text-[#4696AD]">
-                                    Buscando produtos...
-                                </div>
+                                <ReferenceCardsSkeleton />
                             ) : produtosDisponiveis.length === 0 ? (
                                 <div className="flex justify-center items-center h-[150px] text-gray-500 font-light font-Outfit">
                                     Nenhuma nova referência encontrada.

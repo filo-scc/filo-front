@@ -1,14 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 import { getFabricoById } from "../services/fabricoService";
 
 export function Sidebar() {
     const [hoveredPath, setHoveredPath] = useState(null);
-    const [isSobDemanda, setIsSobDemanda] = useState(true);
+    const navigate = useNavigate();
+    const [producaoSobDemanda, setProducaoSobDemanda] = useState(null);
 
     const usuarioLogado = JSON.parse(localStorage.getItem("user") || "{}");
     const fabricoId = usuarioLogado?.fabrico_id;
+
+    const labelNovaFicha =
+        producaoSobDemanda === null ? "" : producaoSobDemanda ? "Novo pedido" : "Nova produção";
 
     useEffect(() => {
         if (!fabricoId) {
@@ -23,11 +27,10 @@ export function Sidebar() {
 
                 if (ignorar) return;
 
-                // Armazena o valor booleano vindo do banco no seu estado
-                // Se for true (produz sob demanda), vira true. Se for false, vira false.
-                setIsSobDemanda(Boolean(response?.fabricacao_sob_demanda));
+                setProducaoSobDemanda(response?.fabricacao_sob_demanda === true);
             } catch (error) {
                 console.error("Erro ao carregar dados do fabrico na Sidebar:", error);
+                setProducaoSobDemanda(false);
             }
         };
 
@@ -39,30 +42,41 @@ export function Sidebar() {
     }, [fabricoId]);
 
     const menuItems = useMemo(() => {
-        return [
+        const items = [
             { name: "Início", slug: "inicio", path: "/" },
-            // Condicional: se isSobDemanda for true -> "Pedidos". Se for false -> "Produções"
-            { name: isSobDemanda ? "Pedidos" : "Produções", slug: "pedidos", path: "/pedidos" },
-            { name: "Facções", slug: "faccoes", path: "/faccoes" },
-            { name: "Clientes", slug: "clientes", path: "/clientes" },
+            {
+                name: producaoSobDemanda ? "Pedidos" : "Produções",
+                slug: "pedidos",
+                path: "/pedidos",
+            },
+            { name: "Parceiros", slug: "parceiros", path: "/parceiros" },
             { name: "Produtos", slug: "produtos", path: "/produtos" },
-            { name: "Estoque", slug: "estoque", path: "/estoque" },
+            { name: "Aviamentos", slug: "aviamentos", path: "/aviamentos" },
             { name: "Financeiro", slug: "financeiro", path: "/financeiro" },
             { name: "Configurações", slug: "configuracoes", path: "/configuracoes" },
         ];
-    }, [isSobDemanda]);
+
+        if (producaoSobDemanda) {
+            items.splice(3, 0, { name: "Clientes", slug: "clientes", path: "/clientes" });
+        }
+
+        return items;
+    }, [producaoSobDemanda]);
 
     return (
-        <aside className="w-[219px] h-screen pl-[24px] flex flex-col items-center py-8 gap-[32px] bg-transparent overflow-y-auto">
+        <aside className="w-[219px] h-screen pl-[24px] flex flex-col items-center py-8 gap-[32px] bg-transparent overflow-y-auto scrollbar-sutil">
             {/* Logo Filo */}
             <div className="w-full pl-[53px] flex justify-start">
                 <img src="/filo-logo.png" alt="Filo" className="h-[47px] w-auto" />
             </div>
 
             {/* 1. Botão Nova Ficha */}
-            <button className="w-[169px] h-[39px] min-h-[39px] bg-[#A9E2F2] rounded-[18.5px] flex items-center justify-start px-4 gap-3 transition-all duration-200 shadow-sm hover:bg-[#8ecce0]">
-                <img src="/nova-ficha.png" alt="" className="w-5 h-5" />
-                <span className="text-[#FFFFFF] font-normal text-sm">Nova ficha</span>
+            <button
+                className="w-[169px] h-[39px] min-h-[39px] bg-[#A9E2F2] rounded-[18.5px] flex items-center justify-start px-4 gap-3 transition-all duration-200 shadow-sm hover:bg-[#A2DCED]"
+                onClick={() => navigate("/pedidos/cadastrar")}
+            >
+                <img src="/pedidos-azul.png" alt="" className="w-5 h-5" />
+                <span className="text-[#4696AD] font-normal text-sm">{labelNovaFicha}</span>
             </button>
 
             {/* 2. Menu Itens */}

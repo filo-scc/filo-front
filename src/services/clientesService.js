@@ -82,8 +82,6 @@ export const cadastrarCliente = async (data) => {
                 ? { ...payloadBase, endereco }
                 : payloadBase;
 
-        console.log("[clientesService] payload POST /clientes:", payload);
-
         const response = await api.post("/clientes", payload);
         return response.data;
     } catch (error) {

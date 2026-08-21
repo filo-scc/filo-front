@@ -11,6 +11,21 @@ export async function syncFichaTecnicaCores(fichaTecnicaId, coresIds) {
     return unwrap(response);
 }
 
+export async function updateFichaTecnicaItem(fichaIemId, data) {
+    const response = await api.put(`fichas-tecnicas/itens/${fichaIemId}`, data);
+    return unwrap(response);
+}
+
+export async function deleteFichaTecnicaItem(fichaItemId) {
+    const response = await api.delete(`fichas-tecnicas/itens/${fichaItemId}`);
+    return unwrap(response);
+}
+
+export async function createFichaTecnicaItem(fichaTecnicaId, data) {
+    const response = await api.post(`/fichas-tecnicas/item/${fichaTecnicaId}`, data);
+    return unwrap(response);
+}
+
 export async function removeFichaTecnicaCores(fichaTecnicaId, coresIds) {
     const response = await api.delete(`/fichas-tecnicas/${fichaTecnicaId}/cores`, {
         data: { cores_ids: coresIds },
@@ -30,16 +45,21 @@ export async function clearFichaTecnicaItens(fichaTecnicaId) {
     return unwrap(response);
 }
 
-export async function updateFaccaoProdutoPrice(faccaoId, produtoId, preco) {
-    const response = await api.put(`/faccoes-produtos/${faccaoId}/${produtoId}`, {
+export async function getProdutoParceiro(produtoId, parceiroId) {
+    const response = await api.get(`/parceiros-produtos/${parceiroId}/${produtoId}`);
+    return unwrap(response);
+}
+
+export async function updateParceiroProdutoPrice(parceiroId, produtoId, preco) {
+    const response = await api.put(`/parceiros-produtos/${parceiroId}/${produtoId}`, {
         preco,
     });
 
     return unwrap(response);
 }
 
-export async function createFaccaoProduto(faccaoId, produtoId, preco) {
-    const response = await api.post(`/faccoes-produtos/${faccaoId}/${produtoId}`, {
+export async function createParceiroProduto(parceiroId, produtoId, preco) {
+    const response = await api.post(`/parceiros-produtos/${parceiroId}/${produtoId}`, {
         preco,
     });
 

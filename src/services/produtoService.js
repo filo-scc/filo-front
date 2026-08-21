@@ -20,13 +20,13 @@ export const getProdutosByFabrico = async (fabricoId) => {
     }
 };
 
-export const getFaccaoByProduto = async (produtoId) => {
+export const getParceiroByProduto = async (produtoId) => {
     try {
-        const response = await api.get(`/faccoes-produtos/produto/${produtoId}`);
+        const response = await api.get(`/parceiros-produtos/produto/${produtoId}`);
 
         return response.data;
     } catch (error) {
-        console.error("Erro ao buscar facções do produto:", error);
+        console.error("Erro ao buscar parceiros do produto:", error);
         throw error;
     }
 };
@@ -71,8 +71,28 @@ export const getAviamentosByFabrico = async (fabricoId) => {
     return response.data;
 };
 
+export const getTiposProdutoByFabrico = async () => {
+    const response = await api.get("/tipo-produto");
+    return response.data;
+};
+
+export const criarTipoProduto = async (data) => {
+    const response = await api.post("/tipo-produto", data);
+    return response.data;
+};
+
 export const vincularProdutoAviamento = async (data) => {
     const response = await api.post("/produto-aviamento", data);
+    return response.data;
+};
+
+export const desvincularProdutoAviamento = async (produtoAviamentoId) => {
+    const response = await api.delete(`/produto-aviamento/${produtoAviamentoId}`);
+    return response.data;
+};
+
+export const atualizarProdutoAviamento = async (produtoAviamentoId, data) => {
+    const response = await api.patch(`/produto-aviamento/${produtoAviamentoId}`, data);
     return response.data;
 };
 

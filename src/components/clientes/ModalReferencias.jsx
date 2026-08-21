@@ -3,6 +3,7 @@ import {
     getUnassociatedProductsForClient,
     vincularProdutoAoCliente,
 } from "../../services/clientesService";
+import { LoadingButton, ReferenceCardsSkeleton } from "../geral/Loading";
 
 export default function ModalReferencias({
     isOpen,
@@ -101,22 +102,6 @@ export default function ModalReferencias({
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
             onClick={handleClose}
         >
-            {/* Estilos locais para deixar o scroll extremamente sutil apenas neste modal */}
-            <style>
-                {`
-          .scrollbar-sutil::-webkit-scrollbar {
-            width: 4px;
-          }
-          .scrollbar-sutil::-webkit-scrollbar-track {
-            background: transparent;
-          }
-          .scrollbar-sutil::-webkit-scrollbar-thumb {
-            background-color: #d1d5db; /* gray-300 */
-            border-radius: 10px;
-          }
-        `}
-            </style>
-
             {/* Container do Modal - Largura aumentada para 730px */}
             <div
                 className="bg-[#F3F4FA] w-full max-w-[730px] rounded-[24px] shadow-[4px_4px_10px_2px_rgba(0,0,0,0.15)] p-8"
@@ -158,12 +143,10 @@ export default function ModalReferencias({
 
                 {/* O -mr-6 empurra a barra de rolagem para a borda direita (invadindo o padding do pai). 
             O pr-4 devolve o espaço para os cards não ficarem colados na barra de rolagem. 
-        */}
+                */}
                 <div className="max-h-[280px] overflow-y-auto -mr-6 pr-4 scrollbar-sutil">
                     {loadingFetch ? (
-                        <div className="flex justify-center items-center h-[150px] text-[#4696AD]">
-                            Buscando produtos...
-                        </div>
+                        <ReferenceCardsSkeleton />
                     ) : produtos.length === 0 ? (
                         <div className="flex justify-center items-center h-[150px] text-gray-500 font-light font-Outfit">
                             Nenhuma nova referência encontrada.
@@ -251,17 +234,19 @@ export default function ModalReferencias({
 
                 {/* Botão de concluir com as novas cores */}
                 <div className="mt-8 flex justify-end">
-                    <button
+                    <LoadingButton
                         onClick={handleAdicionar}
-                        disabled={loadingSubmit || selecionados.length === 0}
+                        loading={loadingSubmit}
+                        loadingText="Adicionando..."
+                        disabled={selecionados.length === 0}
                         className={`w-[189px] h-[39px] rounded-[18.9px] font-['Outfit',_sans-serif] text-[16px] transition-colors bg-[#A9E2F2] text-[#4696AD] ${
                             selecionados.length > 0 && !loadingSubmit
-                                ? "hover:bg-[#8acbdc]" // Leve hover para dar feedback
+                                ? "hover:bg-[#A2DCED]" // Leve hover para dar feedback
                                 : "opacity-50 cursor-not-allowed" // Transparente quando inativo
                         }`}
                     >
-                        {loadingSubmit ? "Adicionando..." : "Adicionar"}
-                    </button>
+                        Adicionar
+                    </LoadingButton>
                 </div>
             </div>
         </div>

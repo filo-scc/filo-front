@@ -1,7 +1,14 @@
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
+import { useAuth } from "@/context/AuthContext";
 
 export function Layout({ children }) {
+    const { loading } = useAuth();
+
+    if (loading) {
+        return null;
+    }
+
     return (
         <div
             className="min-h-screen flex flex-col"
@@ -18,10 +25,9 @@ export function Layout({ children }) {
                 </div>
 
                 {/* Área de Conteúdo */}
-                <div className="flex-1 ml-[219px] flex flex-col">
+                <div className="flex-1 ml-[219px] flex flex-col min-w-0 overflow-hidden">
                     <Header />
-
-                    <main className="flex-1 p-6">{children}</main>
+                    <main className="flex-1 overflow-hidden">{children}</main>
                 </div>
             </div>
 

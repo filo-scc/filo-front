@@ -11,6 +11,7 @@ import ModalReferencias from "../components/clientes/ModalReferencias";
 import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import ModalAtencao from "../components/geral/ModalAtencao";
+import { DetailPageSkeleton } from "../components/geral/Loading";
 
 export default function ClienteDetalhes() {
     const { id } = useParams();
@@ -24,6 +25,7 @@ export default function ClienteDetalhes() {
     const [cliente, setCliente] = useState(null);
     const [produtos, setProdutos] = useState([]);
     const [modalReferenciasAberto, setModalReferenciasAberto] = useState(false);
+    const [excluindo, setExcluindo] = useState(false);
 
     const recarregarTabela = async () => {
         try {
@@ -71,23 +73,27 @@ export default function ClienteDetalhes() {
     }, [id]);
 
     const handleConfirmarExclusao = async () => {
-        if (!cliente) return;
+        if (!cliente || excluindo) return;
         try {
+            setExcluindo(true);
             await excluirCliente(cliente.id);
             setModalExclusaoAberto(false);
             setModalConfirmacaoAberto(true);
         } catch {
             alert("Erro ao excluir cliente.");
+        } finally {
+            setExcluindo(false);
         }
     };
 
     if (loading) {
         return (
             <Layout>
-                <div className="flex items-center justify-center h-screen">
-                    <p className="text-[#4696AD] animate-pulse font-Outfit">
-                        Carregando detalhes...
-                    </p>
+                <div className="p-6 pt-0 mt-6 w-full flex justify-center">
+                    <div className="bg-white p-8 rounded-[24px] shadow-sm w-full min-h-[400px]">
+                        <DetalhesHeader title="Detalhes de cliente" />
+                        <DetailPageSkeleton />
+                    </div>
                 </div>
             </Layout>
         );
@@ -96,7 +102,7 @@ export default function ClienteDetalhes() {
     return (
         <Layout>
             {cliente && (
-                <div className="p-6 pt-0 w-full flex justify-center">
+                <div className="p-6 pt-0 mt-6 w-full flex justify-center">
                     <div className="bg-white p-8 rounded-[24px] shadow-sm w-full min-h-[400px]">
                         <DetalhesHeader title="Detalhes de cliente" />
 
@@ -150,8 +156,10 @@ export default function ClienteDetalhes() {
                 isOpen={modalExclusaoAberto}
                 onClose={() => setModalExclusaoAberto(false)}
                 onConfirm={handleConfirmarExclusao}
+                titulo="Excluir cliente"
                 nomeItem={cliente?.nome}
                 tipoItem="o cliente"
+                loading={excluindo}
             />
 
             <ModalConfirmacao

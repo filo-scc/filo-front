@@ -6,11 +6,12 @@ import { getFabricoById } from "../../services/fabricoService";
 import { getCoresByFabricoId } from "../../services/corService";
 import CorModal from "./CorModal";
 import EstampaModal from "./EstampaModal";
-import { getFaccoesByFabrico } from "../../services/faccaoService";
+import { getParceirosByFabrico } from "../../services/parceiroService";
 import { getGradesLiberadasByFabricoId } from "../../services/gradeService";
-import { getFaccaoByProduto } from "../../services/produtoService";
+import { getParceiroByProduto } from "../../services/produtoService";
 
-import ProdutoFaccoes from "../produtos/ProdutoFaccoes";
+import ProdutoParceiros from "../produtos/ProdutoParceiros";
+import { InlineLoading, SkeletonBox } from "../geral/Loading";
 
 function FloatingInput({ label, value, readOnly, onChange, placeholder }) {
     return (
@@ -135,8 +136,7 @@ function syncMatrix(prevMatrix, selectedColorIds, sizeItems) {
 
 const BORDER_DARK_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#7B7D80" };
 const BORDER_LIGHT_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#E0E0E0" };
-const BORDER_SHELL_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#D9D9D9" };
-const FACCAO_ROW_HEIGHT = 40;
+const PARCEIRO_ROW_HEIGHT = 40;
 
 export default function FichaTecnicaModal({
     isOpen,
@@ -152,26 +152,26 @@ export default function FichaTecnicaModal({
 
     const [fabricoInfo, setFabricoInfo] = useState(null);
     const [availableColors, setAvailableColors] = useState([]);
-    const [availableFaccoes, setAvailableFaccoes] = useState([]);
+    const [availableParceiros, setAvailableParceiros] = useState([]);
     const [gradeOptions, setGradeOptions] = useState([]);
 
     const [selectedGradeVersionId, setSelectedGradeVersionId] = useState(null);
     const [selectedColorIds, setSelectedColorIds] = useState([]);
     const [matrix, setMatrix] = useState({});
-    const [faccaoRows, setFaccaoRows] = useState([]);
+    const [parceiroRows, setParceiroRows] = useState([]);
 
     const [colorDropdownOpen, setColorDropdownOpen] = useState(false);
     const [corModalOpen, setCorModalOpen] = useState(false);
     const [estampaModalOpen, setEstampaModalOpen] = useState(false);
     const [gradeDropdownOpen, setGradeDropdownOpen] = useState(false);
-    const [faccaoModalOpen, setFaccaoModalOpen] = useState(false);
+    const [parceiroModalOpen, setParceiroModalOpen] = useState(false);
 
-    const [hoveredFaccaoIndex, setHoveredFaccaoIndex] = useState(null);
-    const [faccaoScrollTop, setFaccaoScrollTop] = useState(0);
+    const [hoveredParceiroIndex, setHoveredParceiroIndex] = useState(null);
+    const [parceiroScrollTop, setParceiroScrollTop] = useState(0);
     const [colorSearch, setColorSearch] = useState("");
-    const [existingFaccaoIds, setExistingFaccaoIds] = useState([]);
+    const [existingParceiroIds, setExistingParceiroIds] = useState([]);
 
-    const faccaoScrollRef = useRef(null);
+    const parceiroScrollRef = useRef(null);
     const colorDropdownRef = useRef(null);
     const gradeDropdownRef = useRef(null);
 
@@ -197,9 +197,9 @@ export default function FichaTecnicaModal({
         [availableColors, selectedColorIds],
     );
 
-    const selectedFaccaoIds = useMemo(
-        () => faccaoRows.map((row) => row.faccaoId).filter(Boolean),
-        [faccaoRows],
+    const selectedParceiroIds = useMemo(
+        () => parceiroRows.map((row) => row.parceiroId).filter(Boolean),
+        [parceiroRows],
     );
 
     const totalsBySize = useMemo(
@@ -213,6 +213,23 @@ export default function FichaTecnicaModal({
         [currentSizeItems, selectedColorIds, matrix],
     );
 
+    const totalsByColor = useMemo(
+        () =>
+            selectedColorIds.reduce((totals, corId) => {
+                totals[corId] = currentSizeItems.reduce(
+                    (sum, size) => sum + Number(matrix?.[corId]?.[size.tamanhoId] || 0),
+                    0,
+                );
+                return totals;
+            }, {}),
+        [currentSizeItems, selectedColorIds, matrix],
+    );
+
+    const totalGeral = useMemo(
+        () => totalsBySize.reduce((sum, total) => sum + Number(total || 0), 0),
+        [totalsBySize],
+    );
+
     const proporcoes = useMemo(() => calcularProporcao(totalsBySize), [totalsBySize]);
     const filteredColors = availableColors.filter((color) =>
         color.nome.toLowerCase().includes(colorSearch.toLowerCase()),
@@ -221,15 +238,15 @@ export default function FichaTecnicaModal({
     const resetStates = useCallback(() => {
         setSelectedColorIds([]);
         setMatrix({});
-        setFaccaoRows([]);
+        setParceiroRows([]);
         setError("");
         setColorDropdownOpen(false);
         setCorModalOpen(false);
         setEstampaModalOpen(false);
         setGradeDropdownOpen(false);
-        setFaccaoModalOpen(false);
-        setHoveredFaccaoIndex(null);
-        setFaccaoScrollTop(0);
+        setParceiroModalOpen(false);
+        setHoveredParceiroIndex(null);
+        setParceiroScrollTop(0);
     }, []);
 
     const handleForceClose = useCallback(() => {
@@ -248,14 +265,14 @@ export default function FichaTecnicaModal({
                     fabricoResponse,
                     colorsResponse,
                     gradesResponse,
-                    faccoesProdutoResponse,
-                    faccoesResponse,
+                    parceirosProdutoResponse,
+                    parceirosResponse,
                 ] = await Promise.all([
                     getFabricoById(fabricoId),
                     getCoresByFabricoId(fabricoId),
                     getGradesLiberadasByFabricoId(fabricoId),
-                    getFaccaoByProduto(produto.id),
-                    getFaccoesByFabrico(fabricoId),
+                    getParceiroByProduto(produto.id),
+                    getParceirosByFabrico(fabricoId),
                 ]);
 
                 if (!alive) return;
@@ -263,28 +280,30 @@ export default function FichaTecnicaModal({
                 setFabricoInfo(fabricoResponse);
                 setAvailableColors(Array.isArray(colorsResponse) ? colorsResponse : []);
 
-                const faccaoProdutoMap = {};
-                if (Array.isArray(faccoesProdutoResponse)) {
-                    const idsExistentes = faccoesProdutoResponse.map((f) => f.faccao_id);
+                const parceiroProdutoMap = {};
+                if (Array.isArray(parceirosProdutoResponse)) {
+                    const idsExistentes = parceirosProdutoResponse.map((f) => f.parceiro_id);
 
-                    setExistingFaccaoIds(idsExistentes);
+                    setExistingParceiroIds(idsExistentes);
 
-                    faccoesProdutoResponse.forEach((f) => {
-                        faccaoProdutoMap[f.faccao_id] = f;
+                    parceirosProdutoResponse.forEach((f) => {
+                        parceiroProdutoMap[f.parceiro_id] = f;
                     });
 
-                    const mergedFaccoes = Array.isArray(faccoesResponse)
-                        ? faccoesResponse.map((faccao) => ({
-                              ...faccao,
-                              preco: faccaoProdutoMap[faccao.id]?.preco ?? null,
+                    const mergedParceiros = Array.isArray(parceirosResponse)
+                        ? parceirosResponse.map((parceiro) => ({
+                              ...parceiro,
+                              preco: parceiroProdutoMap[parceiro.id]?.preco ?? null,
                           }))
                         : [];
 
-                    setAvailableFaccoes(mergedFaccoes);
-                    setFaccaoRows([]);
+                    setAvailableParceiros(mergedParceiros);
+                    setParceiroRows([]);
                 } else {
-                    setAvailableFaccoes(Array.isArray(faccoesResponse) ? faccoesResponse : []);
-                    setExistingFaccaoIds([]);
+                    setAvailableParceiros(
+                        Array.isArray(parceirosResponse) ? parceirosResponse : [],
+                    );
+                    setExistingParceiroIds([]);
                 }
 
                 const normalizedGrades = normalizeGradeOptions(
@@ -359,18 +378,18 @@ export default function FichaTecnicaModal({
         return `R$ ${Number(valor).toFixed(2).replace(".", ",")}`;
     };
 
-    const handleSelectFaccaoFromModal = (faccao) => {
-        if (!faccao) return;
-        setFaccaoRows((prev) => {
-            if (prev.some((row) => row.faccaoId === faccao.id)) return prev;
-            const jaExisteNoBanco = existingFaccaoIds.includes(Number(faccao.id));
+    const handleSelectParceiroFromModal = (parceiro) => {
+        if (!parceiro) return;
+        setParceiroRows((prev) => {
+            if (prev.some((row) => row.parceiroId === parceiro.id)) return prev;
+            const jaExisteNoBanco = existingParceiroIds.includes(Number(parceiro.id));
             return [
                 ...prev,
                 {
-                    faccaoId: faccao.id,
-                    faccaoNome: faccao.nome,
+                    parceiroId: parceiro.id,
+                    parceiroNome: parceiro.nome,
                     operacao: "",
-                    preco: formatarPreco(faccao.preco),
+                    preco: formatarPreco(parceiro.preco),
                     isDirty: true,
                     isNew: !jaExisteNoBanco,
                 },
@@ -385,18 +404,22 @@ export default function FichaTecnicaModal({
         }
 
         // Construindo o array de itens para a matriz (cores/tamanhos x quantidades)
-        const itensPayload = selectedColorIds
-            .flatMap((corId) =>
-                currentSizeItems.map((s) => ({
-                    cor_id: corId,
-                    grade_versao_item_id: s.gradeVersaoItemId,
-                    quantidade: Number(matrix?.[corId]?.[s.tamanhoId] || 0),
-                })),
-            )
-            .filter((item) => item.quantidade > 0); // Só manda pro backend se a qtd for > 0!
+        const itensPayload = selectedColorIds.flatMap((corId) =>
+            currentSizeItems.map((s) => ({
+                cor_id: corId,
+                grade_versao_item_id: s.gradeVersaoItemId,
+                quantidade: Number(matrix?.[corId]?.[s.tamanhoId] || 0),
+            })),
+        );
 
         // Calculando a quantidade total para exibir na Tabela da tela de Pedidos
         const quantidadeTotal = itensPayload.reduce((acc, curr) => acc + curr.quantidade, 0);
+        if (quantidadeTotal === 0) {
+            setError(
+                "Informe a quantidade de pelo menos um tamanho/cor antes de adicionar a ficha.",
+            );
+            return;
+        }
 
         // Montamos um RASCUNHO e devolvemos pra tela pai!
         const rascunhoFicha = {
@@ -411,7 +434,7 @@ export default function FichaTecnicaModal({
             selectedColorIds,
             cores: selectedColors,
             itensPayload,
-            faccaoRows,
+            parceiroRows,
             quantidade: quantidadeTotal, // Utilizado para preencher a tabela visualmente
         };
 
@@ -423,7 +446,6 @@ export default function FichaTecnicaModal({
 
     return (
         <>
-            <style>{`.scrollbar-sutil::-webkit-scrollbar { width: 4px; height: 4px; } .scrollbar-sutil::-webkit-scrollbar-thumb { background-color: #d6d6d6; border-radius: 999px; }`}</style>
             <div
                 className="fixed inset-0 z-[999] flex items-center justify-center bg-black/35 px-4 py-6 backdrop-blur-sm font-['Outfit',_sans-serif]"
                 onClick={handleForceClose}
@@ -457,8 +479,18 @@ export default function FichaTecnicaModal({
                     )}
 
                     {loading ? (
-                        <div className="flex min-h-[400px] items-center justify-center text-[14px] text-[#777]">
-                            Carregando...
+                        <div className="min-h-[400px] px-[30px] pt-3">
+                            <div className="flex justify-center py-8">
+                                <InlineLoading label="Carregando ficha técnica" />
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6">
+                                <SkeletonBox className="h-[150px] rounded-[10px]" />
+                                <div className="space-y-4">
+                                    <SkeletonBox className="h-[39px] rounded-[10px]" />
+                                    <SkeletonBox className="h-[39px] rounded-[10px]" />
+                                    <SkeletonBox className="h-[120px] rounded-[12px]" />
+                                </div>
+                            </div>
                         </div>
                     ) : (
                         <div className="!max-w-full w-full flex-1 overflow-y-auto px-4 pt-3 scrollbar-sutil">
@@ -727,38 +759,43 @@ export default function FichaTecnicaModal({
                                                 </div>
                                             ))}
                                         </div>
+                                        <div className="w-[90px] shrink-0" />
                                     </div>
                                     <div className="flex h-[40px] items-stretch">
                                         <div className="w-[160px] shrink-0 rounded-tl-[10px] font-normal bg-[#C9EAF6] px-4 text-[#4696AD] flex items-center justify-center overflow-hidden">
                                             Cores
                                         </div>
                                         <div className="flex flex-1 min-w-0">
-                                            {currentSizeItems.map((s, idx) => (
+                                            {currentSizeItems.map((s, sizeIndex) => (
                                                 <div
                                                     key={s.gradeVersaoItemId}
                                                     className="flex-1 min-w-0 text-center font-normal text-[#4696AD] flex items-center justify-center bg-[#C9EAF6]"
                                                     style={{
-                                                        borderLeftWidth:
-                                                            idx === 0 ? "0.5px" : "0px",
-                                                        borderRightWidth: "0.5px",
+                                                        borderLeftWidth: "0.5px",
+                                                        borderRightWidth:
+                                                            sizeIndex ===
+                                                            currentSizeItems.length - 1
+                                                                ? "0.5px"
+                                                                : "0px",
                                                         borderBottomWidth: "0px",
                                                         borderTopWidth: "0px",
                                                         borderColor: "#7B7D80",
-                                                        borderRightColor:
-                                                            idx === currentSizeItems.length - 1
-                                                                ? "#C9EAF6"
-                                                                : "#7B7D80",
                                                     }}
                                                 >
                                                     {s.codigo}
                                                 </div>
                                             ))}
                                         </div>
+                                        <div
+                                            className="w-[90px] shrink-0 rounded-tr-[10px] bg-[#C9EAF6] px-2 text-center text-[14px] font-normal text-[#4696AD] flex items-center justify-center"
+                                            style={{
+                                                borderRight: "0.5px solid #D9D9D9",
+                                            }}
+                                        >
+                                            Total (cor)
+                                        </div>
                                     </div>
-                                    <div
-                                        className="rounded-b-[10px] bg-white"
-                                        style={BORDER_SHELL_05}
-                                    >
+                                    <div className="rounded-b-[10px] bg-white overflow-hidden">
                                         <div className="flex flex-col w-full">
                                             {selectedColors.length > 0 ? (
                                                 selectedColors.map((color, index) => (
@@ -769,11 +806,8 @@ export default function FichaTecnicaModal({
                                                         <div
                                                             className="w-[160px] shrink-0 pl-2 pr-4 flex items-center"
                                                             style={{
-                                                                ...BORDER_DARK_05,
-                                                                borderTopWidth: "0px",
-                                                                borderLeftWidth: "0px",
-                                                                borderBottomWidth: "0px",
-                                                                borderRightWidth: "0.5px",
+                                                                borderLeftWidth: "0.5px",
+                                                                borderLeftColor: "#D9D9D9",
                                                             }}
                                                         >
                                                             {String(color.tipo).toUpperCase() ===
@@ -805,9 +839,9 @@ export default function FichaTecnicaModal({
                                                                     ...BORDER_DARK_05,
                                                                     borderTopWidth: "0px",
                                                                     borderBottomWidth: "0px",
-                                                                    borderLeftWidth: "0px",
+                                                                    borderLeftWidth: "0.5px",
                                                                     borderRightWidth:
-                                                                        sizeIndex !==
+                                                                        sizeIndex ===
                                                                         currentSizeItems.length - 1
                                                                             ? "0.5px"
                                                                             : "0px",
@@ -832,6 +866,14 @@ export default function FichaTecnicaModal({
                                                                 />
                                                             </div>
                                                         ))}
+                                                        <div
+                                                            className="w-[90px] shrink-0 px-2 flex items-center justify-center text-[14px] font-normal text-[#898C8F]"
+                                                            style={{
+                                                                borderRight: "0.5px solid #D9D9D9",
+                                                            }}
+                                                        >
+                                                            {totalsByColor[color.id] || "-"}
+                                                        </div>
                                                     </div>
                                                 ))
                                             ) : (
@@ -839,12 +881,48 @@ export default function FichaTecnicaModal({
                                                     Nenhuma cor selecionada.
                                                 </div>
                                             )}
+                                            {selectedColors.length > 0 && (
+                                                <div className="flex w-full min-h-[40px] items-stretch">
+                                                    <div className="w-[160px] shrink-0 bg-[#C9EAF6] px-3 text-center text-[14px] font-normal text-[#4696AD] flex items-center justify-center">
+                                                        Total (tamanho)
+                                                    </div>
+                                                    <div className="flex flex-1 min-w-0">
+                                                        {currentSizeItems.map((size, sizeIndex) => (
+                                                            <div
+                                                                key={`total-tamanho-${size.gradeVersaoItemId}`}
+                                                                className={`flex-1 min-w-0 px-2 flex items-center justify-center text-[14px] font-normal text-[#898C8F] border-l-[0.5px] border-[#7B7D80] ${
+                                                                    selectedColors.length % 2 === 1
+                                                                        ? "bg-[#F4F4F4]"
+                                                                        : "bg-[#FFFFFF]"
+                                                                }`}
+                                                                style={{
+                                                                    ...BORDER_DARK_05,
+                                                                    borderBottomColor: "#D9D9D9",
+                                                                    borderTopWidth: "0px",
+                                                                    borderBottomWidth: "0.5px",
+                                                                    borderLeftWidth: "0.5px",
+                                                                    borderRightWidth:
+                                                                        sizeIndex ===
+                                                                        currentSizeItems.length - 1
+                                                                            ? "0.5px"
+                                                                            : "0px",
+                                                                }}
+                                                            >
+                                                                {totalsBySize[sizeIndex] || "-"}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <div className="w-[90px] shrink-0 bg-[#C9EAF6] px-2 flex items-center justify-center text-[14px] font-normal text-[#4696AD]">
+                                                        {totalGeral || "-"}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* TABELA DE FACÇÕES */}
+                            {/* TABELA DE PARCEIROS */}
                             <div className="mt-8 mx-[30px]">
                                 <div className="w-full">
                                     <div className="grid grid-cols-3 items-center h-10 font-normal text-center text-[#4696AD]">
@@ -855,30 +933,30 @@ export default function FichaTecnicaModal({
                                             Operação
                                         </div>
                                         <div className="bg-[#C9EAF6] rounded-tr-[10px] px-4 py-2.5 h-10">
-                                            Preço
+                                            Preço Unitário
                                         </div>
                                     </div>
                                     <div className="relative">
                                         <div
-                                            ref={faccaoScrollRef}
+                                            ref={parceiroScrollRef}
                                             className="max-h-[180px] overflow-y-auto overflow-x-hidden scrollbar-sutil"
                                             onScroll={(e) =>
-                                                setFaccaoScrollTop(e.currentTarget.scrollTop)
+                                                setParceiroScrollTop(e.currentTarget.scrollTop)
                                             }
                                         >
-                                            {faccaoRows.length > 0 ? (
-                                                faccaoRows.map((row, index) => {
+                                            {parceiroRows.length > 0 ? (
+                                                parceiroRows.map((row, index) => {
                                                     const isLastRow =
-                                                        index === faccaoRows.length - 1;
+                                                        index === parceiroRows.length - 1;
                                                     return (
                                                         <div
-                                                            key={`${row.faccaoId}-${index}`}
+                                                            key={`${row.parceiroId}-${index}`}
                                                             className="grid grid-cols-3 items-stretch min-h-[40px] h-[40px]"
                                                             onMouseEnter={() =>
-                                                                setHoveredFaccaoIndex(index)
+                                                                setHoveredParceiroIndex(index)
                                                             }
                                                             onMouseLeave={() =>
-                                                                setHoveredFaccaoIndex(null)
+                                                                setHoveredParceiroIndex(null)
                                                             }
                                                         >
                                                             <div
@@ -895,7 +973,7 @@ export default function FichaTecnicaModal({
                                                                 }}
                                                             >
                                                                 <span className="text-[14px] font-light text-[#898C8F] truncate">
-                                                                    {row.faccaoNome}
+                                                                    {row.parceiroNome}
                                                                 </span>
                                                             </div>
                                                             <div
@@ -912,7 +990,7 @@ export default function FichaTecnicaModal({
                                                                 <input
                                                                     value={row.operacao}
                                                                     onChange={(e) =>
-                                                                        setFaccaoRows((p) =>
+                                                                        setParceiroRows((p) =>
                                                                             p.map((r, i) =>
                                                                                 i === index
                                                                                     ? {
@@ -954,7 +1032,7 @@ export default function FichaTecnicaModal({
                                                                             numeros
                                                                                 ? `R$ ${(Number(numeros) / 100).toFixed(2).replace(".", ",")}`
                                                                                 : "";
-                                                                        setFaccaoRows((prev) =>
+                                                                        setParceiroRows((prev) =>
                                                                             prev.map((r, i) =>
                                                                                 i === index
                                                                                     ? {
@@ -979,31 +1057,31 @@ export default function FichaTecnicaModal({
                                                     className="px-4 py-5 text-center text-[13px] text-[#888] bg-white rounded-b-[10px]"
                                                     style={BORDER_LIGHT_05}
                                                 >
-                                                    Nenhuma facção atribuída ainda.
+                                                    Nenhum parceiro atribuído ainda.
                                                 </div>
                                             )}
                                         </div>
                                         <div className="pointer-events-none absolute inset-y-0 right-0 w-0 overflow-visible">
-                                            {faccaoRows.map((row, index) => {
-                                                const isVisible = hoveredFaccaoIndex === index;
+                                            {parceiroRows.map((row, index) => {
+                                                const isVisible = hoveredParceiroIndex === index;
                                                 const top =
-                                                    index * FACCAO_ROW_HEIGHT +
-                                                    FACCAO_ROW_HEIGHT / 2 -
-                                                    faccaoScrollTop;
+                                                    index * PARCEIRO_ROW_HEIGHT +
+                                                    PARCEIRO_ROW_HEIGHT / 2 -
+                                                    parceiroScrollTop;
                                                 return (
                                                     <button
-                                                        key={`trash-${row.faccaoId}-${index}`}
+                                                        key={`trash-${row.parceiroId}-${index}`}
                                                         type="button"
                                                         onClick={() =>
-                                                            setFaccaoRows((p) =>
+                                                            setParceiroRows((p) =>
                                                                 p.filter((_, i) => i !== index),
                                                             )
                                                         }
                                                         onMouseEnter={() =>
-                                                            setHoveredFaccaoIndex(index)
+                                                            setHoveredParceiroIndex(index)
                                                         }
                                                         onMouseLeave={() =>
-                                                            setHoveredFaccaoIndex(null)
+                                                            setHoveredParceiroIndex(null)
                                                         }
                                                         className={`pointer-events-auto absolute z-20 rounded p-1 transition-opacity ${isVisible ? "opacity-100" : "opacity-0"}`}
                                                         style={{
@@ -1013,11 +1091,11 @@ export default function FichaTecnicaModal({
                                                             width: "28px",
                                                             height: "28px",
                                                         }}
-                                                        title="Remover facção"
+                                                        title="Remover parceiro"
                                                     >
                                                         <img
                                                             src="/excluir-cinza-claro.png"
-                                                            alt="Remover facção"
+                                                            alt="Remover parceiro"
                                                             style={{
                                                                 width: "100%",
                                                                 height: "100%",
@@ -1033,7 +1111,7 @@ export default function FichaTecnicaModal({
                                 </div>
                                 <button
                                     type="button"
-                                    onClick={() => setFaccaoModalOpen(true)}
+                                    onClick={() => setParceiroModalOpen(true)}
                                     className="mt-3 w-full h-[39px] rounded-[10px] bg-[#F4F4F4] hover:bg-[#F0F0F0] transition flex items-center justify-center gap-2 text-[14px] text-[#898C8F]"
                                 >
                                     <img
@@ -1042,7 +1120,7 @@ export default function FichaTecnicaModal({
                                         className="h-4 w-4 object-contain"
                                     />
                                     <span>
-                                        {faccaoRows.length > 0
+                                        {parceiroRows.length > 0
                                             ? "Atribuir mais uma facção"
                                             : "Atribuir facção"}
                                     </span>
@@ -1053,7 +1131,7 @@ export default function FichaTecnicaModal({
                                 <button
                                     type="button"
                                     onClick={handleSave}
-                                    className="rounded-[19px] bg-[#A9E2F2] px-10 h-[39px] text-[14px] font-medium text-[#4696AD] transition hover:bg-[#8acbdc]"
+                                    className="rounded-[19px] bg-[#A9E2F2] px-10 h-[39px] text-[14px] font-medium text-[#4696AD] transition hover:bg-[#A2DCED]"
                                 >
                                     Adicionar ficha
                                 </button>
@@ -1063,13 +1141,22 @@ export default function FichaTecnicaModal({
                 </div>
             </div>
 
-            <ProdutoFaccoes
-                isOpen={faccaoModalOpen}
-                faccoes={availableFaccoes}
-                selectedFaccaoIds={selectedFaccaoIds}
+            <ProdutoParceiros
+                isOpen={parceiroModalOpen}
+                parceiros={availableParceiros.filter((parceiro) => {
+                    if (!parceiro.categoria) return false;
+
+                    const etapaNormalizada = parceiro.categoria
+                        .normalize("NFD")
+                        .replace(/[\u0300-\u036f]/g, "")
+                        .toLowerCase();
+
+                    return etapaNormalizada === "costura" || etapaNormalizada === "faccao";
+                })}
+                selectedParceiroIds={selectedParceiroIds}
                 produtoId={produto?.id}
-                onClose={() => setFaccaoModalOpen(false)}
-                onSelectFaccao={handleSelectFaccaoFromModal}
+                onClose={() => setParceiroModalOpen(false)}
+                onSelectParceiro={handleSelectParceiroFromModal}
             />
 
             <CorModal
