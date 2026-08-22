@@ -547,8 +547,7 @@ export default function PedidosCadastrar() {
                 data_prevista: dataFormatadaBackend,
                 observacoes: null,
                 quantidade: quantidadeTotalPedido,
-                valor_total:
-                    valorTotalPedido != null ? Number(valorTotalPedido.toFixed(2)) : null,
+                valor_total: valorTotalPedido != null ? Number(valorTotalPedido.toFixed(2)) : null,
                 custo_total: Number(custoTotalPedido.toFixed(2)),
                 usarCorPaleta: fichas.length > 1,
             });
