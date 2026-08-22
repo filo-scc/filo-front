@@ -34,7 +34,7 @@ const simplificarUnidade = (unidade) => {
         CENTIMETRO: "cm",
         GRAMA: "g",
         QUILOGRAMA: "kg",
-        UNIDADE: "un",
+        UNIDADE: "und",
         PAR: "par",
     };
     return unidadesSimplificadas[unidade] || unidade;

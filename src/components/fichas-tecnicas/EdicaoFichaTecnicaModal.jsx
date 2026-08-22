@@ -62,7 +62,7 @@ const simplificarUnidade = (unidade) => {
         CENTIMETRO: "cm",
         GRAMA: "g",
         QUILOGRAMA: "kg",
-        UNIDADE: "un",
+        UNIDADE: "und",
         PAR: "par",
     };
     return unidadesSimplificadas[unidade] || unidade;
@@ -251,16 +251,21 @@ export default function EdicaoFichaTecnicaModal({
     useEffect(() => {
         let isCurent = true;
 
-        if (produtoId) {
-            getAviamentosDoProduto(produtoId)
-                .then((res) => {
-                    if (isCurent) setAviamentos(res || []);
-                })
-                .catch((err) => {
+        const carregarAviamentos = async () => {
+            if (produtoId) {
+                try {
+                    const aviamentosDosProdutos = await getAviamentosDoProduto(produtoId);
+                    if (isCurent) setAviamentos(aviamentosDosProdutos || []);
+                } catch (err) {
                     console.error("Erro ao carregar aviamento para impressão", err);
                     if (isCurent) setAviamentos([]);
-                });
-        }
+                }
+            } else {
+                if (isCurent) setAviamentos([]);
+            }
+        };
+        carregarAviamentos();
+
         return () => {
             isCurent = false;
         };

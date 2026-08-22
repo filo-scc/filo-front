@@ -460,7 +460,6 @@ export default function TransferenciaEtapaModal({
                     retiradas: Number(relatorioPerdas.retiradas) || 0,
                     sobras: Number(relatorioPerdas.sobras) || 0,
                 };
-                console.log("Payload updateFichaTecnica:", payloadRelatorio);
                 await updateFichaTecnica(fichaTecnica.id, payloadRelatorio);
             }
 
