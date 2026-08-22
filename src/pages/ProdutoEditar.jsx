@@ -20,6 +20,7 @@ import {
     getAviamentosDoProduto,
     getClientesDoProduto,
     getGradesByFabrico,
+    getParceiroByProduto,
     getProdutoById,
     getTecidosByFabrico,
     getTiposProdutoByFabrico,
@@ -34,9 +35,8 @@ import {
 } from "../services/clientesService";
 import { upload } from "../services/utilsService";
 import { getAllEtapasByFabricoId } from "../services/etapaService";
-import { getParceirosByFabrico } from "../services/parceiroService";
-import { getVinculoParceiroProduto } from "../services/parceiroProdutoService";
 import { CadastrarTecidoModal } from "../components/produtos/CadastrarTecidoModal";
+import { calcularCustosMediosDasEtapas } from "../utils/custosEtapasProduto";
 
 function formatarUnidadeDeMedida(unidade) {
     if (!unidade) return "";
@@ -574,6 +574,7 @@ export default function ProdutoEditar() {
                     resTiposProduto,
                     dadosFabrico,
                     todasEtapas,
+                    vinculosParceiroProduto,
                 ] = await Promise.all([
                     getProdutoById(id),
                     getClientesDoProduto(id),
@@ -591,7 +592,7 @@ export default function ProdutoEditar() {
                     getTiposProdutoByFabrico().catch(() => []),
                     Number.isFinite(fabricoId) ? getFabricoById(fabricoId) : Promise.resolve(null),
                     getAllEtapasByFabricoId(fabricoId).catch(() => []),
-                    getParceirosByFabrico(fabricoId).catch(() => []),
+                    getParceiroByProduto(id),
                 ]);
 
                 if (ignorar) return;
@@ -700,48 +701,9 @@ export default function ProdutoEditar() {
                             : "",
                 });
 
-                const etapasParaCusto = (todasEtapas || [])
-                    .filter((etapa) => etapa.ativa)
-                    .sort((a, b) => (a.ordem || 0) - (b.ordem || 0))
-                    .slice(0, -1);
-
-                const etapasPreMapeadas = etapasParaCusto.map((etapa) => {
-                    return {
-                        ...etapa,
-                    };
-                });
-
-                const etapasVinculadasComCustos = await Promise.all(
-                    etapasPreMapeadas.map(async (etapa) => {
-                        let custoFinal = 0;
-
-                        const custoExistente = dadosProduto?.etapas_produto?.find(
-                            (ep) => ep.etapa_id === etapa.id,
-                        )?.custo;
-                        if (custoExistente) {
-                            custoFinal = Number(custoExistente) || 0;
-                        } else if (etapa.parceiro_id) {
-                            try {
-                                const vinculo = await getVinculoParceiroProduto(
-                                    etapa.parceiro_id,
-                                    id,
-                                );
-                                if (vinculo && vinculo.preco !== undefined) {
-                                    custoFinal = vinculo.preco;
-                                }
-                            } catch (err) {
-                                console.error(
-                                    `Erro ao buscar vínculo para parceiro ${etapa.parceiro_id} e produto ${id}:`,
-                                    err,
-                                );
-                            }
-                        }
-
-                        return {
-                            ...etapa,
-                            custo: custoFinal,
-                        };
-                    }),
+                const etapasVinculadasComCustos = calcularCustosMediosDasEtapas(
+                    todasEtapas,
+                    vinculosParceiroProduto,
                 );
 
                 setColunasFlexiveis(etapasVinculadasComCustos);
@@ -982,32 +944,7 @@ export default function ProdutoEditar() {
     );
     const totalCalculado = valorTotalGasto + somaEtapas + custoOperacionalNum + outrosCustosNum;
 
-    const operacionalNaoMudou =
-        parseNumber(formData.custo_operacional) === parseNumber(produto?.custo_operacional);
-    const outrosNaoMudou =
-        parseNumber(formData.outros_custos) === parseNumber(produto?.outros_custos);
-    const aviamentosNaoMudaram =
-        (formData.aviamentos || []).length === (aviamentosOriginais || []).length &&
-        (formData.aviamentos || []).every((aviamentoAtual) => {
-            const aviamentoOriginal = (aviamentosOriginais || []).find(
-                (original) => normalizarId(original.id) === normalizarId(aviamentoAtual.id),
-            );
-
-            return (
-                aviamentoOriginal !== undefined &&
-                parseNumber(aviamentoAtual.quantidade) === parseNumber(aviamentoOriginal.quantidade)
-            );
-        });
-    const custoTotalSalvo = Number(produto?.custo_total);
-    const totalGeralCustoPeca =
-        tecidoNaoMudou &&
-        operacionalNaoMudou &&
-        outrosNaoMudou &&
-        aviamentosNaoMudaram &&
-        produto?.custo_total != null &&
-        Number.isFinite(custoTotalSalvo)
-            ? custoTotalSalvo
-            : totalCalculado;
+    const totalGeralCustoPeca = totalCalculado;
 
     const recarregarTecidos = async () => {
         try {
