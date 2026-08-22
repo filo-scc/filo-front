@@ -988,10 +988,18 @@ export default function ProdutoEditar() {
         parseNumber(formData.outros_custos) === parseNumber(produto?.outros_custos);
     const aviamentosNaoMudaram =
         (formData.aviamentos || []).length === (aviamentosOriginais || []).length &&
-        (formData.aviamentos || []).every(
-            (av) =>
-                parseNumber(av.quantidade) === parseNumber(av.quantidadeOriginal ?? av.quantidade),
-        );
+        (formData.aviamentos || []).every((aviamentoAtual) => {
+            const aviamentoOriginal = (aviamentosOriginais || []).find(
+                (original) =>
+                    normalizarId(original.id) === normalizarId(aviamentoAtual.id),
+            );
+
+            return (
+                aviamentoOriginal !== undefined &&
+                parseNumber(aviamentoAtual.quantidade) ===
+                    parseNumber(aviamentoOriginal.quantidade)
+            );
+        });
     const custoTotalSalvo = Number(produto?.custo_total);
     const totalGeralCustoPeca =
         tecidoNaoMudou &&
