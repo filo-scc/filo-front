@@ -603,13 +603,11 @@ export default function ProdutoCadastar() {
             if (formData.aviamentos.length > 0 && produtoId) {
                 for (const aviamento of formData.aviamentos) {
                     const qtd = Number(String(aviamento.quantidade).replace(",", ".") || 0);
-                    const custoItem = qtd * (aviamento.custo_unitario || 0);
 
                     await vincularProdutoAviamento({
                         produto_id: produtoId,
                         aviamento_id: aviamento.id,
                         quantidade: qtd,
-                        custo: Number(custoItem.toFixed(2)),
                     });
                 }
             }
