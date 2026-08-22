@@ -707,17 +707,6 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
                                 />
                             )}
 
-                            {/* Relatório de acabamento */}
-                            {isUltimaEtapa && (
-                                <RelatorioDeAcabamento
-                                    defeitoCostura={relatorioAcabamento.defeitoCostura}
-                                    defeitoTecido={relatorioAcabamento.defeitoTecido}
-                                    retiradas={relatorioAcabamento.retiradas}
-                                    sobras={relatorioAcabamento.sobras}
-                                    readonly
-                                />
-                            )}
-
                             <div className="relative bg-[#F4F4F4] border border-[#D9D9D9] rounded-[14px] p-5 pt-5 mt-6">
                                 <span className="absolute -top-[12px] left-4 bg-gradient-to-b from-white via-white via-[35%] to-[#F4F4F4] px-3 py-0.5 text-[15px] font-normal text-[#898C8F] leading-none">
                                     Materiais necessários por peça:
