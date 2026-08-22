@@ -947,8 +947,9 @@ export default function FichaTecnicaModal({
                             <div className="mt-8 mx-[30px]">
                                 {validacaoPrecoExibida && parceirosSemPreco.length > 0 && (
                                     <div className="mb-3 rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-[14px] font-light text-red-700">
-                                        <span className="font-medium">Atenção:</span> cadastre o preço
-                                        unitário de todas as facções antes de adicionar a ficha.
+                                        <span className="font-medium">Atenção:</span> cadastre o
+                                        preço unitário de todas as facções antes de adicionar a
+                                        ficha.
                                     </div>
                                 )}
                                 <div className="w-full">
