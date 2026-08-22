@@ -270,7 +270,6 @@ export default function EdicaoFichaTecnicaModal({
             isCurent = false;
         };
     }, [produtoId]);
-    const listaAviamentos = produtoId ? aviamentos : [];
 
     useEffect(() => {
         let isCurrent = true;
@@ -1170,23 +1169,23 @@ export default function EdicaoFichaTecnicaModal({
                                 <legend className="px-2 text-[12px] text-[#898C8F] ml-2 font-light bg-white">
                                     Materiais necessários por peça:
                                 </legend>
-                                {listaAviamentos.length > 0 ? (
-                                    <div className="flex flex-col gap-1 text-[13px] px-2 pt-1 font-light">
-                                        {listaAviamentos.map((item, index) => {
+                                {aviamentos && aviamentos.length > 0 ? (
+                                    <div className="flex flex-col gap-1 text-[14px] mt-1">
+                                        {aviamentos.map((item, index) => {
                                             const quantidade = item.quantidade ?? "";
                                             const unidade = simplificarUnidade(
-                                                item.aviamentos?.unidade_media ?? "",
+                                                item.aviamento?.unidade_de_medida ?? "",
                                             );
-                                            const nome = item.aviamentos?.nome;
+                                            const nome = item.aviamento?.nome ?? "";
                                             return (
                                                 <div
-                                                    key={item.aviamentos?.id ?? index}
+                                                    key={item.aviamento?.id ?? index}
                                                     className="leading-relaxed"
                                                 >
-                                                    <span className="text-[#898C8F]">
+                                                    <span className="font-bold text-[#B0B4B8]">
                                                         {quantidade} {unidade}
                                                     </span>{" "}
-                                                    <span className="text-[#898C8F]">
+                                                    <span className="font-normal text-[#B0B4B8]">
                                                         de {nome}
                                                     </span>
                                                 </div>
