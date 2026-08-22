@@ -858,41 +858,34 @@ export default function ProdutoEditar() {
             idsOriginais.has(normalizarId(aviamento.id)),
         );
 
-        // 1. Desvincula aviamentos removidos
-        await Promise.all(
-            aviamentosRemovidos.map((aviamento) =>
-                desvincularProdutoAviamento(aviamento.relacao_id),
-            ),
-        );
+        // As mutações do mesmo produto são sequenciais para evitar contenção
+        // entre transações que também recalculam o seu custo total.
+        for (const aviamento of aviamentosRemovidos) {
+            await desvincularProdutoAviamento(aviamento.relacao_id);
+        }
 
-        // 2. Vincula novos aviamentos já enviando a quantidade
-        await Promise.all(
-            aviamentosAdicionados.map((aviamento) =>
-                vincularProdutoAviamento({
-                    produto_id: Number(id),
-                    aviamento_id: aviamento.id,
-                    quantidade: Number(String(aviamento.quantidade || 0).replace(",", ".")) || null,
-                }),
-            ),
-        );
+        for (const aviamento of aviamentosAdicionados) {
+            await vincularProdutoAviamento({
+                produto_id: Number(id),
+                aviamento_id: aviamento.id,
+                quantidade: Number(String(aviamento.quantidade || 0).replace(",", ".")) || null,
+            });
+        }
 
-        // 3. Atualiza a quantidade dos aviamentos já existentes (PATCH)
-        await Promise.all(
-            aviamentosMantidos.map((aviamento) => {
-                const original = aviamentosOriginais.find(
-                    (o) => normalizarId(o.id) === normalizarId(aviamento.id),
-                );
-                const relacaoId = aviamento.relacao_id || original?.relacao_id;
-                const qtdNum = Number(String(aviamento.quantidade || 0).replace(",", ".")) || null;
+        for (const aviamento of aviamentosMantidos) {
+            const original = aviamentosOriginais.find(
+                (o) => normalizarId(o.id) === normalizarId(aviamento.id),
+            );
+            const relacaoId = aviamento.relacao_id || original?.relacao_id;
+            const qtdNum = Number(String(aviamento.quantidade || 0).replace(",", ".")) || null;
+            const qtdOriginal = Number(String(original?.quantidade || 0).replace(",", ".")) || null;
 
-                if (relacaoId) {
-                    return atualizarProdutoAviamento(relacaoId, {
-                        quantidade: qtdNum,
-                    });
-                }
-                return Promise.resolve();
-            }),
-        );
+            if (relacaoId && qtdNum !== qtdOriginal) {
+                await atualizarProdutoAviamento(relacaoId, {
+                    quantidade: qtdNum,
+                });
+            }
+        }
 
         // 4. Recarrega os dados do banco para manter o estado sincronizado
         const aviamentosAtualizados = await getAviamentosDoProduto(id);
