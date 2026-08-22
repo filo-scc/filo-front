@@ -38,7 +38,7 @@ const Pedidos = () => {
                 ]);
                 setProducaoSobDemanda(fabrico?.fabricacao_sob_demanda === true);
                 const pedidosOrdenados = [...data].sort(
-                    (a, b) => (Number(a.numero) || a.id) - (Number(b.numero) || b.id),
+                    (a, b) => (Number(b.numero) || b.id) - (Number(a.numero) || a.id),
                 );
                 setPedidos(pedidosOrdenados);
             } catch (error) {
