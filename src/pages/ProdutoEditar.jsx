@@ -637,7 +637,10 @@ export default function ProdutoEditar() {
                     custo_unitario: Number(pivot.aviamento?.custo_unitario || 0),
                     unidade_de_medida: pivot.aviamento?.unidade_de_medida || "und",
                     quantidade: pivot.quantidade ?? "",
-                    custo: Number(pivot.custo) || 0,
+                    custo:
+                        pivot.custo !== null && pivot.custo !== undefined
+                            ? Number(pivot.custo)
+                            : null,
                     quantidadeOriginal: pivot.quantidade ?? "",
                 }));
 
@@ -929,7 +932,9 @@ export default function ProdutoEditar() {
     const custoAviamentosCalculado = (formData.aviamentos || []).reduce((acc, av) => {
         const qtd = parseNumber(av.quantidade);
         const qtdOriginal = parseNumber(av.quantidadeOriginal ?? av.quantidade);
-        if (Number(av.custo) > 0 && qtd === qtdOriginal) return acc + Number(av.custo);
+        if (av.custo !== null && av.custo !== undefined && qtd === qtdOriginal) {
+            return acc + Number(av.custo);
+        }
         return acc + qtd * parseNumber(av.custo_unitario);
     }, 0);
 

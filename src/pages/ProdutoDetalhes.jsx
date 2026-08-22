@@ -152,15 +152,16 @@ export default function ProdutoDetalhes() {
         }
     };
 
-    const custoTecido = Number(
-        produto?.custo_tecido ||
-            Number(String(produto?.quantidade_tecido || 0).replace(",", ".")) *
-                Number(produto?.tecido?.custo_unitario || 0),
-    );
+    const custoTecido =
+        produto?.custo_tecido !== null && produto?.custo_tecido !== undefined
+            ? Number(produto.custo_tecido)
+            : Number(String(produto?.quantidade_tecido || 0).replace(",", ".")) *
+              Number(produto?.tecido?.custo_unitario || 0);
 
     const custoAviamentos = aviamentosProduto.reduce((acc, pivot) => {
-        const custoSalvo = Number(pivot.custo);
-        if (Number.isFinite(custoSalvo) && custoSalvo > 0) return acc + custoSalvo;
+        if (pivot.custo !== null && pivot.custo !== undefined) {
+            return acc + Number(pivot.custo);
+        }
 
         const qtd = Number(String(pivot.quantidade || 0).replace(",", "."));
         const custo = Number(pivot.aviamento?.custo_unitario || 0);

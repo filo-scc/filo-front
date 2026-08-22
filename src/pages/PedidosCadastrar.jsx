@@ -420,8 +420,7 @@ export default function PedidosCadastrar() {
     const handleSelecionarCliente = (opcao) => {
         setOpenDropdown(null);
 
-        const mesmoCliente =
-            String(clienteSelecionado?.id || "") === String(opcao.raw?.id || "");
+        const mesmoCliente = String(clienteSelecionado?.id || "") === String(opcao.raw?.id || "");
         if (mesmoCliente) return;
 
         if (fichas.length > 0) {
