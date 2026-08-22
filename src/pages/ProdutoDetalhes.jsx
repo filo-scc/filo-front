@@ -65,21 +65,15 @@ export default function ProdutoDetalhes() {
                 const usuarioLogado = userString ? JSON.parse(userString) : null;
                 const fabricoId = usuarioLogado?.fabrico_id;
 
-                const [
-                    dadosProduto,
-                    dadosClientes,
-                    dadosAviamentos,
-                    dadosTipos,
-                    todasEtapas,
-                    parceirosDisponiveis,
-                ] = await Promise.all([
-                    getProdutoById(id),
-                    getClientesDoProduto(id),
-                    getAviamentosDoProduto(id),
-                    getTiposProdutoByFabrico().catch(() => []),
-                    getAllEtapasByFabricoId(fabricoId).catch(() => []),
-                    getParceirosByFabrico(fabricoId).catch(() => []),
-                ]);
+                const [dadosProduto, dadosClientes, dadosAviamentos, dadosTipos, todasEtapas] =
+                    await Promise.all([
+                        getProdutoById(id),
+                        getClientesDoProduto(id),
+                        getAviamentosDoProduto(id),
+                        getTiposProdutoByFabrico().catch(() => []),
+                        getAllEtapasByFabricoId(fabricoId).catch(() => []),
+                        getParceirosByFabrico(fabricoId).catch(() => []),
+                    ]);
 
                 if (usuarioLogado && dadosProduto.fabrico_id !== usuarioLogado.fabrico_id) {
                     setModalAtencaoAberto(true);
@@ -101,22 +95,16 @@ export default function ProdutoDetalhes() {
                 setClientesAssociados(dadosClientes);
                 setAviamentosProduto(dadosAviamentos);
 
-                const etapasParaCusto = [...(todasEtapas || [])]
-                    .filter((etapa) => etapa?.ativa === true)
+                // Mesma regra do cadastro: só etapas ativas, sem a última (ex.: expedição)
+                const etapasParaCusto = (todasEtapas || [])
+                    .filter((etapa) => etapa.ativa)
                     .sort((a, b) => (a.ordem || 0) - (b.ordem || 0))
                     .slice(0, -1);
 
                 // 1. Mapeamento inicial das etapas com o parceiro correspondente
                 const etapasPreMapeadas = etapasParaCusto.map((etapa) => {
-                    const parceirosMapeados = (parceirosDisponiveis || []).filter((p) => {
-                        const categoriaParceiro = (p?.categoria || "").trim().toLowerCase();
-                        const nomeEtapa = (etapa?.nome || "").trim().toLowerCase();
-                        return categoriaParceiro === nomeEtapa;
-                    });
-
                     return {
                         ...etapa,
-                        parceiros_ids: parceirosMapeados.map((parceiro) => parceiro.id),
                     };
                 });
 
@@ -125,39 +113,26 @@ export default function ProdutoDetalhes() {
                     etapasPreMapeadas.map(async (etapa) => {
                         let custoFinal = 0;
 
-                        if (etapa.parceiros_ids.length > 0) {
-                            const vinculos = await Promise.all(
-                                etapa.parceiros_ids.map(async (parceiroId) => {
-                                    try {
-                                        return await getVinculoParceiroProduto(parceiroId, id);
-                                    } catch (err) {
-                                        console.error(
-                                            `Erro ao buscar vinculo para parceiro ${parceiroId} e produto ${id}:`,
-                                            err,
-                                        );
-                                        return null;
-                                    }
-                                }),
-                            );
-
-                            const precos = vinculos
-                                .map((vinculo) => vinculo?.preco)
-                                .filter((preco) => preco !== null && preco !== undefined)
-                                .map((preco) => Number(preco))
-                                .filter((preco) => Number.isFinite(preco));
-
-                            if (precos.length > 0) {
-                                custoFinal =
-                                    precos.reduce((acc, preco) => acc + preco, 0) / precos.length;
+                        const custoExistente = dadosProduto?.etapas_produto?.find(
+                            (ep) => ep.etapa_id === etapa.id,
+                        )?.custo;
+                        if (custoExistente) {
+                            custoFinal = Number(custoExistente) || 0;
+                        } else if (etapa.parceiro_id) {
+                            try {
+                                const vinculo = await getVinculoParceiroProduto(
+                                    etapa.parceiro_id,
+                                    id,
+                                );
+                                if (vinculo && vinculo.preco !== undefined) {
+                                    custoFinal = vinculo.preco;
+                                }
+                            } catch (err) {
+                                console.error(
+                                    `Erro ao buscar vínculo para parceiro ${etapa.parceiro_id} e produto ${id}:`,
+                                    err,
+                                );
                             }
-                        }
-
-                        // Fallback: Se não achou na tabela intermediária, tenta pegar do etapas_produto antigo (como backup)
-                        if (custoFinal === 0) {
-                            const custoExistente = dadosProduto?.etapas_produto?.find(
-                                (ep) => ep.etapa_id === etapa.id,
-                            )?.custo;
-                            custoFinal = custoExistente || 0;
                         }
 
                         return {
@@ -220,6 +195,9 @@ export default function ProdutoDetalhes() {
     );
 
     const custoAviamentos = aviamentosProduto.reduce((acc, pivot) => {
+        const custoSalvo = Number(pivot.custo);
+        if (Number.isFinite(custoSalvo) && custoSalvo > 0) return acc + custoSalvo;
+
         const qtd = Number(String(pivot.quantidade || 0).replace(",", "."));
         const custo = Number(pivot.aviamento?.custo_unitario || 0);
         return acc + qtd * custo;
@@ -232,11 +210,17 @@ export default function ProdutoDetalhes() {
         0,
     );
 
-    const totalGeral =
+    const totalCalculado =
         valorTotalGasto +
         totalCustosEtapas +
         (Number(produto?.custo_operacional) || 0) +
         (Number(produto?.outros_custos) || 0);
+
+    const custoTotalSalvo = Number(produto?.custo_total);
+    const totalGeral =
+        produto?.custo_total != null && Number.isFinite(custoTotalSalvo)
+            ? custoTotalSalvo
+            : totalCalculado;
 
     if (loading) {
         return (
