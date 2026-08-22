@@ -16,11 +16,13 @@ import {
 import { getProdutosDoCliente } from "../../services/clientesService";
 import ProdutoParceiros from "../produtos/ProdutoParceiros";
 import FichaTecnicaPrintView from "../FichaTecnicaPrintView";
-import { getParceiroByProduto } from "../../services/produtoService";
+import { getAviamentosDoProduto, getParceiroByProduto } from "../../services/produtoService";
 import { updateFichaTecnica } from "../../services/fichasTecnicasService";
 import { getParceirosByFabrico } from "../../services/parceiroService";
 import CorModal from "./CorModal";
 import EstampaModal from "./EstampaModal";
+import RelatorioDeAcabamento from "./RelatorioDeAcabamento";
+import { getAllEtapasByFabricoId } from "../../services/etapaService";
 
 const FloatingInput = ({
     label,
@@ -53,6 +55,18 @@ const FloatingInput = ({
         />
     </div>
 );
+
+const simplificarUnidade = (unidade) => {
+    const unidadesSimplificadas = {
+        METRO: "m",
+        CENTIMETRO: "cm",
+        GRAMA: "g",
+        QUILOGRAMA: "kg",
+        UNIDADE: "und",
+        PAR: "par",
+    };
+    return unidadesSimplificadas[unidade] || unidade;
+};
 
 const calcularProporcao = (totaisPorTamanho) => {
     const valoresValidos = totaisPorTamanho.map(Number).filter((t) => t > 0);
@@ -219,11 +233,67 @@ export default function EdicaoFichaTecnicaModal({
     const [corModalOpen, setCorModalOpen] = useState(false);
     const [estampaModalOpen, setEstampaModalOpen] = useState(false);
     const [validacaoPrecoExibida, setValidacaoPrecoExibida] = useState(false);
+    const [aviamentos, setAviamentos] = useState([]);
+    const [ultimaEtapaId, setUltimaEtapaId] = useState(null);
+    const [relatorioAcabamento, setRelatorioAcabamento] = useState({
+        defeitoCostura: 0,
+        defeitoTecido: 0,
+        retiradas: 0,
+        sobras: 0,
+    });
 
     const sizeItems = useMemo(
         () => dadosFicha?.grade_versao?.itens || [],
         [dadosFicha?.grade_versao?.itens],
     );
+
+    const produtoId = dadosFicha?.produto?.id;
+    useEffect(() => {
+        let isCurent = true;
+
+        const carregarAviamentos = async () => {
+            if (produtoId) {
+                try {
+                    const aviamentosDosProdutos = await getAviamentosDoProduto(produtoId);
+                    if (isCurent) setAviamentos(aviamentosDosProdutos || []);
+                } catch (err) {
+                    console.error("Erro ao carregar aviamento para impressão", err);
+                    if (isCurent) setAviamentos([]);
+                }
+            } else {
+                if (isCurent) setAviamentos([]);
+            }
+        };
+        carregarAviamentos();
+
+        return () => {
+            isCurent = false;
+        };
+    }, [produtoId]);
+
+    useEffect(() => {
+        let isCurrent = true;
+
+        if (dadosFicha?.fabrico_id) {
+            getAllEtapasByFabricoId(dadosFicha.fabrico_id)
+                .then((etapas) => {
+                    if (!isCurrent) return;
+                    const etapasAtivas = (etapas || []).filter((e) => e.ativa);
+                    const etapasOrdenadas = etapasAtivas.sort((a, b) => a.ordem - b.ordem);
+                    const ultima = etapasOrdenadas[etapasOrdenadas.length - 1];
+                    setUltimaEtapaId(ultima?.id ?? null);
+                })
+                .catch((error) => {
+                    console.error("Erro ao verificar última etapa", error);
+                    setUltimaEtapaId(null);
+                });
+        }
+
+        return () => {
+            isCurrent = false;
+        };
+    }, [dadosFicha?.fabrico_id]);
+    const isUltimaEtapa = ultimaEtapaId != null && dadosFicha?.etapa_atual_id == ultimaEtapaId;
 
     const carregarParceirosDisponiveis = useCallback(async () => {
         if (!dadosFicha?.produto_id || !dadosFicha?.fabrico_id) return;
@@ -299,6 +369,13 @@ export default function EdicaoFichaTecnicaModal({
 
     useEffect(() => {
         if (isOpen && dadosFicha) {
+            setRelatorioAcabamento({
+                defeitoCostura: dadosFicha.defeitos_costura ?? 0,
+                defeitoTecido: dadosFicha.defeitos_tecido ?? 0,
+                retiradas: dadosFicha.retiradas ?? 0,
+                sobras: dadosFicha.sobras ?? 0,
+            });
+
             carregarCoresDaFabrica();
             carregarParceirosDisponiveis();
             setParceirosRemovidos([]);
@@ -375,6 +452,10 @@ export default function EdicaoFichaTecnicaModal({
         setCoresSelecionadas((prev) =>
             prev.some((cor) => cor.id === corCriada.id) ? prev : [...prev, corCriada],
         );
+    };
+
+    const handleRelatorioAcabamentoChange = (campo, valor) => {
+        setRelatorioAcabamento((prev) => ({ ...prev, [campo]: valor }));
     };
 
     const handleAddParceiroSelecionado = (novoParceiro) => {
@@ -497,6 +578,7 @@ export default function EdicaoFichaTecnicaModal({
             return;
         }
 
+        if (loading) return;
         setLoading(true);
         try {
             const coresIds = coresSelecionadas.map((c) => c.id);
@@ -568,7 +650,16 @@ export default function EdicaoFichaTecnicaModal({
                             p.operacao,
                             payloadFichaParceiro.valor,
                             payloadFichaParceiro.quantidade,
-                        ),
+                        ).catch((error) => {
+                            if (error?.response?.status === 409) {
+                                return updateFichaTecnicaParceiro(
+                                    fichaId,
+                                    p.parceiro_id,
+                                    payloadFichaParceiro,
+                                );
+                            }
+                            throw error;
+                        }),
                     );
                 } else {
                     requisicoesDoParceiro.push(
@@ -584,6 +675,10 @@ export default function EdicaoFichaTecnicaModal({
             );
 
             const promessaAtualizarQuantidade = updateFichaTecnica(fichaId, {
+                defeitos_costura: relatorioAcabamento.defeitoCostura,
+                defeitos_tecido: relatorioAcabamento.defeitoTecido,
+                retiradas: relatorioAcabamento.retiradas,
+                sobras: relatorioAcabamento.sobras,
                 quantidade: totalGeral,
             });
 
@@ -692,7 +787,6 @@ export default function EdicaoFichaTecnicaModal({
                                 />
                             </div>
                         </div>
-
                         <div className="flex flex-wrap gap-2 pt-2">
                             {coresSelecionadas.map((cor) => (
                                 <ColorPill
@@ -702,7 +796,6 @@ export default function EdicaoFichaTecnicaModal({
                                 />
                             ))}
                         </div>
-
                         <div className="mt-4">
                             <div className="mb-2 text-center text-[16px] font-light text-[#737373]">
                                 Grade
@@ -1041,7 +1134,6 @@ export default function EdicaoFichaTecnicaModal({
                                 </tbody>
                             </table>
                         </div>
-
                         {/* Botão Atribuir Facção */}
                         <button
                             type="button"
@@ -1061,11 +1153,48 @@ export default function EdicaoFichaTecnicaModal({
                             </span>
                         </button>
 
-                        <div className="relative mt-2">
-                            <fieldset className="border border-[#E8E8E8] rounded-[10px] p-4 bg-[#F9F9F9]">
-                                <legend className="px-2 text-[11px] text-[#898C8F] ml-2">
+                        {/* Relatório de acabamento */}
+                        {isUltimaEtapa && (
+                            <RelatorioDeAcabamento
+                                defeitoCostura={relatorioAcabamento.defeitoCostura}
+                                defeitoTecido={relatorioAcabamento.defeitoTecido}
+                                retiradas={relatorioAcabamento.retiradas}
+                                sobras={relatorioAcabamento.sobras}
+                                onChange={handleRelatorioAcabamentoChange}
+                            />
+                        )}
+
+                        <div className="max-[30px] relative mt-5 break-inside-avoid">
+                            <fieldset className="border border-[#E8E8E8] rounded-[10px] p-4 bg-[#F9F9F9] min-h-[80px]">
+                                <legend className="px-2 text-[12px] text-[#898C8F] ml-2 font-light bg-white">
                                     Materiais necessários por peça:
                                 </legend>
+                                {aviamentos && aviamentos.length > 0 ? (
+                                    <div className="flex flex-col gap-1 text-[14px] mt-1">
+                                        {aviamentos.map((item, index) => {
+                                            const quantidade = item.quantidade ?? "";
+                                            const unidade = simplificarUnidade(
+                                                item.aviamento?.unidade_de_medida ?? "",
+                                            );
+                                            const nome = item.aviamento?.nome ?? "";
+                                            return (
+                                                <div
+                                                    key={item.aviamento?.id ?? index}
+                                                    className="leading-relaxed"
+                                                >
+                                                    <span className="font-bold text-[#B0B4B8]">
+                                                        {quantidade} {unidade}
+                                                    </span>{" "}
+                                                    <span className="font-normal text-[#B0B4B8]">
+                                                        de {nome}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <p className="text-[13px] text-[#898C8F] font-light px-2 pt-1"></p>
+                                )}
                             </fieldset>
                         </div>
 

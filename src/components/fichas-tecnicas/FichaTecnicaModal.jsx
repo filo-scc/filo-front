@@ -170,6 +170,7 @@ export default function FichaTecnicaModal({
     const [parceiroScrollTop, setParceiroScrollTop] = useState(0);
     const [colorSearch, setColorSearch] = useState("");
     const [existingParceiroIds, setExistingParceiroIds] = useState([]);
+    const [validacaoPrecoExibida, setValidacaoPrecoExibida] = useState(false);
 
     const parceiroScrollRef = useRef(null);
     const colorDropdownRef = useRef(null);
@@ -199,6 +200,19 @@ export default function FichaTecnicaModal({
 
     const selectedParceiroIds = useMemo(
         () => parceiroRows.map((row) => row.parceiroId).filter(Boolean),
+        [parceiroRows],
+    );
+
+    const parceirosSemPreco = useMemo(
+        () =>
+            parceiroRows.filter((parceiro) => {
+                const precoNormalizado =
+                    typeof parceiro.preco === "string"
+                        ? parceiro.preco.replace("R$", "").replace(",", ".").trim()
+                        : parceiro.preco;
+                const preco = Number(precoNormalizado);
+                return !Number.isFinite(preco) || preco <= 0;
+            }),
         [parceiroRows],
     );
 
@@ -247,6 +261,7 @@ export default function FichaTecnicaModal({
         setParceiroModalOpen(false);
         setHoveredParceiroIndex(null);
         setParceiroScrollTop(0);
+        setValidacaoPrecoExibida(false);
     }, []);
 
     const handleForceClose = useCallback(() => {
@@ -398,6 +413,12 @@ export default function FichaTecnicaModal({
     };
 
     const handleSave = () => {
+        setValidacaoPrecoExibida(true);
+
+        if (parceirosSemPreco.length > 0) {
+            return;
+        }
+
         if (!effectiveGradeVersionId) {
             setError("Selecione uma grade válida.");
             return;
@@ -924,6 +945,13 @@ export default function FichaTecnicaModal({
 
                             {/* TABELA DE PARCEIROS */}
                             <div className="mt-8 mx-[30px]">
+                                {validacaoPrecoExibida && parceirosSemPreco.length > 0 && (
+                                    <div className="mb-3 rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-[14px] font-light text-red-700">
+                                        <span className="font-medium">Atenção:</span> cadastre o
+                                        preço unitário de todas as facções antes de adicionar a
+                                        ficha.
+                                    </div>
+                                )}
                                 <div className="w-full">
                                     <div className="grid grid-cols-3 items-center h-10 font-normal text-center text-[#4696AD]">
                                         <div className="bg-[#C9EAF6] px-4 py-2.5 border-r-[0.5px] rounded-tl-[10px] border-[#7B7D80] h-10">

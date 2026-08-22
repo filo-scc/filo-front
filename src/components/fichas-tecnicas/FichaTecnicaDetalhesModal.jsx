@@ -9,6 +9,8 @@ import FichaTecnicaPrintView from "../FichaTecnicaPrintView";
 import OpcoesImpressaoModal from "./OpcoesImpressaoModal";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import RelatorioDeAcabamento from "./RelatorioDeAcabamento";
+import { getAllEtapasByFabricoId } from "../../services/etapaService";
 
 const CampoDetalhe = ({ label, valor }) => (
     <div className="relative border border-[#898C8F] rounded-[10px] h-[39px] px-3 flex items-center mt-0.5 w-full bg-white">
@@ -32,7 +34,7 @@ const simplificarUnidade = (unidade) => {
         CENTIMETRO: "cm",
         GRAMA: "g",
         QUILOGRAMA: "kg",
-        UNIDADE: "un",
+        UNIDADE: "und",
         PAR: "par",
     };
     return unidadesSimplificadas[unidade] || unidade;
@@ -51,11 +53,24 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
     const [modalEdicaoAberto, setModalEdicaoAberto] = useState(false);
     const [modalImpressaoAberto, setModalImpressaoAberto] = useState(false);
     const [printMode, setPrintMode] = useState(null);
+    const [ultimaEtapaId, setUltimaEtapaId] = useState(null);
+    const [relatorioAcabamento, setRelatorioAcabamento] = useState({
+        defeitoCostura: 0,
+        defeitoTecido: 0,
+        retiradas: 0,
+        sobras: 0,
+    });
 
     const carregarDados = useCallback(async () => {
         try {
             const dados = await findOne(fichaId);
             setFicha(dados);
+            setRelatorioAcabamento({
+                defeitoCostura: dados?.defeitos_costura ?? 0,
+                defeitoTecido: dados?.defeitos_tecido ?? 0,
+                retiradas: dados?.retiradas ?? 0,
+                sobras: dados?.sobras ?? 0,
+            });
 
             if (dados?.produto?.id) {
                 try {
@@ -103,6 +118,30 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
             document.body.classList.remove("print-mode-ficha", "print-mode-nota");
         };
     }, [printMode]);
+
+    useEffect(() => {
+        let isCurrent = true;
+
+        if (ficha?.fabrico_id) {
+            getAllEtapasByFabricoId(ficha.fabrico_id)
+                .then((etapas) => {
+                    if (!isCurrent) return;
+                    const etapasAtivas = (etapas || []).filter((e) => e.ativa);
+                    const etapasOrdenadas = etapasAtivas.sort((a, b) => a.ordem - b.ordem);
+                    const ultima = etapasOrdenadas[etapasOrdenadas.length - 1];
+                    setUltimaEtapaId(ultima?.id ?? null);
+                })
+                .catch((error) => {
+                    console.error("Erro ao verificar última etapa", error);
+                    setUltimaEtapaId(null);
+                });
+        }
+
+        return () => {
+            isCurrent = false;
+        };
+    }, [ficha?.fabrico_id]);
+    const isUltimaEtapa = ultimaEtapaId != null && ficha?.etapa_atual_id == ultimaEtapaId;
 
     const handlePrintMode = useCallback((mode) => {
         document.body.classList.add(`print-mode-${mode}`);
@@ -656,6 +695,17 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
                                     </tbody>
                                 </table>
                             </div>
+
+                            {/* Relatório de acabamento */}
+                            {isUltimaEtapa && (
+                                <RelatorioDeAcabamento
+                                    defeitoCostura={relatorioAcabamento.defeitoCostura}
+                                    defeitoTecido={relatorioAcabamento.defeitoTecido}
+                                    retiradas={relatorioAcabamento.retiradas}
+                                    sobras={relatorioAcabamento.sobras}
+                                    readonly
+                                />
+                            )}
 
                             <div className="relative bg-[#F4F4F4] border border-[#D9D9D9] rounded-[14px] p-5 pt-5 mt-6">
                                 <span className="absolute -top-[12px] left-4 bg-gradient-to-b from-white via-white via-[35%] to-[#F4F4F4] px-3 py-0.5 text-[15px] font-normal text-[#898C8F] leading-none">
