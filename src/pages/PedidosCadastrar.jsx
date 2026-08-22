@@ -24,6 +24,7 @@ import { getPedidosByFabricoId } from "../services/pedidoService";
 
 import { getAllEtapasByFabricoId } from "../services/etapaService";
 import { DropdownOptionsSkeleton, LoadingButton, SkeletonBox } from "../components/geral/Loading";
+import ModalConfirmacaoEscolha from "../components/geral/ModalConfirmacaoEscolha";
 
 const sectionTitleClass = "text-[20px] font-light text-[#404040] mb-4 font-['Outfit',_sans-serif]";
 
@@ -216,6 +217,8 @@ export default function PedidosCadastrar() {
     const [fichas, setFichas] = useState([]);
     const [erro, setErro] = useState("");
     const [numeroPedido, setNumeroPedido] = useState("...");
+    const [modalTrocaClienteAberto, setModalTrocaClienteAberto] = useState(false);
+    const [clientePendente, setClientePendente] = useState(null);
 
     useEffect(() => {
         if (!fabricoId) return;
@@ -408,11 +411,38 @@ export default function PedidosCadastrar() {
 
     const toggleDropdown = (nome) => setOpenDropdown((atual) => (atual === nome ? null : nome));
 
-    const handleSelecionarCliente = (opcao) => {
-        setClienteSelecionado(opcao.raw);
+    const aplicarCliente = (cliente) => {
+        setClienteSelecionado(cliente);
         setReferenciaSelecionada(null);
-        setOpenDropdown(null);
         setErro("");
+    };
+
+    const handleSelecionarCliente = (opcao) => {
+        setOpenDropdown(null);
+
+        const mesmoCliente =
+            String(clienteSelecionado?.id || "") === String(opcao.raw?.id || "");
+        if (mesmoCliente) return;
+
+        if (fichas.length > 0) {
+            setClientePendente(opcao.raw);
+            setModalTrocaClienteAberto(true);
+            return;
+        }
+
+        aplicarCliente(opcao.raw);
+    };
+
+    const cancelarTrocaCliente = () => {
+        setModalTrocaClienteAberto(false);
+        setClientePendente(null);
+    };
+
+    const confirmarTrocaCliente = () => {
+        if (clientePendente) {
+            aplicarCliente(clientePendente);
+        }
+        cancelarTrocaCliente();
     };
 
     const handleSelecionarReferencia = async (opcao) => {
@@ -843,6 +873,13 @@ export default function PedidosCadastrar() {
                     {erro ? <p className="pt-4 text-sm text-[#D75757] text-right">{erro}</p> : null}
                 </div>
             </div>
+
+            <ModalConfirmacaoEscolha
+                isOpen={modalTrocaClienteAberto}
+                onClose={cancelarTrocaCliente}
+                onConfirm={confirmarTrocaCliente}
+                mensagem={`Ao selecionar o cliente ${clientePendente?.nome || ""} todas as Fichas Técnicas criadas estarão associadas a esse cliente, deseja confirmar?`}
+            />
 
             <FichaTecnicaModal
                 isOpen={modalFichaAberto}
