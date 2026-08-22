@@ -990,14 +990,12 @@ export default function ProdutoEditar() {
         (formData.aviamentos || []).length === (aviamentosOriginais || []).length &&
         (formData.aviamentos || []).every((aviamentoAtual) => {
             const aviamentoOriginal = (aviamentosOriginais || []).find(
-                (original) =>
-                    normalizarId(original.id) === normalizarId(aviamentoAtual.id),
+                (original) => normalizarId(original.id) === normalizarId(aviamentoAtual.id),
             );
 
             return (
                 aviamentoOriginal !== undefined &&
-                parseNumber(aviamentoAtual.quantidade) ===
-                    parseNumber(aviamentoOriginal.quantidade)
+                parseNumber(aviamentoAtual.quantidade) === parseNumber(aviamentoOriginal.quantidade)
             );
         });
     const custoTotalSalvo = Number(produto?.custo_total);
