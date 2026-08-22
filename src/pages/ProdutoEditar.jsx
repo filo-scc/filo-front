@@ -1069,6 +1069,7 @@ export default function ProdutoEditar() {
                 grade_versao_id: formData.grade_versao_id,
                 custo_operacional: custoOperacionalFormatado,
                 outros_custos: outrosCustosFormatado,
+                custo_total: Number(totalGeralCustoPeca.toFixed(2)),
             });
 
             await sincronizarAviamentosProduto();
