@@ -9,7 +9,7 @@ import {
 import { getFabricoById } from "../services/fabricoService";
 import FichaTecnicaModal from "../components/fichas-tecnicas/FichaTecnicaModal";
 
-import { atualizarProduto } from "../services/produtoService";
+import { atualizarProduto, getProdutoById } from "../services/produtoService";
 import { createFichaTecnica } from "../services/fichaTecnicaService";
 import {
     syncFichaTecnicaCores,
@@ -186,22 +186,6 @@ const getProdutoId = (item) =>
 const getReferenciaInterna = (item) =>
     item?.produto?.nome ?? item?.produto?.referencia ?? item?.nome ?? "-";
 
-const PALETA_13_CORES = [
-    "#7FA9B8",
-    "#9DB7A5",
-    "#5F8F9B",
-    "#A89FBF",
-    "#8FAF7A",
-    "#6E8CA5",
-    "#B88772",
-    "#8E9CA8",
-    "#8D7FA8",
-    "#A288C7",
-    "#5F9EA0",
-    "#B86A7B",
-    "#7E8F4E",
-];
-
 export default function PedidosCadastrar() {
     const navigate = useNavigate();
     const usuarioLogado = JSON.parse(localStorage.getItem("user") || "{}");
@@ -212,8 +196,6 @@ export default function PedidosCadastrar() {
     );
 
     const [primeiraEtapaId, setPrimeiraEtapaId] = useState(null);
-
-    const [pedidosExistentes, setPedidosExistentes] = useState([]);
 
     const [openDropdown, setOpenDropdown] = useState(null);
     const [clientes, setClientes] = useState([]);
@@ -250,9 +232,6 @@ export default function PedidosCadastrar() {
                 const pedidos_do_fabrico = Array.isArray(resposta)
                     ? resposta
                     : resposta?.data || resposta?.pedidos || [];
-
-                // Guarda a lista para uso posterior no restante do componente
-                setPedidosExistentes(pedidos_do_fabrico);
 
                 // Próximo número = maior número do fabrico + 1 (ou 1 se não houver pedidos)
                 // Ignora null/undefined (Number(null) === 0 e poluiria o max)
@@ -513,29 +492,46 @@ export default function PedidosCadastrar() {
         setErro(null);
 
         try {
-            // === 1. LÓGICA DAS CORES DO PEDIDO (Paleta de 13 cores) ===
-            let corDoPedido = "#FFFFFF";
-
-            if (fichas.length > 1) {
-                const pedidosAtivos = pedidosExistentes.filter(
-                    (p) => !p.finalizado && p.cor && p.cor.toUpperCase() !== "#FFFFFF",
-                );
-                const coresEmUso = pedidosAtivos.map((p) => p.cor.toUpperCase());
-
-                const paletaDisponivel = PALETA_13_CORES;
-
-                const corLivre = paletaDisponivel.find(
-                    (cor) => !coresEmUso.includes(cor.toUpperCase()),
-                );
-
-                corDoPedido = corLivre || paletaDisponivel[0] || "#FFFFFF";
-            }
-
             // === 2. LÓGICA DA QUANTIDADE DO PEDIDO ===
             const quantidadeTotalPedido = fichas.reduce(
                 (acc, ficha) => acc + (Number(ficha.quantidade) || 0),
                 0,
             );
+
+            const getFichaProdutoId = (ficha) => String(ficha.produtoId || ficha.produto_id || "");
+
+            const idsUnicos = [...new Set(fichas.map(getFichaProdutoId).filter(Boolean))];
+            const produtos = await Promise.all(idsUnicos.map((id) => getProdutoById(id)));
+            const mapaCustos = new Map(
+                (produtos || []).map((produto) => [
+                    String(produto?.id),
+                    Number(produto?.custo_total) || 0,
+                ]),
+            );
+
+            const custoTotalPedido = fichas.reduce((acc, ficha) => {
+                const quantidade = Number(ficha.quantidade) || 0;
+                const custo = mapaCustos.get(getFichaProdutoId(ficha)) || 0;
+                return acc + quantidade * custo;
+            }, 0);
+
+            let valorTotalPedido = null;
+
+            if (isSobDemanda && clienteSelecionado?.id) {
+                const produtosDoCliente = await getProdutosDoCliente(clienteSelecionado.id);
+                const mapaPrecos = new Map(
+                    (produtosDoCliente || []).map((item) => [
+                        String(getProdutoId(item)),
+                        Number(item.preco_padrao) || 0,
+                    ]),
+                );
+
+                valorTotalPedido = fichas.reduce((acc, ficha) => {
+                    const quantidade = Number(ficha.quantidade) || 0;
+                    const preco = mapaPrecos.get(getFichaProdutoId(ficha)) || 0;
+                    return acc + quantidade * preco;
+                }, 0);
+            }
 
             // === AJUSTE DA DATA PARA O BACKEND (ISO-8601) ===
             let dataFormatadaBackend = undefined;
@@ -551,7 +547,9 @@ export default function PedidosCadastrar() {
                 data_prevista: dataFormatadaBackend,
                 observacoes: null,
                 quantidade: quantidadeTotalPedido,
-                cor: corDoPedido,
+                valor_total: valorTotalPedido != null ? Number(valorTotalPedido.toFixed(2)) : null,
+                custo_total: Number(custoTotalPedido.toFixed(2)),
+                usarCorPaleta: fichas.length > 1,
             });
 
             // === 4. ASSEGURAR ID DA ETAPA ATUAL ===
