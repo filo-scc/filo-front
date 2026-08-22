@@ -222,6 +222,10 @@ const Pedidos = () => {
                                                 }
                                             }
 
+                                            const valorMonetario = producaoSobDemanda
+                                                ? pedido.valor_total
+                                                : pedido.custo_total;
+
                                             return (
                                                 <tr
                                                     key={pedido.id}
@@ -240,8 +244,8 @@ const Pedidos = () => {
                                                     <td className="py-4 px-6 ">
                                                         {producaoSobDemanda && !pedido.cliente
                                                             ? "-"
-                                                            : pedido.valor_total != null
-                                                              ? `R$ ${Number(pedido.valor_total)
+                                                            : valorMonetario != null
+                                                              ? `R$ ${Number(valorMonetario)
                                                                     .toFixed(2)
                                                                     .replace(".", ",")}`
                                                               : "R$ 0,00"}
