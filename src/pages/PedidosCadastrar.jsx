@@ -776,10 +776,10 @@ export default function PedidosCadastrar() {
                             {/* BLOCO ESQUERDO: Título e Dropdowns de Ficha Técnica */}
                             <div className="flex flex-col">
                                 <h2 className={sectionTitleClass}>Adicionar ficha técnica</h2>
-                                <div className="flex flex-wrap gap-4">
+                                <div className="flex flex-row flex-wrap gap-4">
                                     {/* Dropdown de Cliente */}
                                     {isSobDemanda && (
-                                        <div className="w-full max-w-[320px]">
+                                        <div className="w-[320px] shrink-0">
                                             <DropdownField
                                                 value={clienteSelecionado?.nome || ""}
                                                 placeholder="Selecionar cliente"
@@ -797,7 +797,7 @@ export default function PedidosCadastrar() {
                                     )}
 
                                     {/* Dropdown de Referência */}
-                                    <div className="w-full max-w-[320px]">
+                                    <div className="w-[320px] shrink-0">
                                         <DropdownField
                                             value={referenciaSelecionada?.label || ""}
                                             placeholder={
