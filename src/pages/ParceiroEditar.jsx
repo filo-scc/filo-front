@@ -553,7 +553,7 @@ const EditarParceiro = () => {
                                 loadingText="Salvando..."
                                 className="bg-[#a9e2f2] hover:bg-[#A2DCED] text-[#4696ad] w-[189px] h-[39px] rounded-full text-sm font-medium transition-colors disabled:opacity-50 shadow-sm"
                             >
-                                Finalizar edição
+                                Concluir edição
                             </LoadingButton>
                         </div>
                     </form>

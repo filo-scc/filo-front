@@ -5,12 +5,12 @@ import {
     getClientesDoProduto,
     excluirProduto,
     getAviamentosDoProduto,
+    getParceiroByProduto,
     getTiposProdutoByFabrico,
 } from "../services/produtoService";
 import { getFabricoById } from "../services/fabricoService";
 import { getAllEtapasByFabricoId } from "../services/etapaService";
-import { getParceirosByFabrico } from "../services/parceiroService";
-import { getVinculoParceiroProduto } from "../services/parceiroProdutoService";
+import { calcularCustosMediosDasEtapas } from "../utils/custosEtapasProduto";
 
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
 import SecaoDadosProduto from "../components/produtos/SecaoDadosProduto";
@@ -71,14 +71,14 @@ export default function ProdutoDetalhes() {
                     dadosAviamentos,
                     dadosTipos,
                     todasEtapas,
-                    parceirosDisponiveis,
+                    vinculosParceiroProduto,
                 ] = await Promise.all([
                     getProdutoById(id),
                     getClientesDoProduto(id),
                     getAviamentosDoProduto(id),
                     getTiposProdutoByFabrico().catch(() => []),
                     getAllEtapasByFabricoId(fabricoId).catch(() => []),
-                    getParceirosByFabrico(fabricoId).catch(() => []),
+                    getParceiroByProduto(id),
                 ]);
 
                 if (usuarioLogado && dadosProduto.fabrico_id !== usuarioLogado.fabrico_id) {
@@ -101,56 +101,9 @@ export default function ProdutoDetalhes() {
                 setClientesAssociados(dadosClientes);
                 setAviamentosProduto(dadosAviamentos);
 
-                // 1. Mapeamento inicial das etapas com o parceiro correspondente
-                const etapasPreMapeadas = (todasEtapas || []).map((etapa) => {
-                    const parceiroMapeado = (parceirosDisponiveis || []).find((p) => {
-                        const categoriaParceiro = (p?.categoria || "").trim().toLowerCase();
-                        const nomeEtapa = (etapa?.nome || "").trim().toLowerCase();
-                        return categoriaParceiro === nomeEtapa;
-                    });
-
-                    return {
-                        ...etapa,
-                        parceiro_id: parceiroMapeado ? parceiroMapeado.id : null,
-                    };
-                });
-
-                // 2. 🌟 Busca dinâmica na tabela intermediária (parceiro_produto) para cada vínculo encontrado
-                const etapasVinculadasComCustos = await Promise.all(
-                    etapasPreMapeadas.map(async (etapa) => {
-                        let custoFinal = 0;
-
-                        // Se houver um parceiro associado a esta etapa, buscamos o preço customizado
-                        if (etapa.parceiro_id) {
-                            try {
-                                const vinculo = await getVinculoParceiroProduto(
-                                    etapa.parceiro_id,
-                                    id,
-                                );
-                                if (vinculo && vinculo.preco !== undefined) {
-                                    custoFinal = vinculo.preco;
-                                }
-                            } catch (err) {
-                                console.error(
-                                    `Erro ao buscar vínculo para parceiro ${etapa.parceiro_id} e produto ${id}:`,
-                                    err,
-                                );
-                            }
-                        }
-
-                        // Fallback: Se não achou na tabela intermediária, tenta pegar do etapas_produto antigo (como backup)
-                        if (custoFinal === 0) {
-                            const custoExistente = dadosProduto?.etapas_produto?.find(
-                                (ep) => ep.etapa_id === etapa.id,
-                            )?.custo;
-                            custoFinal = custoExistente || 0;
-                        }
-
-                        return {
-                            ...etapa,
-                            custo: custoFinal,
-                        };
-                    }),
+                const etapasVinculadasComCustos = calcularCustosMediosDasEtapas(
+                    todasEtapas,
+                    vinculosParceiroProduto,
                 );
 
                 setColunasFlexiveis(etapasVinculadasComCustos);
@@ -199,13 +152,17 @@ export default function ProdutoDetalhes() {
         }
     };
 
-    const custoTecido = Number(
-        produto?.custo_tecido ||
-            Number(String(produto?.quantidade_tecido || 0).replace(",", ".")) *
-                Number(produto?.tecido?.custo_unitario || 0),
-    );
+    const custoTecido =
+        produto?.custo_tecido !== null && produto?.custo_tecido !== undefined
+            ? Number(produto.custo_tecido)
+            : Number(String(produto?.quantidade_tecido || 0).replace(",", ".")) *
+              Number(produto?.tecido?.custo_unitario || 0);
 
     const custoAviamentos = aviamentosProduto.reduce((acc, pivot) => {
+        if (pivot.custo !== null && pivot.custo !== undefined) {
+            return acc + Number(pivot.custo);
+        }
+
         const qtd = Number(String(pivot.quantidade || 0).replace(",", "."));
         const custo = Number(pivot.aviamento?.custo_unitario || 0);
         return acc + qtd * custo;
@@ -218,11 +175,17 @@ export default function ProdutoDetalhes() {
         0,
     );
 
-    const totalGeral =
+    const totalCalculado =
         valorTotalGasto +
         totalCustosEtapas +
         (Number(produto?.custo_operacional) || 0) +
         (Number(produto?.outros_custos) || 0);
+
+    const custoTotalSalvo = Number(produto?.custo_total);
+    const totalGeral =
+        produto?.custo_total != null && Number.isFinite(custoTotalSalvo)
+            ? custoTotalSalvo
+            : totalCalculado;
 
     if (loading) {
         return (
@@ -345,9 +308,9 @@ export default function ProdutoDetalhes() {
                                         </thead>
                                         <tbody>
                                             <tr>
-                                                {/* Aviamentos */}
+                                                {/* Total de materiais (tecido + aviamentos) */}
                                                 <td className="bg-[#FFFFFF] py-3 px-4 border-l-[0.5px] border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] first:rounded-bl-[10px] text-center text-[16px] font-light text-[#404040]">
-                                                    {formatarPreco(custoAviamentos)}
+                                                    {formatarPreco(valorTotalGasto)}
                                                 </td>
 
                                                 {/* Colunas Flexíveis (Etapas) */}

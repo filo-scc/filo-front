@@ -321,7 +321,7 @@ export default function NotaDeSaidaPrintView({
                                             />
                                             <Campo
                                                 label="Modelo"
-                                                valor={ficha.produto.tipo_produto.nome}
+                                                valor={ficha?.produto?.tipo_produto?.nome}
                                             />
                                         </div>
 
@@ -350,7 +350,7 @@ export default function NotaDeSaidaPrintView({
                                             <Campo label="Tecido" valor={dados.tecido} />
                                             <Campo
                                                 label="Modelo"
-                                                valor={ficha.produto.tipo_produto.nome}
+                                                valor={ficha?.produto?.tipo_produto?.nome}
                                             />
                                         </div>
                                     </>
@@ -615,8 +615,8 @@ export default function NotaDeSaidaPrintView({
                     </div>
 
                     {/* FOOTER */}
-                    <div className="print-footer mt-auto pt-6 pb-2">
-                        <div className="mx-[30px] flex items-end justify-between">
+                    <div className="print-footer mt-auto pt-6 pb-2 w-full">
+                        <div className="mx-[50px] flex items-end justify-between">
                             {fabricoInfo?.foto_de_perfil ? (
                                 <img
                                     src={fabricoInfo.foto_de_perfil}
@@ -624,18 +624,14 @@ export default function NotaDeSaidaPrintView({
                                     className="h-[35px] object-contain"
                                 />
                             ) : (
-                                <span className="text-[24px] font-bold text-[#4696AD]">Filo</span>
+                                <span className="text-[24px] font-bold text-[#4696AD]"></span>
                             )}
 
-                            {dados.logoDireitaUrl ? (
-                                <img
-                                    src={dados.logoDireitaUrl}
-                                    alt="Logo filo"
-                                    className="w-[59px] h-[35px] object-contain"
-                                />
-                            ) : (
-                                <span className="text-[24px] font-bold text-[#4696AD]">Filo</span>
-                            )}
+                            <img
+                                src="/logo-FILO.png"
+                                alt="Logo filo"
+                                className="w-[59px] h-[35px] object-contain"
+                            />
                         </div>
                     </div>
                 </div>

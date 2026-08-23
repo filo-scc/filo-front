@@ -9,7 +9,7 @@ import {
 import { getFabricoById } from "../services/fabricoService";
 import FichaTecnicaModal from "../components/fichas-tecnicas/FichaTecnicaModal";
 
-import { atualizarProduto } from "../services/produtoService";
+import { atualizarProduto, getProdutoById } from "../services/produtoService";
 import { createFichaTecnica } from "../services/fichaTecnicaService";
 import {
     syncFichaTecnicaCores,
@@ -24,8 +24,19 @@ import { getPedidosByFabricoId } from "../services/pedidoService";
 
 import { getAllEtapasByFabricoId } from "../services/etapaService";
 import { DropdownOptionsSkeleton, LoadingButton, SkeletonBox } from "../components/geral/Loading";
+import ModalConfirmacaoEscolha from "../components/geral/ModalConfirmacaoEscolha";
 
 const sectionTitleClass = "text-[20px] font-light text-[#404040] mb-4 font-['Outfit',_sans-serif]";
+
+const normalizarPrecoOpcional = (preco) => {
+    if (preco === null || preco === undefined || preco === "") return null;
+
+    const valorNormalizado =
+        typeof preco === "string" ? preco.replace("R$", "").replace(",", ".").trim() : preco;
+    const valorNumerico = Number(valorNormalizado);
+
+    return Number.isFinite(valorNumerico) && valorNumerico > 0 ? valorNumerico : null;
+};
 
 function DropdownField({
     value,
@@ -176,22 +187,6 @@ const getProdutoId = (item) =>
 const getReferenciaInterna = (item) =>
     item?.produto?.nome ?? item?.produto?.referencia ?? item?.nome ?? "-";
 
-const PALETA_13_CORES = [
-    "#7FA9B8",
-    "#9DB7A5",
-    "#5F8F9B",
-    "#A89FBF",
-    "#8FAF7A",
-    "#6E8CA5",
-    "#B88772",
-    "#8E9CA8",
-    "#8D7FA8",
-    "#A288C7",
-    "#5F9EA0",
-    "#B86A7B",
-    "#7E8F4E",
-];
-
 export default function PedidosCadastrar() {
     const navigate = useNavigate();
     const usuarioLogado = JSON.parse(localStorage.getItem("user") || "{}");
@@ -202,8 +197,6 @@ export default function PedidosCadastrar() {
     );
 
     const [primeiraEtapaId, setPrimeiraEtapaId] = useState(null);
-
-    const [pedidosExistentes, setPedidosExistentes] = useState([]);
 
     const [openDropdown, setOpenDropdown] = useState(null);
     const [clientes, setClientes] = useState([]);
@@ -224,6 +217,8 @@ export default function PedidosCadastrar() {
     const [fichas, setFichas] = useState([]);
     const [erro, setErro] = useState("");
     const [numeroPedido, setNumeroPedido] = useState("...");
+    const [modalTrocaClienteAberto, setModalTrocaClienteAberto] = useState(false);
+    const [clientePendente, setClientePendente] = useState(null);
 
     useEffect(() => {
         if (!fabricoId) return;
@@ -240,9 +235,6 @@ export default function PedidosCadastrar() {
                 const pedidos_do_fabrico = Array.isArray(resposta)
                     ? resposta
                     : resposta?.data || resposta?.pedidos || [];
-
-                // Guarda a lista para uso posterior no restante do componente
-                setPedidosExistentes(pedidos_do_fabrico);
 
                 // Próximo número = maior número do fabrico + 1 (ou 1 se não houver pedidos)
                 // Ignora null/undefined (Number(null) === 0 e poluiria o max)
@@ -419,11 +411,37 @@ export default function PedidosCadastrar() {
 
     const toggleDropdown = (nome) => setOpenDropdown((atual) => (atual === nome ? null : nome));
 
-    const handleSelecionarCliente = (opcao) => {
-        setClienteSelecionado(opcao.raw);
+    const aplicarCliente = (cliente) => {
+        setClienteSelecionado(cliente);
         setReferenciaSelecionada(null);
-        setOpenDropdown(null);
         setErro("");
+    };
+
+    const handleSelecionarCliente = (opcao) => {
+        setOpenDropdown(null);
+
+        const mesmoCliente = String(clienteSelecionado?.id || "") === String(opcao.raw?.id || "");
+        if (mesmoCliente) return;
+
+        if (fichas.length > 0) {
+            setClientePendente(opcao.raw);
+            setModalTrocaClienteAberto(true);
+            return;
+        }
+
+        aplicarCliente(opcao.raw);
+    };
+
+    const cancelarTrocaCliente = () => {
+        setModalTrocaClienteAberto(false);
+        setClientePendente(null);
+    };
+
+    const confirmarTrocaCliente = () => {
+        if (clientePendente) {
+            aplicarCliente(clientePendente);
+        }
+        cancelarTrocaCliente();
     };
 
     const handleSelecionarReferencia = async (opcao) => {
@@ -503,29 +521,46 @@ export default function PedidosCadastrar() {
         setErro(null);
 
         try {
-            // === 1. LÓGICA DAS CORES DO PEDIDO (Paleta de 13 cores) ===
-            let corDoPedido = "#FFFFFF";
-
-            if (fichas.length > 1) {
-                const pedidosAtivos = pedidosExistentes.filter(
-                    (p) => !p.finalizado && p.cor && p.cor.toUpperCase() !== "#FFFFFF",
-                );
-                const coresEmUso = pedidosAtivos.map((p) => p.cor.toUpperCase());
-
-                const paletaDisponivel = PALETA_13_CORES;
-
-                const corLivre = paletaDisponivel.find(
-                    (cor) => !coresEmUso.includes(cor.toUpperCase()),
-                );
-
-                corDoPedido = corLivre || paletaDisponivel[0] || "#FFFFFF";
-            }
-
             // === 2. LÓGICA DA QUANTIDADE DO PEDIDO ===
             const quantidadeTotalPedido = fichas.reduce(
                 (acc, ficha) => acc + (Number(ficha.quantidade) || 0),
                 0,
             );
+
+            const getFichaProdutoId = (ficha) => String(ficha.produtoId || ficha.produto_id || "");
+
+            const idsUnicos = [...new Set(fichas.map(getFichaProdutoId).filter(Boolean))];
+            const produtos = await Promise.all(idsUnicos.map((id) => getProdutoById(id)));
+            const mapaCustos = new Map(
+                (produtos || []).map((produto) => [
+                    String(produto?.id),
+                    Number(produto?.custo_total) || 0,
+                ]),
+            );
+
+            const custoTotalPedido = fichas.reduce((acc, ficha) => {
+                const quantidade = Number(ficha.quantidade) || 0;
+                const custo = mapaCustos.get(getFichaProdutoId(ficha)) || 0;
+                return acc + quantidade * custo;
+            }, 0);
+
+            let valorTotalPedido = null;
+
+            if (isSobDemanda && clienteSelecionado?.id) {
+                const produtosDoCliente = await getProdutosDoCliente(clienteSelecionado.id);
+                const mapaPrecos = new Map(
+                    (produtosDoCliente || []).map((item) => [
+                        String(getProdutoId(item)),
+                        Number(item.preco_padrao) || 0,
+                    ]),
+                );
+
+                valorTotalPedido = fichas.reduce((acc, ficha) => {
+                    const quantidade = Number(ficha.quantidade) || 0;
+                    const preco = mapaPrecos.get(getFichaProdutoId(ficha)) || 0;
+                    return acc + quantidade * preco;
+                }, 0);
+            }
 
             // === AJUSTE DA DATA PARA O BACKEND (ISO-8601) ===
             let dataFormatadaBackend = undefined;
@@ -541,7 +576,9 @@ export default function PedidosCadastrar() {
                 data_prevista: dataFormatadaBackend,
                 observacoes: null,
                 quantidade: quantidadeTotalPedido,
-                cor: corDoPedido,
+                valor_total: valorTotalPedido != null ? Number(valorTotalPedido.toFixed(2)) : null,
+                custo_total: Number(custoTotalPedido.toFixed(2)),
+                usarCorPaleta: fichas.length > 1,
             });
 
             // === 4. ASSEGURAR ID DA ETAPA ATUAL ===
@@ -614,19 +651,7 @@ export default function PedidosCadastrar() {
                     const totalParceiros = ficha.parceiroRows.length;
 
                     for (const parceiro of ficha.parceiroRows) {
-                        let precoFormatado = 0;
-
-                        if (parceiro.preco) {
-                            precoFormatado =
-                                typeof parceiro.preco === "string"
-                                    ? parseFloat(
-                                          parceiro.preco
-                                              .replace(",", ".")
-                                              .replace("R$ ", "")
-                                              .trim(),
-                                      ) || 0
-                                    : Number(parceiro.preco);
-                        }
+                        const precoFormatado = normalizarPrecoOpcional(parceiro.preco);
 
                         const parceiroIdFinal = parceiro.parceiroId || parceiro.id;
                         const produtoIdFinal = pId;
@@ -657,31 +682,10 @@ export default function PedidosCadastrar() {
 
                             if (totalParceiros === 1) {
                                 quantidadeFinal = Number(ficha.quantidade);
-                                const calculo = quantidadeFinal * precoFormatado;
-                                valorFinal = Number(calculo.toFixed(2));
-                            }
-
-                            await createFichaParceiro(
-                                novaFicha.id,
-                                parceiroIdFinal,
-                                parceiro.operacao || null,
-                                valorFinal,
-                                quantidadeFinal,
-                            );
-                        } catch (err) {
-                            console.error(
-                                `Erro ao criar Ficha-Parceiro para o id ${parceiroIdFinal}`,
-                                err,
-                            );
-                        }
-                        try {
-                            let valorFinal = undefined;
-                            let quantidadeFinal = undefined;
-
-                            if (totalParceiros === 1) {
-                                quantidadeFinal = Number(ficha.quantidade);
-                                const calculo = quantidadeFinal * precoFormatado;
-                                valorFinal = Number(calculo.toFixed(2));
+                                if (precoFormatado !== null) {
+                                    const calculo = quantidadeFinal * precoFormatado;
+                                    valorFinal = Number(calculo.toFixed(2));
+                                }
                             }
 
                             await createFichaParceiro(
@@ -771,10 +775,10 @@ export default function PedidosCadastrar() {
                             {/* BLOCO ESQUERDO: Título e Dropdowns de Ficha Técnica */}
                             <div className="flex flex-col">
                                 <h2 className={sectionTitleClass}>Adicionar ficha técnica</h2>
-                                <div className="flex flex-wrap gap-4">
+                                <div className="flex flex-row flex-wrap gap-4">
                                     {/* Dropdown de Cliente */}
                                     {isSobDemanda && (
-                                        <div className="w-full max-w-[320px]">
+                                        <div className="w-[320px] shrink-0">
                                             <DropdownField
                                                 value={clienteSelecionado?.nome || ""}
                                                 placeholder="Selecionar cliente"
@@ -792,7 +796,7 @@ export default function PedidosCadastrar() {
                                     )}
 
                                     {/* Dropdown de Referência */}
-                                    <div className="w-full max-w-[320px]">
+                                    <div className="w-[320px] shrink-0">
                                         <DropdownField
                                             value={referenciaSelecionada?.label || ""}
                                             placeholder={
@@ -860,7 +864,7 @@ export default function PedidosCadastrar() {
                             onClick={handleConcluirPedido}
                             className="bg-[#A9E2F2] hover:bg-[#A2DCED] text-[#4696AD] h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px] disabled:opacity-50 flex items-center justify-center"
                         >
-                            {isSobDemanda ? "Concluir pedido" : "Concluir ordem"}
+                            Concluir cadastro
                         </LoadingButton>
                     </div>
 
@@ -868,6 +872,13 @@ export default function PedidosCadastrar() {
                     {erro ? <p className="pt-4 text-sm text-[#D75757] text-right">{erro}</p> : null}
                 </div>
             </div>
+
+            <ModalConfirmacaoEscolha
+                isOpen={modalTrocaClienteAberto}
+                onClose={cancelarTrocaCliente}
+                onConfirm={confirmarTrocaCliente}
+                mensagem={`Ao selecionar o cliente ${clientePendente?.nome || ""} todas as Fichas Técnicas criadas estarão associadas a esse cliente, deseja confirmar?`}
+            />
 
             <FichaTecnicaModal
                 isOpen={modalFichaAberto}

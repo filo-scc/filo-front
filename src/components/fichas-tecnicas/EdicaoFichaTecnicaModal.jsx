@@ -16,9 +16,13 @@ import {
 import { getProdutosDoCliente } from "../../services/clientesService";
 import ProdutoParceiros from "../produtos/ProdutoParceiros";
 import FichaTecnicaPrintView from "../FichaTecnicaPrintView";
-import { getParceiroByProduto } from "../../services/produtoService";
+import { getAviamentosDoProduto, getParceiroByProduto } from "../../services/produtoService";
 import { updateFichaTecnica } from "../../services/fichasTecnicasService";
 import { getParceirosByFabrico } from "../../services/parceiroService";
+import CorModal from "./CorModal";
+import EstampaModal from "./EstampaModal";
+import RelatorioDeAcabamento from "./RelatorioDeAcabamento";
+import { getAllEtapasByFabricoId } from "../../services/etapaService";
 
 const FloatingInput = ({
     label,
@@ -52,6 +56,18 @@ const FloatingInput = ({
     </div>
 );
 
+const simplificarUnidade = (unidade) => {
+    const unidadesSimplificadas = {
+        METRO: "m",
+        CENTIMETRO: "cm",
+        GRAMA: "g",
+        QUILOGRAMA: "kg",
+        UNIDADE: "und",
+        PAR: "par",
+    };
+    return unidadesSimplificadas[unidade] || unidade;
+};
+
 const calcularProporcao = (totaisPorTamanho) => {
     const valoresValidos = totaisPorTamanho.map(Number).filter((t) => t > 0);
     if (valoresValidos.length === 0) return totaisPorTamanho.map(() => 0);
@@ -59,7 +75,13 @@ const calcularProporcao = (totaisPorTamanho) => {
     return totaisPorTamanho.map((t) => (t > 0 ? Math.round(t / base) : 0));
 };
 
-const ColorDropdown = ({ coresDisponiveis, coresSelecionadas, onToggleCor }) => {
+const ColorDropdown = ({
+    coresDisponiveis,
+    coresSelecionadas,
+    onToggleCor,
+    onCreateCor,
+    onCreateEstampa,
+}) => {
     const [aberto, setAberto] = useState(false);
     const dropdownRef = useRef(null);
 
@@ -93,51 +115,85 @@ const ColorDropdown = ({ coresDisponiveis, coresSelecionadas, onToggleCor }) => 
             </div>
 
             {aberto && (
-                <div className="absolute top-full left-0 mt-1 w-full bg-white border border-[#D9D9D9] rounded-[10px] shadow-lg z-20 max-h-[180px] overflow-y-auto scrollbar-sutil py-2">
-                    {coresDisponiveis.length === 0 ? (
-                        <div className="px-4 py-2 text-sm text-gray-500">
-                            Nenhuma cor cadastrada.
-                        </div>
-                    ) : (
-                        coresDisponiveis.map((cor) => {
-                            const isSelected = coresSelecionadas.some((c) => c.id === cor.id);
-                            return (
-                                <button
-                                    type="button"
-                                    key={cor.id}
-                                    onClick={() => onToggleCor(cor)}
-                                    className={`flex w-full items-center border-l-[4px] px-4 py-2.5 transition bg-white text-[#707070] hover:bg-[#F4F4F4] ${
-                                        isSelected
-                                            ? "border-l-[3px] border-l-[#C4F042]"
-                                            : "border-l-transparent"
-                                    }`}
-                                >
-                                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                                        <span
-                                            className="w-[16px] h-[16px] rounded-[4px] border border-gray-300 shrink-0"
-                                            style={{ backgroundColor: cor.codigo_hex || "#E5E5E5" }}
-                                        />
-                                        <span className="flex-1 truncate text-left">
-                                            {cor.nome}
-                                        </span>
-                                    </div>
-                                    {isSelected ? (
-                                        <img
-                                            src="/check_cinza.png"
-                                            className="w-[12px] h-[8px] shrink-0"
-                                            alt=""
-                                        />
-                                    ) : (
-                                        <img
-                                            src="/mais_cinza.png"
-                                            className="w-[12px] h-[12px] shrink-0"
-                                            alt=""
-                                        />
-                                    )}
-                                </button>
-                            );
-                        })
-                    )}
+                <div className="absolute top-full left-0 mt-1 w-full bg-white border border-[#D9D9D9] rounded-[10px] shadow-lg z-20 overflow-hidden">
+                    <div className="max-h-[180px] overflow-y-auto scrollbar-sutil">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setAberto(false);
+                                onCreateCor();
+                            }}
+                            className="flex w-full items-center px-4 py-2.5 text-left text-[14px] font-medium text-[#4696AD] bg-white hover:bg-[#F4F4F4] transition-colors"
+                        >
+                            + Nova cor
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setAberto(false);
+                                onCreateEstampa();
+                            }}
+                            className="flex w-full items-center px-4 py-2.5 text-left text-[14px] font-medium text-[#4696AD] bg-white hover:bg-[#F4F4F4] transition-colors"
+                        >
+                            + Nova estampa
+                        </button>
+
+                        {coresDisponiveis.length === 0 ? (
+                            <div className="px-4 py-3 text-[14px] text-[#898C8F]">
+                                Nenhuma cor cadastrada.
+                            </div>
+                        ) : (
+                            coresDisponiveis.map((cor) => {
+                                const isSelected = coresSelecionadas.some((c) => c.id === cor.id);
+                                return (
+                                    <button
+                                        type="button"
+                                        key={cor.id}
+                                        onClick={() => onToggleCor(cor)}
+                                        className={`flex w-full items-center border-l-[4px] px-4 py-2.5 transition-colors bg-white text-[#707070] hover:bg-[#F4F4F4] ${
+                                            isSelected
+                                                ? "border-l-[3px] border-l-[#C4F042]"
+                                                : "border-l-transparent"
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                                            {String(cor.tipo).toUpperCase() === "ESTAMPA" ? (
+                                                <img
+                                                    src={cor.foto}
+                                                    alt={cor.nome}
+                                                    className="w-[20px] h-[20px] rounded-[6px] shrink-0 border border-[#D9D9D9] object-cover"
+                                                />
+                                            ) : (
+                                                <span
+                                                    className="w-[20px] h-[20px] rounded-[6px] border border-[#D9D9D9] shrink-0"
+                                                    style={{
+                                                        backgroundColor:
+                                                            cor.codigo_hex || "#E5E5E5",
+                                                    }}
+                                                />
+                                            )}
+                                            <span className="flex-1 truncate text-left font-light">
+                                                {cor.nome}
+                                            </span>
+                                        </div>
+                                        {isSelected ? (
+                                            <img
+                                                src="/check_cinza.png"
+                                                className="w-[12px] h-[8px] shrink-0"
+                                                alt=""
+                                            />
+                                        ) : (
+                                            <img
+                                                src="/mais_cinza.png"
+                                                className="w-[12px] h-[12px] shrink-0"
+                                                alt=""
+                                            />
+                                        )}
+                                    </button>
+                                );
+                            })
+                        )}
+                    </div>
                 </div>
             )}
         </div>
@@ -156,7 +212,6 @@ const ColorPill = ({ nome, onRemove }) => (
 );
 
 const BORDER_DARK_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#7B7D80" };
-const BORDER_SHELL_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#D9D9D9" };
 
 export default function EdicaoFichaTecnicaModal({
     isOpen,
@@ -175,11 +230,70 @@ export default function EdicaoFichaTecnicaModal({
     const [referenciaCliente, setReferenciaCliente] = useState("-");
     const [isProdutoParceirosOpen, setIsProdutoParceirosOpen] = useState(false);
     const [parceirosDisponiveis, setParceirosDisponiveis] = useState([]);
+    const [corModalOpen, setCorModalOpen] = useState(false);
+    const [estampaModalOpen, setEstampaModalOpen] = useState(false);
+    const [validacaoPrecoExibida, setValidacaoPrecoExibida] = useState(false);
+    const [aviamentos, setAviamentos] = useState([]);
+    const [ultimaEtapaId, setUltimaEtapaId] = useState(null);
+    const [relatorioAcabamento, setRelatorioAcabamento] = useState({
+        defeitoCostura: 0,
+        defeitoTecido: 0,
+        retiradas: 0,
+        sobras: 0,
+    });
 
     const sizeItems = useMemo(
         () => dadosFicha?.grade_versao?.itens || [],
         [dadosFicha?.grade_versao?.itens],
     );
+
+    const produtoId = dadosFicha?.produto?.id;
+    useEffect(() => {
+        let isCurent = true;
+
+        const carregarAviamentos = async () => {
+            if (produtoId) {
+                try {
+                    const aviamentosDosProdutos = await getAviamentosDoProduto(produtoId);
+                    if (isCurent) setAviamentos(aviamentosDosProdutos || []);
+                } catch (err) {
+                    console.error("Erro ao carregar aviamento para impressão", err);
+                    if (isCurent) setAviamentos([]);
+                }
+            } else {
+                if (isCurent) setAviamentos([]);
+            }
+        };
+        carregarAviamentos();
+
+        return () => {
+            isCurent = false;
+        };
+    }, [produtoId]);
+
+    useEffect(() => {
+        let isCurrent = true;
+
+        if (dadosFicha?.fabrico_id) {
+            getAllEtapasByFabricoId(dadosFicha.fabrico_id)
+                .then((etapas) => {
+                    if (!isCurrent) return;
+                    const etapasAtivas = (etapas || []).filter((e) => e.ativa);
+                    const etapasOrdenadas = etapasAtivas.sort((a, b) => a.ordem - b.ordem);
+                    const ultima = etapasOrdenadas[etapasOrdenadas.length - 1];
+                    setUltimaEtapaId(ultima?.id ?? null);
+                })
+                .catch((error) => {
+                    console.error("Erro ao verificar última etapa", error);
+                    setUltimaEtapaId(null);
+                });
+        }
+
+        return () => {
+            isCurrent = false;
+        };
+    }, [dadosFicha?.fabrico_id]);
+    const isUltimaEtapa = ultimaEtapaId != null && dadosFicha?.etapa_atual_id == ultimaEtapaId;
 
     const carregarParceirosDisponiveis = useCallback(async () => {
         if (!dadosFicha?.produto_id || !dadosFicha?.fabrico_id) return;
@@ -255,8 +369,17 @@ export default function EdicaoFichaTecnicaModal({
 
     useEffect(() => {
         if (isOpen && dadosFicha) {
+            setRelatorioAcabamento({
+                defeitoCostura: dadosFicha.defeitos_costura ?? 0,
+                defeitoTecido: dadosFicha.defeitos_tecido ?? 0,
+                retiradas: dadosFicha.retiradas ?? 0,
+                sobras: dadosFicha.sobras ?? 0,
+            });
+
             carregarCoresDaFabrica();
             carregarParceirosDisponiveis();
+            setParceirosRemovidos([]);
+            setValidacaoPrecoExibida(false);
 
             const coresUnicasMap = {};
             dadosFicha.ficha_tecnica_itens?.forEach((item) => {
@@ -320,14 +443,42 @@ export default function EdicaoFichaTecnicaModal({
         });
     };
 
+    const handleCorCreated = (corCriada) => {
+        if (!corCriada?.id) return;
+
+        setTodasCoresDisponiveis((prev) =>
+            prev.some((cor) => cor.id === corCriada.id) ? prev : [...prev, corCriada],
+        );
+        setCoresSelecionadas((prev) =>
+            prev.some((cor) => cor.id === corCriada.id) ? prev : [...prev, corCriada],
+        );
+    };
+
+    const handleRelatorioAcabamentoChange = (campo, valor) => {
+        setRelatorioAcabamento((prev) => ({ ...prev, [campo]: valor }));
+    };
+
     const handleAddParceiroSelecionado = (novoParceiro) => {
-        const jaExiste = parceiros.some((p) => p.parceiro_id === novoParceiro.id);
+        const parceiroId = Number(novoParceiro.id);
+        const jaExiste = parceiros.some((p) => Number(p.parceiro_id) === parceiroId);
         if (jaExiste) return;
 
+        const vinculoRemovido = parceirosRemovidos.find(
+            (vinculo) => Number(vinculo.parceiro_id) === parceiroId,
+        );
+
+        if (vinculoRemovido) {
+            setParceirosRemovidos((prev) =>
+                prev.filter((vinculo) => Number(vinculo.parceiro_id) !== parceiroId),
+            );
+            setParceiros((prev) => [...prev, vinculoRemovido]);
+            return;
+        }
+
         const novoVinculo = {
-            parceiro_id: novoParceiro.id,
+            parceiro_id: parceiroId,
             parceiro: {
-                id: novoParceiro.id,
+                id: parceiroId,
                 nome: novoParceiro.nome,
             },
             operacao: "",
@@ -339,15 +490,14 @@ export default function EdicaoFichaTecnicaModal({
         setParceiros((prev) => [...prev, novoVinculo]);
     };
 
-    const quantidadeTotal = useMemo(() => {
-        let total = 0;
-        Object.values(matrizQuantidades).forEach((tamanhos) => {
-            Object.values(tamanhos).forEach((celula) => {
-                total += Number(celula.quantidade || 0);
-            });
-        });
-        return total;
-    }, [matrizQuantidades]);
+    const parceirosSemPreco = useMemo(
+        () =>
+            parceiros.filter((parceiro) => {
+                const preco = Number(parceiro.preco_editavel);
+                return !Number.isFinite(preco) || preco <= 0;
+            }),
+        [parceiros],
+    );
 
     const totaisPorTamanho = useMemo(() => {
         const totais = {};
@@ -361,6 +511,22 @@ export default function EdicaoFichaTecnicaModal({
         });
         return totais;
     }, [sizeItems, coresSelecionadas, matrizQuantidades]);
+
+    const totaisPorCor = useMemo(() => {
+        const totais = {};
+        coresSelecionadas.forEach((cor) => {
+            totais[cor.id] = sizeItems.reduce(
+                (sum, size) => sum + Number(matrizQuantidades[cor.id]?.[size.id]?.quantidade || 0),
+                0,
+            );
+        });
+        return totais;
+    }, [sizeItems, coresSelecionadas, matrizQuantidades]);
+
+    const totalGeral = useMemo(
+        () => Object.values(totaisPorTamanho).reduce((sum, total) => sum + Number(total || 0), 0),
+        [totaisPorTamanho],
+    );
 
     const proporcoes = useMemo(() => {
         const arrayDeTotais = sizeItems.map((s) => totaisPorTamanho[s.id] || 0);
@@ -392,13 +558,27 @@ export default function EdicaoFichaTecnicaModal({
 
     const handleRemoverParceiro = (index) => {
         const parceiroParaRemover = parceiros[index];
-        if (parceiroParaRemover.parceiro_id) {
-            setParceirosRemovidos((prev) => [...prev, parceiroParaRemover.parceiro_id]);
+        if (parceiroParaRemover.parceiro_id && !parceiroParaRemover.isNovo) {
+            setParceirosRemovidos((prev) =>
+                prev.some(
+                    (vinculo) =>
+                        Number(vinculo.parceiro_id) === Number(parceiroParaRemover.parceiro_id),
+                )
+                    ? prev
+                    : [...prev, parceiroParaRemover],
+            );
         }
         setParceiros((prev) => prev.filter((_, i) => i !== index));
     };
 
     const handleConcluir = async () => {
+        setValidacaoPrecoExibida(true);
+
+        if (parceirosSemPreco.length > 0) {
+            return;
+        }
+
+        if (loading) return;
         setLoading(true);
         try {
             const coresIds = coresSelecionadas.map((c) => c.id);
@@ -432,72 +612,79 @@ export default function EdicaoFichaTecnicaModal({
                 });
             });
 
-            const promessasParceiros = parceiros.map((p) => {
-                const requisicoesDoParceiro = [];
-
-                if (p.parceiroProdutoExiste) {
-                    requisicoesDoParceiro.push(
-                        updateParceiroProdutoPrice(
+            const salvarParceiros = async () => {
+                for (const p of parceiros) {
+                    if (p.parceiroProdutoExiste) {
+                        await updateParceiroProdutoPrice(
                             p.parceiro_id,
                             dadosFicha.produto_id,
                             Number(p.preco_editavel),
-                        ),
-                    );
-                } else {
-                    requisicoesDoParceiro.push(
-                        createParceiroProduto(
+                        );
+                    } else {
+                        await createParceiroProduto(
                             p.parceiro_id,
                             dadosFicha.produto_id,
                             Number(p.preco_editavel),
-                        ),
-                    );
-                }
+                        );
+                    }
 
-                const temMultiplosParceiros = parceiros.length > 1;
+                    const temMultiplosParceiros = parceiros.length > 1;
 
-                const payloadFichaParceiro = {
-                    operacao: p.operacao,
-                    quantidade: temMultiplosParceiros ? 0 : quantidadeTotal,
-                    valor: temMultiplosParceiros
-                        ? undefined
-                        : Number((quantidadeTotal * Number(p.preco_editavel)).toFixed(2)),
-                };
-                if (p.isNovo) {
-                    requisicoesDoParceiro.push(
-                        createFichaParceiro(
+                    const payloadFichaParceiro = {
+                        operacao: p.operacao,
+                        quantidade: temMultiplosParceiros ? 0 : totalGeral,
+                        valor: temMultiplosParceiros
+                            ? undefined
+                            : Number((totalGeral * Number(p.preco_editavel)).toFixed(2)),
+                    };
+                    if (p.isNovo) {
+                        await createFichaParceiro(
                             fichaId,
                             p.parceiro_id,
                             p.operacao,
                             payloadFichaParceiro.valor,
                             payloadFichaParceiro.quantidade,
-                        ),
-                    );
-                } else {
-                    requisicoesDoParceiro.push(
-                        updateFichaTecnicaParceiro(fichaId, p.parceiro_id, payloadFichaParceiro),
-                    );
+                        ).catch((error) => {
+                            if (error?.response?.status === 409) {
+                                return updateFichaTecnicaParceiro(
+                                    fichaId,
+                                    p.parceiro_id,
+                                    payloadFichaParceiro,
+                                );
+                            }
+                            throw error;
+                        });
+                    } else {
+                        await updateFichaTecnicaParceiro(
+                            fichaId,
+                            p.parceiro_id,
+                            payloadFichaParceiro,
+                        );
+                    }
                 }
+            };
 
-                return Promise.all(requisicoesDoParceiro);
-            });
-
-            const promessasDelecaoParceiros = parceirosRemovidos.map((parceiroId) =>
-                deleteFichaTecnicaParceiro(fichaId, parceiroId),
+            const promessasDelecaoParceiros = parceirosRemovidos.map((parceiroRemovido) =>
+                deleteFichaTecnicaParceiro(fichaId, parceiroRemovido.parceiro_id),
             );
 
             const promessaAtualizarQuantidade = updateFichaTecnica(fichaId, {
-                quantidade: quantidadeTotal,
+                defeitos_costura: relatorioAcabamento.defeitoCostura,
+                defeitos_tecido: relatorioAcabamento.defeitoTecido,
+                retiradas: relatorioAcabamento.retiradas,
+                sobras: relatorioAcabamento.sobras,
+                quantidade: totalGeral,
             });
 
             await Promise.all([
                 ...promessasItens,
-                ...promessasParceiros,
                 ...promessasDelecaoParceiros,
                 promessaAtualizarQuantidade,
+                salvarParceiros(),
             ]);
             await syncFichaTecnicaCores(fichaId, coresIds);
 
-            onSuccess();
+            await onSuccess?.();
             onClose();
         } catch (error) {
             console.error("Erro ao salvar edição", error);
@@ -522,7 +709,7 @@ export default function EdicaoFichaTecnicaModal({
                     className="bg-white rounded-[24px] w-full max-w-[850px] max-h-[95vh] flex flex-col shadow-2xl relative overflow-hidden font-['Outfit',_sans-serif]"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <div className="flex justify-between items-center px-8 py-6 border-b border-gray-100 shrink-0">
+                    <div className="flex justify-between items-center px-8 py-6 shrink-0">
                         <div className="flex items-center gap-3">
                             <img
                                 src="/etiqueta-preta.png"
@@ -542,9 +729,9 @@ export default function EdicaoFichaTecnicaModal({
                         </button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-8 space-y-6 scrollbar-sutil">
+                    <div className="flex-1 overflow-y-auto pb-8 px-8 pt-1 space-y-6 scrollbar-sutil">
                         <div className="flex flex-col md:flex-row gap-6">
-                            <div className="w-[209px] h-[160px] shrink-0 rounded-[10px] overflow-hidden border border-dashed border-[#898C8F]">
+                            <div className="w-[209px] h-[165px] shrink-0 rounded-[10px] overflow-hidden border border-dashed border-[#898C8F]">
                                 <img
                                     src={dadosFicha?.produto?.foto || "/image-placeholder.png"}
                                     alt="Foto do Produto"
@@ -582,6 +769,8 @@ export default function EdicaoFichaTecnicaModal({
                                     coresDisponiveis={todasCoresDisponiveis}
                                     coresSelecionadas={coresSelecionadas}
                                     onToggleCor={handleToggleCor}
+                                    onCreateCor={() => setCorModalOpen(true)}
+                                    onCreateEstampa={() => setEstampaModalOpen(true)}
                                 />
 
                                 <FloatingInput
@@ -592,7 +781,6 @@ export default function EdicaoFichaTecnicaModal({
                                 />
                             </div>
                         </div>
-
                         <div className="flex flex-wrap gap-2 pt-2">
                             {coresSelecionadas.map((cor) => (
                                 <ColorPill
@@ -602,9 +790,8 @@ export default function EdicaoFichaTecnicaModal({
                                 />
                             ))}
                         </div>
-
                         <div className="mt-4">
-                            <div className="mb-2 text-center text-[15px] font-light text-[#737373]">
+                            <div className="mb-2 text-center text-[16px] font-light text-[#737373]">
                                 Grade
                             </div>
                             <div className="w-full">
@@ -614,7 +801,7 @@ export default function EdicaoFichaTecnicaModal({
                                         {sizeItems.map((s, i) => (
                                             <div
                                                 key={`total-${s.id}`}
-                                                className="bg-[#F4F4F4] flex-1 min-w-0 text-center text-[13px] font-light flex items-center justify-center text-[#D7D7D7]"
+                                                className="bg-[#F4F4F4] flex-1 min-w-0 text-center text-[14px] font-light flex items-center justify-center text-[#D7D7D7]"
                                                 style={{
                                                     borderColor: "#7B7D80",
                                                     borderLeftWidth: "0.5px",
@@ -637,6 +824,7 @@ export default function EdicaoFichaTecnicaModal({
                                             </div>
                                         ))}
                                     </div>
+                                    <div className="w-[90px] shrink-0" />
                                 </div>
 
                                 <div className="flex h-[40px] items-stretch">
@@ -644,13 +832,16 @@ export default function EdicaoFichaTecnicaModal({
                                         Cores
                                     </div>
                                     <div className="flex flex-1 min-w-0">
-                                        {sizeItems.map((s, idx) => (
+                                        {sizeItems.map((s, sizeIndex) => (
                                             <div
                                                 key={`header-${s.id}`}
                                                 className="flex-1 min-w-0 text-center text-[14px] font-normal text-[#4696AD] flex items-center justify-center bg-[#C9EAF6]"
                                                 style={{
-                                                    borderLeftWidth: idx === 0 ? "0.5px" : "0px",
-                                                    borderRightWidth: "0.5px",
+                                                    borderLeftWidth: "0.5px",
+                                                    borderRightWidth:
+                                                        sizeIndex === sizeItems.length - 1
+                                                            ? "0.5px"
+                                                            : "0px",
                                                     borderColor: "#7B7D80",
                                                 }}
                                             >
@@ -658,41 +849,47 @@ export default function EdicaoFichaTecnicaModal({
                                             </div>
                                         ))}
                                     </div>
+                                    <div className="w-[90px] shrink-0 rounded-tr-[10px] bg-[#C9EAF6] px-2 text-center text-[14px] font-normal text-[#4696AD] flex items-center justify-center">
+                                        Total (cor)
+                                    </div>
                                 </div>
 
-                                <div
-                                    className="rounded-b-[10px] bg-white overflow-hidden"
-                                    style={BORDER_SHELL_05}
-                                >
+                                <div className="rounded-b-[10px] bg-white overflow-hidden">
                                     <div className="flex flex-col w-full">
                                         {coresSelecionadas.length > 0 ? (
                                             coresSelecionadas.map((cor, index) => (
                                                 <div
                                                     key={cor.id}
-                                                    className={`flex w-full min-h-[45px] items-stretch ${
+                                                    className={`flex w-full min-h-[40px] items-stretch ${
                                                         index % 2 === 1
-                                                            ? "bg-[#F9F9F9]"
+                                                            ? "bg-[#F4F4F4]"
                                                             : "bg-[#FFFFFF]"
                                                     }`}
                                                 >
                                                     <div
-                                                        className="w-[160px] shrink-0 pl-4 pr-4 flex items-center gap-3"
+                                                        className="w-[160px] shrink-0 pl-2 pr-4 flex items-center gap-3"
                                                         style={{
-                                                            ...BORDER_DARK_05,
-                                                            borderTopWidth: "0px",
-                                                            borderLeftWidth: "0px",
-                                                            borderBottomWidth: "0px",
-                                                            borderRightWidth: "0.5px",
+                                                            borderLeftWidth: "0.5px",
+                                                            borderLeftColor: "#D9D9D9",
                                                         }}
                                                     >
-                                                        <span
-                                                            className="w-[18px] h-[18px] rounded-[4px] shrink-0 shadow-sm border border-black/10"
-                                                            style={{
-                                                                backgroundColor:
-                                                                    cor.codigo_hex || "#E5E5E5",
-                                                            }}
-                                                        />
-                                                        <span className="flex-1 text-[14px] font-light text-[#707070] truncate">
+                                                        {String(cor.tipo).toUpperCase() ===
+                                                        "ESTAMPA" ? (
+                                                            <img
+                                                                src={cor.foto}
+                                                                alt={cor.nome}
+                                                                className="w-[20px] h-[20px] rounded-[6px] shrink-0 border border-[#D9D9D9] object-cover"
+                                                            />
+                                                        ) : (
+                                                            <span
+                                                                className="w-[20px] h-[20px] rounded-[6px] shrink-0 border border-[#D9D9D9]"
+                                                                style={{
+                                                                    backgroundColor:
+                                                                        cor.codigo_hex || "#E5E5E5",
+                                                                }}
+                                                            />
+                                                        )}
+                                                        <span className="flex-1 text-center text-[14px] font-light text-[#898C8F] truncate leading-none">
                                                             {cor.nome}
                                                         </span>
                                                     </div>
@@ -709,9 +906,9 @@ export default function EdicaoFichaTecnicaModal({
                                                                     ...BORDER_DARK_05,
                                                                     borderTopWidth: "0px",
                                                                     borderBottomWidth: "0px",
-                                                                    borderLeftWidth: "0px",
+                                                                    borderLeftWidth: "0.5px",
                                                                     borderRightWidth:
-                                                                        sizeIndex !==
+                                                                        sizeIndex ===
                                                                         sizeItems.length - 1
                                                                             ? "0.5px"
                                                                             : "0px",
@@ -734,16 +931,59 @@ export default function EdicaoFichaTecnicaModal({
                                                                             e.target.value,
                                                                         )
                                                                     }
-                                                                    className="w-full h-full text-center text-[14px] text-[#707070] bg-transparent outline-none placeholder:text-[#D7D7D7] [&::-webkit-inner-spin-button]:appearance-none"
+                                                                    className="w-full h-full text-center text-[14px] font-light text-[#898C8F] bg-transparent outline-none placeholder:text-[#D7D7D7] [&::-webkit-inner-spin-button]:appearance-none"
                                                                 />
                                                             </div>
                                                         );
                                                     })}
+                                                    <div
+                                                        className="w-[90px] shrink-0 px-2 flex items-center justify-center text-[14px] font-normal text-[#898C8F]"
+                                                        style={{
+                                                            borderRight: "0.5px solid #D9D9D9",
+                                                        }}
+                                                    >
+                                                        {totaisPorCor[cor.id] || "-"}
+                                                    </div>
                                                 </div>
                                             ))
                                         ) : (
-                                            <div className="px-4 py-4 text-[13px] text-center text-[#888]">
+                                            <div className="px-4 py-4 text-[13px] text-center text-[#888] bg-white w-full rounded-b-[10px]">
                                                 Nenhuma cor selecionada.
+                                            </div>
+                                        )}
+                                        {coresSelecionadas.length > 0 && (
+                                            <div className="flex w-full min-h-[40px] items-stretch">
+                                                <div className="w-[160px] shrink-0 bg-[#C9EAF6] px-3 text-center text-[14px] font-normal text-[#4696AD] flex items-center justify-center">
+                                                    Total (tamanho)
+                                                </div>
+                                                <div className="flex flex-1 min-w-0">
+                                                    {sizeItems.map((size, sizeIndex) => (
+                                                        <div
+                                                            key={`total-tamanho-${size.id}`}
+                                                            className={`flex-1 min-w-0 px-2 flex items-center justify-center text-[14px] font-normal text-[#898C8F] border-l-[0.5px] border-[#7B7D80] ${
+                                                                coresSelecionadas.length % 2 === 1
+                                                                    ? "bg-[#F4F4F4]"
+                                                                    : "bg-[#FFFFFF]"
+                                                            }`}
+                                                            style={{
+                                                                borderLeftWidth: "0.5px",
+                                                                borderRightWidth:
+                                                                    sizeIndex ===
+                                                                    sizeItems.length - 1
+                                                                        ? "0.5px"
+                                                                        : "0px",
+                                                                borderColor: "#7B7D80",
+                                                                borderBottomWidth: "0.5px",
+                                                                borderBottomColor: "#D9D9D9",
+                                                            }}
+                                                        >
+                                                            {totaisPorTamanho[size.id] || "-"}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <div className="w-[90px] shrink-0 bg-[#C9EAF6] px-2 flex items-center justify-center text-[14px] font-normal text-[#4696AD]">
+                                                    {totalGeral || "-"}
+                                                </div>
                                             </div>
                                         )}
                                     </div>
@@ -751,106 +991,143 @@ export default function EdicaoFichaTecnicaModal({
                             </div>
                         </div>
 
-                        <div className="border border-[#E8E8E8] rounded-[10px]">
-                            <table className="w-full text-center text-sm">
+                        {validacaoPrecoExibida && parceirosSemPreco.length > 0 && (
+                            <div className="rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-[14px] font-light text-red-700">
+                                <span className="font-medium">Atenção:</span> cadastre o preço
+                                unitário de todas as facções antes de concluir a edição.
+                            </div>
+                        )}
+
+                        <div className="overflow-visible">
+                            <table className="w-full table-fixed border-separate border-spacing-0 text-center text-sm">
                                 <thead className="bg-[#C9EAF6] text-[#4696AD]">
                                     <tr>
-                                        <th className="py-3 border-r border-white/50 font-normal w-1/3 rounded-tl-[9px]">
+                                        <th className="w-1/3 rounded-tl-[10px] py-3 border-r border-[#7B7D80] font-normal">
                                             Facção
                                         </th>
-                                        <th className="py-3 border-r border-white/50 font-normal w-1/3">
+                                        <th className="w-1/3 py-3 border-r border-[#7B7D80] font-normal">
                                             Operação
                                         </th>
-                                        <th className="py-3 font-normal w-1/3 rounded-tr-[9px]">
+                                        <th className="w-1/3 rounded-tr-[10px] py-3 font-normal">
                                             Preço Unitário
                                         </th>
                                     </tr>
                                 </thead>
                                 <tbody className="text-[#707070]">
-                                    {parceiros.map((vinculo, index) => {
-                                        const isLastRow = index === parceiros.length - 1;
+                                    {parceiros.length > 0 ? (
+                                        parceiros.map((vinculo, index) => {
+                                            const isLastRow = index === parceiros.length - 1;
 
-                                        return (
-                                            <tr
-                                                key={vinculo.id || index}
-                                                className="group border-t border-[#E8E8E8] transition-colors hover:bg-[#F9F9F9]"
-                                            >
-                                                <td
-                                                    className={`py-3 ${isLastRow ? "rounded-bl-[9px]" : ""}`}
+                                            return (
+                                                <tr
+                                                    key={vinculo.id || index}
+                                                    className="group odd:bg-[#FFFFFF] even:bg-[#F4F4F4]"
                                                 >
-                                                    {vinculo.parceiro?.nome || "-"}
-                                                </td>
-                                                <td className="p-0 border-r border-[#E8E8E8]">
-                                                    <input
-                                                        type="text"
-                                                        value={vinculo.operacao || ""}
-                                                        placeholder="Ex: Completa"
-                                                        onChange={(e) =>
-                                                            handleParceiroChange(
-                                                                index,
-                                                                "operacao",
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        className="w-full h-full py-3 text-center bg-transparent outline-none placeholder-[#D3D3D3]"
-                                                    />
-                                                </td>
-                                                <td className="p-0 relative">
-                                                    <div className="flex items-center justify-center w-full h-full">
-                                                        <span className="text-[#707070]">R$</span>
+                                                    <td
+                                                        className={`w-1/3 py-3 border-l border-[#D9D9D9] border-r border-r-[#7B7D80] ${
+                                                            isLastRow
+                                                                ? "rounded-bl-[10px] border-b border-[#D9D9D9]"
+                                                                : ""
+                                                        }`}
+                                                    >
+                                                        {vinculo.parceiro?.nome || "-"}
+                                                    </td>
+                                                    <td
+                                                        className={`w-1/3 p-0 border-r border-[#7B7D80] ${
+                                                            isLastRow
+                                                                ? "border-b border-b-[#D9D9D9]"
+                                                                : ""
+                                                        }`}
+                                                    >
                                                         <input
                                                             type="text"
-                                                            inputMode="numeric"
-                                                            value={
-                                                                vinculo.preco_editavel
-                                                                    ? Number(vinculo.preco_editavel)
-                                                                          .toFixed(2)
-                                                                          .replace(".", ",")
-                                                                    : ""
-                                                            }
-                                                            onChange={(e) => {
-                                                                const numeros =
-                                                                    e.target.value.replace(
-                                                                        /\D/g,
-                                                                        "",
-                                                                    );
-                                                                const valorNumerico = numeros
-                                                                    ? Number(numeros) / 100
-                                                                    : 0;
+                                                            value={vinculo.operacao || ""}
+                                                            placeholder="Ex: Completa"
+                                                            onChange={(e) =>
                                                                 handleParceiroChange(
                                                                     index,
-                                                                    "preco_editavel",
-                                                                    valorNumerico,
-                                                                );
-                                                            }}
-                                                            className="w-[50px] py-3 pl-1 text-left bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                                        />
-                                                    </div>
-
-                                                    <div className="absolute top-0 -right-[30px] w-[30px] h-full flex items-center justify-center opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity z-20">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                handleRemoverParceiro(index)
+                                                                    "operacao",
+                                                                    e.target.value,
+                                                                )
                                                             }
-                                                            className="w-[18px] h-[18px] flex items-center justify-center hover:opacity-70 transition-opacity"
-                                                            title="Remover parceiro"
-                                                        >
-                                                            <img
-                                                                src="/excluir-cinza-claro.png"
-                                                                alt="Remover parceiro"
-                                                                className="w-full h-full object-contain"
+                                                            className="w-full h-full py-3 text-center bg-transparent outline-none placeholder-[#D3D3D3]"
+                                                        />
+                                                    </td>
+                                                    <td
+                                                        className={`w-1/3 p-0 relative border-r border-[#D9D9D9] ${
+                                                            isLastRow
+                                                                ? "rounded-br-[10px] border-b border-[#D9D9D9]"
+                                                                : ""
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-center justify-center w-full h-full">
+                                                            <span className="text-[#707070]">
+                                                                R$
+                                                            </span>
+                                                            <input
+                                                                type="text"
+                                                                inputMode="numeric"
+                                                                value={
+                                                                    vinculo.preco_editavel
+                                                                        ? Number(
+                                                                              vinculo.preco_editavel,
+                                                                          )
+                                                                              .toFixed(2)
+                                                                              .replace(".", ",")
+                                                                        : ""
+                                                                }
+                                                                onChange={(e) => {
+                                                                    const numeros =
+                                                                        e.target.value.replace(
+                                                                            /\D/g,
+                                                                            "",
+                                                                        );
+                                                                    const valorNumerico = numeros
+                                                                        ? Number(numeros) / 100
+                                                                        : 0;
+                                                                    handleParceiroChange(
+                                                                        index,
+                                                                        "preco_editavel",
+                                                                        valorNumerico,
+                                                                    );
+                                                                }}
+                                                                className="w-[50px] py-3 pl-1 text-left bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                             />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
+                                                        </div>
+
+                                                        <div className="absolute top-0 -right-[30px] w-[30px] h-full flex items-center justify-center opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity z-20">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    handleRemoverParceiro(index)
+                                                                }
+                                                                className="w-[18px] h-[18px] flex items-center justify-center hover:opacity-70 transition-opacity"
+                                                                title="Remover parceiro"
+                                                            >
+                                                                <img
+                                                                    src="/excluir-cinza-claro.png"
+                                                                    alt="Remover parceiro"
+                                                                    className="w-full h-full object-contain"
+                                                                />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    ) : (
+                                        <tr>
+                                            <td
+                                                colSpan="3"
+                                                className="rounded-bl-[10px] rounded-br-[10px] border-l border-r border-b border-[#D9D9D9] py-4 text-center text-[13px] text-[#888]"
+                                            >
+                                                Nenhuma facção vinculada a esta ficha.
+                                            </td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
-
                         {/* Botão Atribuir Facção */}
                         <button
                             type="button"
@@ -870,24 +1147,61 @@ export default function EdicaoFichaTecnicaModal({
                             </span>
                         </button>
 
-                        <div className="relative mt-2">
-                            <fieldset className="border border-[#E8E8E8] rounded-[10px] p-4 bg-[#F9F9F9]">
-                                <legend className="px-2 text-[11px] text-[#898C8F] ml-2">
+                        {/* Relatório de acabamento */}
+                        {isUltimaEtapa && (
+                            <RelatorioDeAcabamento
+                                defeitoCostura={relatorioAcabamento.defeitoCostura}
+                                defeitoTecido={relatorioAcabamento.defeitoTecido}
+                                retiradas={relatorioAcabamento.retiradas}
+                                sobras={relatorioAcabamento.sobras}
+                                onChange={handleRelatorioAcabamentoChange}
+                            />
+                        )}
+
+                        <div className="max-[30px] relative mt-5 break-inside-avoid">
+                            <fieldset className="border border-[#E8E8E8] rounded-[10px] p-4 bg-[#F9F9F9] min-h-[80px]">
+                                <legend className="px-2 text-[12px] text-[#898C8F] ml-2 font-light bg-white">
                                     Materiais necessários por peça:
                                 </legend>
+                                {aviamentos && aviamentos.length > 0 ? (
+                                    <div className="flex flex-col gap-1 text-[14px] mt-1">
+                                        {aviamentos.map((item, index) => {
+                                            const quantidade = item.quantidade ?? "";
+                                            const unidade = simplificarUnidade(
+                                                item.aviamento?.unidade_de_medida ?? "",
+                                            );
+                                            const nome = item.aviamento?.nome ?? "";
+                                            return (
+                                                <div
+                                                    key={item.aviamento?.id ?? index}
+                                                    className="leading-relaxed"
+                                                >
+                                                    <span className="font-bold text-[#B0B4B8]">
+                                                        {quantidade} {unidade}
+                                                    </span>{" "}
+                                                    <span className="font-normal text-[#B0B4B8]">
+                                                        de {nome}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <p className="text-[13px] text-[#898C8F] font-light px-2 pt-1"></p>
+                                )}
                             </fieldset>
                         </div>
-                    </div>
 
-                    {/* FOOTER */}
-                    <div className="px-8 py-5 border-t border-gray-100 flex justify-end items-center shrink-0">
-                        <button
-                            onClick={handleConcluir}
-                            disabled={loading}
-                            className="px-10 h-[42px] rounded-full bg-[#A9E2F2] text-[#4996AD] font-normal text-[15px] hover:bg-[#A2DCED] transition-colors shadow-sm disabled:opacity-50"
-                        >
-                            {loading ? "Salvando..." : "Concluir"}
-                        </button>
+                        {/* FOOTER */}
+                        <div className="py-5  flex justify-end items-center shrink-0">
+                            <button
+                                onClick={handleConcluir}
+                                disabled={loading}
+                                className="px-10 h-[42px] rounded-full bg-[#A9E2F2] text-[#347A8A] font-normal text-[15px] hover:bg-[#97D8EA] transition-colors shadow-sm disabled:opacity-50"
+                            >
+                                {loading ? "Salvando..." : "Concluir edição"}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -898,6 +1212,18 @@ export default function EdicaoFichaTecnicaModal({
                 parceiros={parceirosFiltrados}
                 selectedParceiroIds={parceiros.map((p) => p.parceiro_id)}
                 onSelectParceiro={handleAddParceiroSelecionado}
+            />
+            <CorModal
+                isOpen={corModalOpen}
+                onClose={() => setCorModalOpen(false)}
+                fabricoId={dadosFicha?.fabrico_id}
+                onSuccess={handleCorCreated}
+            />
+            <EstampaModal
+                isOpen={estampaModalOpen}
+                onClose={() => setEstampaModalOpen(false)}
+                fabricoId={dadosFicha?.fabrico_id}
+                onSuccess={handleCorCreated}
             />
         </>
     );

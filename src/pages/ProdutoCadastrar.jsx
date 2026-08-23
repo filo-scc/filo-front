@@ -594,25 +594,22 @@ export default function ProdutoCadastar() {
                     ? Number(produto.custo_operacional)
                     : 0,
                 outros_custos: produto.outros_custos ? Number(produto.outros_custos) : 0,
+                custo_total: Number(totalGeral.toFixed(2)),
             };
 
             const produtoCriado = await criarProduto(payloadProduto);
             const produtoId = produtoCriado.id;
 
             if (formData.aviamentos.length > 0 && produtoId) {
-                const promessasAviamentos = formData.aviamentos.map((aviamento) => {
+                for (const aviamento of formData.aviamentos) {
                     const qtd = Number(String(aviamento.quantidade).replace(",", ".") || 0);
-                    const custoItem = qtd * (aviamento.custo_unitario || 0);
 
-                    return vincularProdutoAviamento({
+                    await vincularProdutoAviamento({
                         produto_id: produtoId,
                         aviamento_id: aviamento.id,
                         quantidade: qtd,
-                        custo: Number(custoItem.toFixed(2)),
                     });
-                });
-
-                await Promise.all(promessasAviamentos);
+                }
             }
 
             if (produtoId) {
@@ -630,10 +627,12 @@ export default function ProdutoCadastar() {
         }
     };
 
-    const etapasAtivas = fabrico?.etapas?.filter((etapa) => etapa.ativa) || [];
-    const colunasFlexiveis = etapasAtivas.slice(0, -1);
+    const etapasAtivasOrdenadas =
+        fabrico?.etapas
+            ?.filter((etapa) => etapa?.ativa === true)
+            .sort((a, b) => (a.ordem || 0) - (b.ordem || 0)) || [];
+    const colunasFlexiveis = etapasAtivasOrdenadas.slice(0, -1);
 
-    const custoAviamentos = valorTotalGasto || 0;
     const custoOperacional = produto?.custo_operacional || 0;
     const custoOutros = produto?.outros_custos || 0;
 
@@ -642,7 +641,7 @@ export default function ProdutoCadastar() {
         0,
     );
 
-    const totalGeral = custoAviamentos + custoOperacional + custoOutros + custoEtapasFlexiveis;
+    const totalGeral = valorTotalGasto + custoOperacional + custoOutros + custoEtapasFlexiveis;
 
     const formatarMoeda = (valor) => {
         return new Intl.NumberFormat("pt-BR", {
@@ -701,46 +700,33 @@ export default function ProdutoCadastar() {
                 return;
             }
 
-            // ... resto da sua função ...
-            await Promise.all(
-                etapasParaSalvar.map(async (etapa) => {
-                    const precoInformado = etapa.custo;
-                    const categoriaNome = etapa.nome;
+            for (const etapa of etapasParaSalvar) {
+                const precoInformado = etapa.custo;
+                const categoriaNome = etapa.nome;
 
-                    const parceirosDaEtapa = await getParceirosByFabricoECategoria(
-                        fabricoIdEfetivo,
-                        categoriaNome,
+                const parceirosDaEtapa = await getParceirosByFabricoECategoria(
+                    fabricoIdEfetivo,
+                    categoriaNome,
+                );
+
+                if (!parceirosDaEtapa || parceirosDaEtapa.length === 0) {
+                    console.warn(
+                        `Nenhum parceiro encontrado para a categoria '${categoriaNome}' no fabrico ${fabricoIdEfetivo}`,
                     );
+                    continue;
+                }
 
-                    if (!parceirosDaEtapa || parceirosDaEtapa.length === 0) {
-                        console.warn(
-                            `Nenhum parceiro encontrado para a categoria '${categoriaNome}' no fabrico ${fabricoIdEfetivo}`,
-                        );
-                        return;
+                for (const parceiro of parceirosDaEtapa) {
+                    const parceiroId = parceiro.id;
+                    const vinculoExistente = await getVinculoParceiroProduto(parceiroId, produtoId);
+
+                    if (vinculoExistente) {
+                        await atualizarParceiroProduto(parceiroId, produtoId, precoInformado);
+                    } else {
+                        await criarParceiroProduto(parceiroId, produtoId, precoInformado);
                     }
-
-                    await Promise.all(
-                        parceirosDaEtapa.map(async (parceiro) => {
-                            const parceiroId = parceiro.id;
-
-                            const vinculoExistente = await getVinculoParceiroProduto(
-                                parceiroId,
-                                produtoId,
-                            );
-
-                            if (vinculoExistente) {
-                                await atualizarParceiroProduto(
-                                    parceiroId,
-                                    produtoId,
-                                    precoInformado,
-                                );
-                            } else {
-                                await criarParceiroProduto(parceiroId, produtoId, precoInformado);
-                            }
-                        }),
-                    );
-                }),
-            );
+                }
+            }
         } catch (error) {
             console.error("Erro ao salvar custos de parceiros no banco:", error);
         }
@@ -994,7 +980,12 @@ export default function ProdutoCadastar() {
                                         {formData.aviamentos.map((av) => (
                                             <td
                                                 key={av.id}
-                                                className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center"
+                                                onClick={(e) => {
+                                                    const input =
+                                                        e.currentTarget.querySelector("input");
+                                                    if (input) input.focus();
+                                                }}
+                                                className="bg-[#FFFFFF] py-3 px-4 border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] text-center cursor-text"
                                             >
                                                 <div className="flex items-center justify-center gap-1 w-full bg-transparent">
                                                     <input
@@ -1075,9 +1066,9 @@ export default function ProdutoCadastar() {
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        {/* Valor Aviamentos (Estático/Calculado) */}
+                                        {/* Total de materiais (tecido + aviamentos) */}
                                         <td className="bg-[#FFFFFF] py-3 px-4 border-l-[0.5px] border-b-[0.5px] border-r-[0.5px] border-[#D9D9D9] first:rounded-bl-[10px] text-center text-[16px] font-light text-[#404040]">
-                                            {formatarMoeda(custoAviamentos)}
+                                            {formatarMoeda(valorTotalGasto)}
                                         </td>
 
                                         {colunasFlexiveis.map((etapa, index) => (
@@ -1170,7 +1161,7 @@ export default function ProdutoCadastar() {
                             loadingText="Salvando..."
                             className="w-[189px] h-[39px] rounded-[18.9px] bg-[#A9E2F2] text-[#4696AD] text-sm font-medium transition-colors hover:bg-[#A2DCED] disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                            Finalizar cadastro
+                            Concluir cadastro
                         </LoadingButton>
                     </div>
                 </form>
