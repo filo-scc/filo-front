@@ -1,4 +1,3 @@
-
 import { SkeletonBox } from "../geral/Loading";
 
 export function TecidosTableSkeleton({ rows = 5 }) {

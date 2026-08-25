@@ -224,7 +224,7 @@ function AppRoutes() {
                     }
                 />
 
-                 <Route
+                <Route
                     path="/tecidos"
                     element={
                         <PrivateRoute>
