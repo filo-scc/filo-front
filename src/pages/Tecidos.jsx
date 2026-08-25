@@ -5,14 +5,22 @@ import { CadastrarTecidoModal } from "../components/produtos/CadastrarTecidoModa
 import MenuOpcoes from "../components/geral/MenuOpcoes";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import ModalExclusao from "../components/geral/ModalExclusao";
+import { EditarTecidoModal } from "../components/tecidos/EdicaoTecidoModal";
+import { deletarTecido } from "../services/tecidoService";
 
 export default function Tecidos() {
     const userString = localStorage.getItem("user");
 
-    const [isModalTecidoOpen, setIsModalTecidoOpen] = useState(false);
     const [tecidos, setTecidos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+
+    // Estados para controle dos Modais
+    const [isModalCadastrarOpen, setIsModalCadastrarOpen] = useState(false);
+    const [isModalEditarOpen, setIsModalEditarOpen] = useState(false);
+    const [isModalExclusaoOpen, setIsModalExclusaoOpen] = useState(false);
+    const [isModalConfirmacaoOpen, setIsModalConfirmacaoOpen] = useState(false);
+    const [tecidoSelecionado, setTecidoSelecionado] = useState(null);
 
     const fabricoId = userString ? JSON.parse(userString).fabrico_id : null;
 
@@ -32,6 +40,34 @@ export default function Tecidos() {
     useEffect(() => {
         fetchTecidos();
     }, [fetchTecidos]);
+
+    // Ações do usuário
+    const handleAbrirCadastro = () => {
+        setTecidoSelecionado(null);
+        setIsModalCadastrarOpen(true);
+    };
+
+    const handleEdit = (tecido) => {
+        setTecidoSelecionado(tecido);
+        setIsModalEditarOpen(true);
+    };
+
+    const abrirModalExclusao = (tecido) => {
+        setTecidoSelecionado(tecido);
+        setIsModalExclusaoOpen(true);
+    };
+
+    const handleConfirmarExclusao = async () => {
+        if (!tecidoSelecionado) return;
+        try {
+            await deletarTecido(tecidoSelecionado.id);
+            setIsModalExclusaoOpen(false);
+            setIsModalConfirmacaoOpen(true);
+            fetchTecidos();
+        } catch (error) {
+            console.error("Erro ao excluir tecido:", error);
+        }
+    };
 
     // Filtra os tecidos pelo termo de busca
     const filteredTecidos = tecidos.filter((tecido) =>
@@ -77,11 +113,11 @@ export default function Tecidos() {
 
                             {/* Botão Cadastrar Tecido */}
                             <button
-                                onClick={() => setIsModalTecidoOpen(true)}
+                                onClick={handleAbrirCadastro}
                                 className="bg-[#A9E2F2] hover:bg-[#A2DCED] text-[#4696AD] w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors cursor-pointer"
                             >
                                 <img
-                                    src="/produtos-azul.png"
+                                    src="/add-fabric-pin.png"
                                     alt="Adicionar tecido"
                                     className="w-[20px] h-[20px]"
                                 />
@@ -109,6 +145,7 @@ export default function Tecidos() {
                                 ) : filteredTecidos.length > 0 ? (
                                     filteredTecidos.map((tecido, index) => {
                                         const isPar = index % 2 === 0;
+                                        const isLast = index === filteredTecidos.length - 1;
                                         const valorNumerico = Number(tecido.custo_unitario);
 
                                         return (
@@ -122,11 +159,8 @@ export default function Tecidos() {
                                                     {tecido.nome}
                                                 </td>
                                                 <td className="px-6 py-4 font-normal">
-                                                    {tecido.unidade_medida ||
-                                                        tecido.un_medida ||
-                                                        "Kg"}
+                                                    {tecido.unidade_de_medida}
                                                 </td>
-                                                {/* Preço com R$ formatado */}
                                                 <td className="px-6 py-4 font-normal">
                                                     {!isNaN(valorNumerico) &&
                                                     tecido.custo_unitario !== null
@@ -136,10 +170,15 @@ export default function Tecidos() {
                                                           })
                                                         : `R$ ${tecido.custo_unitario || "0,00"}`}
                                                 </td>
-                                                {/* Opções centralizadas e sem a tag td duplicada */}
                                                 <td className="px-6 py-4">
                                                     <div className="flex justify-center items-center">
-                                                        <MenuOpcoes />
+                                                        <MenuOpcoes
+                                                            onEdit={() => handleEdit(tecido)}
+                                                            onDelete={() =>
+                                                                abrirModalExclusao(tecido)
+                                                            }
+                                                            isLast={isLast}
+                                                        />
                                                     </div>
                                                 </td>
                                             </tr>
@@ -158,10 +197,44 @@ export default function Tecidos() {
                 </div>
             </div>
 
-            {/* Modal Cadastrar Tecido */}
+            {/* Modal de Confirmação de Exclusão */}
+            <ModalExclusao
+                isOpen={isModalExclusaoOpen}
+                onClose={() => setIsModalExclusaoOpen(false)}
+                onConfirm={handleConfirmarExclusao}
+                titulo="Excluir tecido"
+                mensagem={
+                    <>
+                        Deseja mesmo prosseguir com esta ação e excluir{" "}
+                        <strong>{tecidoSelecionado?.nome}</strong>?
+                    </>
+                }
+            />
+
+            {/* Modal de Sucesso após Exclusão */}
+            <ModalConfirmacao
+                isOpen={isModalConfirmacaoOpen}
+                onClose={() => setIsModalConfirmacaoOpen(false)}
+                type="excluído"
+                message="Tecido excluído com sucesso!"
+                compactButton
+            />
+
+            {/* Modal de Edição */}
+            <EditarTecidoModal
+                isOpen={isModalEditarOpen}
+                onClose={() => setIsModalEditarOpen(false)}
+                fabricoId={fabricoId}
+                tecidoParaEditar={tecidoSelecionado}
+                onSuccess={() => {
+                    fetchTecidos();
+                }}
+            />
+
+            {/* Modal de Cadastro */}
             <CadastrarTecidoModal
-                isOpen={isModalTecidoOpen}
-                onClose={() => setIsModalTecidoOpen(false)}
+                isOpen={isModalCadastrarOpen}
+                onClose={() => setIsModalCadastrarOpen(false)}
                 fabricoId={fabricoId}
                 onSuccess={() => {
                     fetchTecidos();

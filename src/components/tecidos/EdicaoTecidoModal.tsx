@@ -1,11 +1,43 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import FloatingLabelInput from "../FloatingLabelInput";
-import { criarTecido } from "../../services/tecidoService";
+import { atualizarTecido } from "../../services/tecidoService";
 
-// Função para formatar as unidades de medida
-function formatarUnidadeDeMedida(unidade) {
+// Interfaces de Tipagem
+export interface Tecido {
+    id: number | string;
+    nome?: string;
+    unidade_de_medida?: string;
+    unidade_medida?: string;
+    un_medida?: string;
+    custo_unitario?: number | string;
+}
+
+interface CustoOptionProps {
+    checked: boolean;
+    label: string;
+    onSelect: () => void;
+}
+
+interface EditarTecidoModalProps {
+    isOpen: boolean;
+    onClose?: () => void;
+    onSuccess?: (resultado?: unknown) => void | Promise<void>;
+    fabricoId: number | string;
+    tecidoParaEditar: Tecido | null;
+}
+
+interface ApiError {
+    response?: {
+        data?: {
+            message?: string;
+        };
+    };
+}
+
+// Funções Auxiliares Tipadas
+function formatarUnidadeDeMedida(unidade?: string): string {
     if (!unidade) return "";
-    const unidadesMapeadas = {
+    const unidadesMapeadas: Record<string, string> = {
         METRO: "Metro (m)",
         CENTIMETRO: "Centímetro (cm)",
         GRAMA: "Grama (g)",
@@ -18,26 +50,17 @@ function formatarUnidadeDeMedida(unidade) {
 
 const UNIDADES_OPCOES = ["METRO", "CENTIMETRO", "GRAMA", "QUILOGRAMA", "UNIDADE", "PAR"];
 
-const UNIDADES_LABELS = {
-    METRO: "Metro (m)",
-    CENTIMETRO: "Centímetro (cm)",
-    GRAMA: "Grama (g)",
-    QUILOGRAMA: "Quilograma (kg)",
-    UNIDADE: "Unidade (un)",
-    PAR: "Par (par)",
-};
-
-const parseNumero = (valor) => {
+const parseNumero = (valor?: string | number): number => {
     const numero = Number(String(valor || "").replace(",", "."));
     return Number.isFinite(numero) ? numero : 0;
 };
 
-const parseMoeda = (valor) => {
+const parseMoeda = (valor?: string | number): number => {
     const digitos = String(valor || "").replace(/\D/g, "");
     return digitos ? Number(digitos) / 100 : 0;
 };
 
-const formatarMoeda = (valor) => {
+const formatarMoeda = (valor?: number | string): string => {
     const numero = Number(valor);
     return (Number.isFinite(numero) ? numero : 0).toLocaleString("pt-BR", {
         style: "currency",
@@ -45,13 +68,13 @@ const formatarMoeda = (valor) => {
     });
 };
 
-const maskMoeda = (valor) => {
+const maskMoeda = (valor?: number | string): string => {
     const digitos = String(valor || "").replace(/\D/g, "");
     if (!digitos) return "";
     return formatarMoeda(Number(digitos) / 100);
 };
 
-function CustoOption({ checked, label, onSelect }) {
+function CustoOption({ checked, label, onSelect }: CustoOptionProps) {
     return (
         <button
             type="button"
@@ -74,16 +97,22 @@ function CustoOption({ checked, label, onSelect }) {
     );
 }
 
-export function CadastrarTecidoModal({ isOpen, onClose, onSuccess, fabricoId }) {
-    const [nome, setNome] = useState("");
-    const [unidadeMedida, setUnidadeMedida] = useState("");
-    const [tipoCusto, setTipoCusto] = useState("unitario");
-    const [custoUnitario, setCustoUnitario] = useState("");
-    const [valorPago, setValorPago] = useState("");
-    const [quantidadeAdquirida, setQuantidadeAdquirida] = useState("");
-    const [submitting, setSubmitting] = useState(false);
-    const [error, setError] = useState("");
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+export function EditarTecidoModal({
+    isOpen,
+    onClose,
+    onSuccess,
+    fabricoId,
+    tecidoParaEditar,
+}: EditarTecidoModalProps) {
+    const [nome, setNome] = useState<string>("");
+    const [unidadeMedida, setUnidadeMedida] = useState<string>("");
+    const [tipoCusto, setTipoCusto] = useState<"unitario" | "compra">("unitario");
+    const [custoUnitario, setCustoUnitario] = useState<string>("");
+    const [valorPago, setValorPago] = useState<string>("");
+    const [quantidadeAdquirida, setQuantidadeAdquirida] = useState<string>("");
+    const [submitting, setSubmitting] = useState<boolean>(false);
+    const [error, setError] = useState<string>("");
+    const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
 
     const custoCalculado = useMemo(() => {
         if (tipoCusto === "unitario") return parseMoeda(custoUnitario);
@@ -107,10 +136,26 @@ export function CadastrarTecidoModal({ isOpen, onClose, onSuccess, fabricoId }) 
     }, []);
 
     useEffect(() => {
-        if (!isOpen) {
+        if (isOpen && tecidoParaEditar) {
+            setNome(tecidoParaEditar.nome || "");
+            setUnidadeMedida(
+                tecidoParaEditar.unidade_de_medida ||
+                    tecidoParaEditar.unidade_medida ||
+                    tecidoParaEditar.un_medida ||
+                    "",
+            );
+            setTipoCusto("unitario");
+
+            const valorCusto = tecidoParaEditar.custo_unitario ?? 0;
+            const centavos = Math.round(Number(valorCusto) * 100);
+            setCustoUnitario(maskMoeda(centavos));
+
+            setValorPago("");
+            setQuantidadeAdquirida("");
+        } else if (!isOpen) {
             resetForm();
         }
-    }, [isOpen, resetForm]);
+    }, [isOpen, tecidoParaEditar, resetForm]);
 
     const handleClose = useCallback(() => {
         if (submitting) return;
@@ -160,16 +205,22 @@ export function CadastrarTecidoModal({ isOpen, onClose, onSuccess, fabricoId }) 
             setSubmitting(true);
             setError("");
 
-            const novoTecido = await criarTecido(payload);
+            if (!tecidoParaEditar?.id) {
+                setError("Tecido inválido para edição.");
+                return;
+            }
 
-            await onSuccess?.(novoTecido);
+            const resultado = await atualizarTecido(tecidoParaEditar.id, payload);
+
+            await onSuccess?.(resultado);
             resetForm();
             onClose?.();
         } catch (err) {
             console.error(err);
+            const apiError = err as ApiError;
             setError(
-                err.response?.data?.message ||
-                    "Não foi possível cadastrar o tecido. Tente novamente.",
+                apiError.response?.data?.message ||
+                    "Não foi possível atualizar o tecido. Tente novamente.",
             );
         } finally {
             setSubmitting(false);
@@ -190,11 +241,11 @@ export function CadastrarTecidoModal({ isOpen, onClose, onSuccess, fabricoId }) 
                 <div className="mb-8 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <img
-                            src="/add-fabric-pin.png"
+                            src="/tecidos-ativado.png"
                             alt=""
                             className="h-[28px] w-[28px] object-contain"
                         />
-                        <h2 className="text-[26px] font-light text-[#404040]">Cadastrar tecido</h2>
+                        <h2 className="text-[26px] font-light text-[#404040]">Editar tecido</h2>
                     </div>
                     <button
                         type="button"
@@ -222,14 +273,17 @@ export function CadastrarTecidoModal({ isOpen, onClose, onSuccess, fabricoId }) 
                             <FloatingLabelInput
                                 label="Nome do tecido"
                                 value={nome}
-                                onChange={(event) => setNome(event.target.value)}
+                                onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                                    setNome(event.target.value)
+                                }
                                 inputClassName="border-[#898C8F] text-[14px] text-[#898C8F]"
-                                onKeyDown={(event) => {
+                                onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) => {
                                     if (event.key === "Enter") {
                                         event.preventDefault();
                                         handleSubmit();
                                     }
                                 }}
+                                endAdornment={null}
                             />
 
                             <div className="relative w-full">
@@ -301,10 +355,11 @@ export function CadastrarTecidoModal({ isOpen, onClose, onSuccess, fabricoId }) 
                                 label="Custo unitário"
                                 value={custoUnitario}
                                 inputMode="numeric"
-                                onChange={(event) =>
+                                onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
                                     setCustoUnitario(maskMoeda(event.target.value))
                                 }
                                 inputClassName="border-[#898C8F] text-[14px] text-[#898C8F]"
+                                endAdornment={null}
                             />
                         </div>
                     ) : (
@@ -314,16 +369,20 @@ export function CadastrarTecidoModal({ isOpen, onClose, onSuccess, fabricoId }) 
                                     label="Valor pago"
                                     value={valorPago}
                                     inputMode="numeric"
-                                    onChange={(event) =>
+                                    onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
                                         setValorPago(maskMoeda(event.target.value))
                                     }
                                     inputClassName="border-[#898C8F] text-[14px] text-[#898C8F]"
+                                    endAdornment={null}
                                 />
                                 <FloatingLabelInput
                                     label="Quantidade adquirida"
                                     value={quantidadeAdquirida}
-                                    onChange={(event) => setQuantidadeAdquirida(event.target.value)}
+                                    onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                                        setQuantidadeAdquirida(event.target.value)
+                                    }
                                     inputClassName="border-[#898C8F] text-[14px] text-[#898C8F]"
+                                    endAdornment={null}
                                 />
                             </div>
 
@@ -345,7 +404,7 @@ export function CadastrarTecidoModal({ isOpen, onClose, onSuccess, fabricoId }) 
                             onClick={handleSubmit}
                             className="h-[39px] shrink-0 rounded-full bg-[#A9E2F2] px-6 text-[15px] font-light text-[#4696AD] transition hover:bg-[#A2DCED] disabled:cursor-not-allowed disabled:opacity-60 whitespace-nowrap"
                         >
-                            {submitting ? "Salvando..." : "Concluir cadastro"}
+                            {submitting ? "Salvando..." : "Salvar alterações"}
                         </button>
                     </div>
                 </div>
