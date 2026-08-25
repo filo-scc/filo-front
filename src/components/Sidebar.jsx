@@ -53,6 +53,7 @@ export function Sidebar() {
             { name: "Produtos", slug: "produtos", path: "/produtos" },
             { name: "Aviamentos", slug: "aviamentos", path: "/aviamentos" },
             { name: "Financeiro", slug: "financeiro", path: "/financeiro" },
+            { name: "Tecidos", slug: "tecidos", path: "/tecidos" },
             { name: "Configurações", slug: "configuracoes", path: "/configuracoes" },
         ];
 
