@@ -8,6 +8,7 @@ import {
     getProdutosPorFabrico,
     vincularProdutoAoCliente,
 } from "../services/clientesService";
+import { getEnderecoByCep } from "../services/apiCep";
 import { apenasNumeros, formatarCep, formatarCnpj, formatarTelefone } from "../utils/formatters";
 import { LoadingButton, ReferenceCardsSkeleton } from "../components/geral/Loading";
 
@@ -51,8 +52,27 @@ export default function ClientesCadastrar() {
         setForm((prev) => ({ ...prev, telefone: formatarTelefone(e.target.value) }));
     };
 
-    const handleChangeCep = (e) => {
-        setForm((prev) => ({ ...prev, cep: formatarCep(e.target.value) }));
+    const handleChangeCep = async (e) => {
+        const novoCep = formatarCep(e.target.value);
+        setForm((prev) => ({ ...prev, cep: novoCep }));
+
+        const cepNumerico = apenasNumeros(novoCep);
+        if (cepNumerico.length === 8) {
+            try {
+                const dados = await getEnderecoByCep(cepNumerico);
+                if (dados && !dados.erro) {
+                    setForm((prev) => ({
+                        ...prev,
+                        rua: dados.logradouro || dados.rua || prev.rua,
+                        bairro: dados.bairro || prev.bairro,
+                        cidade: dados.localidade || dados.cidade || prev.cidade,
+                        estado: dados.uf || dados.estado || prev.estado,
+                    }));
+                }
+            } catch (error) {
+                console.error("Erro ao buscar o CEP fornecido:", error);
+            }
+        }
     };
 
     const handleChangeNumeroEndereco = (e) => {
@@ -263,9 +283,7 @@ export default function ClientesCadastrar() {
                 const clientes = await getClientes(fabricoIdNumerico);
                 const clienteRecemCriado = [...(clientes || [])].reverse().find((cliente) => {
                     const cnpjCliente = valorOuUndefined(apenasNumeros(cliente?.cnpj));
-
                     const correspondenciaCnpj = cnpjCliente === cnpjNumerico;
-
                     const mesmoNome = String(cliente?.nome || "").trim() === nome;
 
                     return correspondenciaCnpj && mesmoNome;

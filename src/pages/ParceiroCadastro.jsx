@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { createParceiro } from "../services/parceiroService";
 import { getAllEtapasByFabricoId } from "../services/etapaService";
 import { LoadingButton, SkeletonBox } from "../components/geral/Loading";
+import { getEnderecoByCep } from "../services/apiCep";
 
 // Componente para inputs com Label Flutuante
 const FloatingInput = ({ label, name, value, onChange, containerClass, ...rest }) => (
@@ -154,25 +155,17 @@ export default function ParceiroCadastro() {
     });
 
     useEffect(() => {
-        const cleanCep = formData.cep.replace(/\D/g, "");
+        const cleanCep = (formData.cep || "").replace(/\D/g, "");
 
         if (cleanCep.length === 8) {
             const fetchEndereco = async () => {
-                try {
-                    const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
-                    const data = await response.json();
+                const endereco = await getEnderecoByCep(cleanCep);
 
-                    if (!data.erro) {
-                        setFormData((prev) => ({
-                            ...prev,
-                            rua: data.logradouro || prev.rua,
-                            bairro: data.bairro || prev.bairro,
-                            cidade: data.localidade || prev.cidade,
-                            estado: data.uf || prev.estado,
-                        }));
-                    }
-                } catch (err) {
-                    console.error("Erro ao buscar dados do CEP:", err);
+                if (endereco) {
+                    setFormData((prev) => ({
+                        ...prev,
+                        ...endereco,
+                    }));
                 }
             };
 

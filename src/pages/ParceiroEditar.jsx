@@ -4,6 +4,7 @@ import { getParceiroById, updateParceiro } from "../services/parceiroService";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import { getAllEtapasByFabricoId } from "../services/etapaService";
 import { FormPageSkeleton, LoadingButton, SkeletonBox } from "../components/geral/Loading";
+import { getEnderecoByCep } from "../services/apiCep";
 
 const FloatingInput = ({ label, name, value, onChange, containerClass, ...rest }) => (
     <div className={`relative group ${containerClass}`}>
@@ -98,27 +99,15 @@ const EditarParceiro = () => {
             masked = maskCep(value);
             const cepLimpo = value.replace(/\D/g, "");
 
-            // Atualiza o estado do CEP imediatamente para o input não travar
             setFormData((prev) => ({ ...prev, cep: masked }));
 
-            // Quando completar 8 dígitos, busca o endereço e sobrescreve os campos existentes
             if (cepLimpo.length === 8) {
-                try {
-                    const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
-                    const data = await response.json();
-
-                    if (!data.erro) {
-                        setFormData((prev) => ({
-                            ...prev,
-                            cep: masked,
-                            rua: data.logradouro || "",
-                            bairro: data.bairro || "",
-                            cidade: data.localidade || "",
-                            estado: data.uf || "",
-                        }));
-                    }
-                } catch (err) {
-                    console.error("Erro ao buscar CEP:", err);
+                const endereco = await getEnderecoByCep(cepLimpo);
+                if (endereco) {
+                    setFormData((prev) => ({
+                        ...prev,
+                        ...endereco,
+                    }));
                 }
             }
             return;
