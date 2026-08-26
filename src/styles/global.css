@@ -50,9 +50,11 @@ body {
     animation: filo-text-shimmer 2s ease-in-out infinite;
 }
 
-.scrollbar-sutil {
-    scrollbar-width: thin;
-    scrollbar-color: #d6d6d6 transparent;
+@supports not selector(::-webkit-scrollbar) {
+    .scrollbar-sutil {
+        scrollbar-width: thin;
+        scrollbar-color: #d6d6d6 transparent;
+    }
 }
 
 .scrollbar-sutil::-webkit-scrollbar {

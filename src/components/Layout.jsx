@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
 import { useAuth } from "@/context/AuthContext";
 
 export function Layout({ children }) {
     const { loading } = useAuth();
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     if (loading) {
         return null;
@@ -11,29 +13,32 @@ export function Layout({ children }) {
 
     return (
         <div
-            className="min-h-screen flex flex-col"
+            className="scrollbar-sutil flex h-dvh flex-col overflow-y-auto"
             style={{
-                background: "linear-gradient(to bottom, #F4F4F4 25%, #C7E9F5 100%)",
+                background: "linear-gradient(to bottom, #F3F4FA 25%, #C7E9F5 100%)",
                 backgroundAttachment: "fixed",
             }}
         >
-            {/* Conteúdo principal (Sidebar + Área) */}
             <div className="flex flex-1">
-                {/* Sidebar Fixa */}
-                <div className="fixed inset-y-0 left-0 z-40">
-                    <Sidebar />
-                </div>
+                <Sidebar isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
 
-                {/* Área de Conteúdo */}
-                <div className="flex-1 ml-[219px] flex flex-col min-w-0 overflow-hidden">
-                    <Header />
-                    <main className="flex-1 overflow-hidden">{children}</main>
+                {mobileMenuOpen && (
+                    <button
+                        type="button"
+                        aria-label="Fechar menu"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="fixed inset-0 z-30 bg-black/25 backdrop-blur-[1px] lg:hidden"
+                    />
+                )}
+
+                <div className="flex min-w-0 flex-1 flex-col lg:ml-[219px]">
+                    <Header onMenuOpen={() => setMobileMenuOpen(true)} />
+                    <main className="min-w-0 flex-1">{children}</main>
                 </div>
             </div>
 
-            {/* Footer */}
-            <footer className="w-full h-[117px] flex items-center justify-center p-10">
-                <p className="text-[#4696AD] text-sm font-medium">
+            <footer className="flex h-[117px] w-full items-center justify-center px-4 lg:pl-[219px]">
+                <p className="text-center text-sm font-medium text-[#4696AD]">
                     Filo® | Onde negócios fluem, resultados acontecem
                 </p>
             </footer>
