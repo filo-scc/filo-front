@@ -737,7 +737,9 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
                                         })}
                                     </div>
                                 ) : (
-                                    <div className="mt-1 text-[13px] text-[#888]"></div>
+                                    <p className="text-[13px] text-[#898C8F] font-light px-2 pt-1">
+                                        Nenhum material cadastrado.
+                                    </p>
                                 )}
                             </div>
                         </>
@@ -748,6 +750,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
                     <button
                         type="button"
                         onClick={() => setModalImpressaoAberto(true)}
+                        disabled={loading}
                         className="w-[71px] h-[39px] bg-[#A9E2F2] rounded-full flex items-center justify-center hover:bg-[#A2DCED] transition-colors shadow-sm focus:outline-none"
                     >
                         <img
@@ -814,6 +817,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
                         dadosFicha={ficha}
                         fichaId={fichaId}
                         referencia={referenciaCliente}
+                        aviamentosProduto={aviamentosProduto}
                     />
                     <NotaDeSaidaPrintView
                         ficha={ficha}
