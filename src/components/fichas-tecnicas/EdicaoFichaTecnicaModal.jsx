@@ -221,6 +221,7 @@ export default function EdicaoFichaTecnicaModal({
     dadosFicha,
 }) {
     const [loading, setLoading] = useState(false);
+    const [saveError, setSaveError] = useState("");
 
     const [coresSelecionadas, setCoresSelecionadas] = useState([]);
     const [todasCoresDisponiveis, setTodasCoresDisponiveis] = useState([]);
@@ -528,6 +529,16 @@ export default function EdicaoFichaTecnicaModal({
         [totaisPorTamanho],
     );
 
+    const totalPerdas = useMemo(
+        () =>
+            Number(relatorioAcabamento.defeitoCostura || 0) +
+            Number(relatorioAcabamento.defeitoTecido || 0) +
+            Number(relatorioAcabamento.retiradas || 0) +
+            Number(relatorioAcabamento.sobras || 0),
+        [relatorioAcabamento],
+    );
+    const perdasValidas = !isUltimaEtapa || totalPerdas <= totalGeral;
+
     const proporcoes = useMemo(() => {
         const arrayDeTotais = sizeItems.map((s) => totaisPorTamanho[s.id] || 0);
         const arrayDeProporcoes = calcularProporcao(arrayDeTotais);
@@ -573,8 +584,9 @@ export default function EdicaoFichaTecnicaModal({
 
     const handleConcluir = async () => {
         setValidacaoPrecoExibida(true);
+        setSaveError("");
 
-        if (parceirosSemPreco.length > 0) {
+        if (parceirosSemPreco.length > 0 || !perdasValidas) {
             return;
         }
 
@@ -688,6 +700,12 @@ export default function EdicaoFichaTecnicaModal({
             onClose();
         } catch (error) {
             console.error("Erro ao salvar edição", error);
+            const message = error?.response?.data?.message;
+            setSaveError(
+                Array.isArray(message)
+                    ? message.join(" ")
+                    : message || "Não foi possível salvar a ficha. Tente novamente.",
+            );
         } finally {
             setLoading(false);
         }
@@ -698,7 +716,7 @@ export default function EdicaoFichaTecnicaModal({
     return (
         <>
             <div
-                className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4 backdrop-blur-sm print:hidden"
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-2 backdrop-blur-sm print:hidden sm:p-4"
                 onClick={() => {
                     if (!isProdutoParceirosOpen) {
                         onClose();
@@ -706,17 +724,17 @@ export default function EdicaoFichaTecnicaModal({
                 }}
             >
                 <div
-                    className="bg-white rounded-[24px] w-full max-w-[850px] max-h-[95vh] flex flex-col shadow-2xl relative overflow-hidden font-['Outfit',_sans-serif]"
+                    className="relative flex max-h-[96dvh] w-full max-w-[850px] flex-col overflow-hidden rounded-[24px] bg-white shadow-2xl font-['Outfit',_sans-serif] sm:max-h-[95vh] sm:rounded-[24px]"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <div className="flex justify-between items-center px-8 py-6 shrink-0">
+                    <div className="flex shrink-0 items-center justify-between px-4 py-4 sm:px-8 sm:py-6">
                         <div className="flex items-center gap-3">
                             <img
                                 src="/etiqueta-preta.png"
                                 alt="Tag"
                                 className="w-[28px] h-[28px] object-contain opacity-70"
                             />
-                            <h2 className="text-[26px] font-light text-[#404040]">
+                            <h2 className="text-xl font-light text-[#404040] sm:text-[26px]">
                                 Editar Ficha Técnica {dadosFicha?.numero}
                             </h2>
                         </div>
@@ -729,7 +747,7 @@ export default function EdicaoFichaTecnicaModal({
                         </button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto pb-8 px-8 pt-1 space-y-6 scrollbar-sutil">
+                    <div className="flex-1 space-y-6 overflow-y-auto px-4 pb-8 pt-1 scrollbar-sutil sm:px-8">
                         <div className="flex flex-col md:flex-row gap-6">
                             <div className="w-[209px] h-[165px] shrink-0 rounded-[10px] overflow-hidden border border-dashed border-[#898C8F]">
                                 <img
@@ -739,7 +757,7 @@ export default function EdicaoFichaTecnicaModal({
                                 />
                             </div>
 
-                            <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-3 content-start">
+                            <div className="grid flex-1 grid-cols-1 content-start gap-x-6 gap-y-3 sm:grid-cols-2">
                                 <FloatingInput
                                     label="Referência Interna"
                                     valor={dadosFicha?.produto?.nome}
@@ -1158,6 +1176,25 @@ export default function EdicaoFichaTecnicaModal({
                             />
                         )}
 
+                        {!perdasValidas && (
+                            <div
+                                className="mt-4 rounded-[10px] border border-red-200 bg-red-50 p-4 text-[14px] font-light text-red-700"
+                                role="alert"
+                            >
+                                A soma das perdas ({totalPerdas}) não pode ultrapassar a quantidade
+                                da ficha ({totalGeral}).
+                            </div>
+                        )}
+
+                        {saveError && (
+                            <div
+                                className="mt-4 rounded-[10px] border border-red-200 bg-red-50 p-4 text-[14px] font-light text-red-700"
+                                role="alert"
+                            >
+                                {saveError}
+                            </div>
+                        )}
+
                         <div className="max-[30px] relative mt-5 break-inside-avoid">
                             <fieldset className="border border-[#E8E8E8] rounded-[10px] p-4 bg-[#F9F9F9] min-h-[80px]">
                                 <legend className="px-2 text-[12px] text-[#898C8F] ml-2 font-light bg-white">
@@ -1196,7 +1233,7 @@ export default function EdicaoFichaTecnicaModal({
                         <div className="py-5  flex justify-end items-center shrink-0">
                             <button
                                 onClick={handleConcluir}
-                                disabled={loading}
+                                disabled={loading || !perdasValidas}
                                 className="px-10 h-[42px] rounded-full bg-[#A9E2F2] text-[#347A8A] font-normal text-[15px] hover:bg-[#97D8EA] transition-colors shadow-sm disabled:opacity-50"
                             >
                                 {loading ? "Salvando..." : "Concluir edição"}

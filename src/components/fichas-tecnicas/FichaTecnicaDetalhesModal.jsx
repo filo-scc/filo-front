@@ -329,21 +329,21 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-2 backdrop-blur-sm sm:p-4"
             onClick={onClose}
         >
             <div
-                className="bg-white rounded-[24px] w-full max-w-[850px] max-h-[90vh] flex flex-col shadow-2xl relative overflow-hidden font-['Outfit',_sans-serif]"
+                className="relative flex max-h-[95dvh] w-full max-w-[850px] flex-col overflow-hidden rounded-[20px] bg-white shadow-2xl font-['Outfit',_sans-serif] sm:max-h-[90vh] sm:rounded-[24px]"
                 onClick={handleContentClick}
             >
-                <div className="flex justify-between items-center px-8 py-6 shrink-0">
+                <div className="flex shrink-0 items-center justify-between px-4 py-4 sm:px-8 sm:py-6">
                     <div className="flex items-center gap-3">
                         <img
                             src="/etiqueta-preta.png"
                             alt="Tag"
                             className="w-[30px] h-[30px] object-contain"
                         />
-                        <h2 className="text-[26px] font-light text-[#404040]">
+                        <h2 className="text-xl font-light text-[#404040] sm:text-[26px]">
                             Ficha Técnica {ficha?.numero}
                         </h2>
                     </div>
@@ -357,7 +357,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto pb-8 px-8 pt-1 space-y-8 scrollbar-sutil">
+                <div className="flex-1 space-y-8 overflow-y-auto px-4 pb-8 pt-1 scrollbar-sutil sm:px-8">
                     {loading ? (
                         <div className="text-center text-[#4696AD]">
                             Carregando dados da ficha...
@@ -373,7 +373,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
                                     />
                                 </div>
 
-                                <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-4 content-start">
+                                <div className="grid flex-1 grid-cols-1 content-start gap-x-6 gap-y-4 sm:grid-cols-2">
                                     <CampoDetalhe
                                         label="Referência Interna"
                                         valor={ficha?.produto?.nome}
@@ -744,7 +744,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
                     )}
                 </div>
 
-                <div className="px-8 py-5 flex justify-between items-center shrink-0">
+                <div className="flex shrink-0 flex-col-reverse gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-5">
                     <button
                         type="button"
                         onClick={() => setModalImpressaoAberto(true)}
@@ -757,10 +757,10 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
                         />
                     </button>
 
-                    <div className="flex gap-4">
+                    <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:gap-4">
                         <button
                             onClick={() => setModalEdicaoAberto(true)}
-                            className="px-8 h-[39px] rounded-full border border-[#4696AD] text-[#4696AD] bg-[#F3F4FA] hover:bg-[#F3FBFC] transition-colors text-sm"
+                            className="h-[39px] rounded-full border border-[#4696AD] bg-[#F3F4FA] px-8 text-sm text-[#4696AD] transition-colors hover:bg-[#F3FBFC]"
                         >
                             Editar Ficha
                         </button>
@@ -769,7 +769,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
                                 onClose();
                                 navigate("/");
                             }}
-                            className="px-10 h-[39px] rounded-full bg-[#A9E2F2] text-[#4696AD] hover:bg-[#A2DCED] transition-colors text-sm"
+                            className="h-[39px] rounded-full bg-[#A9E2F2] px-10 text-sm text-[#4696AD] transition-colors hover:bg-[#A2DCED]"
                         >
                             Concluir
                         </button>
