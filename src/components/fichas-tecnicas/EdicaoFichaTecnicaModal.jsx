@@ -612,39 +612,33 @@ export default function EdicaoFichaTecnicaModal({
                 });
             });
 
-            const promessasParceiros = parceiros.map((p) => {
-                const requisicoesDoParceiro = [];
-
-                if (p.parceiroProdutoExiste) {
-                    requisicoesDoParceiro.push(
-                        updateParceiroProdutoPrice(
+            const salvarParceiros = async () => {
+                for (const p of parceiros) {
+                    if (p.parceiroProdutoExiste) {
+                        await updateParceiroProdutoPrice(
                             p.parceiro_id,
                             dadosFicha.produto_id,
                             Number(p.preco_editavel),
-                        ),
-                    );
-                } else {
-                    requisicoesDoParceiro.push(
-                        createParceiroProduto(
+                        );
+                    } else {
+                        await createParceiroProduto(
                             p.parceiro_id,
                             dadosFicha.produto_id,
                             Number(p.preco_editavel),
-                        ),
-                    );
-                }
+                        );
+                    }
 
-                const temMultiplosParceiros = parceiros.length > 1;
+                    const temMultiplosParceiros = parceiros.length > 1;
 
-                const payloadFichaParceiro = {
-                    operacao: p.operacao,
-                    quantidade: temMultiplosParceiros ? 0 : totalGeral,
-                    valor: temMultiplosParceiros
-                        ? undefined
-                        : Number((totalGeral * Number(p.preco_editavel)).toFixed(2)),
-                };
-                if (p.isNovo) {
-                    requisicoesDoParceiro.push(
-                        createFichaParceiro(
+                    const payloadFichaParceiro = {
+                        operacao: p.operacao,
+                        quantidade: temMultiplosParceiros ? 0 : totalGeral,
+                        valor: temMultiplosParceiros
+                            ? undefined
+                            : Number((totalGeral * Number(p.preco_editavel)).toFixed(2)),
+                    };
+                    if (p.isNovo) {
+                        await createFichaParceiro(
                             fichaId,
                             p.parceiro_id,
                             p.operacao,
@@ -659,16 +653,16 @@ export default function EdicaoFichaTecnicaModal({
                                 );
                             }
                             throw error;
-                        }),
-                    );
-                } else {
-                    requisicoesDoParceiro.push(
-                        updateFichaTecnicaParceiro(fichaId, p.parceiro_id, payloadFichaParceiro),
-                    );
+                        });
+                    } else {
+                        await updateFichaTecnicaParceiro(
+                            fichaId,
+                            p.parceiro_id,
+                            payloadFichaParceiro,
+                        );
+                    }
                 }
-
-                return Promise.all(requisicoesDoParceiro);
-            });
+            };
 
             const promessasDelecaoParceiros = parceirosRemovidos.map((parceiroRemovido) =>
                 deleteFichaTecnicaParceiro(fichaId, parceiroRemovido.parceiro_id),
@@ -684,9 +678,9 @@ export default function EdicaoFichaTecnicaModal({
 
             await Promise.all([
                 ...promessasItens,
-                ...promessasParceiros,
                 ...promessasDelecaoParceiros,
                 promessaAtualizarQuantidade,
+                salvarParceiros(),
             ]);
             await syncFichaTecnicaCores(fichaId, coresIds);
 

@@ -20,6 +20,7 @@ import {
     getAviamentosDoProduto,
     getClientesDoProduto,
     getGradesByFabrico,
+    getParceiroByProduto,
     getProdutoById,
     getTecidosByFabrico,
     getTiposProdutoByFabrico,
@@ -34,9 +35,8 @@ import {
 } from "../services/clientesService";
 import { upload } from "../services/utilsService";
 import { getAllEtapasByFabricoId } from "../services/etapaService";
-import { getParceirosByFabrico } from "../services/parceiroService";
-import { getVinculoParceiroProduto } from "../services/parceiroProdutoService";
 import { CadastrarTecidoModal } from "../components/produtos/CadastrarTecidoModal";
+import { calcularCustosMediosDasEtapas } from "../utils/custosEtapasProduto";
 
 function formatarUnidadeDeMedida(unidade) {
     if (!unidade) return "";
@@ -574,6 +574,7 @@ export default function ProdutoEditar() {
                     resTiposProduto,
                     dadosFabrico,
                     todasEtapas,
+                    vinculosParceiroProduto,
                 ] = await Promise.all([
                     getProdutoById(id),
                     getClientesDoProduto(id),
@@ -591,7 +592,7 @@ export default function ProdutoEditar() {
                     getTiposProdutoByFabrico().catch(() => []),
                     Number.isFinite(fabricoId) ? getFabricoById(fabricoId) : Promise.resolve(null),
                     getAllEtapasByFabricoId(fabricoId).catch(() => []),
-                    getParceirosByFabrico(fabricoId).catch(() => []),
+                    getParceiroByProduto(id),
                 ]);
 
                 if (ignorar) return;
@@ -636,7 +637,10 @@ export default function ProdutoEditar() {
                     custo_unitario: Number(pivot.aviamento?.custo_unitario || 0),
                     unidade_de_medida: pivot.aviamento?.unidade_de_medida || "und",
                     quantidade: pivot.quantidade ?? "",
-                    custo: Number(pivot.custo) || 0,
+                    custo:
+                        pivot.custo !== null && pivot.custo !== undefined
+                            ? Number(pivot.custo)
+                            : null,
                     quantidadeOriginal: pivot.quantidade ?? "",
                 }));
 
@@ -700,48 +704,9 @@ export default function ProdutoEditar() {
                             : "",
                 });
 
-                const etapasParaCusto = (todasEtapas || [])
-                    .filter((etapa) => etapa.ativa)
-                    .sort((a, b) => (a.ordem || 0) - (b.ordem || 0))
-                    .slice(0, -1);
-
-                const etapasPreMapeadas = etapasParaCusto.map((etapa) => {
-                    return {
-                        ...etapa,
-                    };
-                });
-
-                const etapasVinculadasComCustos = await Promise.all(
-                    etapasPreMapeadas.map(async (etapa) => {
-                        let custoFinal = 0;
-
-                        const custoExistente = dadosProduto?.etapas_produto?.find(
-                            (ep) => ep.etapa_id === etapa.id,
-                        )?.custo;
-                        if (custoExistente) {
-                            custoFinal = Number(custoExistente) || 0;
-                        } else if (etapa.parceiro_id) {
-                            try {
-                                const vinculo = await getVinculoParceiroProduto(
-                                    etapa.parceiro_id,
-                                    id,
-                                );
-                                if (vinculo && vinculo.preco !== undefined) {
-                                    custoFinal = vinculo.preco;
-                                }
-                            } catch (err) {
-                                console.error(
-                                    `Erro ao buscar vínculo para parceiro ${etapa.parceiro_id} e produto ${id}:`,
-                                    err,
-                                );
-                            }
-                        }
-
-                        return {
-                            ...etapa,
-                            custo: custoFinal,
-                        };
-                    }),
+                const etapasVinculadasComCustos = calcularCustosMediosDasEtapas(
+                    todasEtapas,
+                    vinculosParceiroProduto,
                 );
 
                 setColunasFlexiveis(etapasVinculadasComCustos);
@@ -893,41 +858,34 @@ export default function ProdutoEditar() {
             idsOriginais.has(normalizarId(aviamento.id)),
         );
 
-        // 1. Desvincula aviamentos removidos
-        await Promise.all(
-            aviamentosRemovidos.map((aviamento) =>
-                desvincularProdutoAviamento(aviamento.relacao_id),
-            ),
-        );
+        // As mutações do mesmo produto são sequenciais para evitar contenção
+        // entre transações que também recalculam o seu custo total.
+        for (const aviamento of aviamentosRemovidos) {
+            await desvincularProdutoAviamento(aviamento.relacao_id);
+        }
 
-        // 2. Vincula novos aviamentos já enviando a quantidade
-        await Promise.all(
-            aviamentosAdicionados.map((aviamento) =>
-                vincularProdutoAviamento({
-                    produto_id: Number(id),
-                    aviamento_id: aviamento.id,
-                    quantidade: Number(String(aviamento.quantidade || 0).replace(",", ".")) || null,
-                }),
-            ),
-        );
+        for (const aviamento of aviamentosAdicionados) {
+            await vincularProdutoAviamento({
+                produto_id: Number(id),
+                aviamento_id: aviamento.id,
+                quantidade: Number(String(aviamento.quantidade || 0).replace(",", ".")) || null,
+            });
+        }
 
-        // 3. Atualiza a quantidade dos aviamentos já existentes (PATCH)
-        await Promise.all(
-            aviamentosMantidos.map((aviamento) => {
-                const original = aviamentosOriginais.find(
-                    (o) => normalizarId(o.id) === normalizarId(aviamento.id),
-                );
-                const relacaoId = aviamento.relacao_id || original?.relacao_id;
-                const qtdNum = Number(String(aviamento.quantidade || 0).replace(",", ".")) || null;
+        for (const aviamento of aviamentosMantidos) {
+            const original = aviamentosOriginais.find(
+                (o) => normalizarId(o.id) === normalizarId(aviamento.id),
+            );
+            const relacaoId = aviamento.relacao_id || original?.relacao_id;
+            const qtdNum = Number(String(aviamento.quantidade || 0).replace(",", ".")) || null;
+            const qtdOriginal = Number(String(original?.quantidade || 0).replace(",", ".")) || null;
 
-                if (relacaoId) {
-                    return atualizarProdutoAviamento(relacaoId, {
-                        quantidade: qtdNum,
-                    });
-                }
-                return Promise.resolve();
-            }),
-        );
+            if (relacaoId && qtdNum !== qtdOriginal) {
+                await atualizarProdutoAviamento(relacaoId, {
+                    quantidade: qtdNum,
+                });
+            }
+        }
 
         // 4. Recarrega os dados do banco para manter o estado sincronizado
         const aviamentosAtualizados = await getAviamentosDoProduto(id);
@@ -967,7 +925,9 @@ export default function ProdutoEditar() {
     const custoAviamentosCalculado = (formData.aviamentos || []).reduce((acc, av) => {
         const qtd = parseNumber(av.quantidade);
         const qtdOriginal = parseNumber(av.quantidadeOriginal ?? av.quantidade);
-        if (Number(av.custo) > 0 && qtd === qtdOriginal) return acc + Number(av.custo);
+        if (av.custo !== null && av.custo !== undefined && qtd === qtdOriginal) {
+            return acc + Number(av.custo);
+        }
         return acc + qtd * parseNumber(av.custo_unitario);
     }, 0);
 
@@ -982,26 +942,7 @@ export default function ProdutoEditar() {
     );
     const totalCalculado = valorTotalGasto + somaEtapas + custoOperacionalNum + outrosCustosNum;
 
-    const operacionalNaoMudou =
-        parseNumber(formData.custo_operacional) === parseNumber(produto?.custo_operacional);
-    const outrosNaoMudou =
-        parseNumber(formData.outros_custos) === parseNumber(produto?.outros_custos);
-    const aviamentosNaoMudaram =
-        (formData.aviamentos || []).length === (aviamentosOriginais || []).length &&
-        (formData.aviamentos || []).every(
-            (av) =>
-                parseNumber(av.quantidade) === parseNumber(av.quantidadeOriginal ?? av.quantidade),
-        );
-    const custoTotalSalvo = Number(produto?.custo_total);
-    const totalGeralCustoPeca =
-        tecidoNaoMudou &&
-        operacionalNaoMudou &&
-        outrosNaoMudou &&
-        aviamentosNaoMudaram &&
-        produto?.custo_total != null &&
-        Number.isFinite(custoTotalSalvo)
-            ? custoTotalSalvo
-            : totalCalculado;
+    const totalGeralCustoPeca = totalCalculado;
 
     const recarregarTecidos = async () => {
         try {

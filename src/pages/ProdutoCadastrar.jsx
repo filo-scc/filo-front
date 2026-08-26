@@ -601,19 +601,15 @@ export default function ProdutoCadastar() {
             const produtoId = produtoCriado.id;
 
             if (formData.aviamentos.length > 0 && produtoId) {
-                const promessasAviamentos = formData.aviamentos.map((aviamento) => {
+                for (const aviamento of formData.aviamentos) {
                     const qtd = Number(String(aviamento.quantidade).replace(",", ".") || 0);
-                    const custoItem = qtd * (aviamento.custo_unitario || 0);
 
-                    return vincularProdutoAviamento({
+                    await vincularProdutoAviamento({
                         produto_id: produtoId,
                         aviamento_id: aviamento.id,
                         quantidade: qtd,
-                        custo: Number(custoItem.toFixed(2)),
                     });
-                });
-
-                await Promise.all(promessasAviamentos);
+                }
             }
 
             if (produtoId) {
@@ -704,46 +700,33 @@ export default function ProdutoCadastar() {
                 return;
             }
 
-            // ... resto da sua função ...
-            await Promise.all(
-                etapasParaSalvar.map(async (etapa) => {
-                    const precoInformado = etapa.custo;
-                    const categoriaNome = etapa.nome;
+            for (const etapa of etapasParaSalvar) {
+                const precoInformado = etapa.custo;
+                const categoriaNome = etapa.nome;
 
-                    const parceirosDaEtapa = await getParceirosByFabricoECategoria(
-                        fabricoIdEfetivo,
-                        categoriaNome,
+                const parceirosDaEtapa = await getParceirosByFabricoECategoria(
+                    fabricoIdEfetivo,
+                    categoriaNome,
+                );
+
+                if (!parceirosDaEtapa || parceirosDaEtapa.length === 0) {
+                    console.warn(
+                        `Nenhum parceiro encontrado para a categoria '${categoriaNome}' no fabrico ${fabricoIdEfetivo}`,
                     );
+                    continue;
+                }
 
-                    if (!parceirosDaEtapa || parceirosDaEtapa.length === 0) {
-                        console.warn(
-                            `Nenhum parceiro encontrado para a categoria '${categoriaNome}' no fabrico ${fabricoIdEfetivo}`,
-                        );
-                        return;
+                for (const parceiro of parceirosDaEtapa) {
+                    const parceiroId = parceiro.id;
+                    const vinculoExistente = await getVinculoParceiroProduto(parceiroId, produtoId);
+
+                    if (vinculoExistente) {
+                        await atualizarParceiroProduto(parceiroId, produtoId, precoInformado);
+                    } else {
+                        await criarParceiroProduto(parceiroId, produtoId, precoInformado);
                     }
-
-                    await Promise.all(
-                        parceirosDaEtapa.map(async (parceiro) => {
-                            const parceiroId = parceiro.id;
-
-                            const vinculoExistente = await getVinculoParceiroProduto(
-                                parceiroId,
-                                produtoId,
-                            );
-
-                            if (vinculoExistente) {
-                                await atualizarParceiroProduto(
-                                    parceiroId,
-                                    produtoId,
-                                    precoInformado,
-                                );
-                            } else {
-                                await criarParceiroProduto(parceiroId, produtoId, precoInformado);
-                            }
-                        }),
-                    );
-                }),
-            );
+                }
+            }
         } catch (error) {
             console.error("Erro ao salvar custos de parceiros no banco:", error);
         }

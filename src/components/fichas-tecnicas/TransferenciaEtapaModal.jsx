@@ -284,10 +284,10 @@ export default function TransferenciaEtapaModal({
                 // aceitando tanto snake_case quanto camelCase, conforme o que a API retornar.
                 setRelatorioPerdas({
                     defeitoCostura: Number(
-                        fichaTecnica?.defeito_costura ?? fichaTecnica?.defeitoCostura ?? 0,
+                        fichaTecnica?.defeitos_costura ?? fichaTecnica?.defeitoCostura ?? 0,
                     ),
                     defeitoTecido: Number(
-                        fichaTecnica?.defeito_tecido ?? fichaTecnica?.defeitoTecido ?? 0,
+                        fichaTecnica?.defeitos_tecido ?? fichaTecnica?.defeitoTecido ?? 0,
                     ),
                     retiradas: Number(fichaTecnica?.retiradas ?? 0),
                     sobras: Number(fichaTecnica?.sobras ?? 0),
@@ -311,9 +311,9 @@ export default function TransferenciaEtapaModal({
         etapaConcluida?.nome,
         proximaEtapa.id,
         proximaEtapa.nome,
-        fichaTecnica?.defeito_costura,
+        fichaTecnica?.defeitos_costura,
         fichaTecnica?.defeitoCostura,
-        fichaTecnica?.defeito_tecido,
+        fichaTecnica?.defeitos_tecido,
         fichaTecnica?.defeitoTecido,
         fichaTecnica?.retiradas,
         fichaTecnica?.sobras,

@@ -5,12 +5,12 @@ import {
     getClientesDoProduto,
     excluirProduto,
     getAviamentosDoProduto,
+    getParceiroByProduto,
     getTiposProdutoByFabrico,
 } from "../services/produtoService";
 import { getFabricoById } from "../services/fabricoService";
 import { getAllEtapasByFabricoId } from "../services/etapaService";
-import { getParceirosByFabrico } from "../services/parceiroService";
-import { getVinculoParceiroProduto } from "../services/parceiroProdutoService";
+import { calcularCustosMediosDasEtapas } from "../utils/custosEtapasProduto";
 
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
 import SecaoDadosProduto from "../components/produtos/SecaoDadosProduto";
@@ -65,15 +65,21 @@ export default function ProdutoDetalhes() {
                 const usuarioLogado = userString ? JSON.parse(userString) : null;
                 const fabricoId = usuarioLogado?.fabrico_id;
 
-                const [dadosProduto, dadosClientes, dadosAviamentos, dadosTipos, todasEtapas] =
-                    await Promise.all([
-                        getProdutoById(id),
-                        getClientesDoProduto(id),
-                        getAviamentosDoProduto(id),
-                        getTiposProdutoByFabrico().catch(() => []),
-                        getAllEtapasByFabricoId(fabricoId).catch(() => []),
-                        getParceirosByFabrico(fabricoId).catch(() => []),
-                    ]);
+                const [
+                    dadosProduto,
+                    dadosClientes,
+                    dadosAviamentos,
+                    dadosTipos,
+                    todasEtapas,
+                    vinculosParceiroProduto,
+                ] = await Promise.all([
+                    getProdutoById(id),
+                    getClientesDoProduto(id),
+                    getAviamentosDoProduto(id),
+                    getTiposProdutoByFabrico().catch(() => []),
+                    getAllEtapasByFabricoId(fabricoId).catch(() => []),
+                    getParceiroByProduto(id),
+                ]);
 
                 if (usuarioLogado && dadosProduto.fabrico_id !== usuarioLogado.fabrico_id) {
                     setModalAtencaoAberto(true);
@@ -95,51 +101,9 @@ export default function ProdutoDetalhes() {
                 setClientesAssociados(dadosClientes);
                 setAviamentosProduto(dadosAviamentos);
 
-                // Mesma regra do cadastro: só etapas ativas, sem a última (ex.: expedição)
-                const etapasParaCusto = (todasEtapas || [])
-                    .filter((etapa) => etapa.ativa)
-                    .sort((a, b) => (a.ordem || 0) - (b.ordem || 0))
-                    .slice(0, -1);
-
-                // 1. Mapeamento inicial das etapas com o parceiro correspondente
-                const etapasPreMapeadas = etapasParaCusto.map((etapa) => {
-                    return {
-                        ...etapa,
-                    };
-                });
-
-                // 2. 🌟 Busca dinâmica na tabela intermediária (parceiro_produto) para cada vínculo encontrado
-                const etapasVinculadasComCustos = await Promise.all(
-                    etapasPreMapeadas.map(async (etapa) => {
-                        let custoFinal = 0;
-
-                        const custoExistente = dadosProduto?.etapas_produto?.find(
-                            (ep) => ep.etapa_id === etapa.id,
-                        )?.custo;
-                        if (custoExistente) {
-                            custoFinal = Number(custoExistente) || 0;
-                        } else if (etapa.parceiro_id) {
-                            try {
-                                const vinculo = await getVinculoParceiroProduto(
-                                    etapa.parceiro_id,
-                                    id,
-                                );
-                                if (vinculo && vinculo.preco !== undefined) {
-                                    custoFinal = vinculo.preco;
-                                }
-                            } catch (err) {
-                                console.error(
-                                    `Erro ao buscar vínculo para parceiro ${etapa.parceiro_id} e produto ${id}:`,
-                                    err,
-                                );
-                            }
-                        }
-
-                        return {
-                            ...etapa,
-                            custo: custoFinal,
-                        };
-                    }),
+                const etapasVinculadasComCustos = calcularCustosMediosDasEtapas(
+                    todasEtapas,
+                    vinculosParceiroProduto,
                 );
 
                 setColunasFlexiveis(etapasVinculadasComCustos);
@@ -188,15 +152,16 @@ export default function ProdutoDetalhes() {
         }
     };
 
-    const custoTecido = Number(
-        produto?.custo_tecido ||
-            Number(String(produto?.quantidade_tecido || 0).replace(",", ".")) *
-                Number(produto?.tecido?.custo_unitario || 0),
-    );
+    const custoTecido =
+        produto?.custo_tecido !== null && produto?.custo_tecido !== undefined
+            ? Number(produto.custo_tecido)
+            : Number(String(produto?.quantidade_tecido || 0).replace(",", ".")) *
+              Number(produto?.tecido?.custo_unitario || 0);
 
     const custoAviamentos = aviamentosProduto.reduce((acc, pivot) => {
-        const custoSalvo = Number(pivot.custo);
-        if (Number.isFinite(custoSalvo) && custoSalvo > 0) return acc + custoSalvo;
+        if (pivot.custo !== null && pivot.custo !== undefined) {
+            return acc + Number(pivot.custo);
+        }
 
         const qtd = Number(String(pivot.quantidade || 0).replace(",", "."));
         const custo = Number(pivot.aviamento?.custo_unitario || 0);
