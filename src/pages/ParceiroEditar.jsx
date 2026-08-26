@@ -58,7 +58,7 @@ const EditarParceiro = () => {
     });
 
     const maskTelefone = (value) => {
-        return value
+        return String(value ?? "")
             .replace(/\D/g, "")
             .slice(0, 11)
             .replace(/^(\d{2})(\d)/, "($1) $2")
@@ -66,10 +66,10 @@ const EditarParceiro = () => {
     };
 
     const maskCep = (value) => {
-        return value
+        return String(value ?? "")
             .replace(/\D/g, "")
             .slice(0, 8)
-            .replace(/(\d{5})(\d{1,3})$/, "$1-$2");
+            .replace(/^(\d{5})(\d)/, "$1-$2");
     };
 
     const maskAgencia = (value) => {
@@ -88,17 +88,49 @@ const EditarParceiro = () => {
         return `${numeros.slice(0, -1)}-${numeros.slice(-1)}`;
     };
 
-    const handleMaskedChange = (e) => {
+    const handleMaskedChange = async (e) => {
         const { name, value } = e.target;
         let masked = value;
+
         if (name === "telefone") masked = maskTelefone(value);
-        if (name === "cep") masked = maskCep(value);
+
+        if (name === "cep") {
+            masked = maskCep(value);
+            const cepLimpo = value.replace(/\D/g, "");
+
+            // Atualiza o estado do CEP imediatamente para o input não travar
+            setFormData((prev) => ({ ...prev, cep: masked }));
+
+            // Quando completar 8 dígitos, busca o endereço e sobrescreve os campos existentes
+            if (cepLimpo.length === 8) {
+                try {
+                    const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+                    const data = await response.json();
+
+                    if (!data.erro) {
+                        setFormData((prev) => ({
+                            ...prev,
+                            cep: masked,
+                            rua: data.logradouro || "",
+                            bairro: data.bairro || "",
+                            cidade: data.localidade || "",
+                            estado: data.uf || "",
+                        }));
+                    }
+                } catch (err) {
+                    console.error("Erro ao buscar CEP:", err);
+                }
+            }
+            return;
+        }
+
         if (name === "agencia" && formData.forma_pagamento === "TED") {
             masked = maskAgencia(value);
         }
         if (name === "conta" && formData.forma_pagamento === "TED") {
             masked = maskConta(value);
         }
+
         setFormData((prev) => ({ ...prev, [name]: masked }));
     };
 
@@ -231,9 +263,6 @@ const EditarParceiro = () => {
         );
     }
 
-    const inputClass =
-        "border border-[#D3D3D3] rounded-[10px] px-3 h-[39px] text-sm text-gray-600 focus:outline-none";
-
     return (
         <>
             <div className="p-6 pt-0 mt-6 w-full">
@@ -253,23 +282,22 @@ const EditarParceiro = () => {
                     )}
 
                     <form onSubmit={handleSubmit} className="space-y-8 w-full px-6">
-                        <div className="flex flex-warp gap-6 item-start">
+                        <div className="flex flex-wrap gap-6 items-start">
+                            {/* Dropdown Etapa de Produção */}
                             <div className="w-full md:w-[212px]">
                                 <h2 className="text-[#404040] font-light mb-4">
                                     Etapa de Produção
                                 </h2>
                                 <div className="relative w-full">
-                                    <div
-                                        className={`${inputClass} bg-white flex justify-between items-center ${
+                                    <button
+                                        type="button"
+                                        disabled={loadingEtapas}
+                                        onClick={() => setDropdownEtapaAberto(!dropdownEtapaAberto)}
+                                        className={`w-full bg-white flex items-center justify-between rounded-[10px] px-3 h-[39px] text-sm focus:outline-none border border-[#D3D3D3] ${
                                             loadingEtapas
                                                 ? "cursor-not-allowed opacity-60"
                                                 : "cursor-pointer"
                                         }`}
-                                        onClick={() => {
-                                            if (!loadingEtapas) {
-                                                setDropdownEtapaAberto(!dropdownEtapaAberto);
-                                            }
-                                        }}
                                     >
                                         {loadingEtapas ? (
                                             <SkeletonBox className="h-[14px] w-24 rounded-[7px]" />
@@ -285,7 +313,7 @@ const EditarParceiro = () => {
                                             </span>
                                         )}
                                         <svg
-                                            className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
+                                            className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${
                                                 dropdownEtapaAberto ? "rotate-180" : ""
                                             }`}
                                             fill="none"
@@ -299,38 +327,36 @@ const EditarParceiro = () => {
                                                 d="M19 9l-7 7-7-7"
                                             />
                                         </svg>
+                                    </button>
+
+                                    {/* Menu Etapas — animado via CSS */}
+                                    <div
+                                        className={`absolute z-20 mt-2 w-full bg-white border border-[#D3D3D3] rounded-[10px] shadow-lg overflow-hidden origin-top transition-all duration-300 max-h-60 overflow-y-auto ${
+                                            dropdownEtapaAberto
+                                                ? "opacity-100 scale-y-100 visible"
+                                                : "opacity-0 scale-y-95 invisible pointer-events-none"
+                                        }`}
+                                    >
+                                        {etapas.map((etapa) => (
+                                            <button
+                                                key={etapa.id}
+                                                type="button"
+                                                className="w-full h-[35px] flex items-center px-4 text-sm relative text-[#898C8F] hover:bg-[#F5F5F5] transition-colors text-left"
+                                                onClick={() => {
+                                                    setFormData((prev) => ({
+                                                        ...prev,
+                                                        categoria: etapa.nome,
+                                                    }));
+                                                    setDropdownEtapaAberto(false);
+                                                }}
+                                            >
+                                                {formData.categoria === etapa.nome && (
+                                                    <div className="absolute left-0 top-0 w-[4px] h-full bg-[#D7FE65]" />
+                                                )}
+                                                {etapa.nome}
+                                            </button>
+                                        ))}
                                     </div>
-
-                                    {dropdownEtapaAberto && (
-                                        <>
-                                            <div
-                                                className="fixed inset-0 z-10"
-                                                onClick={() => setDropdownEtapaAberto(false)}
-                                            ></div>
-
-                                            <div className="absolute z-20 mt-1 w-full bg-white border border-[#D3D3D3] rounded-[10px] shadow-lg overflow-hidden max-h-60 overflow-y-auto">
-                                                {etapas.map((etapa) => (
-                                                    <div
-                                                        key={etapa.id}
-                                                        className={`px-4 py-2 text-sm cursor-pointer transition-colors ${
-                                                            formData.categoria === etapa.nome
-                                                                ? "border-l-[3px] border-[#C4F042] text-gray-700 bg-white"
-                                                                : "border-l-[3px] border-transparent text-gray-600 hover:bg-[#F5F5F5]"
-                                                        }`}
-                                                        onClick={() => {
-                                                            setFormData((prev) => ({
-                                                                ...prev,
-                                                                categoria: etapa.nome,
-                                                            }));
-                                                            setDropdownEtapaAberto(false);
-                                                        }}
-                                                    >
-                                                        {etapa.nome}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </>
-                                    )}
                                 </div>
                             </div>
 
@@ -435,12 +461,12 @@ const EditarParceiro = () => {
                             </h2>
                             <div className="flex flex-col gap-4">
                                 <div className="flex flex-wrap gap-4">
-                                    {/* Dropdown estilo Produtos.jsx */}
+                                    {/* Dropdown Forma de Pagamento */}
                                     <div className="relative w-full md:w-[212px]">
                                         <button
                                             type="button"
                                             onClick={() => setDropdownAberto(!dropdownAberto)}
-                                            className={`w-full bg-white flex items-center justify-between rounded-[10px] px-3 h-[39px] text-sm focus:outline-none border border-[#D3D3D3]`}
+                                            className="w-full bg-white flex items-center justify-between rounded-[10px] px-3 h-[39px] text-sm focus:outline-none border border-[#D3D3D3]"
                                         >
                                             <span
                                                 className={
@@ -455,7 +481,9 @@ const EditarParceiro = () => {
                                                       "Dado de pagamento"}
                                             </span>
                                             <svg
-                                                className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${dropdownAberto ? "rotate-180" : ""}`}
+                                                className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${
+                                                    dropdownAberto ? "rotate-180" : ""
+                                                }`}
                                                 fill="none"
                                                 stroke="currentColor"
                                                 viewBox="0 0 24 24"
@@ -469,7 +497,7 @@ const EditarParceiro = () => {
                                             </svg>
                                         </button>
 
-                                        {/* Menu — sempre no DOM, animado via classes */}
+                                        {/* Menu Forma de Pagamento */}
                                         <div
                                             className={`absolute z-20 mt-2 w-full bg-white border border-[#D3D3D3] rounded-[10px] shadow-lg overflow-hidden origin-top transition-all duration-300 ${
                                                 dropdownAberto
