@@ -185,6 +185,7 @@ export default function ProductionChart({ refreshKey = 0, fetchSeries = getProdu
     const [period, setPeriod] = useState("semanal");
     const [intervalCount, setIntervalCount] = useState(7);
     const [series, setSeries] = useState(null);
+    const [loadedQuery, setLoadedQuery] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
     const [retryKey, setRetryKey] = useState(0);
@@ -212,10 +213,12 @@ export default function ProductionChart({ refreshKey = 0, fetchSeries = getProdu
         async (signal) => {
             setLoading(true);
             setError(false);
-            setSeries(null);
             try {
                 const result = await fetchSeries(period, intervalCount);
-                if (!signal.cancelled) setSeries(result);
+                if (!signal.cancelled) {
+                    setSeries(result);
+                    setLoadedQuery({ period, intervalCount });
+                }
             } catch (requestError) {
                 console.error("Erro ao carregar série de produção", requestError);
                 if (!signal.cancelled) setError(true);
@@ -244,6 +247,11 @@ export default function ProductionChart({ refreshKey = 0, fetchSeries = getProdu
             : chartData.some(
                   (item) => Number(item.production ?? 0) > 0 || Number(item.losses ?? 0) > 0,
               );
+    const requestedPeriodLabel = PERIODS.find((option) => option.value === period)?.label ?? period;
+    const loadedPeriodLabel =
+        PERIODS.find((option) => option.value === loadedQuery?.period)?.label ??
+        loadedQuery?.period;
+    const showingAnotherPeriod = Boolean(series && loadedQuery) && loadedQuery.period !== period;
 
     return (
         <section
@@ -404,14 +412,32 @@ export default function ProductionChart({ refreshKey = 0, fetchSeries = getProdu
                 </div>
             )}
 
+            {loading && series && (
+                <p className="mt-2 self-end text-xs text-[#7B7D80]" aria-live="polite">
+                    {showingAnotherPeriod
+                        ? `Carregando ${requestedPeriodLabel}. Exibindo ${loadedPeriodLabel} temporariamente.`
+                        : "Atualizando dados…"}
+                </p>
+            )}
+
             {error && series && (
-                <button
-                    type="button"
-                    onClick={() => setRetryKey((key) => key + 1)}
-                    className="mt-2 self-end text-xs text-[#D75757] underline underline-offset-2"
+                <div
+                    className="mt-2 flex w-full items-center justify-end gap-2 text-xs text-[#D75757]"
+                    aria-live="polite"
                 >
-                    Atualização falhou. Tentar novamente
-                </button>
+                    <span>
+                        {showingAnotherPeriod
+                            ? `Não foi possível carregar ${requestedPeriodLabel}. Exibindo ${loadedPeriodLabel}.`
+                            : "Atualização falhou. Exibindo os últimos dados disponíveis."}
+                    </span>
+                    <button
+                        type="button"
+                        onClick={() => setRetryKey((key) => key + 1)}
+                        className="shrink-0 underline underline-offset-2"
+                    >
+                        Tentar novamente
+                    </button>
+                </div>
             )}
         </section>
     );
