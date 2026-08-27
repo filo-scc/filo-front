@@ -562,15 +562,14 @@ export default function PedidosCadastrar() {
                     ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? 0,
                 );
                 return preco <= 0;
-            })
-        
-            if(temPrecoInvalido){
+            });
+
+            if (temPrecoInvalido) {
                 setErro(
                     "Não é possível concluir o pedido: existem fichas técnicas com valor unitário zerado.",
                 );
-            return;
+                return;
             }
-                
         }
 
         if (dataPrevista && dataPrevista.length < 10) {
