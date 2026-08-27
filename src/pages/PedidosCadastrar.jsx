@@ -137,7 +137,7 @@ function DropdownField({
                         className="fixed inset-0 z-10 cursor-default outline-none"
                     />
 
-                    <div className="absolute left-0 right-0 top-[calc(100%+2px)] z-20 overflow-hidden rounded-[14px] border border-[#898C8F] bg-white max-h-[240px] overflow-y-auto scrollbar-sutil py-1">
+                    <div className="absolute left-0 right-0 top-[calc(100%+2px)] z-20 overflow-hidden rounded-[14px] border border-[#898C8F] bg-white max-h-[240px] overflow-y-auto scrollbar-sutil">
                         {loading ? (
                             <DropdownOptionsSkeleton />
                         ) : opcoesFiltradas.length === 0 ? (
