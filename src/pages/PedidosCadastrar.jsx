@@ -503,7 +503,11 @@ export default function PedidosCadastrar() {
     const handleAtualizarFicha = (identificador, campo, valor) => {
         setFichas((prevFichas) =>
             prevFichas.map((ficha, index) => {
-                const ehAFicha = ficha.id ? ficha.id === identificador : index === identificador;
+                const ehAFicha =
+                    ficha.id !== undefined && ficha.id !== null
+                        ? ficha.id === identificador
+                        : index === identificador;
+
                 if (ehAFicha) {
                     return { ...ficha, [campo]: valor };
                 }
@@ -511,39 +515,33 @@ export default function PedidosCadastrar() {
             }),
         );
     };
-    const handleSalvarRefClienteNoBanco = async (identificador, novoValor) => {
-        const ficha = fichas.find((f, index) => (f.id ?? index) == identificador);
-        if (!ficha) return;
+
+    const handleSalvarClienteProduto = async (identificador) => {
+        const ficha = fichas.find((f, index) => {
+            return f.id !== undefined && f.id !== null
+                ? f.id === identificador
+                : index === identificador;
+        });
 
         const clienteId = clienteSelecionado?.id || ficha.cliente_id || ficha.clienteId;
-        const produtoId = ficha.produtoId || ficha.produto_id || ficha.id || ficha.ficha_tecnica_id;
 
-        if (!clienteId || !produtoId) return;
+        const produtoId = ficha.produto_id || ficha.produtoId || ficha.ficha_tecnica_id || ficha.id;
 
-        try {
-            await atualizarClientesProdutos(clienteId, produtoId, {
-                nome_para_cliente: novoValor,
-            });
-        } catch (error) {
-            
-        }
-    };
+        const precoRaw = ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? 0;
+        const precoTratado =
+            typeof precoRaw === "string"
+                ? Number(precoRaw.replace(/[^0-9.,]/g, "").replace(",", ".")) || 0
+                : Number(precoRaw) || 0;
 
-    const handleSalvarPrecoNoBanco = async (identificador, novoPreco) => {
-        const ficha = fichas.find((f, index) => (f.id ?? index) == identificador);
-        if (!ficha) return;
-
-        const clienteId = clienteSelecionado?.id || ficha.cliente_id || ficha.clienteId;
-        const produtoId = ficha.produtoId || ficha.produto_id || ficha.id || ficha.ficha_tecnica_id;
-
-        if (!clienteId || !produtoId) return;
+        const dadosClienteProduto = {
+            nome_para_cliente: ficha.referenciaCliente ?? ficha.ref_cliente ?? "",
+            preco_padrao: precoTratado,
+        };
 
         try {
-            await atualizarClientesProdutos(clienteId, produtoId, {
-                preco_padrao: Number(novoPreco) || 0,
-            });
+            await atualizarClientesProdutos(clienteId, produtoId, dadosClienteProduto);
         } catch (error) {
-           console.log(error)
+            console.error(error);
         }
     };
 
@@ -564,14 +562,15 @@ export default function PedidosCadastrar() {
                     ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? 0,
                 );
                 return preco <= 0;
-            });
-
-            if (temPrecoInvalido) {
+            })
+        
+            if(temPrecoInvalido){
                 setErro(
                     "Não é possível concluir o pedido: existem fichas técnicas com valor unitário zerado.",
                 );
-                return;
+            return;
             }
+                
         }
 
         if (dataPrevista && dataPrevista.length < 10) {
@@ -862,8 +861,7 @@ export default function PedidosCadastrar() {
                             isSobDemanda={isSobDemanda}
                             onRemoverFicha={handleRemoverFicha}
                             onAtualizarFicha={handleAtualizarFicha}
-                            onSalvarRefCliente={handleSalvarRefClienteNoBanco}
-                            onSalvarPreco={handleSalvarPrecoNoBanco}
+                            onSalvarClienteProduto={handleSalvarClienteProduto}
                         />
                     </div>
 
