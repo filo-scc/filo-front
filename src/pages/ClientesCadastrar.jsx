@@ -426,7 +426,7 @@ export default function ClientesCadastrar() {
                     <button
                         type="button"
                         onClick={() => navigate("/clientes")}
-                        className="bg-[#D75757] hover:bg-[#c94a4a] text-white h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px]"
+                        className="border border-[#D75757] bg-[#FFFFFF] hover:bg-[#FDF1F1] text-[#D75757] h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px]"
                     >
                         Cancelar
                     </button>

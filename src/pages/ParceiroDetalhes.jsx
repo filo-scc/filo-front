@@ -220,7 +220,7 @@ const ParceiroDetalhes = () => {
                     <div className="flex gap-4">
                         <button
                             onClick={() => abrirModalExclusao()}
-                            className="w-[189px] h-[39px] rounded-[18.9px] bg-[#D75757] text-white font-Outfit text-[16px] transition-colors hover:bg-[#d74646]"
+                            className="w-[189px] h-[39px] rounded-[18.9px] border border-[#D75757] bg-[#FFFFFF] text-[#D75757] font-Outfit text-[16px] transition-colors hover:bg-[#FDF1F1]"
                         >
                             Excluir Parceiro
                         </button>
