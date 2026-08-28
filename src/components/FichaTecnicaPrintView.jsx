@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useSyncExternalStore } from "react";
+import React, { useEffect, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import RelatorioDeAcabamento from "./fichas-tecnicas/RelatorioDeAcabamento";
 
