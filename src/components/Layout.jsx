@@ -37,7 +37,7 @@ export function Layout({ children }) {
                 </div>
             </div>
 
-            <footer className="flex h-[117px] w-full items-center justify-center px-4 lg:pl-[219px]">
+            <footer className="flex h-[117px] w-full items-center justify-center px-4 pb-6 lg:pl-[219px]">
                 <p className="text-center text-sm font-medium text-[#4696AD]">
                     Filo® | Onde negócios fluem, resultados acontecem
                 </p>

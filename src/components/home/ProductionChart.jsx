@@ -13,7 +13,7 @@ import { getProductionSeries } from "../../services/dashboardService";
 import { SkeletonBox } from "../geral/Loading";
 
 const GREEN = "#D7FE65";
-const RED = "#D75757";
+const RED = "#E5A8A8";
 const MIN_INTERVALS = 4;
 const MAX_INTERVALS = 14;
 const INTERVAL_MIN_WIDTH = 68;
@@ -74,7 +74,7 @@ function CustomTooltip({ active, payload, label, indicator }) {
                 </p>
             )}
             {indicator !== "production" && (
-                <p className="flex justify-between gap-5 text-[#D75757]">
+                <p className="flex justify-between gap-5 text-[#E5A8A8]">
                     <span>Perdas</span>
                     <strong className="font-medium">{numberFormatter.format(point.losses)}</strong>
                 </p>
@@ -148,7 +148,7 @@ function DashboardSelect({ label, value, onChange, options, className = "" }) {
                 <div
                     role="listbox"
                     aria-label={label}
-                    className="absolute inset-x-0 top-[calc(100%+4px)] z-50 overflow-hidden rounded-[8px] border-[0.5px] border-[#898C8F] bg-white py-0.5 shadow-[0_4px_8px_rgba(0,0,0,0.08)]"
+                    className="absolute inset-x-0 top-[calc(100%+4px)] z-50 overflow-hidden rounded-[8px] border-[0.5px] border-[#898C8F] bg-white shadow-[0_4px_8px_rgba(0,0,0,0.08)]"
                 >
                     {options.map((option) => {
                         const selected = option.value === value;

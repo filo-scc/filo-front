@@ -548,7 +548,6 @@ export default function TransferenciaEtapaModal({
             await createFichaEtapa({
                 ficha_tecnica_id: fichaTecnica.id,
                 etapa_id: proximaEtapa.id,
-                data_inicio: new Date().toISOString(),
             });
 
             // 5. Atualizar etapa_atual_id da ficha técnica para refletir a nova etapa
