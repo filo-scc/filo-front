@@ -357,7 +357,7 @@ export default function ProdutoDetalhes() {
                     <div className="flex justify-between items-center mt-14 py-4 w-full">
                         <button
                             onClick={() => navigate("/produtos")}
-                            className="w-[147px] h-[39px] rounded-[18.9px] bg-[#F3F4FA] border border-[#4696ad] text-[#4696ad] font-Outfit text-[16px] transition-colors hover:bg-[#E1F1F6]"
+                            className="px-8 h-[39px] rounded-full border border-[#4696AD] text-[#4696AD] bg-[#F3F4FA] hover:bg-[#F3FBFC] transition-colors text-sm"
                         >
                             Voltar
                         </button>
