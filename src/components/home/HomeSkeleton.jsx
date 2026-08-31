@@ -26,17 +26,17 @@ function SkeletonCard({ compact = false }) {
 function SkeletonColumn({ rounded, cardCount }) {
     return (
         <div
-            className={`w-[270px] min-w-[270px] max-h-full bg-[#F4F4F4] ${rounded} p-1 flex flex-col shrink-0`}
+            className={`flex max-h-full min-w-[260px] flex-1 flex-col bg-[#F4F4F4] ${rounded} px-3 pb-2 pt-1`}
         >
-            <div className="flex justify-between items-center mb-4 px-3 pt-3 shrink-0">
+            <div className="mb-4 flex shrink-0 items-center justify-between px-2 pt-3">
                 <div className="flex items-center gap-2">
                     <SkeletonBox className="w-5 h-5 rounded-[6px]" />
                     <SkeletonBox className="h-[18px] w-[120px] rounded-[8px]" />
                 </div>
-                <SkeletonBox className="w-4 h-4 rounded-[6px]" />
+                <SkeletonBox className="hidden h-4 w-4 rounded-[6px]" />
             </div>
 
-            <div className="flex-1 pr-1 pb-2 flex flex-col gap-1 min-h-0">
+            <div className="scrollbar-sutil -mr-2 flex min-h-0 flex-1 flex-col gap-1 overflow-y-scroll pb-2 pr-1">
                 {[...Array(cardCount)].map((_, index) => (
                     <SkeletonCard key={index} compact={index === cardCount - 1} />
                 ))}
@@ -55,7 +55,7 @@ export default function HomeSkeleton() {
 
     return (
         <>
-            <div className="flex justify-between items-center mb-8 shrink-0">
+            <div className="mb-6 flex shrink-0 items-center justify-between lg:ml-[18px]">
                 <div className="flex items-center gap-2">
                     <SkeletonBox className="w-5 h-5 rounded-[6px]" />
                     <SkeletonBox className="h-[18px] w-[150px] rounded-[8px]" />
@@ -65,7 +65,7 @@ export default function HomeSkeleton() {
             </div>
 
             <div className="relative flex-1 min-h-0 min-w-0 overflow-hidden">
-                <div className="flex gap-1 overflow-x-auto overflow-y-hidden h-full pb-4 no-scrollbar w-full">
+                <div className="flex h-full w-full gap-3.5 overflow-x-auto overflow-y-hidden pb-4 no-scrollbar">
                     {columns.map((column, index) => (
                         <SkeletonColumn
                             key={index}
