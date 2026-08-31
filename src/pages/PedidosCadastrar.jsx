@@ -27,6 +27,8 @@ import { getAllEtapasByFabricoId } from "../services/etapaService";
 import { DropdownOptionsSkeleton, LoadingButton, SkeletonBox } from "../components/geral/Loading";
 import ModalConfirmacaoEscolha from "../components/geral/ModalConfirmacaoEscolha";
 
+import { parsePreco } from "../utils/preco";
+
 const sectionTitleClass = "text-[20px] font-light text-[#404040] mb-4 font-['Outfit']";
 
 const normalizarPrecoOpcional = (preco) => {
@@ -533,10 +535,7 @@ export default function PedidosCadastrar() {
         const produtoId = ficha.produto_id || ficha.produtoId || ficha.ficha_tecnica_id || ficha.id;
 
         const precoRaw = ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? 0;
-        const precoTratado =
-            typeof precoRaw === "string"
-                ? Number(precoRaw.replace(/[^0-9.,]/g, "").replace(",", ".")) || 0
-                : Number(precoRaw) || 0;
+        const precoTratado = parsePreco(precoRaw);
 
         const dadosClienteProduto = {
             nome_para_cliente: ficha.referenciaCliente ?? ficha.ref_cliente ?? "",
@@ -563,7 +562,7 @@ export default function PedidosCadastrar() {
 
         if (isSobDemanda) {
             const temPrecoInvalido = fichas.some((ficha) => {
-                const preco = Number(
+                const preco = parsePreco(
                     ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? 0,
                 );
                 return preco <= 0;
@@ -613,7 +612,7 @@ export default function PedidosCadastrar() {
             if (isSobDemanda && clienteSelecionado?.id) {
                 valorTotalPedido = fichas.reduce((acc, ficha) => {
                     const quantidade = Number(ficha.quantidade) || 0;
-                    const preco = Number(
+                    const preco = parsePreco(
                         ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? 0,
                     );
                     return acc + quantidade * preco;
@@ -659,10 +658,7 @@ export default function PedidosCadastrar() {
 
                 if (isSobDemanda && clienteSelecionado?.id && pId) {
                     const precoRaw = ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? 0;
-                    const precoTratado =
-                        typeof precoRaw === "string"
-                            ? Number(precoRaw.replace(/[^0-9.,]/g, "").replace(",", ".")) || 0
-                            : Number(precoRaw) || 0;
+                    const precoTratado = parsePreco(precoRaw);
 
                     const dadosClienteProduto = {
                         nome_para_cliente: ficha.referenciaCliente ?? ficha.ref_cliente ?? "",
