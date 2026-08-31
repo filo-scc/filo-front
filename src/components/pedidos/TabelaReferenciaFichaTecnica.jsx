@@ -30,13 +30,38 @@ export default function TabelaReferenciaFichaTecnica({
         return Number.isFinite(num) ? num : 0;
     };
 
-    // Formatação de moeda embutida no componente
+    // Formatação de moeda para exibição normal (Subtotal, Total)
     const formatarMoeda = (valor) => {
         const num = parsePreco(valor);
         return num.toLocaleString("pt-BR", {
             style: "currency",
             currency: "BRL",
             minimumFractionDigits: 2,
+        });
+    };
+
+    // Formatação em tempo real para o input de preço (máscara acumulativa: 0,00 -> 0,01 -> 0,10 -> 1,00)
+    const formatarInputMoeda = (valor) => {
+        if (valor === "" || valor === null || valor === undefined) return "0,00";
+
+        let str = "";
+        if (typeof valor === "number") {
+            if (!Number.isFinite(valor)) return "0,00";
+            str = valor.toFixed(2);
+        } else {
+            str = String(valor).trim();
+            if (/^\d+(\.\d+)?$/.test(str)) {
+                str = Number(str).toFixed(2);
+            }
+        }
+
+        const apenasNumeros = str.replace(/\D/g, "");
+        if (!apenasNumeros) return "0,00";
+
+        const valorEmCentavos = parseInt(apenasNumeros, 10) / 100;
+        return valorEmCentavos.toLocaleString("pt-BR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
         });
     };
 
@@ -91,25 +116,25 @@ export default function TabelaReferenciaFichaTecnica({
                 <div className="flex flex-row items-center w-full">
                     <div className="flex-1 rounded-t-[16px] border-t border-l border-r border-[#d9d9d9] bg-[#d9d9d9] overflow-hidden">
                         <div
-                            className={`${gridColsClass} text-[#898C8F] text-xs md:text-sm font-['Outfit'] font-medium min-h-[48px]`}
+                            className={`${gridColsClass} text-[#898C8F] text-light md:text-light font-['Outfit'] font-light min-h-[48px]`}
                         >
-                            <div className="border-r border-[#c4c4c4] flex items-center justify-center px-2" />
-                            <div className="border-r border-[#c4c4c4] flex items-center justify-center text-center px-2">
+                            <div className="flex items-center justify-center px-2" />
+                            <div className="flex items-center justify-center text-center px-2">
                                 Ref. interna
                             </div>
                             {isSobDemanda && (
-                                <div className="border-r border-[#c4c4c4] flex items-center justify-center text-center px-2">
+                                <div className="flex items-center justify-center text-center px-2">
                                     Ref. cliente
                                 </div>
                             )}
-                            <div className="border-r border-[#c4c4c4] flex items-center justify-center text-center px-2">
+                            <div className="flex items-center justify-center text-center px-2">
                                 Cores
                             </div>
-                            <div className="border-r border-[#c4c4c4] flex items-center justify-center text-center px-2">
+                            <div className="flex items-center justify-center text-center px-2">
                                 Quantidade
                             </div>
                             {isSobDemanda && (
-                                <div className="border-r border-[#c4c4c4] flex items-center justify-center text-center px-2">
+                                <div className="flex items-center justify-center text-center px-2">
                                     Preço unit.
                                 </div>
                             )}
@@ -166,7 +191,7 @@ export default function TabelaReferenciaFichaTecnica({
                                             </div>
 
                                             {/* 2. Ref. interna */}
-                                            <div className="border-r border-[#d9d9d9] flex items-center justify-center text-center px-2 break-all text-sm md:text-base text-[#404040]">
+                                            <div className="border-r border-[#d9d9d9] flex items-center justify-center text-center px-2 break-all text-light md:text-base text-[#404040]">
                                                 {ficha.referenciaInterna ||
                                                     ficha.ref_interna ||
                                                     "-"}
@@ -174,7 +199,7 @@ export default function TabelaReferenciaFichaTecnica({
 
                                             {/* 3. Ref. cliente */}
                                             {isSobDemanda && (
-                                                <div className="border-r border-[#d9d9d9] flex items-center justify-center px-2 text-center text-sm md:text-base text-[#404040]">
+                                                <div className="border-r border-[#d9d9d9] flex items-center justify-center px-2 text-center text-light md:text-base text-[#404040]">
                                                     {isEditando ? (
                                                         <input
                                                             type="text"
@@ -191,7 +216,7 @@ export default function TabelaReferenciaFichaTecnica({
                                                                 handleInputBlur(e, itemKey)
                                                             }
                                                             placeholder="Ref. Cliente"
-                                                            className="w-full text-center bg-transparent outline-none focus:outline-none text-sm md:text-base font-['Outfit'] text-[#404040] min-w-0 p-0"
+                                                            className="w-full text-center bg-transparent outline-none focus:outline-none text-light md:text-base font-['Outfit'] text-[#404040] min-w-0 p-0"
                                                         />
                                                     ) : (
                                                         refClienteValor || "-"
@@ -200,50 +225,40 @@ export default function TabelaReferenciaFichaTecnica({
                                             )}
 
                                             {/* 4. Cores */}
-                                            <div className="border-r border-[#d9d9d9] flex items-center justify-center text-center px-2 break-words text-sm md:text-base text-[#404040]">
+                                            <div className="border-r border-[#d9d9d9] flex items-center justify-center text-center px-2 break-words text-light md:text-base text-[#404040]">
                                                 {formatarCores(ficha.cores)}
                                             </div>
 
                                             {/* 5. Quantidade */}
-                                            <div className="border-r border-[#d9d9d9] flex items-center justify-center text-center px-2 font-normal text-sm md:text-base text-[#404040]">
+                                            <div className="border-r border-[#d9d9d9] flex items-center justify-center text-center px-2 font-light text-light md:text-base text-[#404040]">
                                                 {qtd}
                                             </div>
 
                                             {/* 6. Preço unit. */}
                                             {isSobDemanda && (
-                                                <div className="border-r border-[#d9d9d9] flex flex-col items-center justify-center px-2 text-center text-sm md:text-base text-[#404040]">
+                                                <div className="border-r border-[#d9d9d9] flex flex-col items-center justify-center px-2 text-center text-light md:text-base text-[#404040]">
                                                     {isEditando ? (
                                                         <div className="relative w-full min-w-0 flex items-center justify-center">
                                                             <input
                                                                 type="text"
                                                                 data-itemkey={itemKey}
-                                                                value={
-                                                                    valPrecoRaw !== "" &&
-                                                                    valPrecoRaw !== null
-                                                                        ? String(
-                                                                              valPrecoRaw,
-                                                                          ).startsWith("R$")
-                                                                            ? valPrecoRaw
-                                                                            : `R$ ${valPrecoRaw}`
-                                                                        : ""
-                                                                }
+                                                                value={`R$ ${formatarInputMoeda(valPrecoRaw)}`}
                                                                 onChange={(e) => {
-                                                                    const val =
-                                                                        e.target.value.replace(
-                                                                            /[^0-9.,]/g,
-                                                                            "",
+                                                                    const valFormatado =
+                                                                        formatarInputMoeda(
+                                                                            e.target.value,
                                                                         );
                                                                     onAtualizarFicha?.(
                                                                         itemKey,
                                                                         "preco_padrao",
-                                                                        val,
+                                                                        valFormatado,
                                                                     );
                                                                 }}
                                                                 onBlur={(e) =>
                                                                     handleInputBlur(e, itemKey)
                                                                 }
                                                                 placeholder="R$ 0,00"
-                                                                className="w-full text-center bg-transparent outline-none focus:outline-none text-sm md:text-base font-['Outfit'] text-[#404040] p-0"
+                                                                className="w-full text-center bg-transparent outline-none focus:outline-none text-light md:text-base font-['Outfit'] text-[#404040] p-0"
                                                             />
                                                         </div>
                                                     ) : (
@@ -253,7 +268,7 @@ export default function TabelaReferenciaFichaTecnica({
                                             )}
 
                                             {/* 7. Subtotal */}
-                                            <div className="flex items-center justify-center text-center px-2 font-normal text-sm md:text-base text-[#404040]">
+                                            <div className="flex items-center justify-center text-center px-2 font-light text-light md:text-base text-[#404040]">
                                                 {formatarMoeda(subtotal)}
                                             </div>
                                         </div>
@@ -305,7 +320,7 @@ export default function TabelaReferenciaFichaTecnica({
                     </div>
                 ) : (
                     <div className="flex flex-row items-center w-full">
-                        <div className="flex-1 border-l border-r border-b border-[#d9d9d9] py-12 text-center text-gray-700 font-['Outfit'] font-light bg-[#F9F9F9] text-sm md:text-base">
+                        <div className="flex-1 border-l border-r border-b border-[#d9d9d9] py-12 text-center text-[#898C8F] font-['Outfit'] font-light bg-[#F9F9F9] text-light md:text-base">
                             Nenhuma ficha técnica adicionada ao pedido.
                         </div>
                         <div className="w-9" />
@@ -315,17 +330,17 @@ export default function TabelaReferenciaFichaTecnica({
                 {/* 3. RODAPÉ DA TABELA */}
                 {fichas.length > 0 && (
                     <div className="flex flex-row items-center w-full">
-                        <div className="flex-1 rounded-b-[16px] border-l border-r border-b border-[#d9d9d9] bg-[#d9d9d9] px-6 py-3.5 flex flex-row items-center justify-between text-[#898C8F] font-['Outfit'] text-sm md:text-base">
-                            <span className="font-semibold text-[#898C8F]">Resumo do pedido</span>
-                            <div className="flex items-center gap-6 text-[#898C8F]">
+                        <div className="flex-1 rounded-b-[16px] border-l border-r border-b border-[#d9d9d9] bg-[#d9d9d9] px-6 py-3.5 flex flex-row items-center justify-between text-[#898C8F] font-['Outfit'] text-light md:text-base">
+                            <span className="font-['Outfit'] text-[#898C8F]">Resumo do pedido</span>
+                            <div className="flex items-center font-['Outfit'] gap-6 text-[#898C8F]">
                                 <div>
                                     Total de peças:{" "}
-                                    <span className="font-normal">{totalQuantidade}</span>
+                                    <span className="font-light font-['Outfit']">{totalQuantidade}</span>
                                 </div>
-                                <div className="h-4 w-[1px] bg-[#a0a3a6]" />
+                                <div className="h-4 w-[1px] bg-[#a0a3a6] font-['Outfit']" />
                                 <div>
                                     Total do pedido:{" "}
-                                    <span className="font-normal">
+                                    <span className="font-light font-['Outfit']">
                                         {formatarMoeda(totalPedido)}
                                     </span>
                                 </div>
