@@ -259,6 +259,7 @@ export default function TabelaReferenciaFichaTecnica({
                                     <div className="w-9 flex flex-col items-center justify-center gap-2 pl-2 transition-opacity duration-200">
                                         <button
                                             type="button"
+                                            data-itemkey={itemKey}
                                             onClick={() => handleAlternarEdicao(itemKey)}
                                             className={`group/edit p-1 transition-transform hover:scale-110 ${
                                                 isEditando ? "opacity-100 scale-110" : ""

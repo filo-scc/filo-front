@@ -222,6 +222,7 @@ export default function PedidosCadastrar() {
     const [numeroPedido, setNumeroPedido] = useState("...");
     const [modalTrocaClienteAberto, setModalTrocaClienteAberto] = useState(false);
     const [clientePendente, setClientePendente] = useState(null);
+    const [trocandoCliente, setTrocandoCliente] = useState(false);
 
     useEffect(() => {
         if (!fabricoId) return;
@@ -433,15 +434,52 @@ export default function PedidosCadastrar() {
     };
 
     const cancelarTrocaCliente = () => {
+        if (trocandoCliente) return;
         setModalTrocaClienteAberto(false);
         setClientePendente(null);
     };
 
-    const confirmarTrocaCliente = () => {
-        if (clientePendente) {
-            aplicarCliente(clientePendente);
+    const confirmarTrocaCliente = async () => {
+        if (!clientePendente || trocandoCliente) return;
+
+        const novoCliente = clientePendente;
+        setTrocandoCliente(true);
+
+        try {
+            const produtosDoNovoCliente = await getProdutosDoCliente(novoCliente.id);
+            const relacoesPorProduto = new Map(
+                (produtosDoNovoCliente || []).map((item) => [String(getProdutoId(item)), item]),
+            );
+
+            setFichas((fichasAtuais) =>
+                fichasAtuais.map((ficha) => {
+                    const produtoId = ficha.produtoId ?? ficha.produto_id;
+                    const relacao = relacoesPorProduto.get(String(produtoId));
+                    const referenciaCliente = relacao?.nome_para_cliente ?? "";
+                    const precoPadrao = relacao?.preco_padrao ?? null;
+
+                    return {
+                        ...ficha,
+                        associadoAoCliente: Boolean(relacao),
+                        referenciaCliente,
+                        ref_cliente: referenciaCliente,
+                        preco_padrao: precoPadrao,
+                        preco_unitario: null,
+                        preco: null,
+                        subtotal: undefined,
+                    };
+                }),
+            );
+
+            aplicarCliente(novoCliente);
+            setModalTrocaClienteAberto(false);
+            setClientePendente(null);
+        } catch (error) {
+            console.error("Erro ao carregar produtos do novo cliente:", error);
+            setErro("Não foi possível trocar o cliente. Tente novamente.");
+        } finally {
+            setTrocandoCliente(false);
         }
-        cancelarTrocaCliente();
     };
 
     const handleSelecionarReferencia = async (opcao) => {
@@ -550,6 +588,11 @@ export default function PedidosCadastrar() {
     };
 
     const handleConcluirPedido = async () => {
+        if (trocandoCliente) {
+            setErro("Aguarde a atualização dos produtos do novo cliente.");
+            return;
+        }
+
         if (isSobDemanda && !clienteSelecionado) {
             setErro("Selecione um cliente para prosseguir.");
             return;
