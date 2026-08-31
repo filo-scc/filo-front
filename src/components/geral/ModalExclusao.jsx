@@ -54,7 +54,7 @@ export default function ModalExclusao({
                         onClick={onConfirm}
                         disabled={loading}
                         aria-busy={loading}
-                        className="flex-1 h-[39px] rounded-[18.9px] bg-[#D75757] text-white font-light text-[16px] transition-colors hover:bg-[#D74646] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center"
+                        className="flex-1 h-[39px] rounded-[18.9px] bg-[#D75757] text-[#FFFFFF] font-light text-[16px] transition-colors hover:bg-[#D74646] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center"
                     >
                         {loading ? "Excluindo..." : "Sim"}
                     </button>

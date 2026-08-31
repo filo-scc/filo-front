@@ -1501,7 +1501,7 @@ export default function ProdutoEditar() {
                         <button
                             type="button"
                             onClick={() => navigate("/produtos")}
-                            className="w-[147px] h-[39px] rounded-[18.9px] bg-[#F3F4FA] border border-[#4696ad] text-[#4696ad] font-Outfit text-[16px] transition-colors hover:bg-[#E1F1F6]"
+                            className="px-8 h-[39px] rounded-full border border-[#4696AD] text-[#4696AD] bg-[#F3F4FA] hover:bg-[#F3FBFC] transition-colors text-sm"
                         >
                             Voltar
                         </button>
@@ -1510,7 +1510,7 @@ export default function ProdutoEditar() {
                             <button
                                 type="button"
                                 onClick={() => setModalExclusaoAberto(true)}
-                                className="w-[189px] h-[39px] rounded-[18.9px] bg-[#D75757] text-white font-Outfit text-[16px] transition-colors hover:bg-[#d74646]"
+                                className="w-[189px] h-[39px] rounded-[18.9px] border border-[#D75757] bg-[#FFFFFF] text-[#D75757] font-Outfit text-[16px] transition-colors hover:bg-[#FDF1F1]"
                             >
                                 Excluir produto
                             </button>

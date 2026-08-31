@@ -853,7 +853,7 @@ export default function PedidosCadastrar() {
                             type="button"
                             disabled={salvandoPedido}
                             onClick={() => navigate("/pedidos")}
-                            className="bg-[#D75757] hover:bg-[#c94a4a] text-white h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px] disabled:opacity-50"
+                            className="border border-[#D75757] bg-[#FFFFFF] hover:bg-[#FDF1F1] text-[#D75757] h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px] disabled:opacity-50"
                         >
                             Cancelar
                         </button>
