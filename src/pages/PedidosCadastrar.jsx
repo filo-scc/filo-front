@@ -155,7 +155,7 @@ function DropdownField({
                                         className={`relative overflow-hidden flex w-full items-center pl-[12px] pr-3 py-3 border-l-[3px] text-left text-[16px] transition-colors ${
                                             selected
                                                 ? "border-[#C4F042] text-[#707070] bg-white"
-                                                : "border-transparent text-[#707070] bg-white hover:bg-[#FAFAFA]"
+                                                : "border-transparent text-[#707070] bg-white hover:bg-[#F5F5F5]"
                                         }`}
                                     >
                                         <span className="truncate">{option.label}</span>
