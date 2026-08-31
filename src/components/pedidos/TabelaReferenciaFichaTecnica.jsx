@@ -1,14 +1,5 @@
 import React, { useState } from "react";
 
-const formatarMoeda = (valor) => {
-    const num = Number(valor) || 0;
-    return num.toLocaleString("pt-BR", {
-        style: "currency",
-        currency: "BRL",
-        minimumFractionDigits: 2,
-    });
-};
-
 export default function TabelaReferenciaFichaTecnica({
     fichas = [],
     isSobDemanda = true,
@@ -18,6 +9,36 @@ export default function TabelaReferenciaFichaTecnica({
     onEditarFicha,
 }) {
     const [idEmEdicao, setIdEmEdicao] = useState(null);
+
+    // Normalização de preço embutida no componente
+    const parsePreco = (valor) => {
+        if (typeof valor === "number") return Number.isFinite(valor) ? valor : 0;
+        if (!valor) return 0;
+
+        let str = String(valor)
+            .trim()
+            .replace(/[^\d.,-]/g, "");
+        if (!str) return 0;
+
+        if (str.includes(",") && str.includes(".")) {
+            str = str.replace(/\./g, "").replace(",", ".");
+        } else if (str.includes(",")) {
+            str = str.replace(",", ".");
+        }
+
+        const num = Number(str);
+        return Number.isFinite(num) ? num : 0;
+    };
+
+    // Formatação de moeda embutida no componente
+    const formatarMoeda = (valor) => {
+        const num = parsePreco(valor);
+        return num.toLocaleString("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+            minimumFractionDigits: 2,
+        });
+    };
 
     const gridColsClass = isSobDemanda
         ? "grid grid-cols-7 w-full items-stretch"
@@ -38,9 +59,10 @@ export default function TabelaReferenciaFichaTecnica({
 
     const totalPedido = fichas.reduce((acc, ficha) => {
         const qtd = Number(ficha.quantidade) || Number(ficha.quantidade_pecas) || 0;
-        const preco = Number(ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? 0);
-        const subtotal = ficha.subtotal !== undefined ? Number(ficha.subtotal) : qtd * preco;
-        return acc + (isNaN(subtotal) ? 0 : subtotal);
+        const valPrecoRaw = ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? 0;
+        const preco = parsePreco(valPrecoRaw);
+        const subtotal = ficha.subtotal !== undefined ? parsePreco(ficha.subtotal) : qtd * preco;
+        return acc + subtotal;
     }, 0);
 
     const handleAlternarEdicao = (itemKey) => {
@@ -108,11 +130,11 @@ export default function TabelaReferenciaFichaTecnica({
                                 Number(ficha.quantidade) || Number(ficha.quantidade_pecas) || 0;
                             const valPrecoRaw =
                                 ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? "";
-                            const precoUnit = Number(valPrecoRaw) || 0;
+                            const precoUnit = parsePreco(valPrecoRaw);
 
                             const subtotal =
                                 ficha.subtotal !== undefined
-                                    ? Number(ficha.subtotal)
+                                    ? parsePreco(ficha.subtotal)
                                     : qtd * precoUnit;
                             const refClienteValor =
                                 ficha.referenciaCliente ?? ficha.ref_cliente ?? "";
@@ -196,8 +218,13 @@ export default function TabelaReferenciaFichaTecnica({
                                                                 type="text"
                                                                 data-itemkey={itemKey}
                                                                 value={
-                                                                    valPrecoRaw
-                                                                        ? `R$${valPrecoRaw}`
+                                                                    valPrecoRaw !== "" &&
+                                                                    valPrecoRaw !== null
+                                                                        ? String(
+                                                                              valPrecoRaw,
+                                                                          ).startsWith("R$")
+                                                                            ? valPrecoRaw
+                                                                            : `R$ ${valPrecoRaw}`
                                                                         : ""
                                                                 }
                                                                 onChange={(e) => {
@@ -215,7 +242,7 @@ export default function TabelaReferenciaFichaTecnica({
                                                                 onBlur={(e) =>
                                                                     handleInputBlur(e, itemKey)
                                                                 }
-                                                                placeholder="R$0"
+                                                                placeholder="R$ 0,00"
                                                                 className="w-full text-center bg-transparent outline-none focus:outline-none text-sm md:text-base font-['Outfit'] text-[#404040] p-0"
                                                             />
                                                         </div>
@@ -278,7 +305,7 @@ export default function TabelaReferenciaFichaTecnica({
                     </div>
                 ) : (
                     <div className="flex flex-row items-center w-full">
-                        <div className="flex-1 border-l border-r border-b border-[#d9d9d9] py-12 text-center text-gray-700 font-['Outfit'] font-light bg-white text-sm md:text-base">
+                        <div className="flex-1 border-l border-r border-b border-[#d9d9d9] py-12 text-center text-gray-700 font-['Outfit'] font-light bg-[#F9F9F9] text-sm md:text-base">
                             Nenhuma ficha técnica adicionada ao pedido.
                         </div>
                         <div className="w-9" />
