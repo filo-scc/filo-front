@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { parsePreco } from "../../utils/preco";
 
 export default function TabelaReferenciaFichaTecnica({
     fichas = [],
@@ -9,26 +10,6 @@ export default function TabelaReferenciaFichaTecnica({
     onEditarFicha,
 }) {
     const [idEmEdicao, setIdEmEdicao] = useState(null);
-
-    // Normalização de preço embutida no componente
-    const parsePreco = (valor) => {
-        if (typeof valor === "number") return Number.isFinite(valor) ? valor : 0;
-        if (!valor) return 0;
-
-        let str = String(valor)
-            .trim()
-            .replace(/[^\d.,-]/g, "");
-        if (!str) return 0;
-
-        if (str.includes(",") && str.includes(".")) {
-            str = str.replace(/\./g, "").replace(",", ".");
-        } else if (str.includes(",")) {
-            str = str.replace(",", ".");
-        }
-
-        const num = Number(str);
-        return Number.isFinite(num) ? num : 0;
-    };
 
     // Formatação de moeda para exibição normal (Subtotal, Total)
     const formatarMoeda = (valor) => {
@@ -335,7 +316,9 @@ export default function TabelaReferenciaFichaTecnica({
                             <div className="flex items-center font-['Outfit'] gap-6 text-[#898C8F]">
                                 <div>
                                     Total de peças:{" "}
-                                    <span className="font-light font-['Outfit']">{totalQuantidade}</span>
+                                    <span className="font-light font-['Outfit']">
+                                        {totalQuantidade}
+                                    </span>
                                 </div>
                                 <div className="h-4 w-[1px] bg-[#a0a3a6] font-['Outfit']" />
                                 <div>
