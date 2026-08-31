@@ -52,6 +52,16 @@ export default function TabelaReferenciaFichaTecnica({
         onEditarFicha?.(itemKey);
     };
 
+    const handleInputBlur = (e, itemKey) => {
+        const proximoFoco = e.relatedTarget;
+        if (!proximoFoco || proximoFoco.getAttribute("data-itemkey") !== String(itemKey)) {
+            if (idEmEdicao === itemKey) {
+                onSalvarClienteProduto?.(itemKey);
+                setIdEmEdicao(null);
+            }
+        }
+    };
+
     return (
         <section className="w-full">
             <div className="flex flex-col w-full">
@@ -59,7 +69,7 @@ export default function TabelaReferenciaFichaTecnica({
                 <div className="flex flex-row items-center w-full">
                     <div className="flex-1 rounded-t-[16px] border-t border-l border-r border-[#d9d9d9] bg-[#d9d9d9] overflow-hidden">
                         <div
-                            className={`${gridColsClass} text-[#898C8F] text-xs md:text-sm font-['Outfit',_sans-serif] font-medium min-h-[48px]`}
+                            className={`${gridColsClass} text-[#898C8F] text-xs md:text-sm font-['Outfit'] font-medium min-h-[48px]`}
                         >
                             <div className="border-r border-[#c4c4c4] flex items-center justify-center px-2" />
                             <div className="border-r border-[#c4c4c4] flex items-center justify-center text-center px-2">
@@ -116,7 +126,7 @@ export default function TabelaReferenciaFichaTecnica({
                                     {/* Linha da Tabela */}
                                     <div className="flex-1 border-l border-r border-b border-[#d9d9d9] bg-white">
                                         <div
-                                            className={`${gridColsClass} text-[#404040] font-['Outfit',_sans-serif] font-light min-h-[120px] md:min-h-[140px]`}
+                                            className={`${gridColsClass} text-[#404040] font-['Outfit'] font-light min-h-[120px] md:min-h-[140px]`}
                                         >
                                             {/* 1. Foto */}
                                             <div className="border-r border-[#d9d9d9] p-3 flex items-center justify-center bg-white">
@@ -146,6 +156,7 @@ export default function TabelaReferenciaFichaTecnica({
                                                     {isEditando ? (
                                                         <input
                                                             type="text"
+                                                            data-itemkey={itemKey}
                                                             value={refClienteValor}
                                                             onChange={(e) => {
                                                                 onAtualizarFicha?.(
@@ -154,8 +165,11 @@ export default function TabelaReferenciaFichaTecnica({
                                                                     e.target.value,
                                                                 );
                                                             }}
+                                                            onBlur={(e) =>
+                                                                handleInputBlur(e, itemKey)
+                                                            }
                                                             placeholder="Ref. Cliente"
-                                                            className="w-full text-center bg-transparent outline-none focus:outline-none text-sm md:text-base font-['Outfit',_sans-serif] text-[#404040] min-w-0 p-0"
+                                                            className="w-full text-center bg-transparent outline-none focus:outline-none text-sm md:text-base font-['Outfit'] text-[#404040] min-w-0 p-0"
                                                         />
                                                     ) : (
                                                         refClienteValor || "-"
@@ -180,6 +194,7 @@ export default function TabelaReferenciaFichaTecnica({
                                                         <div className="relative w-full min-w-0 flex items-center justify-center">
                                                             <input
                                                                 type="text"
+                                                                data-itemkey={itemKey}
                                                                 value={
                                                                     valPrecoRaw
                                                                         ? `R$${valPrecoRaw}`
@@ -188,15 +203,17 @@ export default function TabelaReferenciaFichaTecnica({
                                                                 onChange={(e) => {
                                                                     const val = e.target.value
                                                                         .replace(/[^0-9.,]/g, "")
-                                                                        .replace(",", ".");
                                                                     onAtualizarFicha?.(
                                                                         itemKey,
                                                                         "preco_padrao",
                                                                         val,
                                                                     );
                                                                 }}
+                                                                onBlur={(e) =>
+                                                                    handleInputBlur(e, itemKey)
+                                                                }
                                                                 placeholder="R$0"
-                                                                className="w-full text-center bg-transparent outline-none focus:outline-none text-sm md:text-base font-['Outfit',_sans-serif] text-[#404040] p-0"
+                                                                className="w-full text-center bg-transparent outline-none focus:outline-none text-sm md:text-base font-['Outfit'] text-[#404040] p-0"
                                                             />
                                                         </div>
                                                     ) : (
@@ -213,7 +230,7 @@ export default function TabelaReferenciaFichaTecnica({
                                     </div>
 
                                     {/* Botões de Ação */}
-                                    <div className="w-9 flex flex-col items-center justify-center gap-2 pl-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                    <div className="w-9 flex flex-col items-center justify-center gap-2 pl-2 transition-opacity duration-200">
                                         <button
                                             type="button"
                                             onClick={() => handleAlternarEdicao(itemKey)}
@@ -258,7 +275,7 @@ export default function TabelaReferenciaFichaTecnica({
                     </div>
                 ) : (
                     <div className="flex flex-row items-center w-full">
-                        <div className="flex-1 border-l border-r border-b border-[#d9d9d9] py-12 text-center text-gray-700 font-['Outfit',_sans-serif] font-light bg-white text-sm md:text-base">
+                        <div className="flex-1 border-l border-r border-b border-[#d9d9d9] py-12 text-center text-gray-700 font-['Outfit'] font-light bg-white text-sm md:text-base">
                             Nenhuma ficha técnica adicionada ao pedido.
                         </div>
                         <div className="w-9" />
@@ -268,7 +285,7 @@ export default function TabelaReferenciaFichaTecnica({
                 {/* 3. RODAPÉ DA TABELA */}
                 {fichas.length > 0 && (
                     <div className="flex flex-row items-center w-full">
-                        <div className="flex-1 rounded-b-[16px] border-l border-r border-b border-[#d9d9d9] bg-[#d9d9d9] px-6 py-3.5 flex flex-row items-center justify-between text-[#898C8F] font-['Outfit',_sans-serif] text-sm md:text-base">
+                        <div className="flex-1 rounded-b-[16px] border-l border-r border-b border-[#d9d9d9] bg-[#d9d9d9] px-6 py-3.5 flex flex-row items-center justify-between text-[#898C8F] font-['Outfit'] text-sm md:text-base">
                             <span className="font-semibold text-[#898C8F]">Resumo do pedido</span>
                             <div className="flex items-center gap-6 text-[#898C8F]">
                                 <div>

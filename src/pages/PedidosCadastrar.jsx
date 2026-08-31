@@ -5,6 +5,8 @@ import {
     getClientes,
     getProdutosDoCliente,
     getProdutosPorFabrico,
+    atualizarClientesProdutos,
+    criarClientesProdutos,
 } from "../services/clientesService";
 import { getFabricoById } from "../services/fabricoService";
 import FichaTecnicaModal from "../components/fichas-tecnicas/FichaTecnicaModal";
@@ -24,9 +26,8 @@ import { createPedido, getPedidosByFabricoId } from "../services/pedidoService";
 import { getAllEtapasByFabricoId } from "../services/etapaService";
 import { DropdownOptionsSkeleton, LoadingButton, SkeletonBox } from "../components/geral/Loading";
 import ModalConfirmacaoEscolha from "../components/geral/ModalConfirmacaoEscolha";
-import { atualizarClientesProdutos } from "../services/clientesService";
 
-const sectionTitleClass = "text-[20px] font-light text-[#404040] mb-4 font-['Outfit',_sans-serif]";
+const sectionTitleClass = "text-[20px] font-light text-[#404040] mb-4 font-['Outfit']";
 
 const normalizarPrecoOpcional = (preco) => {
     if (preco === null || preco === undefined || preco === "") return null;
@@ -470,6 +471,7 @@ export default function PedidosCadastrar() {
             referenciaCliente,
             preco_padrao,
             id: getProdutoId(opcao.raw),
+            associadoAoCliente: opcao.raw?.associadoAoCliente ?? false,
         };
 
         setReferenciaParaModal(dadosParaModal);
@@ -523,8 +525,11 @@ export default function PedidosCadastrar() {
                 : index === identificador;
         });
 
-        const clienteId = clienteSelecionado?.id || ficha.cliente_id || ficha.clienteId;
+        if (!ficha || ficha.associadoAoCliente === false) {
+            return;
+        }
 
+        const clienteId = clienteSelecionado?.id || ficha.cliente_id || ficha.clienteId;
         const produtoId = ficha.produto_id || ficha.produtoId || ficha.ficha_tecnica_id || ficha.id;
 
         const precoRaw = ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? 0;
@@ -541,7 +546,7 @@ export default function PedidosCadastrar() {
         try {
             await atualizarClientesProdutos(clienteId, produtoId, dadosClienteProduto);
         } catch (error) {
-            console.error(error);
+            console.error("Erro ao atualizar dados do produto do cliente:", error);
         }
     };
 
@@ -606,17 +611,11 @@ export default function PedidosCadastrar() {
             let valorTotalPedido = null;
 
             if (isSobDemanda && clienteSelecionado?.id) {
-                const produtosDoCliente = await getProdutosDoCliente(clienteSelecionado.id);
-                const mapaPrecos = new Map(
-                    (produtosDoCliente || []).map((item) => [
-                        String(getProdutoId(item)),
-                        Number(item.preco_padrao) || 0,
-                    ]),
-                );
-
                 valorTotalPedido = fichas.reduce((acc, ficha) => {
                     const quantidade = Number(ficha.quantidade) || 0;
-                    const preco = mapaPrecos.get(getFichaProdutoId(ficha)) || 0;
+                    const preco = Number(
+                        ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? 0,
+                    );
                     return acc + quantidade * preco;
                 }, 0);
             }
@@ -657,6 +656,34 @@ export default function PedidosCadastrar() {
 
             for (const ficha of fichas) {
                 const pId = ficha.produtoId || ficha.produto_id;
+
+                if (isSobDemanda && clienteSelecionado?.id && pId) {
+                    const precoRaw = ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? 0;
+                    const precoTratado =
+                        typeof precoRaw === "string"
+                            ? Number(precoRaw.replace(/[^0-9.,]/g, "").replace(",", ".")) || 0
+                            : Number(precoRaw) || 0;
+
+                    const dadosClienteProduto = {
+                        nome_para_cliente: ficha.referenciaCliente ?? ficha.ref_cliente ?? "",
+                        preco_padrao: precoTratado,
+                    };
+
+                    if (ficha.associadoAoCliente === false) {
+                        await criarClientesProdutos(clienteSelecionado.id, pId, {
+                            cliente_id: clienteSelecionado.id,
+                            produto_id: pId,
+                            ...dadosClienteProduto,
+                        });
+                    } else {
+                        await atualizarClientesProdutos(
+                            clienteSelecionado.id,
+                            pId,
+                            dadosClienteProduto,
+                        );
+                    }
+                }
+
                 if (
                     ficha.gradeVersaoIdNova &&
                     ficha.gradeVersaoIdNova !== ficha.gradeVersaoIdOriginal &&
@@ -772,7 +799,7 @@ export default function PedidosCadastrar() {
 
     return (
         <>
-            <div className="p-6 pt-0 mt-6 w-full relative z-0 font-['Outfit',_sans-serif]">
+            <div className="p-6 pt-0 mt-6 w-full relative z-0 font-['Outfit']">
                 <div className="bg-white p-10 rounded-[24px] shadow-sm w-full mx-auto">
                     <div className="mb-6">
                         <div className="flex items-start gap-3">
@@ -846,7 +873,7 @@ export default function PedidosCadastrar() {
                                     value={dataPrevista}
                                     onChange={handleDataPrevistaChange}
                                     placeholder="Data"
-                                    className={`w-full h-[39px] border border-[#898C8F] rounded-[10px] px-3 bg-white outline-none text-[#707070] placeholder:text-[#898C8F]/60 text-sm font-['Outfit',_sans-serif] transition-opacity ${
+                                    className={`w-full h-[39px] border border-[#898C8F] rounded-[10px] px-3 bg-white outline-none text-[#707070] placeholder:text-[#898C8F]/60 text-sm font-['Outfit'] transition-opacity ${
                                         salvandoPedido ? "opacity-60 cursor-not-allowed" : ""
                                     }`}
                                 />
@@ -917,6 +944,10 @@ export default function PedidosCadastrar() {
                                 referenciaParaModal?.referenciaCliente,
                             cores: rascunhoFicha.cores || rascunhoFicha.selectedColors || [],
                             etapa_atual_id: primeiraEtapaId,
+                            associadoAoCliente:
+                                rascunhoFicha.associadoAoCliente ??
+                                referenciaParaModal?.associadoAoCliente ??
+                                false,
                         },
                     ]);
                 }}
