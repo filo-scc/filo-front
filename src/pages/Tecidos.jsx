@@ -8,6 +8,21 @@ import ModalExclusao from "../components/geral/ModalExclusao";
 import { EditarTecidoModal } from "../components/tecidos/EdicaoTecidoModal";
 import { deletarTecido } from "../services/tecidoService";
 
+// Mapeamento visual das unidades de medida
+const UNIDADES_MEDIDA_MAP = {
+    METRO: "Metro (m)",
+    CENTIMETRO: "Centímetro (cm)",
+    GRAMA: "Grama (g)",
+    QUILOGRAMA: "Quilograma (kg)",
+    UNIDADE: "Unidade (un)",
+    PAR: "Par (pr)",
+};
+
+const formatarUnidade = (unidade) => {
+    if (!unidade) return "-";
+    return UNIDADES_MEDIDA_MAP[unidade.toUpperCase()] || unidade;
+};
+
 export default function Tecidos() {
     const userString = localStorage.getItem("user");
 
@@ -117,7 +132,7 @@ export default function Tecidos() {
                                 className="bg-[#A9E2F2] hover:bg-[#A2DCED] text-[#4696AD] w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors cursor-pointer"
                             >
                                 <img
-                                    src="/add-fabric-pin.png"
+                                    src="/add-fabric-pin-azul.png"
                                     alt="Adicionar tecido"
                                     className="w-[20px] h-[20px]"
                                 />
@@ -159,7 +174,8 @@ export default function Tecidos() {
                                                     {tecido.nome}
                                                 </td>
                                                 <td className="px-6 py-4 font-normal">
-                                                    {tecido.unidade_de_medida}
+                                                    {/* Exibe o texto formatado */}
+                                                    {formatarUnidade(tecido.unidade_de_medida)}
                                                 </td>
                                                 <td className="px-6 py-4 font-normal">
                                                     {!isNaN(valorNumerico) &&

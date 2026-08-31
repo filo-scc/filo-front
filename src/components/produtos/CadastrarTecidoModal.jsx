@@ -190,7 +190,7 @@ export function CadastrarTecidoModal({ isOpen, onClose, onSuccess, fabricoId }) 
                 <div className="mb-8 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <img
-                            src="/add-fabric-pin.png"
+                            src="/add-fabric-pin-preto.png"
                             alt=""
                             className="h-[28px] w-[28px] object-contain"
                         />
