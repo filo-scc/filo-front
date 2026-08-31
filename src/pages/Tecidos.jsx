@@ -166,15 +166,16 @@ export default function Tecidos() {
                                         return (
                                             <tr
                                                 key={tecido.id || index}
-                                                className={`h-[60px] border-b border-[#E8E8E8] last:border-0 ${
-                                                    isPar ? "bg-white" : "bg-[#F4F4F4]"
+                                                className={`h-[60px] border-b border-[#E8E8E8] last:border-0 transition-colors hover:text-[#4696AD] ${
+                                                    isPar
+                                                        ? "bg-white hover:bg-[#FBFBFB]"
+                                                        : "bg-[#F4F4F4] hover:bg-[#EDEDED]"
                                                 }`}
                                             >
                                                 <td className="px-6 py-4 font-normal">
                                                     {tecido.nome}
                                                 </td>
                                                 <td className="px-6 py-4 font-normal">
-                                                    {/* Exibe o texto formatado */}
                                                     {formatarUnidade(tecido.unidade_de_medida)}
                                                 </td>
                                                 <td className="px-6 py-4 font-normal">
