@@ -201,8 +201,11 @@ export default function TabelaReferenciaFichaTecnica({
                                                                         : ""
                                                                 }
                                                                 onChange={(e) => {
-                                                                    const val = e.target.value
-                                                                        .replace(/[^0-9.,]/g, "")
+                                                                    const val =
+                                                                        e.target.value.replace(
+                                                                            /[^0-9.,]/g,
+                                                                            "",
+                                                                        );
                                                                     onAtualizarFicha?.(
                                                                         itemKey,
                                                                         "preco_padrao",
