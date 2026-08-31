@@ -316,7 +316,9 @@ export default function TabelaReferenciaFichaTecnica({
                             <div className="flex items-center font-['Outfit'] gap-6 text-[#898C8F]">
                                 <div>
                                     Total de peças:{" "}
-                                    <span className="font-light font-['Outfit']">{totalQuantidade}</span>
+                                    <span className="font-light font-['Outfit']">
+                                        {totalQuantidade}
+                                    </span>
                                 </div>
                                 <div className="h-4 w-[1px] bg-[#a0a3a6] font-['Outfit']" />
                                 <div>
