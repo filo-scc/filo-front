@@ -6,6 +6,9 @@ import { getMe } from "../services/authService";
 import TransferenciaEtapaModal from "../components/fichas-tecnicas/TransferenciaEtapaModal";
 import FichaTecnicaDetalhesModal from "../components/fichas-tecnicas/FichaTecnicaDetalhesModal";
 import HomeSkeleton from "../components/home/HomeSkeleton";
+import OperationalSummaryCards from "../components/home/OperationalSummaryCards";
+import ProductionChart from "../components/home/ProductionChart";
+import NotificationsPanel from "../components/home/NotificationsPanel";
 
 const CATEGORIAS_DE_COSTURA = ["costur", "faccao", "confeccao", "costura"];
 
@@ -50,13 +53,14 @@ export default function Home() {
     const [quadro, setQuadro] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const [mostrarSetaEsquerda, setMostrarSetaEsquerda] = useState(null);
-    const [mostrarSetaDireita, setMostrarSetaDireita] = useState(null);
+    const [mostrarSetaEsquerda, setMostrarSetaEsquerda] = useState(false);
+    const [mostrarSetaDireita, setMostrarSetaDireita] = useState(false);
     const [transferenciaAtiva, setTransferenciaAtiva] = useState(null);
     const [fabricoId, setFabricoId] = useState(null);
 
     const [modalDetalhesAberto, setModalDetalhesAberto] = useState(false);
     const [fichaSelecionadaId, setFichaSelecionadaId] = useState(null);
+    const [dashboardRefreshKey, setDashboardRefreshKey] = useState(0);
 
     const mensagem = location.state?.error;
 
@@ -94,10 +98,6 @@ export default function Home() {
             }));
 
             setQuadro(colunasAgrupadas);
-
-            if (colunasAgrupadas.length > 4) {
-                setMostrarSetaDireita(true);
-            }
         } catch (error) {
             console.error("Erro ao carregar os dados", error);
         } finally {
@@ -109,13 +109,32 @@ export default function Home() {
         carregarDadosDoQuadro();
     }, [carregarDadosDoQuadro]);
 
-    const handleScroll = () => {
+    const handleScroll = useCallback(() => {
         if (scrollRef.current) {
             const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
             setMostrarSetaEsquerda(scrollLeft > 0);
             setMostrarSetaDireita(Math.ceil(scrollLeft + clientWidth) < scrollWidth);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        const container = scrollRef.current;
+        if (!container) return undefined;
+
+        const frame = requestAnimationFrame(handleScroll);
+        const resizeObserver =
+            typeof ResizeObserver === "undefined" ? null : new ResizeObserver(handleScroll);
+
+        resizeObserver?.observe(container);
+        Array.from(container.children).forEach((column) => resizeObserver?.observe(column));
+        window.addEventListener("resize", handleScroll);
+
+        return () => {
+            cancelAnimationFrame(frame);
+            resizeObserver?.disconnect();
+            window.removeEventListener("resize", handleScroll);
+        };
+    }, [handleScroll, quadro]);
 
     const rolarParaDireita = () => {
         if (scrollRef.current) {
@@ -213,7 +232,7 @@ export default function Home() {
     };
 
     return (
-        <div className="p-6 pt-0 w-full min-w-0 mt-6">
+        <div className="mt-2 w-full min-w-0 px-3 pb-6 sm:mt-5 sm:px-5 lg:ml-6 lg:mr-10 lg:mt-[23px] lg:w-auto lg:px-0 lg:pb-[25px]">
             {mostrarErro && mensagem && (
                 <div className="fixed top-4 right-4 z-50 bg-red-500 text-white px-6 py-3 rounded-lg shadow-2xl animate-fade-in-out">
                     <div className="flex items-center gap-2">
@@ -222,12 +241,19 @@ export default function Home() {
                 </div>
             )}
 
-            <div className="bg-white px-6 py-8 rounded-[24px] shadow-sm h-[calc(100vh-120px)] w-full flex flex-col relative overflow-hidden min-w-0">
+            <OperationalSummaryCards refreshKey={dashboardRefreshKey} />
+
+            <div className="mt-3 hidden min-w-0 grid-cols-1 gap-3 sm:mt-4 sm:grid sm:gap-[14px] xl:grid-cols-[minmax(0,639fr)_minmax(0,504fr)]">
+                <ProductionChart refreshKey={dashboardRefreshKey} />
+                <NotificationsPanel />
+            </div>
+
+            <div className="relative mt-3 flex h-[620px] w-full min-w-0 flex-col overflow-hidden rounded-[24px] bg-white px-4 py-6 sm:mt-[15px] sm:h-[664px] lg:px-[19px] lg:pb-[23px] lg:pt-[31px]">
                 {loading ? (
                     <HomeSkeleton />
                 ) : (
                     <>
-                        <div className="flex justify-between items-center mb-8 shrink-0">
+                        <div className="mb-6 flex shrink-0 items-center justify-between lg:ml-[18px]">
                             <h1 className="font-normal text-base text-[#404040] flex items-center gap-2">
                                 <span className="flex items-center">
                                     <img
@@ -253,7 +279,7 @@ export default function Home() {
                             <div
                                 ref={scrollRef}
                                 onScroll={handleScroll}
-                                className="flex gap-1 overflow-x-auto overflow-y-hidden h-full pb-4 scroll-smooth no-scrollbar w-full"
+                                className="flex h-full w-full gap-3.5 overflow-x-auto overflow-y-hidden pb-4 scroll-smooth no-scrollbar"
                                 style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}
                             >
                                 {quadro.map((coluna, index) => {
@@ -268,11 +294,11 @@ export default function Home() {
                                     return (
                                         <div
                                             key={coluna.id}
-                                            className={`w-[270px] min-w-[270px] max-h-full bg-[#F4F4F4] ${rounded} p-1 flex flex-col shrink-0`}
+                                            className={`flex max-h-full min-w-[260px] flex-1 flex-col bg-[#F4F4F4] ${rounded} px-3 pb-2 pt-1`}
                                             onDragOver={handleDragOver}
                                             onDrop={(e) => handleDrop(e, coluna.id)}
                                         >
-                                            <div className="flex justify-between items-center mb-4 px-3 pt-3 shrink-0">
+                                            <div className="mb-4 flex shrink-0 items-center justify-between px-2 pt-3">
                                                 <h2 className="font-normal text-base text-[#404040] flex items-center gap-2">
                                                     <img
                                                         src={coluna.icone?.link || ""}
@@ -281,7 +307,7 @@ export default function Home() {
                                                     />
                                                     {coluna.nome}
                                                 </h2>
-                                                <button className="hover:opacity-70 transition-opacity flex items-center justify-center">
+                                                <button className="hidden items-center justify-center transition-opacity hover:opacity-70">
                                                     <img
                                                         src="/tres-pontos.png"
                                                         alt="Três pontos"
@@ -290,7 +316,7 @@ export default function Home() {
                                                 </button>
                                             </div>
 
-                                            <div className="flex-1 overflow-y-auto pr-1 pb-2 flex flex-col gap-1 min-h-0 scrollbar-sutil">
+                                            <div className="scrollbar-sutil -mr-2 flex min-h-0 flex-1 flex-col gap-1 overflow-y-scroll pb-2 pr-1">
                                                 {coluna.fichas.map((ficha) => {
                                                     const textoParceiro =
                                                         formatarParceirosDeCostura(ficha);
@@ -322,7 +348,7 @@ export default function Home() {
                                                                 setModalDetalhesAberto(true);
                                                                 setFichaSelecionadaId(ficha.id);
                                                             }}
-                                                            className="bg-white p-4 rounded-[10px] shadow-sm border border-gray-100 flex flex-col gap-1.5 relative border-l-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow shrink-0"
+                                                            className="relative flex w-full shrink-0 cursor-grab flex-col gap-1.5 rounded-[10px] border border-l-4 border-gray-100 bg-white p-4 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing"
                                                             style={{
                                                                 borderLeftColor:
                                                                     ficha.pedido?.cor || "#ffffff",
@@ -463,6 +489,7 @@ export default function Home() {
                     proximaEtapa={transferenciaAtiva.proximaEtapa}
                     onSuccess={() => {
                         carregarDadosDoQuadro();
+                        setDashboardRefreshKey((key) => key + 1);
                     }}
                 />
             )}
@@ -471,7 +498,10 @@ export default function Home() {
                 <FichaTecnicaDetalhesModal
                     isOpen={modalDetalhesAberto}
                     fichaId={fichaSelecionadaId}
-                    onFichaAtualizada={carregarDadosDoQuadro}
+                    onFichaAtualizada={async () => {
+                        await carregarDadosDoQuadro();
+                        setDashboardRefreshKey((key) => key + 1);
+                    }}
                     onClose={() => {
                         setModalDetalhesAberto(false);
                         setFichaSelecionadaId(null);

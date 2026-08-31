@@ -7,6 +7,13 @@ body {
     background-image: linear-gradient(180deg, #f3f4fa 0%, #a9e2f2 100%);
 }
 
+button,
+button * {
+    font-family: "Outfit", sans-serif !important;
+    font-size: 16px !important;
+    font-weight: 400 !important;
+}
+
 @keyframes filo-breathe {
     0%,
     100% {
@@ -50,9 +57,11 @@ body {
     animation: filo-text-shimmer 2s ease-in-out infinite;
 }
 
-.scrollbar-sutil {
-    scrollbar-width: thin;
-    scrollbar-color: #d6d6d6 transparent;
+@supports not selector(::-webkit-scrollbar) {
+    .scrollbar-sutil {
+        scrollbar-width: thin;
+        scrollbar-color: #d6d6d6 transparent;
+    }
 }
 
 .scrollbar-sutil::-webkit-scrollbar {

@@ -138,7 +138,7 @@ function DropdownField({
                         className="fixed inset-0 z-10 cursor-default outline-none"
                     />
 
-                    <div className="absolute left-0 right-0 top-[calc(100%+2px)] z-20 overflow-hidden rounded-[14px] border border-[#898C8F] bg-white max-h-[240px] overflow-y-auto scrollbar-sutil py-1">
+                    <div className="absolute left-0 right-0 top-[calc(100%+2px)] z-20 overflow-hidden rounded-[14px] border border-[#898C8F] bg-white max-h-[240px] overflow-y-auto scrollbar-sutil">
                         {loading ? (
                             <DropdownOptionsSkeleton />
                         ) : opcoesFiltradas.length === 0 ? (
@@ -156,7 +156,7 @@ function DropdownField({
                                         className={`relative overflow-hidden flex w-full items-center pl-[12px] pr-3 py-3 border-l-[3px] text-left text-[16px] transition-colors ${
                                             selected
                                                 ? "border-[#C4F042] text-[#707070] bg-white"
-                                                : "border-transparent text-[#707070] bg-white hover:bg-[#FAFAFA]"
+                                                : "border-transparent text-[#707070] bg-white hover:bg-[#F5F5F5]"
                                         }`}
                                     >
                                         <span className="truncate">{option.label}</span>
@@ -896,7 +896,7 @@ export default function PedidosCadastrar() {
                             type="button"
                             disabled={salvandoPedido}
                             onClick={() => navigate("/pedidos")}
-                            className="bg-[#D75757] hover:bg-[#c94a4a] text-white h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px] disabled:opacity-50"
+                            className="border border-[#D75757] bg-[#FFFFFF] hover:bg-[#FDF1F1] text-[#D75757] h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px] disabled:opacity-50"
                         >
                             Cancelar
                         </button>
