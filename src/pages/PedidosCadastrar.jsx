@@ -137,7 +137,7 @@ function DropdownField({
                         className="fixed inset-0 z-10 cursor-default outline-none"
                     />
 
-                    <div className="absolute left-0 right-0 top-[calc(100%+2px)] z-20 overflow-hidden rounded-[14px] border border-[#898C8F] bg-white max-h-[240px] overflow-y-auto scrollbar-sutil py-1">
+                    <div className="absolute left-0 right-0 top-[calc(100%+2px)] z-20 overflow-hidden rounded-[14px] border border-[#898C8F] bg-white max-h-[240px] overflow-y-auto scrollbar-sutil">
                         {loading ? (
                             <DropdownOptionsSkeleton />
                         ) : opcoesFiltradas.length === 0 ? (
@@ -155,7 +155,7 @@ function DropdownField({
                                         className={`relative overflow-hidden flex w-full items-center pl-[12px] pr-3 py-3 border-l-[3px] text-left text-[16px] transition-colors ${
                                             selected
                                                 ? "border-[#C4F042] text-[#707070] bg-white"
-                                                : "border-transparent text-[#707070] bg-white hover:bg-[#FAFAFA]"
+                                                : "border-transparent text-[#707070] bg-white hover:bg-[#F5F5F5]"
                                         }`}
                                     >
                                         <span className="truncate">{option.label}</span>

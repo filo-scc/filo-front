@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useSyncExternalStore } from "react";
+import React, { useEffect, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { getAviamentosDoProduto } from "../services/produtoService";
 import RelatorioDeAcabamento from "./fichas-tecnicas/RelatorioDeAcabamento";
 
 // Hook para verificar montagem no cliente sem causar renderizações em cascata
@@ -35,31 +34,14 @@ const simplificarUnidade = (unidade) => {
 const darkSide = "0.5px solid #7B7D80";
 const shellSide = "0.5px solid #D9D9D9";
 
-export default function FichaTecnicaPrintView({ dadosFicha, referencia, onReadyToPrint }) {
+export default function FichaTecnicaPrintView({
+    dadosFicha,
+    referencia,
+    onReadyToPrint,
+    aviamentosProduto,
+}) {
     const isMounted = useIsMounted();
-    const [aviamentos, setAviamentos] = useState([]);
-
     const produtoId = dadosFicha?.produto?.id;
-
-    // Busca assíncrona de aviamentos sem setState síncrono no bloco 'else'
-    useEffect(() => {
-        let isCurrent = true;
-
-        if (produtoId) {
-            getAviamentosDoProduto(produtoId)
-                .then((res) => {
-                    if (isCurrent) setAviamentos(res || []);
-                })
-                .catch((err) => {
-                    console.error("Erro ao carregar aviamentos para impressão:", err);
-                    if (isCurrent) setAviamentos([]);
-                });
-        }
-
-        return () => {
-            isCurrent = false;
-        };
-    }, [produtoId]);
 
     // Notifica prontidão para impressão sem disparar setState
     useEffect(() => {
@@ -70,7 +52,7 @@ export default function FichaTecnicaPrintView({ dadosFicha, referencia, onReadyT
 
     if (!dadosFicha || !isMounted) return null;
 
-    const listaAviamentos = produtoId ? aviamentos : [];
+    const listaAviamentos = produtoId ? aviamentosProduto || [] : [];
     const sizeItems = dadosFicha?.grade_versao?.itens || [];
     const cores = Object.values(
         dadosFicha.ficha_tecnica_itens?.reduce((acc, item) => {
