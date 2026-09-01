@@ -45,10 +45,11 @@ const calcularProporcao = (totaisPorTamanho) => {
 
 function QuantityCell({ value, suggestion, onCommit, onDraftChange, onTab }) {
     const [editing, setEditing] = useState(false);
-    const getInitialDraft = () =>
-        value > 0 ? String(value) : suggestion > 0 ? String(suggestion) : "";
+    const getInitialDraft = () => (value > 0 ? String(value) : "");
     const [draft, setDraft] = useState(getInitialDraft());
     const inputRef = useRef(null);
+    const draftChangedRef = useRef(false);
+    const skipNextBlurRef = useRef(false);
 
     useEffect(() => {
         if (!editing) setDraft(getInitialDraft());
@@ -64,16 +65,28 @@ function QuantityCell({ value, suggestion, onCommit, onDraftChange, onTab }) {
     };
 
     const commit = useCallback(() => {
-        onCommit(parseValue(draft));
+        if (skipNextBlurRef.current) {
+            skipNextBlurRef.current = false;
+            setEditing(false);
+            return;
+        }
+
+        if (draftChangedRef.current || value > 0) {
+            onCommit(parseValue(draft));
+        }
         setEditing(false);
-    }, [draft, onCommit]);
+    }, [draft, onCommit, value]);
 
     if (!editing) {
         const showSuggestion = value === 0 && suggestion > 0;
         return (
             <button
                 type="button"
-                onClick={() => setEditing(true)}
+                onClick={() => {
+                    draftChangedRef.current = false;
+                    skipNextBlurRef.current = false;
+                    setEditing(true);
+                }}
                 className={`flex h-[40px] w-full items-center justify-center rounded-[6px] border border-transparent text-[14px] transition ${
                     value > 0
                         ? "text-[#898C8F]"
@@ -96,6 +109,7 @@ function QuantityCell({ value, suggestion, onCommit, onDraftChange, onTab }) {
             value={draft}
             onChange={(e) => {
                 const raw = e.target.value;
+                draftChangedRef.current = true;
                 setDraft(raw);
                 if (onDraftChange) onDraftChange(parseValue(raw));
             }}
@@ -103,8 +117,14 @@ function QuantityCell({ value, suggestion, onCommit, onDraftChange, onTab }) {
             placeholder={suggestion ? String(suggestion) : ""}
             onKeyDown={(e) => {
                 if (e.key === "Enter") commit();
-                if (e.key === "Escape") setEditing(false);
+                if (e.key === "Escape") {
+                    skipNextBlurRef.current = true;
+                    setEditing(false);
+                }
                 if (e.key === "Tab" && onTab) {
+                    if (!draftChangedRef.current && value === 0 && suggestion > 0) {
+                        skipNextBlurRef.current = true;
+                    }
                     onTab();
                 }
             }}
