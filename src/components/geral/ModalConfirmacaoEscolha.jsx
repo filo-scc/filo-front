@@ -32,7 +32,7 @@ export default function ModalConfirmacaoEscolha({
                     <button
                         type="button"
                         onClick={onClose}
-                        className="flex-1 h-[39px] rounded-[18.9px] bg-[#D75757] text-white font-light text-[16px] transition-colors hover:bg-[#D74646]"
+                        className="flex-1 h-[39px] rounded-[18.9px] bg-[#D75757] text-[#FFFFFF] font-light text-[16px] transition-colors hover:bg-[#D74646]"
                     >
                         {textoNao}
                     </button>

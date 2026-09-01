@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 
 import { getFabricoById } from "../services/fabricoService";
 
-export function Sidebar() {
+export function Sidebar({ isOpen = false, onClose }) {
     const [hoveredPath, setHoveredPath] = useState(null);
     const navigate = useNavigate();
     const [producaoSobDemanda, setProducaoSobDemanda] = useState(null);
@@ -52,6 +52,7 @@ export function Sidebar() {
             { name: "Parceiros", slug: "parceiros", path: "/parceiros" },
             { name: "Produtos", slug: "produtos", path: "/produtos" },
             { name: "Aviamentos", slug: "aviamentos", path: "/aviamentos" },
+            { name: "Tecidos", slug: "tecidos", path: "/tecidos" },
             { name: "Financeiro", slug: "financeiro", path: "/financeiro" },
             { name: "Configurações", slug: "configuracoes", path: "/configuracoes" },
         ];
@@ -64,7 +65,27 @@ export function Sidebar() {
     }, [producaoSobDemanda]);
 
     return (
-        <aside className="w-[219px] h-screen pl-[24px] flex flex-col items-center py-8 gap-[32px] bg-transparent overflow-y-auto scrollbar-sutil">
+        <aside
+            className={`fixed inset-y-0 left-0 z-40 flex h-dvh w-[219px] flex-col items-center gap-8 overflow-y-auto bg-[#F3F4FA]/95 py-8 pl-6 shadow-xl backdrop-blur-md transition-transform duration-300 scrollbar-sutil lg:translate-x-0 lg:bg-transparent lg:shadow-none lg:backdrop-blur-none ${
+                isOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
+            aria-label="Navegação principal"
+        >
+            <button
+                type="button"
+                onClick={onClose}
+                aria-label="Fechar menu"
+                className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full text-[#7B7D80] hover:bg-white lg:hidden"
+            >
+                <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                    className="h-5 w-5 fill-none stroke-current stroke-2"
+                >
+                    <path strokeLinecap="round" d="m6 6 12 12M18 6 6 18" />
+                </svg>
+            </button>
+
             {/* Logo Filo */}
             <div className="w-full pl-[53px] flex justify-start">
                 <img src="/filo-logo.png" alt="Filo" className="h-[47px] w-auto" />
@@ -73,7 +94,10 @@ export function Sidebar() {
             {/* 1. Botão Nova Ficha */}
             <button
                 className="w-[169px] h-[39px] min-h-[39px] bg-[#A9E2F2] rounded-[18.5px] flex items-center justify-start px-4 gap-3 transition-all duration-200 shadow-sm hover:bg-[#A2DCED]"
-                onClick={() => navigate("/pedidos/cadastrar")}
+                onClick={() => {
+                    onClose?.();
+                    navigate("/pedidos/cadastrar");
+                }}
             >
                 <img src="/pedidos-azul.png" alt="" className="w-5 h-5" />
                 <span className="text-[#4696AD] font-normal text-sm">{labelNovaFicha}</span>
@@ -87,6 +111,7 @@ export function Sidebar() {
                         to={item.path}
                         onMouseEnter={() => setHoveredPath(item.path)}
                         onMouseLeave={() => setHoveredPath(null)}
+                        onClick={onClose}
                         className={({ isActive }) => `
               flex items-center gap-3 h-[39px] min-h-[39px] px-4 transition-all duration-300
               ${

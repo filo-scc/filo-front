@@ -43,35 +43,59 @@ const calcularProporcao = (totaisPorTamanho) => {
     return totaisPorTamanho.map((t) => (t > 0 ? Math.round(t / base) : 0));
 };
 
-function QuantityCell({ value, onCommit }) {
+function QuantityCell({ value, suggestion, onCommit, onDraftChange, onTab }) {
     const [editing, setEditing] = useState(false);
-    const [draft, setDraft] = useState(value > 0 ? String(value) : "");
+    const getInitialDraft = () => (value > 0 ? String(value) : "");
+    const [draft, setDraft] = useState(getInitialDraft());
     const inputRef = useRef(null);
+    const draftChangedRef = useRef(false);
+    const skipNextBlurRef = useRef(false);
 
     useEffect(() => {
-        if (!editing) setDraft(value > 0 ? String(value) : "");
-    }, [value, editing]);
+        if (!editing) setDraft(getInitialDraft());
+    }, [value, editing, suggestion]);
 
     useEffect(() => {
-        if (editing && inputRef.current) inputRef.current.focus();
+        if (editing && inputRef.current) inputRef.current.select();
     }, [editing]);
 
+    const parseValue = (raw) => {
+        const parsed = Number.parseInt(String(raw || 0), 10);
+        return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+    };
+
     const commit = useCallback(() => {
-        const parsed = Number.parseInt(String(draft || 0), 10);
-        onCommit(Number.isFinite(parsed) && parsed >= 0 ? parsed : 0);
+        if (skipNextBlurRef.current) {
+            skipNextBlurRef.current = false;
+            setEditing(false);
+            return;
+        }
+
+        if (draftChangedRef.current || value > 0) {
+            onCommit(parseValue(draft));
+        }
         setEditing(false);
-    }, [draft, onCommit]);
+    }, [draft, onCommit, value]);
 
     if (!editing) {
+        const showSuggestion = value === 0 && suggestion > 0;
         return (
             <button
                 type="button"
-                onClick={() => setEditing(true)}
+                onClick={() => {
+                    draftChangedRef.current = false;
+                    skipNextBlurRef.current = false;
+                    setEditing(true);
+                }}
                 className={`flex h-[40px] w-full items-center justify-center rounded-[6px] border border-transparent text-[14px] transition ${
-                    value > 0 ? "text-[#898C8F]" : "text-[#D7D7D7]"
+                    value > 0
+                        ? "text-[#898C8F]"
+                        : showSuggestion
+                          ? "text-[#D7D7D7] italic"
+                          : "text-[#D7D7D7]"
                 }`}
             >
-                {value > 0 ? value : "-"}
+                {value > 0 ? value : showSuggestion ? suggestion : "-"}
             </button>
         );
     }
@@ -83,11 +107,26 @@ function QuantityCell({ value, onCommit }) {
             min="0"
             step="1"
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => {
+                const raw = e.target.value;
+                draftChangedRef.current = true;
+                setDraft(raw);
+                if (onDraftChange) onDraftChange(parseValue(raw));
+            }}
             onBlur={commit}
+            placeholder={suggestion ? String(suggestion) : ""}
             onKeyDown={(e) => {
                 if (e.key === "Enter") commit();
-                if (e.key === "Escape") setEditing(false);
+                if (e.key === "Escape") {
+                    skipNextBlurRef.current = true;
+                    setEditing(false);
+                }
+                if (e.key === "Tab" && onTab) {
+                    if (!draftChangedRef.current && value === 0 && suggestion > 0) {
+                        skipNextBlurRef.current = true;
+                    }
+                    onTab();
+                }
             }}
             className="h-[40px] w-full bg-transparent text-center text-[14px] outline-none text-[#898C8F] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0"
         />
@@ -172,6 +211,8 @@ export default function FichaTecnicaModal({
     const [existingParceiroIds, setExistingParceiroIds] = useState([]);
     const [validacaoPrecoExibida, setValidacaoPrecoExibida] = useState(false);
 
+    const [activeSuggestions, setActiveSuggestions] = useState({});
+
     const parceiroScrollRef = useRef(null);
     const colorDropdownRef = useRef(null);
     const gradeDropdownRef = useRef(null);
@@ -179,6 +220,47 @@ export default function FichaTecnicaModal({
     const producaoSobDemanda = useMemo(
         () => Boolean(fabricoInfo?.fabricacao_sob_demanda),
         [fabricoInfo],
+    );
+
+    const matrixRef = useRef(matrix);
+    useEffect(() => {
+        matrixRef.current = matrix;
+    }, [matrix]);
+
+    const computeNextSuggestion = useCallback(
+        (prevSuggestions, corId, tamanhoId, valorDigitado) => {
+            const linhaAtual = matrixRef.current[corId] || {};
+            const outrosValoresExistentes = Object.entries(linhaAtual).filter(
+                ([tId, v]) => tId !== String(tamanhoId) && v > 0,
+            );
+            const sugestaoAtual = prevSuggestions[corId];
+
+            // Regra 1: primeiro valor da linha ativa a sugestão
+            if (valorDigitado > 0) {
+                if (outrosValoresExistentes.length === 0) {
+                    return { ...prevSuggestions, [corId]: valorDigitado };
+                }
+                // Regra 2: valor diferente da sugestão existente cancela a sugestão
+                if (
+                    sugestaoAtual !== null &&
+                    sugestaoAtual !== undefined &&
+                    valorDigitado !== sugestaoAtual
+                ) {
+                    return { ...prevSuggestions, [corId]: null };
+                }
+                // Regra 3: mesmo valor da sugestão existente -> mantém como está
+                return prevSuggestions;
+            }
+
+            // Regra 4: célula ficou vazia e a linha inteira (sem essa célula) também está vazia -> cancela
+            const linhaSemEsseValor = { ...linhaAtual, [tamanhoId]: 0 };
+            const linhaVazia = Object.values(linhaSemEsseValor).every((v) => !v);
+            if (linhaVazia) {
+                return { ...prevSuggestions, [corId]: null };
+            }
+            return prevSuggestions;
+        },
+        [],
     );
 
     const currentGradeOption = useMemo(
@@ -191,6 +273,51 @@ export default function FichaTecnicaModal({
 
     const currentSizeItems = currentGradeOption?.sizeItems || [];
     const effectiveGradeVersionId = currentGradeOption?.gradeVersaoId || null;
+
+    const handleApplySuggestionOnTab = useCallback(
+        (corId) => {
+            const sugestao = activeSuggestions[corId];
+            if (!sugestao) return;
+
+            setMatrix((prevMatrix) => {
+                const linhaAtual = prevMatrix[corId] || {};
+                const novaLinha = { ...linhaAtual };
+
+                currentSizeItems.forEach((s) => {
+                    const tamanhoId = s.tamanhoId;
+                    if (!novaLinha[tamanhoId] || novaLinha[tamanhoId] === 0) {
+                        novaLinha[tamanhoId] = sugestao;
+                    }
+                });
+                return { ...prevMatrix, [corId]: novaLinha };
+            });
+        },
+        [activeSuggestions, currentSizeItems],
+    );
+
+    const handleQuantidadeDraftChange = useCallback(
+        (corId, tamanhoId, valorDigitado) => {
+            setActiveSuggestions((prev) =>
+                computeNextSuggestion(prev, corId, tamanhoId, valorDigitado),
+            );
+        },
+        [computeNextSuggestion],
+    );
+
+    const handleCommitQuantidade = useCallback(
+        (corId, tamanhoId, valorDigitado) => {
+            setActiveSuggestions((prev) =>
+                computeNextSuggestion(prev, corId, tamanhoId, valorDigitado),
+            );
+
+            setMatrix((prevMatrix) => {
+                const linhaAtual = prevMatrix[corId] || {};
+                const novaLinha = { ...linhaAtual, [tamanhoId]: valorDigitado };
+                return { ...prevMatrix, [corId]: novaLinha };
+            });
+        },
+        [computeNextSuggestion],
+    );
 
     const selectedColors = useMemo(
         () =>
@@ -874,16 +1001,34 @@ export default function FichaTecnicaModal({
                                                                             s.tamanhoId
                                                                         ] || 0
                                                                     }
-                                                                    onCommit={(v) =>
-                                                                        setMatrix((p) => ({
-                                                                            ...p,
-                                                                            [color.id]: {
-                                                                                ...(p[color.id] ||
-                                                                                    {}),
-                                                                                [s.tamanhoId]: v,
-                                                                            },
-                                                                        }))
+                                                                    suggestion={
+                                                                        activeSuggestions[color.id]
                                                                     }
+                                                                    onCommit={(v) =>
+                                                                        handleCommitQuantidade(
+                                                                            color.id,
+                                                                            s.tamanhoId,
+                                                                            v,
+                                                                        )
+                                                                    }
+                                                                    onDraftChange={(v) =>
+                                                                        handleQuantidadeDraftChange(
+                                                                            color.id,
+                                                                            s.tamanhoId,
+                                                                            v,
+                                                                        )
+                                                                    }
+                                                                    onTab={() => {
+                                                                        if (
+                                                                            activeSuggestions[
+                                                                                color.id
+                                                                            ]
+                                                                        ) {
+                                                                            handleApplySuggestionOnTab(
+                                                                                color.id,
+                                                                            );
+                                                                        }
+                                                                    }}
                                                                 />
                                                             </div>
                                                         ))}

@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import TabelaReferencias from "../components/clientes/TabelaReferencias";
 import FloatingLabelInput from "../components/FloatingLabelInput";
 import ModalReferencias from "../components/clientes/ModalReferencias";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import { ClientEditPageSkeleton, LoadingButton } from "../components/geral/Loading";
+import { getEnderecoByCep } from "../services/apiCep";
 import {
     getClienteById,
     getProdutosDoCliente,
@@ -15,7 +16,6 @@ import {
 
 const sectionTitleClass = "text-[20px] font-light text-[#404040] mb-4 font-['Outfit',_sans-serif]";
 
-// Funções utilitárias mantidas...
 const apenasNumeros = (valor) => String(valor || "").replace(/\D/g, "");
 const formatarCnpj = (valor) => {
     const digitos = apenasNumeros(valor).slice(0, 14);
@@ -82,27 +82,64 @@ export default function ClientesEditar() {
     const [produtosAssociados, setProdutosAssociados] = useState([]);
     const [modalReferenciasAberto, setModalReferenciasAberto] = useState(false);
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
-
-    // Novo estado para controlar qual item estamos editando na tabela
     const [itemParaEditar, setItemParaEditar] = useState(null);
+    const cepRequestRef = useRef(null);
 
     const fabricoId = primeiroNumeroValido(
         usuarioLogado?.fabrico_id,
         usuarioLogado?.fabricoId,
         usuarioLogado?.fabrico?.id,
     );
+
     const handleChange = (campo) => (e) =>
         setForm((prev) => ({ ...prev, [campo]: e.target.value }));
     const handleChangeCnpj = (e) =>
         setForm((prev) => ({ ...prev, cnpj: formatarCnpj(e.target.value) }));
     const handleChangeTelefone = (e) =>
         setForm((prev) => ({ ...prev, telefone: formatarTelefone(e.target.value) }));
-    const handleChangeCep = (e) =>
-        setForm((prev) => ({ ...prev, cep: formatarCep(e.target.value) }));
+
+    const handleChangeCep = async (e) => {
+        const novoCep = formatarCep(e.target.value);
+        cepRequestRef.current?.abort();
+        cepRequestRef.current = null;
+        setForm((prev) => ({ ...prev, cep: novoCep }));
+
+        const cepNumerico = apenasNumeros(novoCep);
+        if (cepNumerico.length === 8) {
+            const controller = new AbortController();
+            cepRequestRef.current = controller;
+
+            try {
+                const dados = await getEnderecoByCep(cepNumerico, {
+                    signal: controller.signal,
+                });
+                if (dados && !controller.signal.aborted) {
+                    setForm((prev) =>
+                        apenasNumeros(prev.cep) === cepNumerico
+                            ? {
+                                  ...prev,
+                                  rua: dados.logradouro || dados.rua || prev.rua,
+                                  bairro: dados.bairro || prev.bairro,
+                                  cidade: dados.localidade || dados.cidade || prev.cidade,
+                                  estado: dados.uf || dados.estado || prev.estado,
+                              }
+                            : prev,
+                    );
+                }
+            } catch (error) {
+                console.error("Erro ao buscar o CEP fornecido:", error);
+            } finally {
+                if (cepRequestRef.current === controller) {
+                    cepRequestRef.current = null;
+                }
+            }
+        }
+    };
+
+    useEffect(() => () => cepRequestRef.current?.abort(), []);
 
     const recarregarProdutos = async () => {
         if (!id) return;
-
         const dados = await getProdutosDoCliente(id);
         setProdutosAssociados(dados);
     };
@@ -193,7 +230,7 @@ export default function ClientesEditar() {
             });
 
             setProdutosAssociados((listaAnterior) => {
-                const novaLista = listaAnterior.map((item) => {
+                return listaAnterior.map((item) => {
                     const itemId = item?.produto?.id || item?.produto_id;
 
                     if (itemId === pId) {
@@ -205,13 +242,12 @@ export default function ClientesEditar() {
                     }
                     return item;
                 });
-
-                return novaLista;
             });
         } catch (error) {
-            console.error("❌ ERRO AO SALVAR:", error);
+            console.error("Erro ao salvar alterações do produto:", error);
         }
     };
+
     return (
         <div className="p-6 pt-0 mt-6 w-full font-['Outfit',_sans-serif]">
             <div className="bg-white p-8 sm:p-10 rounded-[32px] shadow-[0_8px_40px_rgba(70,150,173,0.08)] border border-[#F0F4F6] w-full">
@@ -338,7 +374,6 @@ export default function ClientesEditar() {
                 )}
             </div>
 
-            {/* Modal de Referências - Note as novas props */}
             {modalReferenciasAberto && (
                 <ModalReferencias
                     isOpen={modalReferenciasAberto}
@@ -348,7 +383,7 @@ export default function ClientesEditar() {
                     }}
                     clienteId={id}
                     fabricoId={fabricoId}
-                    itemParaEditar={itemParaEditar} // Passa o item se for edição
+                    itemParaEditar={itemParaEditar}
                     produtosExistentes={produtosAssociados}
                     onSuccess={recarregarProdutos}
                 />

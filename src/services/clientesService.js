@@ -106,6 +106,22 @@ export const atualizarClientesProdutos = async (clienteId, produtoId, data) => {
     }
 };
 
+export const criarClientesProdutos = async (clienteId, produtoId, data) => {
+    try {
+        const payload = {
+            nome_para_cliente: data?.nome_para_cliente,
+            preco_padrao: data?.preco_padrao,
+        };
+        const limpo = limparUndefined(payload);
+
+        const response = await api.post(`/clientes-produtos/${clienteId}/${produtoId}`, limpo);
+        return response.data;
+    } catch (error) {
+        console.error("Erro ao cadastrar produtos do cliente:", error);
+        throw error;
+    }
+};
+
 export const atualizarCliente = async (id, data) => {
     try {
         const endereco = limparUndefined(data?.endereco);
