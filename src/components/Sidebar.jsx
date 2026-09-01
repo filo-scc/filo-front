@@ -52,8 +52,8 @@ export function Sidebar({ isOpen = false, onClose }) {
             { name: "Parceiros", slug: "parceiros", path: "/parceiros" },
             { name: "Produtos", slug: "produtos", path: "/produtos" },
             { name: "Aviamentos", slug: "aviamentos", path: "/aviamentos" },
-            { name: "Financeiro", slug: "financeiro", path: "/financeiro" },
             { name: "Tecidos", slug: "tecidos", path: "/tecidos" },
+            { name: "Financeiro", slug: "financeiro", path: "/financeiro" },
             { name: "Configurações", slug: "configuracoes", path: "/configuracoes" },
         ];
 
