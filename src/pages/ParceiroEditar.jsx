@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getParceiroById, updateParceiro } from "../services/parceiroService";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
@@ -57,6 +57,7 @@ const EditarParceiro = () => {
         conta: "",
         categoria: "",
     });
+    const cepRequestRef = useRef(null);
 
     const maskTelefone = (value) => {
         return String(value ?? "")
@@ -99,15 +100,28 @@ const EditarParceiro = () => {
             masked = maskCep(value);
             const cepLimpo = value.replace(/\D/g, "");
 
+            cepRequestRef.current?.abort();
+            cepRequestRef.current = null;
             setFormData((prev) => ({ ...prev, cep: masked }));
 
             if (cepLimpo.length === 8) {
-                const endereco = await getEnderecoByCep(cepLimpo);
-                if (endereco) {
-                    setFormData((prev) => ({
-                        ...prev,
-                        ...endereco,
-                    }));
+                const controller = new AbortController();
+                cepRequestRef.current = controller;
+                const endereco = await getEnderecoByCep(cepLimpo, {
+                    signal: controller.signal,
+                });
+                if (endereco && !controller.signal.aborted) {
+                    setFormData((prev) =>
+                        (prev.cep || "").replace(/\D/g, "") === cepLimpo
+                            ? {
+                                  ...prev,
+                                  ...endereco,
+                              }
+                            : prev,
+                    );
+                }
+                if (cepRequestRef.current === controller) {
+                    cepRequestRef.current = null;
                 }
             }
             return;
@@ -122,6 +136,8 @@ const EditarParceiro = () => {
 
         setFormData((prev) => ({ ...prev, [name]: masked }));
     };
+
+    useEffect(() => () => cepRequestRef.current?.abort(), []);
 
     useEffect(() => {
         const fetchParceiro = async () => {

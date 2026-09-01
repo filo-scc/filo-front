@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import TabelaReferencias from "../components/clientes/TabelaReferencias";
 import FloatingLabelInput from "../components/FloatingLabelInput";
@@ -39,6 +39,7 @@ export default function ClientesCadastrar() {
     const [loadingReferencias, setLoadingReferencias] = useState(false);
     const [salvando, setSalvando] = useState(false);
     const [erroCadastro, setErroCadastro] = useState("");
+    const cepRequestRef = useRef(null);
 
     const handleChange = (campo) => (e) => {
         setForm((prev) => ({ ...prev, [campo]: e.target.value }));
@@ -54,26 +55,43 @@ export default function ClientesCadastrar() {
 
     const handleChangeCep = async (e) => {
         const novoCep = formatarCep(e.target.value);
+        cepRequestRef.current?.abort();
+        cepRequestRef.current = null;
         setForm((prev) => ({ ...prev, cep: novoCep }));
 
         const cepNumerico = apenasNumeros(novoCep);
         if (cepNumerico.length === 8) {
+            const controller = new AbortController();
+            cepRequestRef.current = controller;
+
             try {
-                const dados = await getEnderecoByCep(cepNumerico);
-                if (dados && !dados.erro) {
-                    setForm((prev) => ({
-                        ...prev,
-                        rua: dados.logradouro || dados.rua || prev.rua,
-                        bairro: dados.bairro || prev.bairro,
-                        cidade: dados.localidade || dados.cidade || prev.cidade,
-                        estado: dados.uf || dados.estado || prev.estado,
-                    }));
+                const dados = await getEnderecoByCep(cepNumerico, {
+                    signal: controller.signal,
+                });
+                if (dados && !controller.signal.aborted) {
+                    setForm((prev) =>
+                        apenasNumeros(prev.cep) === cepNumerico
+                            ? {
+                                  ...prev,
+                                  rua: dados.logradouro || dados.rua || prev.rua,
+                                  bairro: dados.bairro || prev.bairro,
+                                  cidade: dados.localidade || dados.cidade || prev.cidade,
+                                  estado: dados.uf || dados.estado || prev.estado,
+                              }
+                            : prev,
+                    );
                 }
             } catch (error) {
                 console.error("Erro ao buscar o CEP fornecido:", error);
+            } finally {
+                if (cepRequestRef.current === controller) {
+                    cepRequestRef.current = null;
+                }
             }
         }
     };
+
+    useEffect(() => () => cepRequestRef.current?.abort(), []);
 
     const handleChangeNumeroEndereco = (e) => {
         setForm((prev) => ({ ...prev, numero: e.target.value }));

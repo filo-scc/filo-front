@@ -558,35 +558,6 @@ export default function PedidosCadastrar() {
         );
     };
 
-    const handleSalvarClienteProduto = async (identificador) => {
-        const ficha = fichas.find((f, index) => {
-            return f.id !== undefined && f.id !== null
-                ? f.id === identificador
-                : index === identificador;
-        });
-
-        if (!ficha || ficha.associadoAoCliente === false) {
-            return;
-        }
-
-        const clienteId = clienteSelecionado?.id || ficha.cliente_id || ficha.clienteId;
-        const produtoId = ficha.produto_id || ficha.produtoId || ficha.ficha_tecnica_id || ficha.id;
-
-        const precoRaw = ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? 0;
-        const precoTratado = parsePreco(precoRaw);
-
-        const dadosClienteProduto = {
-            nome_para_cliente: ficha.referenciaCliente ?? ficha.ref_cliente ?? "",
-            preco_padrao: precoTratado,
-        };
-
-        try {
-            await atualizarClientesProdutos(clienteId, produtoId, dadosClienteProduto);
-        } catch (error) {
-            console.error("Erro ao atualizar dados do produto do cliente:", error);
-        }
-    };
-
     const handleConcluirPedido = async () => {
         if (trocandoCliente) {
             setErro("Aguarde a atualização dos produtos do novo cliente.");
@@ -699,30 +670,6 @@ export default function PedidosCadastrar() {
             for (const ficha of fichas) {
                 const pId = ficha.produtoId || ficha.produto_id;
 
-                if (isSobDemanda && clienteSelecionado?.id && pId) {
-                    const precoRaw = ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? 0;
-                    const precoTratado = parsePreco(precoRaw);
-
-                    const dadosClienteProduto = {
-                        nome_para_cliente: ficha.referenciaCliente ?? ficha.ref_cliente ?? "",
-                        preco_padrao: precoTratado,
-                    };
-
-                    if (ficha.associadoAoCliente === false) {
-                        await criarClientesProdutos(clienteSelecionado.id, pId, {
-                            cliente_id: clienteSelecionado.id,
-                            produto_id: pId,
-                            ...dadosClienteProduto,
-                        });
-                    } else {
-                        await atualizarClientesProdutos(
-                            clienteSelecionado.id,
-                            pId,
-                            dadosClienteProduto,
-                        );
-                    }
-                }
-
                 if (
                     ficha.gradeVersaoIdNova &&
                     ficha.gradeVersaoIdNova !== ficha.gradeVersaoIdOriginal &&
@@ -827,6 +774,34 @@ export default function PedidosCadastrar() {
                     }
                 }
             }
+
+            if (isSobDemanda && clienteSelecionado?.id) {
+                for (const ficha of fichas) {
+                    const pId = ficha.produtoId || ficha.produto_id;
+                    if (!pId) continue;
+
+                    const precoRaw = ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? 0;
+                    const dadosClienteProduto = {
+                        nome_para_cliente: ficha.referenciaCliente ?? ficha.ref_cliente ?? "",
+                        preco_padrao: parsePreco(precoRaw),
+                    };
+
+                    if (ficha.associadoAoCliente === false) {
+                        await criarClientesProdutos(clienteSelecionado.id, pId, {
+                            cliente_id: clienteSelecionado.id,
+                            produto_id: pId,
+                            ...dadosClienteProduto,
+                        });
+                    } else {
+                        await atualizarClientesProdutos(
+                            clienteSelecionado.id,
+                            pId,
+                            dadosClienteProduto,
+                        );
+                    }
+                }
+            }
+
             navigate("/pedidos");
         } catch (error) {
             setErro("Falha ao salvar pedido. Verifique os dados e tente novamente.");
@@ -926,7 +901,6 @@ export default function PedidosCadastrar() {
                             isSobDemanda={isSobDemanda}
                             onRemoverFicha={handleRemoverFicha}
                             onAtualizarFicha={handleAtualizarFicha}
-                            onSalvarClienteProduto={handleSalvarClienteProduto}
                         />
                     </div>
 

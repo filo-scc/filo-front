@@ -6,7 +6,6 @@ export default function TabelaReferenciaFichaTecnica({
     isSobDemanda = true,
     onRemoverFicha,
     onAtualizarFicha,
-    onSalvarClienteProduto,
     onEditarFicha,
 }) {
     const [idEmEdicao, setIdEmEdicao] = useState(null);
@@ -72,10 +71,6 @@ export default function TabelaReferenciaFichaTecnica({
     }, 0);
 
     const handleAlternarEdicao = (itemKey) => {
-        const estaEditando = idEmEdicao === itemKey;
-        if (estaEditando) {
-            onSalvarClienteProduto?.(itemKey);
-        }
         setIdEmEdicao((prevKey) => (prevKey === itemKey ? null : itemKey));
         onEditarFicha?.(itemKey);
     };
@@ -84,7 +79,6 @@ export default function TabelaReferenciaFichaTecnica({
         const proximoFoco = e.relatedTarget;
         if (!proximoFoco || proximoFoco.getAttribute("data-itemkey") !== String(itemKey)) {
             if (idEmEdicao === itemKey) {
-                onSalvarClienteProduto?.(itemKey);
                 setIdEmEdicao(null);
             }
         }

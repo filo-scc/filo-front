@@ -156,21 +156,30 @@ export default function ParceiroCadastro() {
 
     useEffect(() => {
         const cleanCep = (formData.cep || "").replace(/\D/g, "");
+        const controller = new AbortController();
 
         if (cleanCep.length === 8) {
             const fetchEndereco = async () => {
-                const endereco = await getEnderecoByCep(cleanCep);
+                const endereco = await getEnderecoByCep(cleanCep, {
+                    signal: controller.signal,
+                });
 
-                if (endereco) {
-                    setFormData((prev) => ({
-                        ...prev,
-                        ...endereco,
-                    }));
+                if (endereco && !controller.signal.aborted) {
+                    setFormData((prev) =>
+                        (prev.cep || "").replace(/\D/g, "") === cleanCep
+                            ? {
+                                  ...prev,
+                                  ...endereco,
+                              }
+                            : prev,
+                    );
                 }
             };
 
             fetchEndereco();
         }
+
+        return () => controller.abort();
     }, [formData.cep]);
 
     const maskTelefone = (value) => {

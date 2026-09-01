@@ -1,4 +1,4 @@
-export const getEnderecoByCep = async (cep) => {
+export const getEnderecoByCep = async (cep, { signal } = {}) => {
     const cepLimpo = String(cep ?? "").replace(/\D/g, "");
 
     if (cepLimpo.length !== 8) {
@@ -6,7 +6,7 @@ export const getEnderecoByCep = async (cep) => {
     }
 
     try {
-        const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+        const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`, { signal });
         const data = await response.json();
 
         if (data.erro) {
@@ -20,7 +20,9 @@ export const getEnderecoByCep = async (cep) => {
             estado: data.uf || "",
         };
     } catch (error) {
-        console.error("Erro na busca do CEP:", error);
+        if (error?.name !== "AbortError") {
+            console.error("Erro na busca do CEP:", error);
+        }
         return null;
     }
 };
