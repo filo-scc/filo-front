@@ -3,16 +3,57 @@ import { NavLink, useNavigate } from "react-router-dom";
 
 import { getFabricoById } from "../services/fabricoService";
 
+const FABRICACAO_SOB_DEMANDA_CACHE_KEY = "filo:fabricacaoSobDemanda";
+
+const getFabricacaoSobDemandaCache = (fabricoId) => {
+    if (!fabricoId) {
+        return { fabricoId: null, valor: null };
+    }
+
+    try {
+        const cached = JSON.parse(
+            sessionStorage.getItem(FABRICACAO_SOB_DEMANDA_CACHE_KEY) || "null",
+        );
+
+        if (cached?.fabricoId === fabricoId && typeof cached.valor === "boolean") {
+            return cached;
+        }
+    } catch (error) {
+        console.error("Erro ao ler cache de fabricação sob demanda:", error);
+    }
+
+    return { fabricoId: null, valor: null };
+};
+
+const setFabricacaoSobDemandaCache = (fabricoId, valor) => {
+    try {
+        sessionStorage.setItem(
+            FABRICACAO_SOB_DEMANDA_CACHE_KEY,
+            JSON.stringify({ fabricoId, valor }),
+        );
+    } catch (error) {
+        console.error("Erro ao salvar cache de fabricação sob demanda:", error);
+    }
+};
+
 export function Sidebar({ isOpen = false, onClose }) {
     const [hoveredPath, setHoveredPath] = useState(null);
     const navigate = useNavigate();
-    const [producaoSobDemanda, setProducaoSobDemanda] = useState(null);
 
     const usuarioLogado = JSON.parse(localStorage.getItem("user") || "{}");
     const fabricoId = usuarioLogado?.fabrico_id;
+    const [producaoSobDemanda, setProducaoSobDemanda] = useState(() =>
+        getFabricacaoSobDemandaCache(fabricoId),
+    );
+    const fabricoResolvido =
+        !fabricoId ||
+        (producaoSobDemanda.fabricoId === fabricoId && producaoSobDemanda.valor !== null);
+    const producaoSobDemandaAtiva =
+        fabricoId && producaoSobDemanda.fabricoId === fabricoId
+            ? producaoSobDemanda.valor === true
+            : false;
 
-    const labelNovaFicha =
-        producaoSobDemanda === null ? "" : producaoSobDemanda ? "Novo pedido" : "Nova produção";
+    const labelNovaFicha = producaoSobDemandaAtiva ? "Novo pedido" : "Nova produção";
 
     useEffect(() => {
         if (!fabricoId) {
@@ -27,10 +68,17 @@ export function Sidebar({ isOpen = false, onClose }) {
 
                 if (ignorar) return;
 
-                setProducaoSobDemanda(response?.fabricacao_sob_demanda === true);
+                setProducaoSobDemanda({
+                    fabricoId,
+                    valor: response?.fabricacao_sob_demanda === true,
+                });
+                setFabricacaoSobDemandaCache(fabricoId, response?.fabricacao_sob_demanda === true);
             } catch (error) {
+                if (ignorar) return;
+
                 console.error("Erro ao carregar dados do fabrico na Sidebar:", error);
-                setProducaoSobDemanda(false);
+                setProducaoSobDemanda({ fabricoId, valor: false });
+                setFabricacaoSobDemandaCache(fabricoId, false);
             }
         };
 
@@ -44,11 +92,6 @@ export function Sidebar({ isOpen = false, onClose }) {
     const menuItems = useMemo(() => {
         const items = [
             { name: "Início", slug: "inicio", path: "/" },
-            {
-                name: producaoSobDemanda ? "Pedidos" : "Produções",
-                slug: "pedidos",
-                path: "/pedidos",
-            },
             { name: "Parceiros", slug: "parceiros", path: "/parceiros" },
             { name: "Produtos", slug: "produtos", path: "/produtos" },
             { name: "Aviamentos", slug: "aviamentos", path: "/aviamentos" },
@@ -57,12 +100,22 @@ export function Sidebar({ isOpen = false, onClose }) {
             { name: "Configurações", slug: "configuracoes", path: "/configuracoes" },
         ];
 
-        if (producaoSobDemanda) {
+        if (!fabricoResolvido) {
+            return items;
+        }
+
+        items.splice(1, 0, {
+            name: producaoSobDemandaAtiva ? "Pedidos" : "Produções",
+            slug: "pedidos",
+            path: "/pedidos",
+        });
+
+        if (producaoSobDemandaAtiva) {
             items.splice(3, 0, { name: "Clientes", slug: "clientes", path: "/clientes" });
         }
 
         return items;
-    }, [producaoSobDemanda]);
+    }, [fabricoResolvido, producaoSobDemandaAtiva]);
 
     return (
         <aside
@@ -92,16 +145,20 @@ export function Sidebar({ isOpen = false, onClose }) {
             </div>
 
             {/* 1. Botão Nova Ficha */}
-            <button
-                className="w-[169px] h-[39px] min-h-[39px] bg-[#A9E2F2] rounded-[18.5px] flex items-center justify-start px-4 gap-3 transition-all duration-200 shadow-sm hover:bg-[#A2DCED]"
-                onClick={() => {
-                    onClose?.();
-                    navigate("/pedidos/cadastrar");
-                }}
-            >
-                <img src="/pedidos-azul.png" alt="" className="w-5 h-5" />
-                <span className="text-[#4696AD] font-normal text-sm">{labelNovaFicha}</span>
-            </button>
+            {fabricoResolvido && (
+                <button
+                    className="w-[182px] h-[39px] min-h-[39px] bg-[#A9E2F2] rounded-[18.5px] flex items-center justify-center px-3 gap-2 transition-all duration-200 shadow-sm hover:bg-[#A2DCED]"
+                    onClick={() => {
+                        onClose?.();
+                        navigate("/pedidos/cadastrar");
+                    }}
+                >
+                    <img src="/pedidos-azul.png" alt="" className="w-5 h-5" />
+                    <span className="whitespace-nowrap text-[#4696AD] font-normal text-sm">
+                        {labelNovaFicha}
+                    </span>
+                </button>
+            )}
 
             {/* 2. Menu Itens */}
             <nav className="flex flex-col gap-2 w-full pb-8">
