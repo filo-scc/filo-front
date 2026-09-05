@@ -150,10 +150,7 @@ const EditarParceiro = () => {
         if (!dropdownEtapaAberto) return undefined;
 
         const handleClickOutside = (event) => {
-            if (
-                etapaDropdownRef.current &&
-                !etapaDropdownRef.current.contains(event.target)
-            ) {
+            if (etapaDropdownRef.current && !etapaDropdownRef.current.contains(event.target)) {
                 setDropdownEtapaAberto(false);
             }
         };
