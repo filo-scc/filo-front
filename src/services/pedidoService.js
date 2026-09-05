@@ -20,6 +20,16 @@ export const getPedidosByFabricoId = async (fabricoId) => {
     }
 };
 
+export const getPedidoById = async (pedidoId) => {
+    try {
+        const response = await api.get(`/pedidos/${pedidoId}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching pedido:", error);
+        throw error;
+    }
+};
+
 export const deletPedido = async (pedido_id) => {
     try {
         await api.delete(`/pedidos/${pedido_id}`);

@@ -948,6 +948,8 @@ export default function PedidosCadastrar() {
                             foto: rascunhoFicha.foto || referenciaParaModal?.foto,
                             preco_padrao:
                                 rascunhoFicha.preco_padrao ?? referenciaParaModal?.preco_padrao,
+                            custo_total:
+                                rascunhoFicha.custo_total ?? referenciaParaModal?.custo_total,
                             referenciaInterna:
                                 rascunhoFicha.referenciaInterna ||
                                 referenciaParaModal?.nome ||

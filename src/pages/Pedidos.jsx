@@ -229,7 +229,10 @@ const Pedidos = () => {
                                             return (
                                                 <tr
                                                     key={pedido.id}
-                                                    className="border-b border-[#E8E8E8] last:border-none even:bg-[#E8E8E8] transition-colors text-center"
+                                                    onClick={() =>
+                                                        navigate(`/pedidos/${pedido.id}`)
+                                                    }
+                                                    className="border-b border-[#E8E8E8] last:border-none even:bg-[#E8E8E8] transition-colors text-center cursor-pointer hover:text-[#4696ad]"
                                                 >
                                                     <td className="py-4 px-6">
                                                         {pedido.numero ?? pedido.id}
@@ -257,7 +260,10 @@ const Pedidos = () => {
                                                     <td className="py-4 px-6">
                                                         {textoDataFinalizado}
                                                     </td>
-                                                    <td className="py-4 px-6">
+                                                    <td
+                                                        className="py-4 px-6"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
                                                         <MenuOpcoes
                                                             onEdit={() => handleEdit(pedido.id)}
                                                             onDelete={() =>
