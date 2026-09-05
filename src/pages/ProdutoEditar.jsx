@@ -969,7 +969,7 @@ export default function ProdutoEditar() {
         }
 
         if (!formData.modelo || !formData.tipo_produto_id) {
-            setErro("Selecione o modelo do produto.");
+            setErro("Selecione o tipo de produto.");
             return;
         }
 
@@ -1144,10 +1144,10 @@ export default function ProdutoEditar() {
                                 </div>
 
                                 <div>
-                                    <FieldLabel>Modelo</FieldLabel>
+                                    <FieldLabel>Tipo de produto</FieldLabel>
                                     <DropdownField
                                         value={formData.modelo}
-                                        placeholder="Modelo"
+                                        placeholder="Tipo de produto"
                                         options={modelosDisponiveis.map((modelo) => modelo.nome)}
                                         isOpen={openDropdown === "modelo"}
                                         onToggle={() => toggleDropdown("modelo")}

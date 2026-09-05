@@ -6,6 +6,15 @@ import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import MenuOpcoes from "../components/geral/MenuOpcoes";
 import { PedidosTableSkeleton } from "../components/geral/Loading";
+import { parsePreco } from "../utils/preco";
+
+const formatarMoeda = (valor) =>
+    parsePreco(valor).toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
 
 const Pedidos = () => {
     const navigate = useNavigate();
@@ -244,11 +253,7 @@ const Pedidos = () => {
                                                     <td className="py-4 px-6 ">
                                                         {producaoSobDemanda && !pedido.cliente
                                                             ? "-"
-                                                            : valorMonetario != null
-                                                              ? `R$ ${Number(valorMonetario)
-                                                                    .toFixed(2)
-                                                                    .replace(".", ",")}`
-                                                              : "R$ 0,00"}
+                                                            : formatarMoeda(valorMonetario)}
                                                     </td>
 
                                                     <td className="py-4 px-6">
