@@ -11,6 +11,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import RelatorioDeAcabamento from "./RelatorioDeAcabamento";
 import { getAllEtapasByFabricoId } from "../../services/etapaService";
+import { getFabricoById } from "../../services/fabricoService";
 
 const CampoDetalhe = ({ label, valor }) => (
     <div className="relative border border-[#898C8F] rounded-[10px] h-[39px] px-3 flex items-center mt-0.5 w-full bg-white">
@@ -64,6 +65,9 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
     const carregarDados = useCallback(async () => {
         try {
             const dados = await findOne(fichaId);
+            if (dados && dados.fabrico?.fabricacao_sob_demanda == null && dados.fabrico_id) {
+                dados.fabrico = await getFabricoById(dados.fabrico_id);
+            }
             setFicha(dados);
             setRelatorioAcabamento({
                 defeitoCostura: dados?.defeitos_costura ?? 0,
@@ -260,7 +264,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
                 }
             }
 
-            const fileName = `nota-de-saida-${ficha.numero || "export"}.pdf`;
+            const fileName = `${ficha.fabrico?.fabricacao_sob_demanda === false ? "nota-de-conferencia" : "nota-de-saida"}-${ficha.numero || "export"}.pdf`;
             pdf.save(fileName);
         } catch (error) {
             console.error("Erro ao gerar PDF da nota de saída", error);
@@ -382,10 +386,12 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
                                         label="Cliente"
                                         valor={ficha?.pedido?.cliente?.nome}
                                     />
-                                    <CampoDetalhe
-                                        label="Referência do Cliente"
-                                        valor={referenciaCliente}
-                                    />
+                                    {ficha?.fabrico?.fabricacao_sob_demanda !== false && (
+                                        <CampoDetalhe
+                                            label="Referência do Cliente"
+                                            valor={referenciaCliente}
+                                        />
+                                    )}
                                     <CampoDetalhe
                                         label="Tecido"
                                         valor={ficha?.produto?.tecido?.nome}
@@ -781,6 +787,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
             </div>
 
             <OpcoesImpressaoModal
+                isSobDemanda={ficha?.fabrico?.fabricacao_sob_demanda !== false}
                 isOpen={modalImpressaoAberto}
                 onClose={() => setModalImpressaoAberto(false)}
                 onSelectFichaTecnica={() => {
