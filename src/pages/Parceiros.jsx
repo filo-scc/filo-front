@@ -6,6 +6,7 @@ import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import MenuOpcoes from "../components/geral/MenuOpcoes";
 import { ParceirosTableSkeleton } from "../components/geral/Loading";
+import TabelaCabecalho, { TabelaCabecalhoCelula } from "../components/geral/TabelaCabecalho";
 
 const Parceiros = () => {
     const userString = localStorage.getItem("user");
@@ -186,20 +187,16 @@ const Parceiros = () => {
 
                     {/* Tabela */}
                     <div className="w-full pb-16">
-                        <div className="w-full border border-gray-200 rounded-xl overflow-hidden bg-[#D3EBF2]">
-                            <table className="w-full border-separate border-spacing-0 text-[16px] font-['Outfit',_sans-serif] font-light text-center">
-                                <thead className="bg-[#D3EBF2] text-[#4696AD]">
-                                    <tr className="h-[64px]">
-                                        <th className="px-6 font-light">Parceiro</th>
-                                        <th className="px-6 font-light">Possui pedido</th>
-
-                                        <th className="px-6 font-light"> Etapa de Produção </th>
-
-                                        <th className="px-6 font-light">Consultar endereço</th>
-                                        <th className="px-6 font-light">Contato</th>
-                                        <th className="px-6 font-light">Opções</th>
-                                    </tr>
-                                </thead>
+                        <div className="w-full overflow-x-auto border border-gray-200 rounded-xl bg-white">
+                            <table className="w-full min-w-[760px] table-fixed border-separate border-spacing-0 text-[16px] font-['Outfit',_sans-serif] font-light text-center">
+                                <TabelaCabecalho>
+                                    <TabelaCabecalhoCelula>Parceiro</TabelaCabecalhoCelula>
+                                    <TabelaCabecalhoCelula>Possui pedido</TabelaCabecalhoCelula>
+                                    <TabelaCabecalhoCelula>Etapa de Produção</TabelaCabecalhoCelula>
+                                    <TabelaCabecalhoCelula>Consultar endereço</TabelaCabecalhoCelula>
+                                    <TabelaCabecalhoCelula>Contato</TabelaCabecalhoCelula>
+                                    <TabelaCabecalhoCelula>Opções</TabelaCabecalhoCelula>
+                                </TabelaCabecalho>
 
                                 <tbody className="bg-white text-[#404040]">
                                     {loading ? (

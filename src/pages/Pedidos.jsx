@@ -5,6 +5,7 @@ import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import MenuOpcoes from "../components/geral/MenuOpcoes";
 import { PedidosTableSkeleton } from "../components/geral/Loading";
+import TabelaCabecalho, { TabelaCabecalhoCelula } from "../components/geral/TabelaCabecalho";
 
 const Pedidos = () => {
     const navigate = useNavigate();
@@ -47,6 +48,13 @@ const Pedidos = () => {
             day: "2-digit",
             month: "2-digit",
         });
+    };
+
+    const formatarValor = (valor) => {
+        const valorNumerico = Number(valor);
+        return Number.isFinite(valorNumerico)
+            ? `R$ ${valorNumerico.toFixed(2).replace(".", ",")}`
+            : "R$ 0,00";
     };
 
     const handleEdit = (id) => {
@@ -131,23 +139,17 @@ const Pedidos = () => {
 
                 {/* Tabela de Pedidos */}
                 <div className="w-full overflow-visible">
-                    <div className="min-w-max border border-[#D9D9D9] rounded-xl font-light text-[16px] overflow-hidden">
-                        <table className="w-full text-left border-collapse relative z-10">
-                            <thead>
-                                <tr className="bg-[#C9EAF6] text-[#4696AD]">
-                                    <th className="py-4 px-6 text-center font-normal">Pedido</th>
-                                    <th className="py-4 px-6 text-center font-normal">Cliente</th>
-                                    <th className="py-4 px-6 text-center font-normal">
-                                        Total de peças
-                                    </th>
-                                    <th className="py-4 px-6 text-center font-normal">Valor</th>
-                                    <th className="py-4 px-6 text-center font-normal">Criado</th>
-                                    <th className="py-4 px-6 text-center font-normal">
-                                        Finalizado
-                                    </th>
-                                    <th className="py-4 px-6 text-center font-normal">Opções</th>
-                                </tr>
-                            </thead>
+                    <div className="w-full overflow-x-auto border border-[#D9D9D9] rounded-xl bg-white font-light text-[16px]">
+                        <table className="w-full min-w-[760px] table-fixed border-separate border-spacing-0 text-left relative z-10">
+                            <TabelaCabecalho>
+                                <TabelaCabecalhoCelula>Pedido</TabelaCabecalhoCelula>
+                                <TabelaCabecalhoCelula>Cliente</TabelaCabecalhoCelula>
+                                <TabelaCabecalhoCelula>Total de peças</TabelaCabecalhoCelula>
+                                <TabelaCabecalhoCelula>Valor</TabelaCabecalhoCelula>
+                                <TabelaCabecalhoCelula>Criado</TabelaCabecalhoCelula>
+                                <TabelaCabecalhoCelula>Finalizado</TabelaCabecalhoCelula>
+                                <TabelaCabecalhoCelula>Opções</TabelaCabecalhoCelula>
+                            </TabelaCabecalho>
                             <tbody className="text-[#404040]">
                                 {loading ? (
                                     <PedidosTableSkeleton rows={5} />
@@ -207,9 +209,7 @@ const Pedidos = () => {
                                                     <td className="py-4 px-6 ">
                                                         {!pedido.cliente
                                                             ? "-"
-                                                            : pedido.valor_total != null
-                                                              ? `R$ ${pedido.valor_total.toFixed(2).replace(".", ",")}`
-                                                              : "R$ 0,00"}
+                                                            : formatarValor(pedido.valor_total)}
                                                     </td>
 
                                                     <td className="py-4 px-6">
