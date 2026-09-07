@@ -131,7 +131,7 @@ export default function ClientesCadastrar() {
         const carregarReferencias = async () => {
             setLoadingReferencias(true);
             try {
-                const produtos = await getProdutosPorFabrico(fabricoId, buscaReferencia);
+                const produtos = await getProdutosPorFabrico(buscaReferencia);
                 if (ignorar) return;
 
                 const idsAssociados = new Set(

@@ -275,9 +275,9 @@ export default function ProdutoCadastar() {
                     resEtapasReal,
                     resParceiros,
                 ] = await Promise.allSettled([
-                    getGradesByFabrico(fabricoId),
-                    getTecidosByFabrico(fabricoId),
-                    getAviamentosByFabrico(fabricoId),
+                    getGradesByFabrico(),
+                    getTecidosByFabrico(),
+                    getAviamentosByFabrico(),
                     getTiposProdutoByFabrico(),
                     getAllEtapasByFabricoId(fabricoId),
                     getParceirosByFabrico(fabricoId),
@@ -525,7 +525,7 @@ export default function ProdutoCadastar() {
     // Função para atualizar a lista de tecidos após cadastrar um novo
     const recarregarTecidos = async () => {
         try {
-            const dados = await getTecidosByFabrico(fabricoId);
+            const dados = await getTecidosByFabrico();
             const tecidosTratados = (dados || []).map((t) => ({
                 id: t?.id || t?.tecido?.id,
                 nome: t?.nome || t?.tecido?.nome || "Sem nome na API",
@@ -584,7 +584,6 @@ export default function ProdutoCadastar() {
                 foto: urlFoto,
                 nome: formData.referencia.trim(),
                 tipo_produto_id: formData.tipo_produto_id,
-                fabrico_id: fabricoId,
                 tecido_id: formData.tecido_id || null,
                 grade_versao_id: formData.grade_versao_id,
                 quantidade_tecido: qtdTecidoCalculo || null,

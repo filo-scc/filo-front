@@ -1,7 +1,7 @@
 import api from "./api";
 
-export const getAviamentosByFabrico = async (fabricoId) => {
-    const response = await api.get(`/aviamentos/fabrico/${fabricoId}`);
+export const getAviamentosByFabrico = async () => {
+    const response = await api.get("/aviamentos");
     return response.data;
 };
 

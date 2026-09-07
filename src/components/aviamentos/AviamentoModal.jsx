@@ -164,7 +164,6 @@ export default function AviamentoModal({
 
         const payload = {
             nome: nomeTrim,
-            fabrico_id: Number(fabricoId),
             unidade_de_medida: unidadeNormalizada,
             custo_unitario: Number(custoCalculado.toFixed(2)),
         };

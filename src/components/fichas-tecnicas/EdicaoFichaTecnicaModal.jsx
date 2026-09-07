@@ -245,7 +245,7 @@ export default function EdicaoFichaTecnicaModal({
     const carregarCoresDaFabrica = useCallback(async () => {
         if (dadosFicha?.fabrico_id) {
             try {
-                const cores = await getCoresByFabricoId(dadosFicha.fabrico_id);
+                const cores = await getCoresByFabricoId();
                 setTodasCoresDisponiveis(cores);
             } catch (error) {
                 console.error("Erro ao buscar cores", error);

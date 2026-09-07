@@ -70,7 +70,7 @@ export default function Produtos() {
         const fetchProdutos = async () => {
             setLoading(true);
             try {
-                const dados = await getProdutosByFabrico(fabricoId);
+                const dados = await getProdutosByFabrico();
                 setProdutos(Array.isArray(dados) ? dados : []);
             } catch (error) {
                 console.error("Erro ao carregar produtos:", error);

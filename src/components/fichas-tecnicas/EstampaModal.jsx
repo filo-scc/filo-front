@@ -74,7 +74,6 @@ export default function EstampaModal({ isOpen, onClose, fabricoId, onSuccess }) 
             }
 
             const created = await createCor({
-                fabrico_id: fabricoIdNumerico,
                 nome: nomeTrim,
                 foto: urlFoto,
                 tipo: "ESTAMPA",

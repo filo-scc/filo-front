@@ -253,7 +253,7 @@ export default function FichaTecnicaModal({
                     parceirosResponse,
                 ] = await Promise.all([
                     getFabricoById(fabricoId),
-                    getCoresByFabricoId(fabricoId),
+                    getCoresByFabricoId(),
                     getGradesLiberadasByFabricoId(fabricoId),
                     getParceiroByProduto(produto.id),
                     getParceirosByFabrico(fabricoId),

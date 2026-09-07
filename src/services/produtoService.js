@@ -10,9 +10,9 @@ export const getProdutos = async () => {
     }
 };
 
-export const getProdutosByFabrico = async (fabricoId) => {
+export const getProdutosByFabrico = async () => {
     try {
-        const response = await api.get(`/produtos/fabrico/${fabricoId}`);
+        const response = await api.get("/produtos");
         return response.data;
     } catch (error) {
         console.error("Erro ao buscar produtos do fabrico:", error);
@@ -41,8 +41,8 @@ export const atualizarProduto = async (id, data) => {
     return response.data;
 };
 
-export const getGradesByFabrico = async (fabricoId) => {
-    const response = await api.get(`/fabrico-grades/fabrico/${fabricoId}`);
+export const getGradesByFabrico = async () => {
+    const response = await api.get("/grades");
     return response.data;
 };
 
@@ -61,13 +61,13 @@ export const excluirProduto = async (id) => {
     return response.data;
 };
 
-export const getTecidosByFabrico = async (fabricoId) => {
-    const response = await api.get(`/tecidos/fabrico/${fabricoId}`);
+export const getTecidosByFabrico = async () => {
+    const response = await api.get("/tecidos");
     return response.data;
 };
 
-export const getAviamentosByFabrico = async (fabricoId) => {
-    const response = await api.get(`/aviamentos/fabrico/${fabricoId}`);
+export const getAviamentosByFabrico = async () => {
+    const response = await api.get("/aviamentos");
     return response.data;
 };
 

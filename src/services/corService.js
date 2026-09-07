@@ -11,8 +11,8 @@ export function getApiErrorMessage(error, fallback = "Ocorreu um erro inesperado
     return fallback;
 }
 
-export async function getCoresByFabricoId(fabricoId) {
-    const response = await api.get(`/cores/fabrico/${fabricoId}`);
+export async function getCoresByFabricoId() {
+    const response = await api.get("/cores");
     return unwrap(response);
 }
 

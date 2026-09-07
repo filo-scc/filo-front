@@ -4,7 +4,7 @@ function unwrap(response) {
     return response?.data?.data ?? response?.data ?? response;
 }
 
-export async function getGradesLiberadasByFabricoId(fabricoId) {
-    const response = await api.get(`/fabrico-grades/fabrico/${fabricoId}`);
+export async function getGradesLiberadasByFabricoId() {
+    const response = await api.get("/grades");
     return unwrap(response);
 }

@@ -92,8 +92,26 @@ export function CadastrarTecidoModal({ isOpen, onClose, onSuccess, fabricoId }) 
             custoFinal = valor / qtd;
         }
 
+<<<<<<< Updated upstream
         setSubmitting(true);
         setError("");
+=======
+        if (tipoCusto === "compra" && parseNumero(quantidadeAdquirida) <= 0) {
+            setError("Informe uma quantidade adquirida maior que zero.");
+            return;
+        }
+
+        if (custoCalculado < 0) {
+            setError("Informe um custo válido.");
+            return;
+        }
+
+        const payload = {
+            nome: nomeTrim,
+            unidade_de_medida: unidadeNormalizada,
+            custo_unitario: Number(custoCalculado.toFixed(2)),
+        };
+>>>>>>> Stashed changes
 
         try {
             const payload = {

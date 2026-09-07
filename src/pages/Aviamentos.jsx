@@ -60,7 +60,7 @@ const Aviamentos = () => {
         }
         try {
             setLoading(true);
-            const data = await getAviamentosByFabrico(fabrico_id);
+            const data = await getAviamentosByFabrico();
             setAviamentos(Array.isArray(data) ? data : data?.data || []);
         } catch (error) {
             console.error("Erro ao carregar os aviamentos", error);

@@ -28,8 +28,8 @@ export const getProdutosDoCliente = async (clienteId) => {
 };
 
 // Função para buscar os produtos do fabrico (com busca opcional)
-export const getProdutosPorFabrico = async (fabricoId, busca = "") => {
-    const response = await api.get(`/produtos/fabrico/${fabricoId}`, {
+export const getProdutosPorFabrico = async (busca = "") => {
+    const response = await api.get("/produtos", {
         params: { busca },
     });
 

@@ -579,15 +579,9 @@ export default function ProdutoEditar() {
                     getProdutoById(id),
                     getClientesDoProduto(id),
                     Number.isFinite(fabricoId) ? getClientes(fabricoId) : Promise.resolve([]),
-                    Number.isFinite(fabricoId)
-                        ? getGradesByFabrico(fabricoId)
-                        : Promise.resolve([]),
-                    Number.isFinite(fabricoId)
-                        ? getTecidosByFabrico(fabricoId)
-                        : Promise.resolve([]),
-                    Number.isFinite(fabricoId)
-                        ? getAviamentosByFabrico(fabricoId)
-                        : Promise.resolve([]),
+                    Number.isFinite(fabricoId) ? getGradesByFabrico() : Promise.resolve([]),
+                    Number.isFinite(fabricoId) ? getTecidosByFabrico() : Promise.resolve([]),
+                    Number.isFinite(fabricoId) ? getAviamentosByFabrico() : Promise.resolve([]),
                     getAviamentosDoProduto(id).catch(() => []),
                     getTiposProdutoByFabrico().catch(() => []),
                     Number.isFinite(fabricoId) ? getFabricoById(fabricoId) : Promise.resolve(null),
@@ -983,7 +977,7 @@ export default function ProdutoEditar() {
 
     const recarregarTecidos = async () => {
         try {
-            const dados = await getTecidosByFabrico(fabricoId);
+            const dados = await getTecidosByFabrico();
             const tecidosTratados = (dados || []).map((t) => ({
                 id: t?.id || t?.tecido?.id,
                 nome: t?.nome || t?.tecido?.nome || "Sem nome na API",
@@ -1039,7 +1033,6 @@ export default function ProdutoEditar() {
                 foto: urlFoto,
                 nome: formData.referencia.trim(),
                 tipo_produto_id: formData.tipo_produto_id,
-                fabrico_id: fabricoId,
                 tecido_id: formData.tecido_id || null,
                 quantidade_tecido: qtdTecidoCalculo || null,
                 custo_tecido:

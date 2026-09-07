@@ -355,7 +355,7 @@ export default function PedidosCadastrar() {
             setCarregandoReferencias(true);
             try {
                 let listaProdutosCliente = [];
-                const promessas = [getProdutosPorFabrico(fabricoId)];
+                const promessas = [getProdutosPorFabrico()];
                 if (isSobDemanda && clienteSelecionado?.id) {
                     promessas.push(getProdutosDoCliente(clienteSelecionado.id));
                 }

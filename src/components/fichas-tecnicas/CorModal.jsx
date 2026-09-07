@@ -308,7 +308,6 @@ export default function CorModal({ isOpen, onClose, fabricoId, onSuccess }) {
         setError("");
         try {
             const created = await createCor({
-                fabrico_id: fabricoIdNumerico,
                 nome: nomeTrim,
                 codigo_hex: codigoHex,
                 tipo: "COR",

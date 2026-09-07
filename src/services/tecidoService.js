@@ -5,8 +5,8 @@ export const listarTecidos = async () => {
     return response.data;
 };
 
-export const listarTecidosPorFabrico = async (idFabrico) => {
-    const response = await api.get(`/tecidos/fabrico/${idFabrico}`);
+export const listarTecidosPorFabrico = async () => {
+    const response = await api.get("/tecidos");
     return response.data;
 };
 
