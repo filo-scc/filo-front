@@ -62,11 +62,16 @@ export default function TabelaReferenciaFichaTecnica({
         0,
     );
 
-    const totalPedido = fichas.reduce((acc, ficha) => {
+    const totalFinanceiro = fichas.reduce((acc, ficha) => {
         const qtd = Number(ficha.quantidade) || Number(ficha.quantidade_pecas) || 0;
-        const valPrecoRaw = ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? 0;
-        const preco = parsePreco(valPrecoRaw);
-        const subtotal = ficha.subtotal !== undefined ? parsePreco(ficha.subtotal) : qtd * preco;
+        const valorUnitarioRaw = isSobDemanda
+            ? (ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? 0)
+            : (ficha.custo_total ?? ficha.custo_unitario ?? ficha.custo ?? 0);
+        const valorUnitario = parsePreco(valorUnitarioRaw);
+        const subtotal =
+            isSobDemanda && ficha.subtotal !== undefined
+                ? parsePreco(ficha.subtotal)
+                : qtd * valorUnitario;
         return acc + subtotal;
     }, 0);
 
@@ -114,7 +119,7 @@ export default function TabelaReferenciaFichaTecnica({
                                 </div>
                             )}
                             <div className="flex items-center justify-center text-center px-2">
-                                Subtotal
+                                {isSobDemanda ? "Subtotal" : "Subcusto"}
                             </div>
                         </div>
                     </div>
@@ -131,11 +136,14 @@ export default function TabelaReferenciaFichaTecnica({
                             const valPrecoRaw =
                                 ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? "";
                             const precoUnit = parsePreco(valPrecoRaw);
+                            const custoUnit = parsePreco(
+                                ficha.custo_total ?? ficha.custo_unitario ?? ficha.custo ?? 0,
+                            );
 
                             const subtotal =
-                                ficha.subtotal !== undefined
+                                isSobDemanda && ficha.subtotal !== undefined
                                     ? parsePreco(ficha.subtotal)
-                                    : qtd * precoUnit;
+                                    : qtd * (isSobDemanda ? precoUnit : custoUnit);
                             const refClienteValor =
                                 ficha.referenciaCliente ?? ficha.ref_cliente ?? "";
                             const isEditando = idEmEdicao === itemKey;
@@ -307,7 +315,9 @@ export default function TabelaReferenciaFichaTecnica({
                 {fichas.length > 0 && (
                     <div className="flex flex-row items-center w-full">
                         <div className="flex-1 rounded-b-[16px] border-l border-r border-b border-[#d9d9d9] bg-[#d9d9d9] px-6 py-3.5 flex flex-row items-center justify-between text-[#898C8F] font-['Outfit'] text-light md:text-base">
-                            <span className="font-['Outfit'] text-[#898C8F]">Resumo do pedido</span>
+                            <span className="font-['Outfit'] text-[#898C8F]">
+                                {isSobDemanda ? "Resumo do pedido" : "Resumo da produção"}
+                            </span>
                             <div className="flex items-center font-['Outfit'] gap-6 text-[#898C8F]">
                                 <div>
                                     Total de peças:{" "}
@@ -317,9 +327,9 @@ export default function TabelaReferenciaFichaTecnica({
                                 </div>
                                 <div className="h-4 w-[1px] bg-[#a0a3a6] font-['Outfit']" />
                                 <div>
-                                    Total do pedido:{" "}
+                                    {isSobDemanda ? "Total do pedido" : "Custo total da produção"}:{" "}
                                     <span className="font-light font-['Outfit']">
-                                        {formatarMoeda(totalPedido)}
+                                        {formatarMoeda(totalFinanceiro)}
                                     </span>
                                 </div>
                             </div>
