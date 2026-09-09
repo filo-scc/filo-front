@@ -21,6 +21,16 @@ export const createPedidoCompleto = async (pedidoData) => {
     }
 };
 
+export const updatePedidoCompleto = async (pedidoId, pedidoData) => {
+    try {
+        const response = await api.put(`/pedidos/completo/${pedidoId}`, pedidoData);
+        return response.data;
+    } catch (error) {
+        console.error("Error updating pedido completo:", error);
+        throw error;
+    }
+};
+
 export const getPedidosByFabricoId = async () => {
     try {
         const response = await api.get(`/pedidos`);
