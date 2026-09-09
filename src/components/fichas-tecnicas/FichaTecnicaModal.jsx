@@ -5,11 +5,11 @@ import AvisoRepetirGrade from "./AvisoRepetirGrade";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { getFabricoById } from "../../services/fabricoService";
-import { getCoresByFabricoId } from "../../services/corService";
+import { getCores } from "../../services/corService";
 import CorModal from "./CorModal";
 import EstampaModal from "./EstampaModal";
 import { getParceirosByFabrico } from "../../services/parceiroService";
-import { getGradesLiberadasByFabricoId } from "../../services/gradeService";
+import { getGradesLiberadas } from "../../services/gradeService";
 import { getParceiroByProduto } from "../../services/produtoService";
 
 import ProdutoParceiros from "../produtos/ProdutoParceiros";
@@ -387,8 +387,8 @@ export default function FichaTecnicaModal({
                     parceirosResponse,
                 ] = await Promise.all([
                     getFabricoById(fabricoId),
-                    getCoresByFabricoId(fabricoId),
-                    getGradesLiberadasByFabricoId(fabricoId),
+                    getCores(),
+                    getGradesLiberadas(),
                     getParceiroByProduto(produto.id),
                     getParceirosByFabrico(fabricoId),
                 ]);

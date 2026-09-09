@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getProdutosByFabrico } from "../services/produtoService";
+import { getProdutos } from "../services/produtoService";
 import { useNavigate } from "react-router-dom";
 import { ProductGridSkeleton } from "../components/geral/Loading";
 
@@ -70,7 +70,7 @@ export default function Produtos() {
         const fetchProdutos = async () => {
             setLoading(true);
             try {
-                const dados = await getProdutosByFabrico(fabricoId);
+                const dados = await getProdutos();
                 setProdutos(Array.isArray(dados) ? dados : []);
             } catch (error) {
                 console.error("Erro ao carregar produtos:", error);
