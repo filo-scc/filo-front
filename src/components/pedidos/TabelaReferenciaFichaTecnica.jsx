@@ -1,4 +1,5 @@
 import React from "react";
+import { parsePreco } from "../../utils/preco";
 
 const borderColor = "#d9d9d9";
 const borderStyle = { borderColor };
@@ -25,6 +26,33 @@ export default function TabelaReferenciaFichaTecnica({
         (acc, ficha) => acc + (Number(ficha.quantidade) || Number(ficha.quantidade_pecas) || 0),
         0,
     );
+
+    const totalFinanceiro = fichas.reduce((acc, ficha) => {
+        const qtd = Number(ficha.quantidade) || Number(ficha.quantidade_pecas) || 0;
+        const valorUnitarioRaw = isSobDemanda
+            ? (ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? 0)
+            : (ficha.custo_total ?? ficha.custo_unitario ?? ficha.custo ?? 0);
+        const valorUnitario = parsePreco(valorUnitarioRaw);
+        const subtotal =
+            isSobDemanda && ficha.subtotal !== undefined
+                ? parsePreco(ficha.subtotal)
+                : qtd * valorUnitario;
+        return acc + subtotal;
+    }, 0);
+
+    const handleAlternarEdicao = (itemKey) => {
+        setIdEmEdicao((prevKey) => (prevKey === itemKey ? null : itemKey));
+        onEditarFicha?.(itemKey);
+    };
+
+    const handleInputBlur = (e, itemKey) => {
+        const proximoFoco = e.relatedTarget;
+        if (!proximoFoco || proximoFoco.getAttribute("data-itemkey") !== String(itemKey)) {
+            if (idEmEdicao === itemKey) {
+                setIdEmEdicao(null);
+            }
+        }
+    };
 
     return (
         <section className="w-full">
@@ -56,6 +84,14 @@ export default function TabelaReferenciaFichaTecnica({
                             <div className="flex items-center justify-center text-center px-4">
                                 Quantidade
                             </div>
+                            {isSobDemanda && (
+                                <div className="flex items-center justify-center text-center px-2">
+                                    Preço unit.
+                                </div>
+                            )}
+                            <div className="flex items-center justify-center text-center px-2">
+                                {isSobDemanda ? "Subtotal" : "Subcusto"}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -65,6 +101,23 @@ export default function TabelaReferenciaFichaTecnica({
                     <div className="flex flex-col w-full">
                         {/* 1. MAP DOS PRODUTOS (LINHAS INDEPENDENTES) */}
                         {fichas.map((ficha, index) => {
+                            const itemKey = ficha.id ?? index;
+                            const qtd =
+                                Number(ficha.quantidade) || Number(ficha.quantidade_pecas) || 0;
+                            const valPrecoRaw =
+                                ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? "";
+                            const precoUnit = parsePreco(valPrecoRaw);
+                            const custoUnit = parsePreco(
+                                ficha.custo_total ?? ficha.custo_unitario ?? ficha.custo ?? 0,
+                            );
+
+                            const subtotal =
+                                isSobDemanda && ficha.subtotal !== undefined
+                                    ? parsePreco(ficha.subtotal)
+                                    : qtd * (isSobDemanda ? precoUnit : custoUnit);
+                            const refClienteValor =
+                                ficha.referenciaCliente ?? ficha.ref_cliente ?? "";
+                            const isEditando = idEmEdicao === itemKey;
                             // Verifica se é a última ficha para arredondar apenas o canto esquerdo
                             const isLast = index === fichas.length - 1;
 
@@ -180,6 +233,35 @@ export default function TabelaReferenciaFichaTecnica({
                         </div>
                     </div>
                 ) : (
+                    <div className="flex flex-row items-center w-full">
+                        <div className="flex-1 border-l border-r border-b border-[#d9d9d9] py-12 text-center text-[#898C8F] font-['Outfit'] font-light bg-[#F9F9F9] text-light md:text-base">
+                            Nenhuma ficha técnica adicionada ao pedido.
+                        </div>
+                        <div className="w-9" />
+                    </div>
+                )}
+
+                {/* 3. RODAPÉ DA TABELA */}
+                {fichas.length > 0 && (
+                    <div className="flex flex-row items-center w-full">
+                        <div className="flex-1 rounded-b-[16px] border-l border-r border-b border-[#d9d9d9] bg-[#d9d9d9] px-6 py-3.5 flex flex-row items-center justify-between text-[#898C8F] font-['Outfit'] text-light md:text-base">
+                            <span className="font-['Outfit'] text-[#898C8F]">
+                                {isSobDemanda ? "Resumo do pedido" : "Resumo da produção"}
+                            </span>
+                            <div className="flex items-center font-['Outfit'] gap-6 text-[#898C8F]">
+                                <div>
+                                    Total de peças:{" "}
+                                    <span className="font-light font-['Outfit']">
+                                        {totalQuantidade}
+                                    </span>
+                                </div>
+                                <div className="h-4 w-[1px] bg-[#a0a3a6] font-['Outfit']" />
+                                <div>
+                                    {isSobDemanda ? "Total do pedido" : "Custo total da produção"}:{" "}
+                                    <span className="font-light font-['Outfit']">
+                                        {formatarMoeda(totalFinanceiro)}
+                                    </span>
+                                </div>
                     <div className="flex flex-row items-stretch w-full">
                         <div
                             className="flex-1 border-l border-r border-b rounded-b-[10px] overflow-hidden"

@@ -26,6 +26,12 @@ const FloatingInput = ({ label, name, value, onChange, containerClass, ...rest }
     </div>
 );
 
+const getEtapasSelecionaveis = (etapas = []) =>
+    etapas
+        .filter((etapa) => etapa.ativa === true)
+        .sort((a, b) => Number(a.ordem ?? 0) - Number(b.ordem ?? 0))
+        .slice(0, -1);
+
 const EditarParceiro = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -37,6 +43,7 @@ const EditarParceiro = () => {
     const [dropdownEtapaAberto, setDropdownEtapaAberto] = useState(false);
     const [etapas, setEtapas] = useState([]);
     const [loadingEtapas, setLoadingEtapas] = useState(true);
+    const etapaDropdownRef = useRef(null);
 
     const [formData, setFormData] = useState({
         nome: "",
@@ -102,6 +109,32 @@ const EditarParceiro = () => {
         setFormData((prev) => ({ ...prev, [name]: masked }));
     };
 
+    useEffect(() => () => cepRequestRef.current?.abort(), []);
+
+    useEffect(() => {
+        if (!dropdownEtapaAberto) return undefined;
+
+        const handleClickOutside = (event) => {
+            if (etapaDropdownRef.current && !etapaDropdownRef.current.contains(event.target)) {
+                setDropdownEtapaAberto(false);
+            }
+        };
+
+        const handleKeyDown = (event) => {
+            if (event.key === "Escape") {
+                setDropdownEtapaAberto(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        document.addEventListener("keydown", handleKeyDown);
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [dropdownEtapaAberto]);
+
     useEffect(() => {
         const fetchParceiro = async () => {
             try {
@@ -149,8 +182,7 @@ const EditarParceiro = () => {
                     const fabricoId = usuarioLogado.fabrico_id;
                     if (fabricoId) {
                         const dados = await getAllEtapasByFabricoId(fabricoId);
-                        const etapasAtivas = (dados || []).filter((etapa) => etapa.ativa === true);
-                        setEtapas(etapasAtivas);
+                        setEtapas(getEtapasSelecionaveis(dados || []));
                     }
                 }
             } catch (err) {
@@ -213,6 +245,9 @@ const EditarParceiro = () => {
         }
     };
 
+    const inputClass =
+        "border border-[#D3D3D3] rounded-[10px] px-3 h-[39px] text-sm text-gray-600 focus:outline-none";
+
     if (loading) {
         return (
             <div className="p-6 pt-0 mt-6 w-full">
@@ -253,10 +288,11 @@ const EditarParceiro = () => {
                     )}
 
                     <form onSubmit={handleSubmit} className="space-y-8 w-full px-6">
-                        <div className="flex flex-warp gap-6 item-start">
-                            <div className="w-full md:w-[212px]">
+                        <div className="flex flex-wrap gap-6 items-start">
+                            {/* Dropdown Etapa de Produção */}
+                            <div className="w-full md:w-[212px]" ref={etapaDropdownRef}>
                                 <h2 className="text-[#404040] font-light mb-4">
-                                    Etapa de Produção
+                                    Etapa de produção
                                 </h2>
                                 <div className="relative w-full">
                                     <div
@@ -267,7 +303,7 @@ const EditarParceiro = () => {
                                         }`}
                                         onClick={() => {
                                             if (!loadingEtapas) {
-                                                setDropdownEtapaAberto(!dropdownEtapaAberto);
+                                                setDropdownEtapaAberto((aberto) => !aberto);
                                             }
                                         }}
                                     >
@@ -302,14 +338,9 @@ const EditarParceiro = () => {
                                     </div>
 
                                     {dropdownEtapaAberto && (
-                                        <>
-                                            <div
-                                                className="fixed inset-0 z-10"
-                                                onClick={() => setDropdownEtapaAberto(false)}
-                                            ></div>
-
-                                            <div className="absolute z-20 mt-1 w-full bg-white border border-[#D3D3D3] rounded-[10px] shadow-lg overflow-hidden max-h-60 overflow-y-auto">
-                                                {etapas.map((etapa) => (
+                                        <div className="absolute z-20 mt-1 w-full bg-white border border-[#D3D3D3] rounded-[10px] shadow-lg overflow-hidden max-h-60 overflow-y-auto scrollbar-sutil">
+                                            {etapas.length > 0 ? (
+                                                etapas.map((etapa) => (
                                                     <div
                                                         key={etapa.id}
                                                         className={`px-4 py-2 text-sm cursor-pointer transition-colors ${
@@ -327,18 +358,20 @@ const EditarParceiro = () => {
                                                     >
                                                         {etapa.nome}
                                                     </div>
-                                                ))}
-                                            </div>
-                                        </>
+                                                ))
+                                            ) : (
+                                                <div className="border-l-[3px] border-transparent px-4 py-2 text-sm text-gray-400">
+                                                    Nenhuma etapa disponível
+                                                </div>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             </div>
 
                             {/* Dados gerais */}
-                            <div>
-                                <h2 className="text-[#404040] text-[20px] font-light mb-4">
-                                    Dados gerais
-                                </h2>
+                            <div className="flex-1 min-w-[300px]">
+                                <h2 className="text-[#404040] font-light mb-4">Dados gerais</h2>
                                 <div className="flex flex-wrap gap-4">
                                     <FloatingInput
                                         label="Nome"

@@ -6,6 +6,11 @@ import NotaDeSaidaPrintView from "../NotaDeSaidaPrintView";
 import { useNavigate } from "react-router-dom";
 import FichaTecnicaPrintView from "../FichaTecnicaPrintView";
 import OpcoesImpressaoModal from "./OpcoesImpressaoModal";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import RelatorioDeAcabamento from "./RelatorioDeAcabamento";
+import { getAllEtapasByFabricoId } from "../../services/etapaService";
+import { getFabricoById } from "../../services/fabricoService";
 
 const CampoDetalhe = ({ label, valor }) => (
     <div className="relative border border-[#898C8F] rounded-[10px] h-[39px] px-3 flex items-center mt-2 w-full bg-white">
@@ -40,6 +45,9 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
     const carregarDados = useCallback(async () => {
         try {
             const dados = await findOne(fichaId);
+            if (dados && dados.fabrico?.fabricacao_sob_demanda == null && dados.fabrico_id) {
+                dados.fabrico = await getFabricoById(dados.fabrico_id);
+            }
             setFicha(dados);
 
             if (dados?.pedido?.cliente?.id && dados?.produto?.id) {
@@ -84,6 +92,129 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
         setPrintMode(mode);
         window.print();
     }, []);
+
+    const handleDownloadNotaSaidaPdf = useCallback(async () => {
+        if (!ficha) {
+            console.error("[PDF] ficha não definida");
+            return;
+        }
+
+        const sourceElement =
+            document.getElementById("nota-print-view") ||
+            document.getElementById("portal-impressao-nota");
+
+        if (!sourceElement) {
+            console.error("Elemento de nota de saída não encontrado para gerar PDF.");
+            return;
+        }
+
+        const snapshot = sourceElement.cloneNode(true);
+        snapshot.id = "nota-print-view-pdf-snapshot";
+
+        snapshot.className = snapshot.className
+            .split(" ")
+            .filter((cls) => cls !== "hidden" && cls !== "print:block")
+            .join(" ");
+
+        // Usamos absolute para garantir que o html2canvas capture toda a altura sem limitar pela janela
+        Object.assign(snapshot.style, {
+            position: "absolute",
+            top: "0",
+            left: "0",
+            width: "210mm",
+            boxSizing: "border-box",
+            backgroundColor: "#ffffff",
+            zIndex: "99999",
+            opacity: "1",
+            visibility: "visible",
+            pointerEvents: "none",
+        });
+
+        document.body.appendChild(snapshot);
+
+        // A rotina do PDF captura tudo como uma única imagem. Para preservar a
+        // regra visual de impressão, empurramos as Anotações para a página
+        // seguinte quando o bloco não couber integralmente na página atual.
+        const observacoes = snapshot.querySelector(".nota-observacoes");
+        if (observacoes) {
+            const cssPageHeight = (297 / 25.4) * 96;
+            const observacoesTop = observacoes.offsetTop;
+            const observacoesHeight = observacoes.offsetHeight;
+            const pageOffset = observacoesTop % cssPageHeight;
+            const remainingPageSpace = cssPageHeight - pageOffset;
+
+            if (observacoesHeight > remainingPageSpace) {
+                observacoes.style.marginTop = `${parseFloat(getComputedStyle(observacoes).marginTop) + remainingPageSpace + 8}px`;
+            }
+        }
+
+        const images = snapshot.querySelectorAll("img");
+        await Promise.all(
+            Array.from(images).map(
+                (img) =>
+                    new Promise((resolve) => {
+                        if (img.complete) resolve();
+                        else {
+                            img.onload = resolve;
+                            img.onerror = resolve;
+                        }
+                    }),
+            ),
+        );
+
+        try {
+            const canvas = await html2canvas(snapshot, {
+                useCORS: true,
+                allowTaint: true,
+                scale: 2,
+                backgroundColor: "#ffffff",
+                scrollX: 0,
+                scrollY: 0,
+                x: 0,
+                y: 0,
+                width: snapshot.offsetWidth,
+                height: snapshot.offsetHeight,
+                windowWidth: snapshot.offsetWidth,
+                windowHeight: snapshot.offsetHeight,
+            });
+
+            const imgData = canvas.toDataURL("image/png");
+            const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+
+            const pageWidth = pdf.internal.pageSize.getWidth(); // 210mm
+            const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
+
+            const imgProps = pdf.getImageProperties(imgData);
+            const imgHeight = (imgProps.height * pageWidth) / imgProps.width;
+
+            if (imgHeight <= pageHeight + 20) {
+                pdf.addImage(imgData, "PNG", 0, 0, pageWidth, Math.min(imgHeight, pageHeight));
+            } else {
+                let heightLeft = imgHeight;
+                let position = 0;
+
+                pdf.addImage(imgData, "PNG", 0, position, pageWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                while (heightLeft > 0) {
+                    position -= pageHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, "PNG", 0, position, pageWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+            }
+
+            const fileName = `${ficha.fabrico?.fabricacao_sob_demanda === false ? "nota-de-conferencia" : "nota-de-saida"}-${ficha.numero || "export"}.pdf`;
+            pdf.save(fileName);
+        } catch (error) {
+            console.error("Erro ao gerar PDF da nota de saída", error);
+        } finally {
+            const snapshotElement = document.getElementById("nota-print-view-pdf-snapshot");
+            if (snapshotElement && snapshotElement.parentNode) {
+                snapshotElement.parentNode.removeChild(snapshotElement);
+            }
+        }
+    }, [ficha]);
 
     const handleContentClick = (e) => {
         e.stopPropagation();
@@ -185,10 +316,12 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                         label="Cliente"
                                         valor={ficha?.pedido?.cliente?.nome}
                                     />
-                                    <CampoDetalhe
-                                        label="Referência do Cliente"
-                                        valor={referenciaCliente}
-                                    />
+                                    {ficha?.fabrico?.fabricacao_sob_demanda !== false && (
+                                        <CampoDetalhe
+                                            label="Referência do Cliente"
+                                            valor={referenciaCliente}
+                                        />
+                                    )}
                                     <CampoDetalhe
                                         label="Tecido"
                                         valor={ficha?.produto?.tecido?.nome}
@@ -439,6 +572,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
 
             {/* Modal de Escolha do Tipo de Impressão */}
             <OpcoesImpressaoModal
+                isSobDemanda={ficha?.fabrico?.fabricacao_sob_demanda !== false}
                 isOpen={modalImpressaoAberto}
                 onClose={() => setModalImpressaoAberto(false)}
                 onSelectFichaTecnica={() => {

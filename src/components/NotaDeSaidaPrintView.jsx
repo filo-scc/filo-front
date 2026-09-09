@@ -2,6 +2,16 @@ import React, { useMemo, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { getFabricoById } from "../services/fabricoService";
 
+// AJUSTE: cinza das linhas alternadas da grade na impressão.
+const PRINT_ROW_GRAY = "bg-[#D9D9D9]";
+
+// Helper para padronizar o ajuste manual de alinhamento vertical em labels/textos
+const TextoAjustado = ({ children, className = "", printReset = true }) => (
+    <span className={`${printReset ? "-translate-y-[6px] print:translate-y-0" : ""} ${className}`}>
+        {children}
+    </span>
+);
+
 const Campo = ({ label, valor }) => (
     <div className="relative border border-[#666666] rounded-[10px] min-h-[39px] py-1.5 px-3 flex items-center bg-white">
         <span className="absolute -top-[9px] left-2 bg-white px-1 text-[11px] text-[#555555]">
@@ -12,6 +22,9 @@ const Campo = ({ label, valor }) => (
 );
 
 const Badge = ({ label, valor }) => (
+    <div className="border border-[#4696AD] rounded-[14px] h-[38px] min-w-[70px] relative flex items-center justify-center px-4 bg-white">
+        <span className="absolute -top-[9px] left-3 bg-white px-1 text-[11px] text-[#4696AD] flex items-center">
+            <TextoAjustado>{label}</TextoAjustado>
     <div className="border border-[#4696AD] rounded-[20px] h-[38px] min-w-[70px] relative flex items-center justify-center px-4 bg-white">
         <span className="absolute -top-[9px] left-3 bg-white px-1 text-[11px] text-[#4696AD]">
             {label}
@@ -161,6 +174,7 @@ export default function NotaDeSaidaPrintView({
 
     if (!dados || !isMounted) return null;
 
+    const footerRowBg = itens.length % 2 === 1 ? PRINT_ROW_GRAY : "bg-white";
     const colunasGrid = tamanhos.length > 0 ? tamanhos.length : 1;
     const footerRowBg = itens.length % 2 === 1 ? "bg-[#F9F9F9]" : "bg-white";
     const isProducaoSobDemanda = Boolean(
@@ -176,6 +190,10 @@ export default function NotaDeSaidaPrintView({
         <>
             <style type="text/css" media="print">
                 {`
+                        @page { 
+                            size: A4 portrait; 
+                            margin: 0mm;
+                        }
                     @page { 
                         size: A4 portrait; 
                         margin: 0mm; 
@@ -222,6 +240,22 @@ export default function NotaDeSaidaPrintView({
                             padding: 0 !important;
                         }
 
+                            body.print-mode-nota #nota-print-view {
+                                -webkit-print-color-adjust: exact !important;
+                                print-color-adjust: exact !important;
+                                display: block !important;
+                                padding: 10mm !important;
+                            }
+
+                            .print-footer {
+                                position: static !important;
+                                bottom: 0 !important;
+                                left: 0 !important;
+                                right: 0 !important;
+                                width: 100% !important;
+                                background-color: white !important;
+                                padding-bottom: 0 !important;
+                            }
                         body.print-mode-nota #nota-print-view {
                             -webkit-print-color-adjust: exact !important;
                             print-color-adjust: exact !important;
@@ -238,8 +272,27 @@ export default function NotaDeSaidaPrintView({
             <div id="portal-impressao-nota" className="hidden print:block w-full">
                 <div
                     id="nota-print-view"
+                    className="bg-white text-black p-[10mm] w-full max-w-[210mm] mx-auto font-['Outfit',_sans-serif] flex flex-col justify-between box-border"
                     className="bg-white text-black p-5 w-full max-w-[260mm] mx-auto font-['Outfit',_sans-serif]"
                 >
+                    <div className="flex-1">
+                        {/* HEADER */}
+                        <div className="flex justify-between items-start mb-6 mx-0 break-inside-avoid">
+                            <h1 className="text-[28px] font-light text-[#4696AD] flex items-center">
+                                <TextoAjustado>
+                                    {isProducaoSobDemanda ? "Nota de saída" : "Nota de Conferência"}
+                                </TextoAjustado>
+                            </h1>
+                            <div className="flex gap-4 mt-2">
+                                <span className="flex items-center gap-2">
+                                    <Badge label="Nº" valor={dados.numeroNota} />
+                                </span>
+                                <Badge
+                                    label={isProducaoSobDemanda ? "Pedido" : "Produção"}
+                                    valor={dados.numeroPedido}
+                                />
+                            </div>
+                        </div>
                     {/* HEADER */}
                     <div className="flex justify-between items-start mb-6 mx-[30px] break-inside-avoid">
                         <h1 className="text-[28px] font-light text-[#4696AD]">Nota de saída</h1>
@@ -248,6 +301,14 @@ export default function NotaDeSaidaPrintView({
                             <Badge label="Pedido" valor={dados.numeroPedido} />
                         </div>
                     </div>
+
+                        {/* CAMPOS + FOTO */}
+                        <div className="flex gap-6 mb-6 mx-0 break-inside-avoid">
+                            <div className="flex-1 flex flex-col justify-end gap-5 pb-1">
+                                {/* Primeira linha: Fornecedor */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Campo label="Fornecedor" valor={dados.fornecedor} />
+                                </div>
 
                     {/* CAMPOS + FOTO */}
                     <div className="flex gap-6 mb-6 mx-[30px] break-inside-avoid">
@@ -259,6 +320,56 @@ export default function NotaDeSaidaPrintView({
                             <div className="grid grid-cols-2 gap-4">
                                 <Campo label="Referência Interna" valor={dados.referenciaInterna} />
                                 {isProducaoSobDemanda ? (
+                                    <>
+                                        {/* Segunda linha: Data | Cliente */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <Campo label="Data" valor={dados.data} />
+                                            <Campo label="Cliente" valor={dados.cliente} />
+                                        </div>
+
+                                        {/* Terceira linha: Referência Interna | Modelo */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <Campo
+                                                label="Referência Interna"
+                                                valor={dados.referenciaInterna}
+                                            />
+                                            <Campo
+                                                label="Tipo de produto"
+                                                valor={ficha?.produto?.tipo_produto?.nome}
+                                            />
+                                        </div>
+
+                                        {/* Quarta linha: Referência do Cliente | Tecido */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <Campo
+                                                label={labelReferenciaCliente}
+                                                valor={dados.referenciaCliente}
+                                            />
+                                            <Campo label="Tecido" valor={dados.tecido} />
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        {/* Segunda linha: Data | Referência Interna */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <Campo label="Data" valor={dados.data} />
+                                            <Campo
+                                                label="Referência Interna"
+                                                valor={dados.referenciaInterna}
+                                            />
+                                        </div>
+
+                                        {/* Terceira linha: Tecido | Modelo */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <Campo label="Tecido" valor={dados.tecido} />
+                                            <Campo
+                                                label="Tipo de produto"
+                                                valor={ficha?.produto?.tipo_produto?.nome}
+                                            />
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                                     <Campo label="Cliente" valor={dados.cliente} />
                                 ) : (
                                     <Campo label="Tecido" valor={dados.tecido} />
@@ -293,6 +404,11 @@ export default function NotaDeSaidaPrintView({
                         </div>
                     </div>
 
+                        {/* GRADE DE TAMANHOS */}
+                        <div className="mb-4 mx-0 print-no-break">
+                            <div className="mb-2 text-center text-[15px] font-light text-[#737373]">
+                                <TextoAjustado>Grade</TextoAjustado>
+                            </div>
                     {/* GRADE DE TAMANHOS */}
                     <div className="mb-4 mx-[30px] break-inside-avoid">
                         <div className="mb-2 text-center text-[15px] font-light text-[#555555]">
@@ -345,6 +461,17 @@ export default function NotaDeSaidaPrintView({
                                     Total (cor)
                                 </div>
 
+                                {/* Corpo + rodapé: borda externa apenas esquerda, direita e abaixo. */}
+                                <div className="rounded-b-[8px] overflow-hidden">
+                                    <div className="flex flex-col w-full">
+                                        {itens.length > 0 ? (
+                                            itens.map((item, index) => {
+                                                const rowBg =
+                                                    index % 2 === 1 ? PRINT_ROW_GRAY : "bg-white";
+                                                return (
+                                                    <div
+                                                        key={item.id || item.corNome || index}
+                                                        className={`grid w-full h-[35px] ${rowBg} grade-row`}
                                 {/* CORPO — LINHAS DE CORES */}
                                 {itens.length > 0 ? (
                                     itens.map((item, index) => {
@@ -429,21 +556,27 @@ export default function NotaDeSaidaPrintView({
                         </div>
                     </div>
 
-                    {/* ANOTAÇÕES */}
-                    <div className="mx-[30px] relative mt-5 break-inside-avoid">
-                        <fieldset className="border border-[#666666] rounded-[10px] p-4 bg-white min-h-[200px]">
-                            <legend className="px-2 text-[12px] text-[#555555] ml-2 font-light bg-white">
-                                Anotações
-                            </legend>
-                            <p className="text-[13px] text-[#333333] whitespace-pre-line font-light px-2 pt-1">
-                                {dados.anotacoes}
-                            </p>
-                        </fieldset>
+                        {/* ANOTAÇÕES */}
+                        <div className="mx-0 relative mt-5 nota-observacoes break-inside-avoid">
+                            <fieldset className="border border-[#898C8F] rounded-[10px] p-4 bg-[#F4F4F4] min-h-[180px]">
+                                <legend className="px-2 text-[12px] text-[#898C8F] ml-2 font-light">
+                                    <TextoAjustado>
+                                        <span className="inline-block -translate-y-[10px] print:translate-y-0 bg-gradient-to-t from-[#F4F4F4] to-white px-1">
+                                            Anotações
+                                        </span>
+                                    </TextoAjustado>
+                                </legend>
+
+                                <p className="text-[13px] text-[#707070] whitespace-pre-line font-light px-2 pt-1">
+                                    {dados.anotacoes}
+                                </p>
+                            </fieldset>
+                        </div>
                     </div>
 
                     {/* FOOTER */}
-                    <div className="mt-6 pb-4 break-inside-avoid">
-                        <div className="mx-[30px] flex items-end justify-between">
+                    <div className="print-footer mt-auto pt-6 pb-2 w-full">
+                        <div className="mx-0 flex items-end justify-between">
                             {fabricoInfo?.foto_de_perfil ? (
                                 <img
                                     src={fabricoInfo.foto_de_perfil}

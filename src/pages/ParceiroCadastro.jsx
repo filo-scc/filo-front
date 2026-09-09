@@ -25,6 +25,14 @@ const FloatingInput = ({ label, name, value, onChange, containerClass, ...rest }
     </div>
 );
 
+const getEtapasSelecionaveis = (etapas = []) =>
+    etapas
+        .filter((etapa) => etapa.ativa === true)
+        .sort((a, b) => Number(a.ordem ?? 0) - Number(b.ordem ?? 0))
+        .slice(0, -1);
+
+// Componente do Dropdown de Etapa de Produção
+const EtapaSelect = ({ value, onChange, inputClass }) => {
 const ParceiroCadastro = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
@@ -66,8 +74,7 @@ const ParceiroCadastro = () => {
                     const fabricoId = usuarioLogado.fabrico_id;
                     if (fabricoId) {
                         const dados = await getAllEtapasByFabricoId(fabricoId);
-                        const etapasAtivas = (dados || []).filter((etapa) => etapa.ativa === true);
-                        setEtapas(etapasAtivas);
+                        setEtapas(getEtapasSelecionaveis(dados || []));
                     }
                 }
             } catch (err) {
@@ -78,6 +85,138 @@ const ParceiroCadastro = () => {
         };
         fetchEtapas();
     }, []);
+
+    return (
+        <div className="w-full md:w-[212px]">
+            <h2 className="text-[#404040] font-light mb-4">Etapa de produção</h2>
+            <div className="relative w-full">
+                <div
+                    className={`${inputClass} bg-white flex justify-between items-center ${
+                        loadingEtapas ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+                    }`}
+                    onClick={() => {
+                        if (!loadingEtapas) {
+                            setDropdownEtapaAberto(!dropdownEtapaAberto);
+                        }
+                    }}
+                >
+                    {loadingEtapas ? (
+                        <SkeletonBox className="h-[14px] w-24 rounded-[7px]" />
+                    ) : (
+                        <span className={value ? "text-gray-600" : "text-gray-400"}>
+                            {value || "Selecionar"}
+                        </span>
+                    )}
+                    <svg
+                        className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
+                            dropdownEtapaAberto ? "rotate-180" : ""
+                        }`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M19 9l-7 7-7-7"
+                        />
+                    </svg>
+                </div>
+
+                {dropdownEtapaAberto && (
+                    <>
+                        <div
+                            className="fixed inset-0 z-10"
+                            onClick={() => setDropdownEtapaAberto(false)}
+                        ></div>
+
+                        <div className="absolute z-20 mt-1 w-full bg-white border border-[#D3D3D3] rounded-[10px] shadow-lg overflow-hidden max-h-60 overflow-y-auto scrollbar-sutil">
+                            {etapas.length > 0 ? (
+                                etapas.map((etapa) => (
+                                    <div
+                                        key={etapa.id}
+                                        className={`px-4 py-2 text-sm cursor-pointer transition-colors ${
+                                            value === etapa.nome
+                                                ? "border-l-[3px] border-[#C4F042] text-gray-700 bg-white"
+                                                : "border-l-[3px] border-transparent text-gray-600 hover:bg-[#F5F5F5]"
+                                        }`}
+                                        onClick={() => {
+                                            onChange(etapa.nome);
+                                            setDropdownEtapaAberto(false);
+                                        }}
+                                    >
+                                        {etapa.nome}
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="border-l-[3px] border-transparent px-4 py-2 text-sm text-gray-400">
+                                    Nenhuma etapa disponível
+                                </div>
+                            )}
+                        </div>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// Componente Principal
+export default function ParceiroCadastro() {
+    const navigate = useNavigate();
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+    const [dropdownAberto, setDropdownAberto] = useState(false);
+
+    const [formData, setFormData] = useState({
+        categoria: "",
+        nome: "",
+        responsavel: "",
+        telefone: "",
+
+        cep: "",
+        rua: "",
+        numero: "",
+        bairro: "",
+        complemento: "",
+        cidade: "",
+        estado: "",
+
+        forma_pagamento: "",
+        chave_pix: "",
+        banco: "",
+        agencia: "",
+        conta: "",
+    });
+
+    useEffect(() => {
+        const cleanCep = (formData.cep || "").replace(/\D/g, "");
+        const controller = new AbortController();
+
+        if (cleanCep.length === 8) {
+            const fetchEndereco = async () => {
+                const endereco = await getEnderecoByCep(cleanCep, {
+                    signal: controller.signal,
+                });
+
+                if (endereco && !controller.signal.aborted) {
+                    setFormData((prev) =>
+                        (prev.cep || "").replace(/\D/g, "") === cleanCep
+                            ? {
+                                  ...prev,
+                                  ...endereco,
+                              }
+                            : prev,
+                    );
+                }
+            };
+
+            fetchEndereco();
+        }
+
+        return () => controller.abort();
+    }, [formData.cep]);
 
     const maskTelefone = (value) => {
         return value

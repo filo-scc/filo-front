@@ -883,6 +883,7 @@ export default function PedidosCadastrar() {
                 isOpen={modalFichaAberto}
                 onClose={fecharModalFicha}
                 produto={referenciaParaModal}
+                fichaAnterior={fichas.at(-1)}
                 fabricoId={fabricoId}
                 onFichaCreated={(rascunhoFicha) => {
                     setFichas((prev) => [
@@ -890,6 +891,10 @@ export default function PedidosCadastrar() {
                         {
                             ...rascunhoFicha,
                             foto: rascunhoFicha.foto || referenciaParaModal?.foto,
+                            preco_padrao:
+                                rascunhoFicha.preco_padrao ?? referenciaParaModal?.preco_padrao,
+                            custo_total:
+                                rascunhoFicha.custo_total ?? referenciaParaModal?.custo_total ?? 0,
                             referenciaInterna:
                                 rascunhoFicha.referenciaInterna ||
                                 referenciaParaModal?.nome ||

@@ -5,6 +5,15 @@ import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import MenuOpcoes from "../components/geral/MenuOpcoes";
 import { PedidosTableSkeleton } from "../components/geral/Loading";
+import { parsePreco } from "../utils/preco";
+
+const formatarMoeda = (valor) =>
+    parsePreco(valor).toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
 import TabelaCabecalho, { TabelaCabecalhoCelula } from "../components/geral/TabelaCabecalho";
 
 const Pedidos = () => {
@@ -209,7 +218,7 @@ const Pedidos = () => {
                                                     <td className="py-4 px-6 ">
                                                         {!pedido.cliente
                                                             ? "-"
-                                                            : formatarValor(pedido.valor_total)}
+                                                            : formatarMoeda(valorMonetario)}
                                                     </td>
 
                                                     <td className="py-4 px-6">

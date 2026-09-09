@@ -3,6 +3,7 @@ export default function OpcoesImpressaoModal({
     onClose,
     onSelectFichaTecnica,
     onSelectNotaSaida,
+    isSobDemanda = true,
 }) {
     if (!isOpen) return null;
     return (
@@ -43,7 +44,7 @@ export default function OpcoesImpressaoModal({
                         }}
                         className="bg-[#AEE2F3] hover:bg-[#99D9EB] text-[#3B92A7] font-medium py-2.5 px-6 rounded-full text-[15px] transition-colors focus:outline-none"
                     >
-                        Nota de saída
+                        {isSobDemanda ? "Nota de saída" : "Conferência"}
                     </button>
                 </div>
             </div>

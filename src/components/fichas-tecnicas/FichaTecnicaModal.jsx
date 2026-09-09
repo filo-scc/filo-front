@@ -1,3 +1,5 @@
+import ConfirmacaoFichaModal from "./ConfirmacaoFichaModal";
+import AvisoRepetirGrade from "./AvisoRepetirGrade";
 /* eslint-disable react-hooks/exhaustive-deps */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -11,7 +13,13 @@ import { getGradesLiberadasByFabricoId } from "../../services/gradeService";
 import { getParceiroByProduto } from "../../services/produtoService";
 
 import ProdutoParceiros from "../produtos/ProdutoParceiros";
+import { preventNumberInputWheel } from "../../utils/preventNumberInputWheel";
 import { InlineLoading, SkeletonBox } from "../geral/Loading";
+import {
+    calcularProporcoesGrade,
+    isReferenciaProporcao,
+    obterReferenciaProporcao,
+} from "../../utils/gradeProportions";
 
 function FloatingInput({ label, value, readOnly, onChange, placeholder }) {
     return (
@@ -36,21 +44,16 @@ function FloatingInput({ label, value, readOnly, onChange, placeholder }) {
     );
 }
 
-const calcularProporcao = (totaisPorTamanho) => {
-    const valoresValidos = totaisPorTamanho.map(Number).filter((t) => t > 0);
-    if (valoresValidos.length === 0) return totaisPorTamanho.map(() => 0);
-    const base = Math.min(...valoresValidos);
-    return totaisPorTamanho.map((t) => (t > 0 ? Math.round(t / base) : 0));
-};
-
-function QuantityCell({ value, onCommit }) {
+function QuantityCell({ value, onCommit, onDraftChange }) {
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState(value > 0 ? String(value) : "");
     const inputRef = useRef(null);
+    const draftChangedRef = useRef(false);
+    const initialValueRef = useRef(value);
 
     useEffect(() => {
-        if (!editing) setDraft(value > 0 ? String(value) : "");
-    }, [value, editing]);
+        if (!editing) setDraft(getInitialDraft());
+    }, [value, editing, suggestion]);
 
     useEffect(() => {
         if (editing && inputRef.current) inputRef.current.focus();
@@ -79,15 +82,22 @@ function QuantityCell({ value, onCommit }) {
     return (
         <input
             ref={inputRef}
+            onFocus={preventNumberInputWheel}
             type="number"
             min="0"
             step="1"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onBlur={commit}
+            placeholder="-"
             onKeyDown={(e) => {
                 if (e.key === "Enter") commit();
-                if (e.key === "Escape") setEditing(false);
+                if (e.key === "Escape") {
+                    const initialValue = initialValueRef.current;
+                    setDraft(initialValue > 0 ? String(initialValue) : "");
+                    onDraftChange?.(initialValue);
+                    setEditing(false);
+                }
             }}
             className="h-[40px] w-full bg-transparent text-center text-[14px] outline-none text-[#898C8F] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0"
         />
@@ -147,7 +157,11 @@ export default function FichaTecnicaModal({
     etapaAtualId = null,
     onFichaCreated,
     onRequestCreateColor,
+    fichaAnterior,
 }) {
+    const [confirmarSaida, setConfirmarSaida] = useState(false);
+    const [oferecerGrade, setOferecerGrade] = useState(false);
+    const dispensarGrade = useCallback(() => setOferecerGrade(false), []);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -171,6 +185,9 @@ export default function FichaTecnicaModal({
     const [parceiroScrollTop, setParceiroScrollTop] = useState(0);
     const [colorSearch, setColorSearch] = useState("");
     const [existingParceiroIds, setExistingParceiroIds] = useState([]);
+    const [validacaoPrecoExibida, setValidacaoPrecoExibida] = useState(false);
+
+    const [referenceSizeId, setReferenceSizeId] = useState(null);
 
     const parceiroScrollRef = useRef(null);
     const colorDropdownRef = useRef(null);
@@ -191,6 +208,21 @@ export default function FichaTecnicaModal({
 
     const currentSizeItems = currentGradeOption?.sizeItems || [];
     const effectiveGradeVersionId = currentGradeOption?.gradeVersaoId || null;
+
+    const handleQuantidadeDraftChange = useCallback((corId, tamanhoId, valorDigitado) => {
+        setMatrix((prevMatrix) => ({
+            ...prevMatrix,
+            [corId]: { ...prevMatrix[corId], [tamanhoId]: valorDigitado },
+        }));
+    }, []);
+
+    const handleCommitQuantidade = useCallback((corId, tamanhoId, valorDigitado) => {
+        setMatrix((prevMatrix) => {
+            const linhaAtual = prevMatrix[corId] || {};
+            const novaLinha = { ...linhaAtual, [tamanhoId]: valorDigitado };
+            return { ...prevMatrix, [corId]: novaLinha };
+        });
+    }, []);
 
     const selectedColors = useMemo(
         () =>
@@ -214,7 +246,79 @@ export default function FichaTecnicaModal({
         [currentSizeItems, selectedColorIds, matrix],
     );
 
-    const proporcoes = useMemo(() => calcularProporcao(totalsBySize), [totalsBySize]);
+    const totalsBySizeId = useMemo(
+        () =>
+            currentSizeItems.reduce((totals, size, index) => {
+                totals[size.tamanhoId] = totalsBySize[index] || 0;
+                return totals;
+            }, {}),
+        [currentSizeItems, totalsBySize],
+    );
+
+    const totalsByColor = useMemo(
+        () =>
+            selectedColorIds.reduce((totals, corId) => {
+                totals[corId] = currentSizeItems.reduce(
+                    (sum, size) => sum + Number(matrix?.[corId]?.[size.tamanhoId] || 0),
+                    0,
+                );
+                return totals;
+            }, {}),
+        [currentSizeItems, selectedColorIds, matrix],
+    );
+
+    const totalGeral = useMemo(
+        () => totalsBySize.reduce((sum, total) => sum + Number(total || 0), 0),
+        [totalsBySize],
+    );
+
+    useEffect(() => {
+        setReferenceSizeId(
+            obterReferenciaProporcao({
+                sizeIds: currentSizeItems.map((size) => size.tamanhoId),
+                totalsBySize: totalsBySizeId,
+            }),
+        );
+    }, [currentSizeItems, totalsBySizeId]);
+
+    const proporcoes = useMemo(
+        () =>
+            calcularProporcoesGrade({
+                sizeIds: currentSizeItems.map((size) => size.tamanhoId),
+                colorIds: selectedColorIds,
+                referenceSizeId,
+                getQuantity: (colorId, sizeId) => matrix?.[colorId]?.[sizeId] || 0,
+            }),
+        [currentSizeItems, selectedColorIds, referenceSizeId, matrix],
+    );
+
+    const handleAplicarProporcao = useCallback(
+        (targetSizeId, rawMultiplier) => {
+            const multiplier = Number(rawMultiplier);
+            if (
+                referenceSizeId === null ||
+                !Number.isFinite(multiplier) ||
+                !Number.isInteger(multiplier) ||
+                multiplier < 0 ||
+                isReferenciaProporcao(targetSizeId, referenceSizeId)
+            ) {
+                return;
+            }
+
+            setMatrix((prevMatrix) => {
+                const nextMatrix = { ...prevMatrix };
+                selectedColorIds.forEach((colorId) => {
+                    const referenceQuantity = Number(prevMatrix?.[colorId]?.[referenceSizeId] || 0);
+                    nextMatrix[colorId] = {
+                        ...prevMatrix[colorId],
+                        [targetSizeId]: referenceQuantity * multiplier,
+                    };
+                });
+                return nextMatrix;
+            });
+        },
+        [referenceSizeId, selectedColorIds],
+    );
     const filteredColors = availableColors.filter((color) =>
         color.nome.toLowerCase().includes(colorSearch.toLowerCase()),
     );
@@ -222,6 +326,9 @@ export default function FichaTecnicaModal({
     const resetStates = useCallback(() => {
         setSelectedColorIds([]);
         setMatrix({});
+        setConfirmarSaida(false);
+        setOferecerGrade(false);
+        setReferenceSizeId(null);
         setParceiroRows([]);
         setError("");
         setColorDropdownOpen(false);
@@ -303,6 +410,7 @@ export default function FichaTecnicaModal({
                     null;
 
                 setSelectedGradeVersionId(fallbackGrade);
+                setOferecerGrade(Boolean(fichaAnterior && normalizedGrades.length));
             } catch (err) {
                 if (alive) setError(err?.message || "Falha ao carregar dados.");
             } finally {
@@ -419,6 +527,10 @@ export default function FichaTecnicaModal({
             gradeVersaoIdOriginal: produto?.gradeVersaoId || produto?.grade_versao_id,
             gradeVersaoIdNova: effectiveGradeVersionId,
             selectedColorIds,
+            gradeParaCopia: currentSizeItems.map((size) => ({
+                tamanhoId: size.tamanhoId,
+                gradeVersaoItemId: size.gradeVersaoItemId,
+            })),
             cores: selectedColors,
             itensPayload,
             parceiroRows,
@@ -429,13 +541,51 @@ export default function FichaTecnicaModal({
         handleForceClose();
     };
 
+    const repetirGrade = () => {
+        const colorIds = (fichaAnterior.selectedColorIds || []).filter((id) =>
+            availableColors.some((cor) => String(cor.id) === String(id)),
+        );
+        const next = {};
+        colorIds.forEach((colorId) => {
+            next[colorId] = {};
+            currentSizeItems.forEach((size) => {
+                const previousSize = fichaAnterior.gradeParaCopia?.find(
+                    (item) => String(item.tamanhoId) === String(size.tamanhoId),
+                );
+                const item =
+                    previousSize &&
+                    fichaAnterior.itensPayload?.find(
+                        (item) =>
+                            String(item.cor_id) === String(colorId) &&
+                            String(item.grade_versao_item_id) ===
+                                String(previousSize.gradeVersaoItemId),
+                    );
+                next[colorId][size.tamanhoId] = Number(item?.quantidade) || 0;
+            });
+        });
+        setSelectedColorIds(colorIds);
+        setMatrix(next);
+        setOferecerGrade(false);
+    };
+
     if (!isOpen) return null;
 
     return (
         <>
+            <ConfirmacaoFichaModal
+                isOpen={confirmarSaida}
+                mensagem="Ao sair, você perderá o progresso desta ficha técnica. Deseja continuar?"
+                textoCancel="Continuar preenchendo"
+                textoConfirm="Sair e descartar"
+                onCancel={() => setConfirmarSaida(false)}
+                onConfirm={handleForceClose}
+            />
+            {oferecerGrade && (
+                <AvisoRepetirGrade onDismiss={dispensarGrade} onRepeat={repetirGrade} />
+            )}
             <div
                 className="fixed inset-0 z-[999] flex items-center justify-center bg-black/35 px-4 py-6 backdrop-blur-sm font-['Outfit',_sans-serif]"
-                onClick={handleForceClose}
+                onClick={() => setConfirmarSaida(true)}
             >
                 <div
                     className="flex max-h-[95vh] w-full max-w-[1160px] flex-col rounded-[28px] bg-white py-8 shadow-2xl overflow-x-hidden"
@@ -452,7 +602,7 @@ export default function FichaTecnicaModal({
                         </div>
                         <button
                             type="button"
-                            onClick={handleForceClose}
+                            onClick={() => setConfirmarSaida(true)}
                             className="text-[28px] leading-none text-[#8C8C8C] transition hover:text-black"
                         >
                             &times;
@@ -742,7 +892,40 @@ export default function FichaTecnicaModal({
                                                                 : "#D7D7D7",
                                                     }}
                                                 >
-                                                    {proporcoes[i]}
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        step="1"
+                                                        inputMode="numeric"
+                                                        value={proporcoes[s.tamanhoId] || ""}
+                                                        placeholder="0"
+                                                        readOnly={isReferenciaProporcao(
+                                                            s.tamanhoId,
+                                                            referenceSizeId,
+                                                        )}
+                                                        disabled={referenceSizeId === null}
+                                                        onFocus={(event) => {
+                                                            preventNumberInputWheel(event);
+                                                            event.target.select();
+                                                        }}
+                                                        onChange={(event) =>
+                                                            handleAplicarProporcao(
+                                                                s.tamanhoId,
+                                                                event.target.value,
+                                                            )
+                                                        }
+                                                        title={
+                                                            isReferenciaProporcao(
+                                                                s.tamanhoId,
+                                                                referenceSizeId,
+                                                            )
+                                                                ? "Coluna de referência"
+                                                                : referenceSizeId === null
+                                                                  ? "Preencha primeiro uma coluna da grade"
+                                                                  : "Digite a proporção para recalcular esta coluna"
+                                                        }
+                                                        className="h-full w-full bg-transparent text-center outline-none disabled:cursor-not-allowed [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                    />
                                                 </div>
                                             ))}
                                         </div>

@@ -25,7 +25,7 @@ export default function ModeloModal({ isOpen, onClose, onSuccess }) {
     const handleSubmit = async () => {
         const nomeTrim = nome.trim();
         if (!nomeTrim) {
-            setError("Informe o nome do modelo.");
+            setError("Informe o nome do tipo de produto.");
             return;
         }
 
@@ -40,7 +40,7 @@ export default function ModeloModal({ isOpen, onClose, onSuccess }) {
             console.error(err);
             setError(
                 err.response?.data?.message ||
-                    "Não foi possível cadastrar o modelo. Tente novamente.",
+                    "Não foi possível cadastrar o tipo de produto. Tente novamente.",
             );
         } finally {
             setSubmitting(false);
@@ -66,7 +66,7 @@ export default function ModeloModal({ isOpen, onClose, onSuccess }) {
                             className="h-[28px] w-[28px] object-contain"
                         />
                         <h2 className="text-[26px] font-light text-[#404040]">
-                            Cadastrar tipo de modelo
+                            Cadastrar tipo de produto
                         </h2>
                     </div>
                     <button
@@ -87,11 +87,11 @@ export default function ModeloModal({ isOpen, onClose, onSuccess }) {
 
                 <div>
                     <label className="mb-2 block text-[14px] font-light text-[#4696AD]">
-                        Novo tipo de modelo
+                        Novo tipo de produto
                     </label>
                     <div className="flex items-center gap-4">
                         <FloatingLabelInput
-                            label="Nome do tipo de modelo"
+                            label="Nome do tipo de produto"
                             value={nome}
                             onChange={(e) => setNome(e.target.value)}
                             className="flex-1"
