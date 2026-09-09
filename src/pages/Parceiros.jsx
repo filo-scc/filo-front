@@ -186,10 +186,10 @@ const Parceiros = () => {
 
                     {/* Tabela */}
                     <div className="w-full pb-16">
-                        <div className="w-full border border-gray-200 rounded-xl overflow-hidden bg-[#D3EBF2]">
-                            <table className="w-full border-separate border-spacing-0 text-[16px] font-['Outfit',_sans-serif] font-light text-center">
-                                <thead className="bg-[#D3EBF2] text-[#4696AD]">
-                                    <tr className="h-[64px]">
+                        <div className="w-full border border-[#DEDEDE] rounded-xl overflow-hidden bg-[#D3EBF2]">
+                            <table className="w-full border-separate border-spacing-0 text-[16px] font-['Outfit'] font-light text-center">
+                                <thead className="bg-[#C9EAF6] text-[#4696AD]">
+                                    <tr className="bg-[#C9EAF6] text-[#4696AD] h-[64px]">
                                         <th className="px-6 font-light">Parceiro</th>
                                         <th className="px-6 font-light">Possui pedido</th>
 
