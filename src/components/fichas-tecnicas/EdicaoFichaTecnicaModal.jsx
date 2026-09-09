@@ -1,3 +1,4 @@
+import ConfirmacaoFichaModal from "./ConfirmacaoFichaModal";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import {
     syncFichaTecnicaCores,
@@ -15,6 +16,7 @@ import {
 } from "../../services/fichaParceiroService";
 import { getProdutosDoCliente } from "../../services/clientesService";
 import ProdutoParceiros from "../produtos/ProdutoParceiros";
+import { preventNumberInputWheel } from "../../utils/preventNumberInputWheel";
 import FichaTecnicaPrintView from "../FichaTecnicaPrintView";
 import { getAviamentosDoProduto, getParceiroByProduto } from "../../services/produtoService";
 import { updateFichaTecnica } from "../../services/fichasTecnicasService";
@@ -23,6 +25,27 @@ import CorModal from "./CorModal";
 import EstampaModal from "./EstampaModal";
 import RelatorioDeAcabamento from "./RelatorioDeAcabamento";
 import { getAllEtapasByFabricoId } from "../../services/etapaService";
+import {
+    calcularProporcoesGrade,
+    isReferenciaProporcao,
+    obterReferenciaProporcao,
+} from "../../utils/gradeProportions";
+
+function snapshotFicha(cores, matriz, parceiros, removidos, relatorio) {
+    return JSON.stringify({
+        cores: cores.map((cor) => cor.id).sort((a, b) => a - b),
+        quantidades: cores
+            .flatMap((cor) =>
+                Object.entries(matriz[cor.id] || {})
+                    .filter(([, item]) => Number(item.quantidade) > 0)
+                    .map(([sizeId, item]) => [cor.id, sizeId, Number(item.quantidade)]),
+            )
+            .sort((a, b) => String(a).localeCompare(String(b))),
+        parceiros,
+        removidos,
+        relatorio,
+    });
+}
 
 const FloatingInput = ({
     label,
@@ -66,13 +89,6 @@ const simplificarUnidade = (unidade) => {
         PAR: "par",
     };
     return unidadesSimplificadas[unidade] || unidade;
-};
-
-const calcularProporcao = (totaisPorTamanho) => {
-    const valoresValidos = totaisPorTamanho.map(Number).filter((t) => t > 0);
-    if (valoresValidos.length === 0) return totaisPorTamanho.map(() => 0);
-    const base = Math.min(...valoresValidos);
-    return totaisPorTamanho.map((t) => (t > 0 ? Math.round(t / base) : 0));
 };
 
 const ColorDropdown = ({
@@ -225,7 +241,10 @@ export default function EdicaoFichaTecnicaModal({
 
     const [coresSelecionadas, setCoresSelecionadas] = useState([]);
     const [todasCoresDisponiveis, setTodasCoresDisponiveis] = useState([]);
+    const [confirmarSaida, setConfirmarSaida] = useState(false);
+    const initialSnapshot = useRef("");
     const [matrizQuantidades, setMatrizQuantidades] = useState({});
+    const [referenceSizeId, setReferenceSizeId] = useState(null);
     const [parceiros, setParceiros] = useState([]);
     const [parceirosRemovidos, setParceirosRemovidos] = useState([]);
     const [referenciaCliente, setReferenciaCliente] = useState("-");
@@ -399,6 +418,7 @@ export default function EdicaoFichaTecnicaModal({
                 };
             });
             setMatrizQuantidades(matrizInicial);
+            setReferenceSizeId(null);
 
             const categoriasAceitas = ["costura", "faccao", "confeccao"];
 
@@ -424,6 +444,19 @@ export default function EdicaoFichaTecnicaModal({
                     };
                 });
             setParceiros(parceirosIniciais);
+            setConfirmarSaida(false);
+            initialSnapshot.current = snapshotFicha(
+                Object.values(coresUnicasMap),
+                matrizInicial,
+                parceirosIniciais,
+                [],
+                {
+                    defeitoCostura: dadosFicha.defeitos_costura ?? 0,
+                    defeitoTecido: dadosFicha.defeitos_tecido ?? 0,
+                    retiradas: dadosFicha.retiradas ?? 0,
+                    sobras: dadosFicha.sobras ?? 0,
+                },
+            );
             carregarReferencia();
         }
     }, [
@@ -539,16 +572,59 @@ export default function EdicaoFichaTecnicaModal({
     );
     const perdasValidas = !isUltimaEtapa || totalPerdas <= totalGeral;
 
-    const proporcoes = useMemo(() => {
-        const arrayDeTotais = sizeItems.map((s) => totaisPorTamanho[s.id] || 0);
-        const arrayDeProporcoes = calcularProporcao(arrayDeTotais);
-        const propsObj = {};
-        sizeItems.forEach((s, index) => {
-            propsObj[s.id] = arrayDeProporcoes[index];
-        });
-
-        return propsObj;
+    useEffect(() => {
+        setReferenceSizeId(
+            obterReferenciaProporcao({
+                sizeIds: sizeItems.map((size) => size.id),
+                totalsBySize: totaisPorTamanho,
+            }),
+        );
     }, [sizeItems, totaisPorTamanho]);
+
+    const proporcoes = useMemo(
+        () =>
+            calcularProporcoesGrade({
+                sizeIds: sizeItems.map((size) => size.id),
+                colorIds: coresSelecionadas.map((cor) => cor.id),
+                referenceSizeId,
+                getQuantity: (colorId, sizeId) =>
+                    matrizQuantidades[colorId]?.[sizeId]?.quantidade || 0,
+            }),
+        [sizeItems, coresSelecionadas, referenceSizeId, matrizQuantidades],
+    );
+
+    const handleAplicarProporcao = useCallback(
+        (targetSizeId, rawMultiplier) => {
+            const multiplier = Number(rawMultiplier);
+            if (
+                referenceSizeId === null ||
+                !Number.isFinite(multiplier) ||
+                !Number.isInteger(multiplier) ||
+                multiplier < 0 ||
+                isReferenciaProporcao(targetSizeId, referenceSizeId)
+            ) {
+                return;
+            }
+
+            setMatrizQuantidades((prev) => {
+                const next = { ...prev };
+                coresSelecionadas.forEach((cor) => {
+                    const referenceQuantity = Number(
+                        prev[cor.id]?.[referenceSizeId]?.quantidade || 0,
+                    );
+                    next[cor.id] = {
+                        ...prev[cor.id],
+                        [targetSizeId]: {
+                            ...prev[cor.id]?.[targetSizeId],
+                            quantidade: referenceQuantity * multiplier,
+                        },
+                    };
+                });
+                return next;
+            });
+        },
+        [referenceSizeId, coresSelecionadas],
+    );
 
     const handleQuantidadeChange = (corId, gradeItemId, novaQuantidade) => {
         setMatrizQuantidades((prev) => ({
@@ -711,15 +787,39 @@ export default function EdicaoFichaTecnicaModal({
         }
     };
 
+    const solicitarSaida = () => {
+        if (loading) return;
+        const atual = snapshotFicha(
+            coresSelecionadas,
+            matrizQuantidades,
+            parceiros,
+            parceirosRemovidos,
+            relatorioAcabamento,
+        );
+        if (atual !== initialSnapshot.current) setConfirmarSaida(true);
+        else onClose();
+    };
+
     if (!isOpen) return null;
 
     return (
         <>
+            <ConfirmacaoFichaModal
+                isOpen={confirmarSaida}
+                mensagem="Ao sair, você perderá as alterações desta ficha técnica. Deseja continuar?"
+                textoCancel="Continuar preenchendo"
+                textoConfirm="Sair e descartar"
+                onCancel={() => setConfirmarSaida(false)}
+                onConfirm={() => {
+                    setConfirmarSaida(false);
+                    onClose();
+                }}
+            />
             <div
                 className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-2 backdrop-blur-sm print:hidden sm:p-4"
                 onClick={() => {
                     if (!isProdutoParceirosOpen) {
-                        onClose();
+                        solicitarSaida();
                     }
                 }}
             >
@@ -738,7 +838,7 @@ export default function EdicaoFichaTecnicaModal({
                                 Editar Ficha Técnica {dadosFicha?.numero}
                             </h2>
                         </div>
-                        <button onClick={onClose}>
+                        <button onClick={solicitarSaida}>
                             <img
                                 src="/fechar-cinza.png"
                                 alt="icone de fechar"
@@ -838,7 +938,37 @@ export default function EdicaoFichaTecnicaModal({
                                                             : "#D7D7D7",
                                                 }}
                                             >
-                                                {proporcoes[s.id] || 0}
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    step="1"
+                                                    inputMode="numeric"
+                                                    value={proporcoes[s.id] || ""}
+                                                    placeholder="0"
+                                                    readOnly={isReferenciaProporcao(
+                                                        s.id,
+                                                        referenceSizeId,
+                                                    )}
+                                                    disabled={referenceSizeId === null}
+                                                    onFocus={(event) => {
+                                                        preventNumberInputWheel(event);
+                                                        event.target.select();
+                                                    }}
+                                                    onChange={(event) =>
+                                                        handleAplicarProporcao(
+                                                            s.id,
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                    title={
+                                                        isReferenciaProporcao(s.id, referenceSizeId)
+                                                            ? "Coluna de referência"
+                                                            : referenceSizeId === null
+                                                              ? "Preencha primeiro uma coluna da grade"
+                                                              : "Digite a proporção para recalcular esta coluna"
+                                                    }
+                                                    className="h-full w-full bg-transparent text-center outline-none disabled:cursor-not-allowed [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                />
                                             </div>
                                         ))}
                                     </div>
@@ -934,6 +1064,9 @@ export default function EdicaoFichaTecnicaModal({
                                                             >
                                                                 <input
                                                                     type="number"
+                                                                    onFocus={
+                                                                        preventNumberInputWheel
+                                                                    }
                                                                     min="0"
                                                                     value={
                                                                         val === undefined ||

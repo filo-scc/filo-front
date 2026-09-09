@@ -27,6 +27,12 @@ const FloatingInput = ({ label, name, value, onChange, containerClass, ...rest }
     </div>
 );
 
+const getEtapasSelecionaveis = (etapas = []) =>
+    etapas
+        .filter((etapa) => etapa.ativa === true)
+        .sort((a, b) => Number(a.ordem ?? 0) - Number(b.ordem ?? 0))
+        .slice(0, -1);
+
 // Componente do Dropdown de Etapa de Produção
 const EtapaSelect = ({ value, onChange, inputClass }) => {
     const [dropdownEtapaAberto, setDropdownEtapaAberto] = useState(false);
@@ -43,8 +49,7 @@ const EtapaSelect = ({ value, onChange, inputClass }) => {
                     const fabricoId = usuarioLogado.fabrico_id;
                     if (fabricoId) {
                         const dados = await getAllEtapasByFabricoId(fabricoId);
-                        const etapasAtivas = (dados || []).filter((etapa) => etapa.ativa === true);
-                        setEtapas(etapasAtivas);
+                        setEtapas(getEtapasSelecionaveis(dados || []));
                     }
                 }
             } catch (err) {
@@ -102,22 +107,28 @@ const EtapaSelect = ({ value, onChange, inputClass }) => {
                         ></div>
 
                         <div className="absolute z-20 mt-1 w-full bg-white border border-[#D3D3D3] rounded-[10px] shadow-lg overflow-hidden max-h-60 overflow-y-auto scrollbar-sutil">
-                            {etapas.map((etapa) => (
-                                <div
-                                    key={etapa.id}
-                                    className={`px-4 py-2 text-sm cursor-pointer transition-colors ${
-                                        value === etapa.nome
-                                            ? "border-l-[3px] border-[#C4F042] text-gray-700 bg-white"
-                                            : "border-l-[3px] border-transparent text-gray-600 hover:bg-[#F5F5F5]"
-                                    }`}
-                                    onClick={() => {
-                                        onChange(etapa.nome);
-                                        setDropdownEtapaAberto(false);
-                                    }}
-                                >
-                                    {etapa.nome}
+                            {etapas.length > 0 ? (
+                                etapas.map((etapa) => (
+                                    <div
+                                        key={etapa.id}
+                                        className={`px-4 py-2 text-sm cursor-pointer transition-colors ${
+                                            value === etapa.nome
+                                                ? "border-l-[3px] border-[#C4F042] text-gray-700 bg-white"
+                                                : "border-l-[3px] border-transparent text-gray-600 hover:bg-[#F5F5F5]"
+                                        }`}
+                                        onClick={() => {
+                                            onChange(etapa.nome);
+                                            setDropdownEtapaAberto(false);
+                                        }}
+                                    >
+                                        {etapa.nome}
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="border-l-[3px] border-transparent px-4 py-2 text-sm text-gray-400">
+                                    Nenhuma etapa disponível
                                 </div>
-                            ))}
+                            )}
                         </div>
                     </>
                 )}

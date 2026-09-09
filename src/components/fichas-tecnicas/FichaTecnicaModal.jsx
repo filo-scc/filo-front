@@ -1,3 +1,5 @@
+import ConfirmacaoFichaModal from "./ConfirmacaoFichaModal";
+import AvisoRepetirGrade from "./AvisoRepetirGrade";
 /* eslint-disable react-hooks/exhaustive-deps */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -11,7 +13,13 @@ import { getGradesLiberadasByFabricoId } from "../../services/gradeService";
 import { getParceiroByProduto } from "../../services/produtoService";
 
 import ProdutoParceiros from "../produtos/ProdutoParceiros";
+import { preventNumberInputWheel } from "../../utils/preventNumberInputWheel";
 import { InlineLoading, SkeletonBox } from "../geral/Loading";
+import {
+    calcularProporcoesGrade,
+    isReferenciaProporcao,
+    obterReferenciaProporcao,
+} from "../../utils/gradeProportions";
 
 function FloatingInput({ label, value, readOnly, onChange, placeholder }) {
     return (
@@ -36,24 +44,17 @@ function FloatingInput({ label, value, readOnly, onChange, placeholder }) {
     );
 }
 
-const calcularProporcao = (totaisPorTamanho) => {
-    const valoresValidos = totaisPorTamanho.map(Number).filter((t) => t > 0);
-    if (valoresValidos.length === 0) return totaisPorTamanho.map(() => 0);
-    const base = Math.min(...valoresValidos);
-    return totaisPorTamanho.map((t) => (t > 0 ? Math.round(t / base) : 0));
-};
-
-function QuantityCell({ value, suggestion, onCommit, onDraftChange, onTab }) {
+function QuantityCell({ value, onCommit, onDraftChange }) {
     const [editing, setEditing] = useState(false);
     const getInitialDraft = () => (value > 0 ? String(value) : "");
     const [draft, setDraft] = useState(getInitialDraft());
     const inputRef = useRef(null);
     const draftChangedRef = useRef(false);
-    const skipNextBlurRef = useRef(false);
+    const initialValueRef = useRef(value);
 
     useEffect(() => {
         if (!editing) setDraft(getInitialDraft());
-    }, [value, editing, suggestion]);
+    }, [value, editing]);
 
     useEffect(() => {
         if (editing && inputRef.current) inputRef.current.select();
@@ -65,12 +66,6 @@ function QuantityCell({ value, suggestion, onCommit, onDraftChange, onTab }) {
     };
 
     const commit = useCallback(() => {
-        if (skipNextBlurRef.current) {
-            skipNextBlurRef.current = false;
-            setEditing(false);
-            return;
-        }
-
         if (draftChangedRef.current || value > 0) {
             onCommit(parseValue(draft));
         }
@@ -78,24 +73,17 @@ function QuantityCell({ value, suggestion, onCommit, onDraftChange, onTab }) {
     }, [draft, onCommit, value]);
 
     if (!editing) {
-        const showSuggestion = value === 0 && suggestion > 0;
         return (
             <button
                 type="button"
                 onClick={() => {
                     draftChangedRef.current = false;
-                    skipNextBlurRef.current = false;
+                    initialValueRef.current = value;
                     setEditing(true);
                 }}
-                className={`flex h-[40px] w-full items-center justify-center rounded-[6px] border border-transparent text-[14px] transition ${
-                    value > 0
-                        ? "text-[#898C8F]"
-                        : showSuggestion
-                          ? "text-[#D7D7D7] italic"
-                          : "text-[#D7D7D7]"
-                }`}
+                className={`flex h-[40px] w-full items-center justify-center rounded-[6px] border border-transparent text-[14px] transition ${value > 0 ? "text-[#898C8F]" : "text-[#D7D7D7]"}`}
             >
-                {value > 0 ? value : showSuggestion ? suggestion : "-"}
+                {value > 0 ? value : "-"}
             </button>
         );
     }
@@ -103,6 +91,7 @@ function QuantityCell({ value, suggestion, onCommit, onDraftChange, onTab }) {
     return (
         <input
             ref={inputRef}
+            onFocus={preventNumberInputWheel}
             type="number"
             min="0"
             step="1"
@@ -114,18 +103,14 @@ function QuantityCell({ value, suggestion, onCommit, onDraftChange, onTab }) {
                 if (onDraftChange) onDraftChange(parseValue(raw));
             }}
             onBlur={commit}
-            placeholder={suggestion ? String(suggestion) : ""}
+            placeholder="-"
             onKeyDown={(e) => {
                 if (e.key === "Enter") commit();
                 if (e.key === "Escape") {
-                    skipNextBlurRef.current = true;
+                    const initialValue = initialValueRef.current;
+                    setDraft(initialValue > 0 ? String(initialValue) : "");
+                    onDraftChange?.(initialValue);
                     setEditing(false);
-                }
-                if (e.key === "Tab" && onTab) {
-                    if (!draftChangedRef.current && value === 0 && suggestion > 0) {
-                        skipNextBlurRef.current = true;
-                    }
-                    onTab();
                 }
             }}
             className="h-[40px] w-full bg-transparent text-center text-[14px] outline-none text-[#898C8F] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0"
@@ -185,7 +170,11 @@ export default function FichaTecnicaModal({
     etapaAtualId = null,
     onFichaCreated,
     onRequestCreateColor,
+    fichaAnterior,
 }) {
+    const [confirmarSaida, setConfirmarSaida] = useState(false);
+    const [oferecerGrade, setOferecerGrade] = useState(false);
+    const dispensarGrade = useCallback(() => setOferecerGrade(false), []);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -211,7 +200,7 @@ export default function FichaTecnicaModal({
     const [existingParceiroIds, setExistingParceiroIds] = useState([]);
     const [validacaoPrecoExibida, setValidacaoPrecoExibida] = useState(false);
 
-    const [activeSuggestions, setActiveSuggestions] = useState({});
+    const [referenceSizeId, setReferenceSizeId] = useState(null);
 
     const parceiroScrollRef = useRef(null);
     const colorDropdownRef = useRef(null);
@@ -220,47 +209,6 @@ export default function FichaTecnicaModal({
     const producaoSobDemanda = useMemo(
         () => Boolean(fabricoInfo?.fabricacao_sob_demanda),
         [fabricoInfo],
-    );
-
-    const matrixRef = useRef(matrix);
-    useEffect(() => {
-        matrixRef.current = matrix;
-    }, [matrix]);
-
-    const computeNextSuggestion = useCallback(
-        (prevSuggestions, corId, tamanhoId, valorDigitado) => {
-            const linhaAtual = matrixRef.current[corId] || {};
-            const outrosValoresExistentes = Object.entries(linhaAtual).filter(
-                ([tId, v]) => tId !== String(tamanhoId) && v > 0,
-            );
-            const sugestaoAtual = prevSuggestions[corId];
-
-            // Regra 1: primeiro valor da linha ativa a sugestão
-            if (valorDigitado > 0) {
-                if (outrosValoresExistentes.length === 0) {
-                    return { ...prevSuggestions, [corId]: valorDigitado };
-                }
-                // Regra 2: valor diferente da sugestão existente cancela a sugestão
-                if (
-                    sugestaoAtual !== null &&
-                    sugestaoAtual !== undefined &&
-                    valorDigitado !== sugestaoAtual
-                ) {
-                    return { ...prevSuggestions, [corId]: null };
-                }
-                // Regra 3: mesmo valor da sugestão existente -> mantém como está
-                return prevSuggestions;
-            }
-
-            // Regra 4: célula ficou vazia e a linha inteira (sem essa célula) também está vazia -> cancela
-            const linhaSemEsseValor = { ...linhaAtual, [tamanhoId]: 0 };
-            const linhaVazia = Object.values(linhaSemEsseValor).every((v) => !v);
-            if (linhaVazia) {
-                return { ...prevSuggestions, [corId]: null };
-            }
-            return prevSuggestions;
-        },
-        [],
     );
 
     const currentGradeOption = useMemo(
@@ -274,50 +222,20 @@ export default function FichaTecnicaModal({
     const currentSizeItems = currentGradeOption?.sizeItems || [];
     const effectiveGradeVersionId = currentGradeOption?.gradeVersaoId || null;
 
-    const handleApplySuggestionOnTab = useCallback(
-        (corId) => {
-            const sugestao = activeSuggestions[corId];
-            if (!sugestao) return;
+    const handleQuantidadeDraftChange = useCallback((corId, tamanhoId, valorDigitado) => {
+        setMatrix((prevMatrix) => ({
+            ...prevMatrix,
+            [corId]: { ...prevMatrix[corId], [tamanhoId]: valorDigitado },
+        }));
+    }, []);
 
-            setMatrix((prevMatrix) => {
-                const linhaAtual = prevMatrix[corId] || {};
-                const novaLinha = { ...linhaAtual };
-
-                currentSizeItems.forEach((s) => {
-                    const tamanhoId = s.tamanhoId;
-                    if (!novaLinha[tamanhoId] || novaLinha[tamanhoId] === 0) {
-                        novaLinha[tamanhoId] = sugestao;
-                    }
-                });
-                return { ...prevMatrix, [corId]: novaLinha };
-            });
-        },
-        [activeSuggestions, currentSizeItems],
-    );
-
-    const handleQuantidadeDraftChange = useCallback(
-        (corId, tamanhoId, valorDigitado) => {
-            setActiveSuggestions((prev) =>
-                computeNextSuggestion(prev, corId, tamanhoId, valorDigitado),
-            );
-        },
-        [computeNextSuggestion],
-    );
-
-    const handleCommitQuantidade = useCallback(
-        (corId, tamanhoId, valorDigitado) => {
-            setActiveSuggestions((prev) =>
-                computeNextSuggestion(prev, corId, tamanhoId, valorDigitado),
-            );
-
-            setMatrix((prevMatrix) => {
-                const linhaAtual = prevMatrix[corId] || {};
-                const novaLinha = { ...linhaAtual, [tamanhoId]: valorDigitado };
-                return { ...prevMatrix, [corId]: novaLinha };
-            });
-        },
-        [computeNextSuggestion],
-    );
+    const handleCommitQuantidade = useCallback((corId, tamanhoId, valorDigitado) => {
+        setMatrix((prevMatrix) => {
+            const linhaAtual = prevMatrix[corId] || {};
+            const novaLinha = { ...linhaAtual, [tamanhoId]: valorDigitado };
+            return { ...prevMatrix, [corId]: novaLinha };
+        });
+    }, []);
 
     const selectedColors = useMemo(
         () =>
@@ -354,6 +272,15 @@ export default function FichaTecnicaModal({
         [currentSizeItems, selectedColorIds, matrix],
     );
 
+    const totalsBySizeId = useMemo(
+        () =>
+            currentSizeItems.reduce((totals, size, index) => {
+                totals[size.tamanhoId] = totalsBySize[index] || 0;
+                return totals;
+            }, {}),
+        [currentSizeItems, totalsBySize],
+    );
+
     const totalsByColor = useMemo(
         () =>
             selectedColorIds.reduce((totals, corId) => {
@@ -371,7 +298,53 @@ export default function FichaTecnicaModal({
         [totalsBySize],
     );
 
-    const proporcoes = useMemo(() => calcularProporcao(totalsBySize), [totalsBySize]);
+    useEffect(() => {
+        setReferenceSizeId(
+            obterReferenciaProporcao({
+                sizeIds: currentSizeItems.map((size) => size.tamanhoId),
+                totalsBySize: totalsBySizeId,
+            }),
+        );
+    }, [currentSizeItems, totalsBySizeId]);
+
+    const proporcoes = useMemo(
+        () =>
+            calcularProporcoesGrade({
+                sizeIds: currentSizeItems.map((size) => size.tamanhoId),
+                colorIds: selectedColorIds,
+                referenceSizeId,
+                getQuantity: (colorId, sizeId) => matrix?.[colorId]?.[sizeId] || 0,
+            }),
+        [currentSizeItems, selectedColorIds, referenceSizeId, matrix],
+    );
+
+    const handleAplicarProporcao = useCallback(
+        (targetSizeId, rawMultiplier) => {
+            const multiplier = Number(rawMultiplier);
+            if (
+                referenceSizeId === null ||
+                !Number.isFinite(multiplier) ||
+                !Number.isInteger(multiplier) ||
+                multiplier < 0 ||
+                isReferenciaProporcao(targetSizeId, referenceSizeId)
+            ) {
+                return;
+            }
+
+            setMatrix((prevMatrix) => {
+                const nextMatrix = { ...prevMatrix };
+                selectedColorIds.forEach((colorId) => {
+                    const referenceQuantity = Number(prevMatrix?.[colorId]?.[referenceSizeId] || 0);
+                    nextMatrix[colorId] = {
+                        ...prevMatrix[colorId],
+                        [targetSizeId]: referenceQuantity * multiplier,
+                    };
+                });
+                return nextMatrix;
+            });
+        },
+        [referenceSizeId, selectedColorIds],
+    );
     const filteredColors = availableColors.filter((color) =>
         color.nome.toLowerCase().includes(colorSearch.toLowerCase()),
     );
@@ -379,6 +352,9 @@ export default function FichaTecnicaModal({
     const resetStates = useCallback(() => {
         setSelectedColorIds([]);
         setMatrix({});
+        setConfirmarSaida(false);
+        setOferecerGrade(false);
+        setReferenceSizeId(null);
         setParceiroRows([]);
         setError("");
         setColorDropdownOpen(false);
@@ -461,6 +437,7 @@ export default function FichaTecnicaModal({
                     null;
 
                 setSelectedGradeVersionId(fallbackGrade);
+                setOferecerGrade(Boolean(fichaAnterior && normalizedGrades.length));
             } catch (err) {
                 if (alive) setError(err?.message || "Falha ao carregar dados.");
             } finally {
@@ -580,6 +557,10 @@ export default function FichaTecnicaModal({
             gradeVersaoIdOriginal: produto?.gradeVersaoId || produto?.grade_versao_id,
             gradeVersaoIdNova: effectiveGradeVersionId,
             selectedColorIds,
+            gradeParaCopia: currentSizeItems.map((size) => ({
+                tamanhoId: size.tamanhoId,
+                gradeVersaoItemId: size.gradeVersaoItemId,
+            })),
             cores: selectedColors,
             itensPayload,
             parceiroRows,
@@ -590,13 +571,51 @@ export default function FichaTecnicaModal({
         handleForceClose();
     };
 
+    const repetirGrade = () => {
+        const colorIds = (fichaAnterior.selectedColorIds || []).filter((id) =>
+            availableColors.some((cor) => String(cor.id) === String(id)),
+        );
+        const next = {};
+        colorIds.forEach((colorId) => {
+            next[colorId] = {};
+            currentSizeItems.forEach((size) => {
+                const previousSize = fichaAnterior.gradeParaCopia?.find(
+                    (item) => String(item.tamanhoId) === String(size.tamanhoId),
+                );
+                const item =
+                    previousSize &&
+                    fichaAnterior.itensPayload?.find(
+                        (item) =>
+                            String(item.cor_id) === String(colorId) &&
+                            String(item.grade_versao_item_id) ===
+                                String(previousSize.gradeVersaoItemId),
+                    );
+                next[colorId][size.tamanhoId] = Number(item?.quantidade) || 0;
+            });
+        });
+        setSelectedColorIds(colorIds);
+        setMatrix(next);
+        setOferecerGrade(false);
+    };
+
     if (!isOpen) return null;
 
     return (
         <>
+            <ConfirmacaoFichaModal
+                isOpen={confirmarSaida}
+                mensagem="Ao sair, você perderá o progresso desta ficha técnica. Deseja continuar?"
+                textoCancel="Continuar preenchendo"
+                textoConfirm="Sair e descartar"
+                onCancel={() => setConfirmarSaida(false)}
+                onConfirm={handleForceClose}
+            />
+            {oferecerGrade && (
+                <AvisoRepetirGrade onDismiss={dispensarGrade} onRepeat={repetirGrade} />
+            )}
             <div
                 className="fixed inset-0 z-[999] flex items-center justify-center bg-black/35 px-4 py-6 backdrop-blur-sm font-['Outfit',_sans-serif]"
-                onClick={handleForceClose}
+                onClick={() => setConfirmarSaida(true)}
             >
                 <div
                     className="flex max-h-[95vh] w-full max-w-[1160px] flex-col rounded-[28px] bg-white py-8 shadow-2xl overflow-x-hidden"
@@ -613,7 +632,7 @@ export default function FichaTecnicaModal({
                         </div>
                         <button
                             type="button"
-                            onClick={handleForceClose}
+                            onClick={() => setConfirmarSaida(true)}
                             className="text-[28px] leading-none text-[#8C8C8C] transition hover:text-black"
                         >
                             &times;
@@ -903,7 +922,40 @@ export default function FichaTecnicaModal({
                                                                 : "#D7D7D7",
                                                     }}
                                                 >
-                                                    {proporcoes[i]}
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        step="1"
+                                                        inputMode="numeric"
+                                                        value={proporcoes[s.tamanhoId] || ""}
+                                                        placeholder="0"
+                                                        readOnly={isReferenciaProporcao(
+                                                            s.tamanhoId,
+                                                            referenceSizeId,
+                                                        )}
+                                                        disabled={referenceSizeId === null}
+                                                        onFocus={(event) => {
+                                                            preventNumberInputWheel(event);
+                                                            event.target.select();
+                                                        }}
+                                                        onChange={(event) =>
+                                                            handleAplicarProporcao(
+                                                                s.tamanhoId,
+                                                                event.target.value,
+                                                            )
+                                                        }
+                                                        title={
+                                                            isReferenciaProporcao(
+                                                                s.tamanhoId,
+                                                                referenceSizeId,
+                                                            )
+                                                                ? "Coluna de referência"
+                                                                : referenceSizeId === null
+                                                                  ? "Preencha primeiro uma coluna da grade"
+                                                                  : "Digite a proporção para recalcular esta coluna"
+                                                        }
+                                                        className="h-full w-full bg-transparent text-center outline-none disabled:cursor-not-allowed [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                    />
                                                 </div>
                                             ))}
                                         </div>
@@ -1001,9 +1053,6 @@ export default function FichaTecnicaModal({
                                                                             s.tamanhoId
                                                                         ] || 0
                                                                     }
-                                                                    suggestion={
-                                                                        activeSuggestions[color.id]
-                                                                    }
                                                                     onCommit={(v) =>
                                                                         handleCommitQuantidade(
                                                                             color.id,
@@ -1018,17 +1067,6 @@ export default function FichaTecnicaModal({
                                                                             v,
                                                                         )
                                                                     }
-                                                                    onTab={() => {
-                                                                        if (
-                                                                            activeSuggestions[
-                                                                                color.id
-                                                                            ]
-                                                                        ) {
-                                                                            handleApplySuggestionOnTab(
-                                                                                color.id,
-                                                                            );
-                                                                        }
-                                                                    }}
                                                                 />
                                                             </div>
                                                         ))}

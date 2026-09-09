@@ -31,6 +31,9 @@ const simplificarUnidade = (unidade) => {
     return unidadesSimplificadas[unidade] || unidade;
 };
 
+// AJUSTE: cinza das linhas alternadas da grade e das facções.
+const PRINT_ROW_GRAY = "bg-[#D9D9D9]";
+
 const darkSide = "0.5px solid #7B7D80";
 const shellSide = "0.5px solid #D9D9D9";
 
@@ -42,6 +45,7 @@ export default function FichaTecnicaPrintView({
 }) {
     const isMounted = useIsMounted();
     const produtoId = dadosFicha?.produto?.id;
+    const isSobDemanda = dadosFicha?.fabrico?.fabricacao_sob_demanda !== false;
 
     // Notifica prontidão para impressão sem disparar setState
     useEffect(() => {
@@ -74,7 +78,7 @@ export default function FichaTecnicaPrintView({
     }, {});
 
     const totalGeral = Object.values(totaisPorTamanho).reduce((acc, val) => acc + val, 0);
-    const totalRowBg = cores.length % 2 === 1 ? "bg-[#F9F9F9]" : "bg-white";
+    const totalRowBg = cores.length % 2 === 1 ? PRINT_ROW_GRAY : "bg-white";
 
     const arrayDeTotais = sizeItems.map((s) => totaisPorTamanho[s.id] || 0);
     const arrayDeProporcoes = calcularProporcao(arrayDeTotais);
@@ -127,6 +131,7 @@ export default function FichaTecnicaPrintView({
                         overflow: visible !important; 
                     }
 
+                    #ficha-print-view > .break-inside-avoid { margin-left: 0; margin-right: 0; }
                     #ficha-print-view table {
                         border-collapse: collapse;
                     }
@@ -136,11 +141,11 @@ export default function FichaTecnicaPrintView({
                     }
 
                     @media print {
-                        body > div:not(#portal-impressao) {
+                        body.print-mode-ficha > div:not(#portal-impressao) {
                             display: none !important;
                         }
 
-                        #portal-impressao-ficha {
+                        #portal-impressao {
                             display: block !important;
                             position: relative !important; 
                             width: 100% !important;
@@ -166,13 +171,13 @@ export default function FichaTecnicaPrintView({
             <div id="portal-impressao" className="hidden print:block w-full">
                 <div
                     id="ficha-print-view"
-                    className="bg-white text-black p-5 w-full max-w-[210mm] mx-auto font-['Outfit',_sans-serif]"
+                    className="bg-white text-black p-[10mm] w-full max-w-[210mm] mx-auto font-['Outfit',_sans-serif]"
                 >
                     {/* HEADER */}
-                    <div className="flex justify-between items-start mb-6 mx-[30px] break-inside-avoid">
+                    <div className="flex justify-between items-start mb-6 mx-0 break-inside-avoid">
                         <h1 className="text-[28px] font-light text-[#4696AD]">Ficha Técnica</h1>
                         <div className="flex gap-4 mt-2">
-                            <div className="border border-[#4696AD] rounded-[20px] h-[38px] min-w-[70px] relative flex items-center justify-center px-4">
+                            <div className="border border-[#4696AD] rounded-[14px] h-[38px] min-w-[70px] relative flex items-center justify-center px-4">
                                 <span className="absolute -top-[9px] left-3 bg-white px-1 text-[11px] text-[#4696AD]">
                                     Nº
                                 </span>
@@ -180,9 +185,9 @@ export default function FichaTecnicaPrintView({
                                     {dadosFicha?.numero}
                                 </span>
                             </div>
-                            <div className="border border-[#4696AD] rounded-[20px] h-[38px] min-w-[70px] relative flex items-center justify-center px-4">
+                            <div className="border border-[#4696AD] rounded-[14px] h-[38px] min-w-[70px] relative flex items-center justify-center px-4">
                                 <span className="absolute -top-[9px] left-3 bg-white px-1 text-[11px] text-[#4696AD]">
-                                    Pedido
+                                    {isSobDemanda ? "Pedido" : "Produção"}
                                 </span>
                                 <span className="text-[15px] font-medium text-[#4696AD]">
                                     {dadosFicha?.pedido?.numero || "--"}
@@ -192,56 +197,32 @@ export default function FichaTecnicaPrintView({
                     </div>
 
                     {/* FOTO E DADOS */}
-                    <div className="flex gap-6 mb-6 mx-[30px] break-inside-avoid">
-                        <div className="flex-1 flex flex-col justify-end gap-5 pb-1">
-                            <div className="w-[calc(50%-0.5rem)]">
-                                <div className="border border-[#B4B4B4] rounded-[10px] min-h-[39px] py-1.5 px-3 relative flex items-center">
+                    <div className="flex gap-6 mb-6 mx-0 break-inside-avoid">
+                        <div className="flex-1 min-w-0 grid grid-cols-2 gap-x-4 gap-y-5 content-end pb-1">
+                            {[
+                                ["Data", new Date().toLocaleDateString("pt-BR")],
+                                ["Referência Interna", dadosFicha?.produto?.nome],
+                                ...(isSobDemanda
+                                    ? [
+                                          ["Cliente", dadosFicha?.pedido?.cliente?.nome],
+                                          ["Referência do Cliente", referencia],
+                                      ]
+                                    : []),
+                                ["Tecido", dadosFicha?.produto?.tecido?.nome],
+                                ["Tipo de produto", dadosFicha?.produto?.tipo_produto?.nome],
+                            ].map(([label, valor]) => (
+                                <div
+                                    key={label}
+                                    className="min-w-0 border border-[#B4B4B4] rounded-[10px] min-h-[39px] py-1.5 px-3 relative flex items-center"
+                                >
                                     <span className="absolute -top-[9px] left-2 bg-white px-1 text-[11px] text-[#898C8F]">
-                                        Data
+                                        {label}
                                     </span>
-                                    <span className="text-[14px] text-[#707070]">
-                                        {new Date().toLocaleDateString("pt-BR")}
+                                    <span className="text-[14px] text-[#707070] leading-tight break-words min-w-0">
+                                        {valor || "--"}
                                     </span>
                                 </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="border border-[#B4B4B4] rounded-[10px] min-h-[39px] py-1.5 px-3 relative flex items-center">
-                                    <span className="absolute -top-[9px] left-2 bg-white px-1 text-[11px] text-[#898C8F]">
-                                        Referência Interna
-                                    </span>
-                                    <span className="text-[14px] text-[#707070] leading-tight">
-                                        {dadosFicha?.produto?.nome || "--"}
-                                    </span>
-                                </div>
-                                <div className="border border-[#B4B4B4] rounded-[10px] min-h-[39px] py-1.5 px-3 relative flex items-center">
-                                    <span className="absolute -top-[9px] left-2 bg-white px-1 text-[11px] text-[#898C8F]">
-                                        Cliente
-                                    </span>
-                                    <span className="text-[14px] text-[#707070] leading-tight">
-                                        {dadosFicha?.pedido?.cliente?.nome || "--"}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="border border-[#B4B4B4] rounded-[10px] min-h-[39px] py-1.5 px-3 relative flex items-center">
-                                    <span className="absolute -top-[9px] left-2 bg-white px-1 text-[11px] text-[#898C8F]">
-                                        Referência do Cliente
-                                    </span>
-                                    <span className="text-[14px] text-[#707070] leading-tight">
-                                        {referencia || "--"}
-                                    </span>
-                                </div>
-                                <div className="border border-[#B4B4B4] rounded-[10px] min-h-[39px] py-1.5 px-3 relative flex items-center">
-                                    <span className="absolute -top-[9px] left-2 bg-white px-1 text-[11px] text-[#898C8F]">
-                                        Tecido
-                                    </span>
-                                    <span className="text-[14px] text-[#707070] leading-tight">
-                                        {dadosFicha?.produto?.tecido?.nome || "--"}
-                                    </span>
-                                </div>
-                            </div>
+                            ))}
                         </div>
 
                         <div className="w-[240px] h-[240px] rounded-[10px] overflow-hidden border border-[#D9D9D9] shrink-0">
@@ -254,7 +235,7 @@ export default function FichaTecnicaPrintView({
                     </div>
 
                     {/* GRADE */}
-                    <div className="mb-4 mx-[30px] break-inside-avoid">
+                    <div className="mb-4 mx-0 break-inside-avoid">
                         <div className="mb-2 text-center text-[15px] font-light text-[#737373]">
                             Grade
                         </div>
@@ -317,7 +298,7 @@ export default function FichaTecnicaPrintView({
                                 {cores.length > 0 ? (
                                     cores.map((cor, index) => {
                                         let totalCor = 0;
-                                        const rowBg = index % 2 === 1 ? "bg-[#F9F9F9]" : "bg-white";
+                                        const rowBg = index % 2 === 1 ? PRINT_ROW_GRAY : "bg-white";
                                         return (
                                             <React.Fragment key={cor.id}>
                                                 <div
@@ -420,7 +401,7 @@ export default function FichaTecnicaPrintView({
                     </div>
 
                     {/* COSTURA */}
-                    <div className="mb-4 mx-[30px] break-inside-avoid">
+                    <div className="mb-4 mx-0 break-inside-avoid">
                         <div className="text-center text-[15px] font-light text-[#737373] mb-2">
                             Costura
                         </div>
@@ -449,7 +430,12 @@ export default function FichaTecnicaPrintView({
                                 <tbody className="text-[#707070]">
                                     {parceirosCostura?.length > 0 ? (
                                         parceirosCostura.map((vinculo, index) => (
-                                            <tr key={vinculo.id || index}>
+                                            <tr
+                                                key={vinculo.id || index}
+                                                className={
+                                                    index % 2 === 1 ? PRINT_ROW_GRAY : "bg-white"
+                                                }
+                                            >
                                                 <td
                                                     className="py-1.5"
                                                     style={{ borderRight: darkSide }}
@@ -473,7 +459,7 @@ export default function FichaTecnicaPrintView({
                                                 colSpan="3"
                                                 className="py-1.5 text-center text-[13px] text-[#888]"
                                             >
-                                                Nenhuma facção vinculada a esta ficha.
+                                                {"\u00A0"}
                                             </td>
                                         </tr>
                                     )}
@@ -493,7 +479,7 @@ export default function FichaTecnicaPrintView({
                     />
 
                     {/* MATERIAIS / AVIAMENTOS */}
-                    <div className="mx-[30px] relative mt-5 break-inside-avoid">
+                    <div className="mx-0 relative mt-5 break-inside-avoid">
                         <fieldset className="border border-[#D9D9D9] rounded-[10px] p-4 bg-[#F9F9F9] min-h-[80px]">
                             <legend className="px-2 text-[12px] text-[#898C8F] ml-2 font-light bg-white">
                                 Materiais necessários por peça:
@@ -531,7 +517,7 @@ export default function FichaTecnicaPrintView({
                     </div>
 
                     {/* FOOTER */}
-                    <div className="flex justify-between items-end mt-6 mx-4 pb-4 break-inside-avoid">
+                    <div className="flex justify-between items-end mt-4 mx-0 break-inside-avoid">
                         <img
                             src="/filo.png"
                             alt="Logo filo"

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 
 import { getFabricoById } from "../services/fabricoService";
 
@@ -39,6 +39,8 @@ const setFabricacaoSobDemandaCache = (fabricoId, valor) => {
 export function Sidebar({ isOpen = false, onClose }) {
     const [hoveredPath, setHoveredPath] = useState(null);
     const navigate = useNavigate();
+    const { pathname } = useLocation();
+    const isNovoPedido = pathname.replace(/\/$/, "") === "/pedidos/cadastrar";
 
     const usuarioLogado = JSON.parse(localStorage.getItem("user") || "{}");
     const fabricoId = usuarioLogado?.fabrico_id;
@@ -145,20 +147,24 @@ export function Sidebar({ isOpen = false, onClose }) {
             </div>
 
             {/* 1. Botão Nova Ficha */}
-            {fabricoResolvido && (
-                <button
-                    className="w-[182px] h-[39px] min-h-[39px] bg-[#A9E2F2] rounded-[18.5px] flex items-center justify-center px-3 gap-2 transition-all duration-200 shadow-sm hover:bg-[#A2DCED]"
-                    onClick={() => {
-                        onClose?.();
-                        navigate("/pedidos/cadastrar");
-                    }}
+            <button
+                className={`w-[169px] h-[39px] min-h-[39px] rounded-[18.5px] flex items-center justify-start px-4 gap-3 transition-all duration-200 shadow-sm ${isNovoPedido ? "bg-[#D7FE65]" : "bg-[#A9E2F2] hover:bg-[#A2DCED]"}`}
+                onClick={() => {
+                    onClose?.();
+                    navigate("/pedidos/cadastrar");
+                }}
+            >
+                <img
+                    src={isNovoPedido ? "/pedidos-adicionar-preto.png" : "/pedidos-azul.png"}
+                    alt=""
+                    className="w-5 h-5 shrink-0"
+                />
+                <span
+                    className={`${isNovoPedido ? "text-[#404040]" : "text-[#4696AD]"} font-normal text-[13px] whitespace-nowrap`}
                 >
-                    <img src="/pedidos-azul.png" alt="" className="w-5 h-5" />
-                    <span className="whitespace-nowrap text-[#4696AD] font-normal text-sm">
-                        {labelNovaFicha}
-                    </span>
-                </button>
-            )}
+                    {labelNovaFicha}
+                </span>
+            </button>
 
             {/* 2. Menu Itens */}
             <nav className="flex flex-col gap-2 w-full pb-8">

@@ -27,6 +27,12 @@ const FloatingInput = ({ label, name, value, onChange, containerClass, ...rest }
     </div>
 );
 
+const getEtapasSelecionaveis = (etapas = []) =>
+    etapas
+        .filter((etapa) => etapa.ativa === true)
+        .sort((a, b) => Number(a.ordem ?? 0) - Number(b.ordem ?? 0))
+        .slice(0, -1);
+
 const EditarParceiro = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -38,6 +44,7 @@ const EditarParceiro = () => {
     const [dropdownEtapaAberto, setDropdownEtapaAberto] = useState(false);
     const [etapas, setEtapas] = useState([]);
     const [loadingEtapas, setLoadingEtapas] = useState(true);
+    const etapaDropdownRef = useRef(null);
 
     const [formData, setFormData] = useState({
         nome: "",
@@ -140,6 +147,30 @@ const EditarParceiro = () => {
     useEffect(() => () => cepRequestRef.current?.abort(), []);
 
     useEffect(() => {
+        if (!dropdownEtapaAberto) return undefined;
+
+        const handleClickOutside = (event) => {
+            if (etapaDropdownRef.current && !etapaDropdownRef.current.contains(event.target)) {
+                setDropdownEtapaAberto(false);
+            }
+        };
+
+        const handleKeyDown = (event) => {
+            if (event.key === "Escape") {
+                setDropdownEtapaAberto(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        document.addEventListener("keydown", handleKeyDown);
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [dropdownEtapaAberto]);
+
+    useEffect(() => {
         const fetchParceiro = async () => {
             try {
                 setLoading(true);
@@ -186,8 +217,7 @@ const EditarParceiro = () => {
                     const fabricoId = usuarioLogado.fabrico_id;
                     if (fabricoId) {
                         const dados = await getAllEtapasByFabricoId(fabricoId);
-                        const etapasAtivas = (dados || []).filter((etapa) => etapa.ativa === true);
-                        setEtapas(etapasAtivas);
+                        setEtapas(getEtapasSelecionaveis(dados || []));
                     }
                 }
             } catch (err) {
@@ -250,6 +280,9 @@ const EditarParceiro = () => {
         }
     };
 
+    const inputClass =
+        "border border-[#D3D3D3] rounded-[10px] px-3 h-[39px] text-sm text-gray-600 focus:outline-none";
+
     if (loading) {
         return (
             <div className="p-6 pt-0 mt-6 w-full">
@@ -289,20 +322,22 @@ const EditarParceiro = () => {
                     <form onSubmit={handleSubmit} className="space-y-8 w-full px-6">
                         <div className="flex flex-wrap gap-6 items-start">
                             {/* Dropdown Etapa de Produção */}
-                            <div className="w-full md:w-[212px]">
+                            <div className="w-full md:w-[212px]" ref={etapaDropdownRef}>
                                 <h2 className="text-[#404040] font-light mb-4">
-                                    Etapa de Produção
+                                    Etapa de produção
                                 </h2>
                                 <div className="relative w-full">
-                                    <button
-                                        type="button"
-                                        disabled={loadingEtapas}
-                                        onClick={() => setDropdownEtapaAberto(!dropdownEtapaAberto)}
-                                        className={`w-full bg-white flex items-center justify-between rounded-[10px] px-3 h-[39px] text-sm focus:outline-none border border-[#D3D3D3] ${
+                                    <div
+                                        className={`${inputClass} bg-white flex justify-between items-center ${
                                             loadingEtapas
                                                 ? "cursor-not-allowed opacity-60"
                                                 : "cursor-pointer"
                                         }`}
+                                        onClick={() => {
+                                            if (!loadingEtapas) {
+                                                setDropdownEtapaAberto((aberto) => !aberto);
+                                            }
+                                        }}
                                     >
                                         {loadingEtapas ? (
                                             <SkeletonBox className="h-[14px] w-24 rounded-[7px]" />
@@ -318,7 +353,7 @@ const EditarParceiro = () => {
                                             </span>
                                         )}
                                         <svg
-                                            className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${
+                                            className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
                                                 dropdownEtapaAberto ? "rotate-180" : ""
                                             }`}
                                             fill="none"
@@ -332,44 +367,43 @@ const EditarParceiro = () => {
                                                 d="M19 9l-7 7-7-7"
                                             />
                                         </svg>
-                                    </button>
-
-                                    {/* Menu Etapas — animado via CSS */}
-                                    <div
-                                        className={`absolute z-20 mt-2 w-full bg-white border border-[#D3D3D3] rounded-[10px] shadow-lg overflow-hidden origin-top transition-all duration-300 max-h-60 overflow-y-auto ${
-                                            dropdownEtapaAberto
-                                                ? "opacity-100 scale-y-100 visible"
-                                                : "opacity-0 scale-y-95 invisible pointer-events-none"
-                                        }`}
-                                    >
-                                        {etapas.map((etapa) => (
-                                            <button
-                                                key={etapa.id}
-                                                type="button"
-                                                className="w-full h-[35px] flex items-center px-4 text-sm relative text-[#898C8F] hover:bg-[#F5F5F5] transition-colors text-left"
-                                                onClick={() => {
-                                                    setFormData((prev) => ({
-                                                        ...prev,
-                                                        categoria: etapa.nome,
-                                                    }));
-                                                    setDropdownEtapaAberto(false);
-                                                }}
-                                            >
-                                                {formData.categoria === etapa.nome && (
-                                                    <div className="absolute left-0 top-0 w-[4px] h-full bg-[#D7FE65]" />
-                                                )}
-                                                {etapa.nome}
-                                            </button>
-                                        ))}
                                     </div>
+
+                                    {dropdownEtapaAberto && (
+                                        <div className="absolute z-20 mt-1 w-full bg-white border border-[#D3D3D3] rounded-[10px] shadow-lg overflow-hidden max-h-60 overflow-y-auto scrollbar-sutil">
+                                            {etapas.length > 0 ? (
+                                                etapas.map((etapa) => (
+                                                    <div
+                                                        key={etapa.id}
+                                                        className={`px-4 py-2 text-sm cursor-pointer transition-colors ${
+                                                            formData.categoria === etapa.nome
+                                                                ? "border-l-[3px] border-[#C4F042] text-gray-700 bg-white"
+                                                                : "border-l-[3px] border-transparent text-gray-600 hover:bg-[#F5F5F5]"
+                                                        }`}
+                                                        onClick={() => {
+                                                            setFormData((prev) => ({
+                                                                ...prev,
+                                                                categoria: etapa.nome,
+                                                            }));
+                                                            setDropdownEtapaAberto(false);
+                                                        }}
+                                                    >
+                                                        {etapa.nome}
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="border-l-[3px] border-transparent px-4 py-2 text-sm text-gray-400">
+                                                    Nenhuma etapa disponível
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
                             {/* Dados gerais */}
-                            <div>
-                                <h2 className="text-[#404040] text-[20px] font-light mb-4">
-                                    Dados gerais
-                                </h2>
+                            <div className="flex-1 min-w-[300px]">
+                                <h2 className="text-[#404040] font-light mb-4">Dados gerais</h2>
                                 <div className="flex flex-wrap gap-4">
                                     <FloatingInput
                                         label="Nome"

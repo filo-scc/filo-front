@@ -58,7 +58,7 @@ export default function SecaoDadosProduto({ produto, aviamentos = [] }) {
                             <Valor>{produto.nome}</Valor>
                         </div>
                         <div className="overflow-hidden">
-                            <Label>Modelo</Label>
+                            <Label>Tipo de produto</Label>
                             <Valor>{nomeModelo}</Valor>
                         </div>
                     </div>
