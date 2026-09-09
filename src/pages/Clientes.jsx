@@ -176,9 +176,9 @@ export default function Clientes() {
                         </div>
 
                         <div className="w-full">
-                            <div className="w-full border border-gray-200 rounded-xl overflow-hidden bg-[#D3EBF2]">
-                                <table className="w-full border-separate border-spacing-0 text-[16px] font-['Outfit',_sans-serif] font-light text-center relative z-10">
-                                    <thead className="bg-[#D3EBF2] text-[#4696AD]">
+                            <div className="w-full border border-[#DEDEDE] rounded-xl overflow-hidden bg-[#D3EBF2]">
+                                <table className="w-full border-separate border-spacing-0 text-[16px] font-['Outfit'] font-light text-center relative z-10">
+                                    <thead className="bg-[#C9EAF6] text-[#4696AD]">
                                         <tr className="h-[64px]">
                                             <th className="px-6 font-light">Cliente</th>
                                             <th className="px-6 font-light">Responsável</th>

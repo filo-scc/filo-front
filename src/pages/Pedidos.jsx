@@ -51,7 +51,7 @@ const Pedidos = () => {
                 );
                 setPedidos(pedidosOrdenados);
             } catch (error) {
-                console.error("Erro ao carregar os pedids", error);
+                console.error("Erro ao carregar os pedidos", error);
             } finally {
                 setLoading(false);
             }
@@ -105,7 +105,7 @@ const Pedidos = () => {
         : "Nenhuma produção encontrada.";
 
     return (
-        <div className="p-6 pt-0 mt-6 relative flex justify-start w-full">
+        <div className="p-6 pt-0 mt-6 relative flex justify-start w-full font-['Outfit']">
             <div className="bg-white px-10 py-8 rounded-[24px] shadow-sm w-full flex flex-col relative h-fit">
                 {/* Cabeçalho da Página */}
                 <div className="flex justify-between items-center mb-8">
@@ -144,7 +144,7 @@ const Pedidos = () => {
 
                         <button
                             onClick={() => navigate("/pedidos/cadastrar")}
-                            className="w-[169px] h-[39px] bg-[#A9E2F2] text-[#4696AD] font-normal text-[16px] rounded-full flex items-center justify-center gap-2 hover:bg-[#A2DCED] transition-colors shrink-0"
+                            className="w-[169px] h-[39px] bg-[#A9E2F2] text-[#4696AD] font-light text-[16px] rounded-full flex items-center justify-center gap-2 hover:bg-[#A2DCED] transition-colors shrink-0 cursor-pointer"
                         >
                             <img
                                 src="/pedidos-azul.png"
@@ -158,29 +158,27 @@ const Pedidos = () => {
 
                 {/* Tabela de Pedidos */}
                 <div className="w-full overflow-visible">
-                    <div className="min-w-max border border-[#D9D9D9] rounded-xl font-light text-[16px] overflow-hidden">
+                    <div className="min-w-max border border-[#DEDEDE] rounded-xl font-light text-[16px] overflow-hidden">
                         <table className="w-full text-left border-collapse relative z-10">
                             <thead>
-                                <tr className="bg-[#C9EAF6] text-[#4696AD]">
-                                    <th className="py-4 px-6 text-center font-normal">
+                                <tr className="bg-[#C9EAF6] text-[#4696AD] h-[64px]">
+                                    <th className="py-4 px-6 text-center font-light">
                                         {labelItemColuna}
                                     </th>
                                     {producaoSobDemanda && (
-                                        <th className="py-4 px-6 text-center font-normal">
+                                        <th className="py-4 px-6 text-center font-light">
                                             Cliente
                                         </th>
                                     )}
-                                    <th className="py-4 px-6 text-center font-normal">
+                                    <th className="py-4 px-6 text-center font-light">
                                         Total de peças
                                     </th>
-                                    <th className="py-4 px-6 text-center font-normal">
+                                    <th className="py-4 px-6 text-center font-light">
                                         {producaoSobDemanda ? "Valor" : "Custo"}
                                     </th>
-                                    <th className="py-4 px-6 text-center font-normal">Criado</th>
-                                    <th className="py-4 px-6 text-center font-normal">
-                                        Finalizado
-                                    </th>
-                                    <th className="py-4 px-6 text-center font-normal">Opções</th>
+                                    <th className="py-4 px-6 text-center font-light">Criado</th>
+                                    <th className="py-4 px-6 text-center font-light">Finalizado</th>
+                                    <th className="py-4 px-6 text-center font-light">Opções</th>
                                 </tr>
                             </thead>
                             <tbody className="text-[#404040]">
@@ -192,6 +190,7 @@ const Pedidos = () => {
                                 ) : (
                                     <>
                                         {pedidos.map((pedido, index) => {
+                                            const isPar = index % 2 === 0;
                                             const totalPecas =
                                                 pedido.fichas_tecnicas?.reduce(
                                                     (acc, ficha) => acc + ficha.quantidade,
@@ -199,7 +198,6 @@ const Pedidos = () => {
                                                 ) || 0;
 
                                             let textoDataFinalizado = "-";
-
                                             const isLast = index === pedidos.length - 1;
 
                                             if (pedido.finalizado) {
@@ -238,38 +236,46 @@ const Pedidos = () => {
                                             return (
                                                 <tr
                                                     key={pedido.id}
-                                                    className="border-b border-[#E8E8E8] last:border-none even:bg-[#E8E8E8] transition-colors text-center"
+                                                    className={`h-[60px] border-b border-[#E8E8E8] last:border-none transition-colors text-center hover:text-[#4696AD] ${
+                                                        isPar
+                                                            ? "bg-white hover:bg-[#FBFBFB]"
+                                                            : "bg-[#F4F4F4] hover:bg-[#EDEDED]"
+                                                    }`}
                                                 >
-                                                    <td className="py-4 px-6">
+                                                    <td className="py-4 px-6 font-light">
                                                         {pedido.numero ?? pedido.id}
                                                     </td>
 
                                                     {producaoSobDemanda && (
-                                                        <td className="py-4 px-6">
+                                                        <td className="py-4 px-6 font-light">
                                                             {pedido.cliente?.nome || "-"}
                                                         </td>
                                                     )}
-                                                    <td className="py-4 px-6 ">{totalPecas}</td>
-                                                    <td className="py-4 px-6 ">
+                                                    <td className="py-4 px-6 font-light">
+                                                        {totalPecas}
+                                                    </td>
+                                                    <td className="py-4 px-6 font-light">
                                                         {producaoSobDemanda && !pedido.cliente
                                                             ? "-"
                                                             : formatarMoeda(valorMonetario)}
                                                     </td>
 
-                                                    <td className="py-4 px-6">
+                                                    <td className="py-4 px-6 font-light">
                                                         {formatarData(pedido.created_at)}
                                                     </td>
-                                                    <td className="py-4 px-6">
+                                                    <td className="py-4 px-6 font-light">
                                                         {textoDataFinalizado}
                                                     </td>
                                                     <td className="py-4 px-6">
-                                                        <MenuOpcoes
-                                                            onEdit={() => handleEdit(pedido.id)}
-                                                            onDelete={() =>
-                                                                abrirModalExclusao(pedido)
-                                                            }
-                                                            isLast={isLast}
-                                                        />
+                                                        <div className="flex justify-center items-center">
+                                                            <MenuOpcoes
+                                                                onEdit={() => handleEdit(pedido.id)}
+                                                                onDelete={() =>
+                                                                    abrirModalExclusao(pedido)
+                                                                }
+                                                                isLast={isLast}
+                                                            />
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             );
