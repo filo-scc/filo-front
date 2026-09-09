@@ -1,16 +1,5 @@
-import React, { useEffect, useSyncExternalStore } from "react";
+import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import RelatorioDeAcabamento from "./fichas-tecnicas/RelatorioDeAcabamento";
-
-// Hook para verificar montagem no cliente sem causar renderizações em cascata
-const emptySubscribe = () => () => {};
-function useIsMounted() {
-    return useSyncExternalStore(
-        emptySubscribe,
-        () => true,
-        () => false,
-    );
-}
 
 const calcularProporcao = (totaisPorTamanho) => {
     const valoresValidos = totaisPorTamanho.map(Number).filter((t) => t > 0);
@@ -37,26 +26,21 @@ const PRINT_ROW_GRAY = "bg-[#D9D9D9]";
 const darkSide = "0.5px solid #7B7D80";
 const shellSide = "0.5px solid #D9D9D9";
 
-export default function FichaTecnicaPrintView({
-    dadosFicha,
-    referencia,
-    onReadyToPrint,
-    aviamentosProduto,
-}) {
-    const isMounted = useIsMounted();
-    const produtoId = dadosFicha?.produto?.id;
-    const isSobDemanda = dadosFicha?.fabrico?.fabricacao_sob_demanda !== false;
+export default function FichaTecnicaPrintView({ dadosFicha, referencia, onReadyToPrint }) {
+    const [isMounted, setIsMounted] = useState(false);
 
-    // Notifica prontidão para impressão sem disparar setState
     useEffect(() => {
-        if (isMounted && dadosFicha) {
-            onReadyToPrint?.();
-        }
-    }, [isMounted, dadosFicha, onReadyToPrint]);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setIsMounted(true);
+    }, []);
+
+    useEffect(() => {
+        if (!isMounted) return undefined;
+        onReadyToPrint?.();
+    }, [isMounted, onReadyToPrint]);
 
     if (!dadosFicha || !isMounted) return null;
 
-    const listaAviamentos = produtoId ? aviamentosProduto || [] : [];
     const sizeItems = dadosFicha?.grade_versao?.itens || [];
     const cores = Object.values(
         dadosFicha.ficha_tecnica_itens?.reduce((acc, item) => {
@@ -247,6 +231,7 @@ export default function FichaTecnicaPrintView({
                                     gridTemplateColumns: `160px repeat(${sizeItems.length}, 1fr) 80px`,
                                 }}
                             >
+                                {/* proporção */}
                                 <div className="bg-transparent" />
                                 {sizeItems.map((s, i) => {
                                     const isFirst = i === 0;
@@ -276,7 +261,9 @@ export default function FichaTecnicaPrintView({
 
                                 <div
                                     className="h-[35px] flex items-center px-4 font-normal bg-[#C9EAF6] text-[#4696AD]"
-                                    style={{ borderTopLeftRadius: "8px" }}
+                                    style={{
+                                        borderTopLeftRadius: "8px",
+                                    }}
                                 >
                                     Cores
                                 </div>
@@ -290,11 +277,14 @@ export default function FichaTecnicaPrintView({
                                 ))}
                                 <div
                                     className="h-[35px] flex items-center justify-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
-                                    style={{ borderTopRightRadius: "8px" }}
+                                    style={{
+                                        borderTopRightRadius: "8px",
+                                    }}
                                 >
                                     Total (cor)
                                 </div>
 
+                                {/* Corpo — cores */}
                                 {cores.length > 0 ? (
                                     cores.map((cor, index) => {
                                         let totalCor = 0;
@@ -350,6 +340,7 @@ export default function FichaTecnicaPrintView({
                                     </div>
                                 )}
 
+                                {/* Rodapé */}
                                 <div
                                     className="h-[35px] flex items-center justify-center text-[14px] font-normal text-[#4696AD] bg-[#C9EAF6]"
                                     style={{ borderBottomLeftRadius: "8px" }}
@@ -373,6 +364,7 @@ export default function FichaTecnicaPrintView({
                                 </div>
                             </div>
 
+                            {/* divisórias verticais (header + corpo + rodapé) */}
                             <div
                                 className="absolute left-0 right-0 pointer-events-none"
                                 style={{ top: "25px", bottom: 0 }}
@@ -385,15 +377,18 @@ export default function FichaTecnicaPrintView({
                                     }}
                                 >
                                     <div />
-                                    {sizeItems.map((s, i) => (
-                                        <div
-                                            key={`divider-${s.id}`}
-                                            style={{
-                                                borderLeft: i === 0 ? darkSide : "none",
-                                                borderRight: darkSide,
-                                            }}
-                                        />
-                                    ))}
+                                    {sizeItems.map((s, i) => {
+                                        const isFirst = i === 0;
+                                        return (
+                                            <div
+                                                key={`divider-${s.id}`}
+                                                style={{
+                                                    borderLeft: isFirst ? darkSide : "none",
+                                                    borderRight: darkSide,
+                                                }}
+                                            />
+                                        );
+                                    })}
                                     <div />
                                 </div>
                             </div>
@@ -424,11 +419,35 @@ export default function FichaTecnicaPrintView({
                                         >
                                             Operação
                                         </th>
-                                        <th className="py-1.5 font-normal">Quantidade</th>
+                                        <th className="py-1.5 font-normal ">Quantidade</th>
                                     </tr>
                                 </thead>
                                 <tbody className="text-[#707070]">
                                     {parceirosCostura?.length > 0 ? (
+                                        parceirosCostura.map((vinculo, index) => {
+                                            const parceiro = vinculo.parceiro;
+                                            const nome = parceiro?.nome || "-";
+                                            const operacao = vinculo.operacao || "-";
+                                            const quantidade = vinculo.quantidade || "-";
+
+                                            return (
+                                                <tr key={vinculo.id || index}>
+                                                    <td
+                                                        className="py-1.5"
+                                                        style={{ borderRight: darkSide }}
+                                                    >
+                                                        {nome}
+                                                    </td>
+                                                    <td
+                                                        className="py-1.5 text-[#D3D3D3]"
+                                                        style={{ borderRight: darkSide }}
+                                                    >
+                                                        {operacao}
+                                                    </td>
+                                                    <td className="py-1.5">{quantidade}</td>
+                                                </tr>
+                                            );
+                                        })
                                         parceirosCostura.map((vinculo, index) => (
                                             <tr
                                                 key={vinculo.id || index}
@@ -469,14 +488,46 @@ export default function FichaTecnicaPrintView({
                     </div>
 
                     {/* RELATÓRIO DE ACABAMENTO */}
-                    <RelatorioDeAcabamento
-                        defeitoCostura={dadosFicha?.defeitos_costura ?? 0}
-                        defeitoTecido={dadosFicha?.defeitos_tecido ?? 0}
-                        retiradas={dadosFicha?.retiradas ?? 0}
-                        sobras={dadosFicha?.sobras ?? 0}
-                        readonly
-                        variant="print"
-                    />
+                    <div className="mb-4 mx-[30px] break-inside-avoid">
+                        <div className="text-center text-[15px] font-light text-[#737373] mb-2">
+                            Relatório de acabamento
+                        </div>
+                        <div className="rounded-[10px] border border-[#D9D9D9] overflow-hidden">
+                            <table className="w-full text-center text-sm border-collapse">
+                                <thead>
+                                    <tr className="bg-[#F4F4F4] text-[#898C8F]">
+                                        <th
+                                            className="py-1.5 font-normal w-1/4"
+                                            style={{ borderRight: darkSide }}
+                                        >
+                                            Defeito de costura
+                                        </th>
+                                        <th
+                                            className="py-1.5 font-normal w-1/4"
+                                            style={{ borderRight: darkSide }}
+                                        >
+                                            Defeito no tecido
+                                        </th>
+                                        <th
+                                            className="py-1.5 font-normal w-1/4"
+                                            style={{ borderRight: darkSide }}
+                                        >
+                                            Retiradas
+                                        </th>
+                                        <th className="py-1.5 font-normal w-1/4">Sobras</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="text-[#707070] font-light bg-white">
+                                    <tr>
+                                        <td className="py-3" style={{ borderRight: darkSide }}></td>
+                                        <td className="py-3" style={{ borderRight: darkSide }}></td>
+                                        <td className="py-3" style={{ borderRight: darkSide }}></td>
+                                        <td className="py-3"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
 
                     {/* MATERIAIS / AVIAMENTOS */}
                     <div className="mx-0 relative mt-5 break-inside-avoid">
@@ -484,35 +535,9 @@ export default function FichaTecnicaPrintView({
                             <legend className="px-2 text-[12px] text-[#898C8F] ml-2 font-light bg-white">
                                 Materiais necessários por peça:
                             </legend>
-                            {listaAviamentos.length > 0 ? (
-                                <div className="flex flex-col gap-1 text-[13px] px-2 pt-1 font-light">
-                                    {listaAviamentos.map((item, index) => {
-                                        const qtd = item.quantidade ?? "";
-                                        const unidade = simplificarUnidade(
-                                            item.aviamento?.unidade_de_medida ?? "",
-                                        );
-                                        const nome = item.aviamento?.nome ?? "";
-
-                                        return (
-                                            <div
-                                                key={item.aviamento?.id ?? index}
-                                                className="leading-relaxed"
-                                            >
-                                                <span className="font-bold text-[#898C8F]">
-                                                    {qtd} {unidade}
-                                                </span>{" "}
-                                                <span className="text-[#898C8F] font-normal">
-                                                    de {nome}
-                                                </span>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            ) : (
-                                <p className="text-[13px] text-[#898C8F] font-light px-2 pt-1">
-                                    Nenhum material cadastrado.
-                                </p>
-                            )}
+                            <p className="text-[13px] text-[#898C8F] whitespace-pre-line font-light px-2 pt-1">
+                                {"\n\n"}
+                            </p>
                         </fieldset>
                     </div>
 

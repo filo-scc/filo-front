@@ -6,6 +6,7 @@ import MenuOpcoes from "../components/geral/MenuOpcoes";
 import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import { ClientesTableSkeleton } from "../components/geral/Loading";
+import TabelaCabecalho, { TabelaCabecalhoCelula } from "../components/geral/TabelaCabecalho";
 
 export default function Clientes() {
     const [clientes, setClientes] = useState([]);
@@ -163,10 +164,10 @@ export default function Clientes() {
                                 <button
                                     type="button"
                                     onClick={() => navigate("/clientes/cadastrar")}
-                                    className="bg-[#A9E2F2] hover:bg-[#A2DCED] text-[#4696AD] w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors"
+                                    className="bg-[#A9E2F2] hover:bg-[#8acbdc] text-white w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors"
                                 >
                                     <img
-                                        src="/clientes-azul.png"
+                                        src="/add-star.png"
                                         alt="Adicionar cliente"
                                         className="w-[20px] h-[20px]"
                                     />
@@ -176,17 +177,15 @@ export default function Clientes() {
                         </div>
 
                         <div className="w-full">
-                            <div className="w-full border border-gray-200 rounded-xl overflow-hidden bg-[#D3EBF2]">
-                                <table className="w-full border-separate border-spacing-0 text-[16px] font-['Outfit',_sans-serif] font-light text-center relative z-10">
-                                    <thead className="bg-[#D3EBF2] text-[#4696AD]">
-                                        <tr className="h-[64px]">
-                                            <th className="px-6 font-light">Cliente</th>
-                                            <th className="px-6 font-light">Responsável</th>
-                                            <th className="px-6 font-light">Contato</th>
-                                            <th className="px-6 font-light">Status</th>
-                                            <th className="px-6 font-light">Opções</th>
-                                        </tr>
-                                    </thead>
+                            <div className="w-full overflow-x-auto border border-gray-200 rounded-xl bg-white">
+                                <table className="w-full min-w-[760px] table-fixed border-separate border-spacing-0 text-[16px] font-['Outfit',_sans-serif] font-light text-center relative z-10">
+                                    <TabelaCabecalho>
+                                        <TabelaCabecalhoCelula>Cliente</TabelaCabecalhoCelula>
+                                        <TabelaCabecalhoCelula>Responsável</TabelaCabecalhoCelula>
+                                        <TabelaCabecalhoCelula>Contato</TabelaCabecalhoCelula>
+                                        <TabelaCabecalhoCelula>Status</TabelaCabecalhoCelula>
+                                        <TabelaCabecalhoCelula>Opções</TabelaCabecalhoCelula>
+                                    </TabelaCabecalho>
 
                                     <tbody className="bg-white text-[#404040]">
                                         {loading ? (

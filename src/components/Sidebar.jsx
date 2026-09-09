@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 
 import { getFabricoById } from "../services/fabricoService";
 
-export function Sidebar({ isOpen = false, onClose }) {
+export function Sidebar() {
     const [hoveredPath, setHoveredPath] = useState(null);
     const navigate = useNavigate();
     const { pathname } = useLocation();
@@ -54,7 +54,6 @@ export function Sidebar({ isOpen = false, onClose }) {
             { name: "Parceiros", slug: "parceiros", path: "/parceiros" },
             { name: "Produtos", slug: "produtos", path: "/produtos" },
             { name: "Aviamentos", slug: "aviamentos", path: "/aviamentos" },
-            { name: "Tecidos", slug: "tecidos", path: "/tecidos" },
             { name: "Financeiro", slug: "financeiro", path: "/financeiro" },
             { name: "Configurações", slug: "configuracoes", path: "/configuracoes" },
         ];
@@ -67,27 +66,7 @@ export function Sidebar({ isOpen = false, onClose }) {
     }, [producaoSobDemanda]);
 
     return (
-        <aside
-            className={`fixed inset-y-0 left-0 z-40 flex h-dvh w-[219px] flex-col items-center gap-8 overflow-y-auto bg-[#F3F4FA]/95 py-8 pl-6 shadow-xl backdrop-blur-md transition-transform duration-300 scrollbar-sutil lg:translate-x-0 lg:bg-transparent lg:shadow-none lg:backdrop-blur-none ${
-                isOpen ? "translate-x-0" : "-translate-x-full"
-            }`}
-            aria-label="Navegação principal"
-        >
-            <button
-                type="button"
-                onClick={onClose}
-                aria-label="Fechar menu"
-                className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full text-[#7B7D80] hover:bg-white lg:hidden"
-            >
-                <svg
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                    className="h-5 w-5 fill-none stroke-current stroke-2"
-                >
-                    <path strokeLinecap="round" d="m6 6 12 12M18 6 6 18" />
-                </svg>
-            </button>
-
+        <aside className="w-[219px] h-screen pl-[24px] flex flex-col items-center py-8 gap-[32px] bg-transparent overflow-y-auto scrollbar-sutil">
             {/* Logo Filo */}
             <div className="w-full pl-[53px] flex justify-start">
                 <img src="/filo-logo.png" alt="Filo" className="h-[47px] w-auto" />
@@ -121,7 +100,6 @@ export function Sidebar({ isOpen = false, onClose }) {
                         to={item.path}
                         onMouseEnter={() => setHoveredPath(item.path)}
                         onMouseLeave={() => setHoveredPath(null)}
-                        onClick={onClose}
                         className={({ isActive }) => `
               flex items-center gap-3 h-[39px] min-h-[39px] px-4 transition-all duration-300
               ${

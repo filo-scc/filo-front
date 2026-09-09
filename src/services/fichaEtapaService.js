@@ -8,7 +8,7 @@ export const getAllFichaEtapaByFichaTecnica = async (fichaTecnicaId) => {
 
 // Cria uma nova etapa para a Ficha (equivalente ao "iniciarFichaEtapa")
 export const createFichaEtapa = async (data) => {
-    // O backend registra data_inicio com o relógio do servidor.
+    // data deve conter: { ficha_tecnica_id, etapa_id, data_inicio }
     const response = await api.post(`/fichas-etapas`, data);
     return response.data;
 };

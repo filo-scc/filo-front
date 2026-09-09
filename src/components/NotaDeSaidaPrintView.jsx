@@ -13,13 +13,11 @@ const TextoAjustado = ({ children, className = "", printReset = true }) => (
 );
 
 const Campo = ({ label, valor }) => (
-    <div className="relative border border-[#898C8F] rounded-[10px] min-h-[39px] py-1.5 px-3 flex items-center bg-white">
-        <span className="absolute -top-[9px] left-2 bg-white px-1 text-[11px] text-[#898C8F] flex items-center">
-            <TextoAjustado>{label}</TextoAjustado>
+    <div className="relative border border-[#666666] rounded-[10px] min-h-[39px] py-1.5 px-3 flex items-center bg-white">
+        <span className="absolute -top-[9px] left-2 bg-white px-1 text-[11px] text-[#555555]">
+            {label}
         </span>
-        <span className="text-[14px] text-[#707070] leading-tight flex items-center h-full">
-            <TextoAjustado>{valor || "-"}</TextoAjustado>
-        </span>
+        <span className="text-[14px] text-[#333333] leading-tight">{valor || "-"}</span>
     </div>
 );
 
@@ -27,10 +25,11 @@ const Badge = ({ label, valor }) => (
     <div className="border border-[#4696AD] rounded-[14px] h-[38px] min-w-[70px] relative flex items-center justify-center px-4 bg-white">
         <span className="absolute -top-[9px] left-3 bg-white px-1 text-[11px] text-[#4696AD] flex items-center">
             <TextoAjustado>{label}</TextoAjustado>
+    <div className="border border-[#4696AD] rounded-[20px] h-[38px] min-w-[70px] relative flex items-center justify-center px-4 bg-white">
+        <span className="absolute -top-[9px] left-3 bg-white px-1 text-[11px] text-[#4696AD]">
+            {label}
         </span>
-        <span className="text-[15px] font-medium text-[#4696AD] flex items-center h-full">
-            <TextoAjustado>{valor || "--"}</TextoAjustado>
-        </span>
+        <span className="text-[15px] font-medium text-[#4696AD]">{valor || "--"}</span>
     </div>
 );
 
@@ -39,7 +38,6 @@ export default function NotaDeSaidaPrintView({
     referenciaCliente,
     dados: dadosProp,
     onReadyToPrint,
-    forceVisibleForPdf = false,
 }) {
     const [isMounted, setIsMounted] = useState(false);
     const [fabricoInfo, setFabricoInfo] = useState(null);
@@ -86,7 +84,7 @@ export default function NotaDeSaidaPrintView({
     }, [isMounted, onReadyToPrint]);
 
     const dados = useMemo(() => {
-        if (dadosProp) return { anotacoes: "", ...dadosProp };
+        if (dadosProp) return { ...dadosProp, anotacoes: "" };
         if (!ficha) return null;
 
         const fornecedor =
@@ -97,7 +95,7 @@ export default function NotaDeSaidaPrintView({
         const dataFormatada = new Date().toLocaleDateString("pt-BR");
 
         return {
-            numeroNota: ficha.numero ? String(ficha.numero) : "-",
+            numeroNota: ficha.numero ? String(ficha.numero).padStart(4, "0") : "-",
             numeroPedido: ficha.pedido?.numero || "-",
             fornecedor,
             data: dataFormatada,
@@ -128,10 +126,16 @@ export default function NotaDeSaidaPrintView({
         if (dadosProp) {
             return {
                 tamanhos: dadosProp.tamanhos || listaTamanhos,
-                itens: dadosProp.itens || [],
-                totaisPorTamanho: dadosProp.totaisPorTamanho || {},
-                totalGeral: dadosProp.totalGeral ?? "",
-                proporcoes: dadosProp.proporcoes || listaTamanhos.map(() => ""),
+                itens: (dadosProp.itens || []).map((item) => ({
+                    ...item,
+                    quantidades: makeEmptyQuantidades(),
+                })),
+                totaisPorTamanho: listaTamanhos.reduce((acc, tam) => {
+                    acc[tam] = "";
+                    return acc;
+                }, {}),
+                totalGeral: "",
+                proporcoes: listaTamanhos.map(() => ""),
             };
         }
 
@@ -171,6 +175,8 @@ export default function NotaDeSaidaPrintView({
     if (!dados || !isMounted) return null;
 
     const footerRowBg = itens.length % 2 === 1 ? PRINT_ROW_GRAY : "bg-white";
+    const colunasGrid = tamanhos.length > 0 ? tamanhos.length : 1;
+    const footerRowBg = itens.length % 2 === 1 ? "bg-[#F9F9F9]" : "bg-white";
     const isProducaoSobDemanda = Boolean(
         ficha?.fabrico?.fabricacao_sob_demanda ??
         ficha?.fabrico?.producao_sob_demanda ??
@@ -188,55 +194,51 @@ export default function NotaDeSaidaPrintView({
                             size: A4 portrait; 
                             margin: 0mm;
                         }
+                    @page { 
+                        size: A4 portrait; 
+                        margin: 0mm; 
+                    }
 
-                        #root {
+                    #root {
+                        display: none !important;
+                    }
+                    
+                    html, body {
+                        width: 100%;
+                        height: auto !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        background-color: white !important;
+                        overflow: visible !important; 
+                    }
+
+                    #nota-print-view table {
+                        border-collapse: collapse;
+                    }
+                    #nota-print-view th,
+                    #nota-print-view td {
+                        border: none;
+                    }
+
+                    @media print {
+                        body.print-mode-nota > div:not(#portal-impressao-nota) {
                             display: none !important;
                         }
-                        
-                        html, body {
-                            width: 100%;
-                            height: auto !important;
+
+                        body.print-mode-nota #portal-impressao-nota,
+                        body.print-mode-nota #portal-impressao-nota * {
+                            visibility: visible !important;
+                        }
+
+                        body.print-mode-nota #portal-impressao-nota {
+                            display: block !important;
+                            position: relative !important;
+                            left: 0 !important;
+                            top: 0 !important;
+                            width: 100% !important;
                             margin: 0 !important;
                             padding: 0 !important;
-                            background-color: white !important;
-                            overflow: visible !important; 
                         }
-                            #nota-print-view .grade-table {
-                                break-inside: avoid-page !important;
-                                page-break-inside: avoid !important;
-                            }
-                            #nota-print-view .grade-row {
-                                break-inside: avoid !important;
-                                page-break-inside: avoid !important;
-                            }
-
-                        #nota-print-view table {
-                            border-collapse: collapse;
-                        }
-                        #nota-print-view th,
-                        #nota-print-view td {
-                            border: none;
-                        }
-
-                        @media print {
-                            body.print-mode-nota > div:not(#portal-impressao-nota) {
-                                display: none !important;
-                            }
-
-                            body.print-mode-nota #portal-impressao-nota,
-                            body.print-mode-nota #portal-impressao-nota * {
-                                visibility: visible !important;
-                            }
-
-                            body.print-mode-nota #portal-impressao-nota {
-                                display: block !important;
-                                position: relative !important;
-                                left: 0 !important;
-                                top: 0 !important;
-                                width: 100% !important;
-                                margin: 0 !important;
-                                padding: 0 !important;
-                            }
 
                             body.print-mode-nota #nota-print-view {
                                 -webkit-print-color-adjust: exact !important;
@@ -254,37 +256,24 @@ export default function NotaDeSaidaPrintView({
                                 background-color: white !important;
                                 padding-bottom: 0 !important;
                             }
-
-                            .break-inside-avoid {
-                                break-inside: avoid !important;
-                                page-break-inside: avoid !important;
-                            }
+                        body.print-mode-nota #nota-print-view {
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
                         }
-                    `}
+
+                        .break-inside-avoid {
+                            break-inside: avoid !important;
+                            page-break-inside: avoid !important;
+                        }
+                    }
+                `}
             </style>
 
-            <div
-                id="portal-impressao-nota"
-                className={`${forceVisibleForPdf ? "block" : "hidden print:block"} w-full`}
-                style={
-                    forceVisibleForPdf
-                        ? {
-                              position: "absolute",
-                              left: 0,
-                              top: "-10000px",
-                              width: "210mm",
-                              visibility: "visible",
-                              zIndex: 99999,
-                              pointerEvents: "none",
-                              opacity: 1,
-                              display: "block",
-                          }
-                        : undefined
-                }
-            >
+            <div id="portal-impressao-nota" className="hidden print:block w-full">
                 <div
                     id="nota-print-view"
                     className="bg-white text-black p-[10mm] w-full max-w-[210mm] mx-auto font-['Outfit',_sans-serif] flex flex-col justify-between box-border"
+                    className="bg-white text-black p-5 w-full max-w-[260mm] mx-auto font-['Outfit',_sans-serif]"
                 >
                     <div className="flex-1">
                         {/* HEADER */}
@@ -304,6 +293,14 @@ export default function NotaDeSaidaPrintView({
                                 />
                             </div>
                         </div>
+                    {/* HEADER */}
+                    <div className="flex justify-between items-start mb-6 mx-[30px] break-inside-avoid">
+                        <h1 className="text-[28px] font-light text-[#4696AD]">Nota de saída</h1>
+                        <div className="flex gap-4 mt-2">
+                            <Badge label="Nº" valor={dados.numeroNota} />
+                            <Badge label="Pedido" valor={dados.numeroPedido} />
+                        </div>
+                    </div>
 
                         {/* CAMPOS + FOTO */}
                         <div className="flex gap-6 mb-6 mx-0 break-inside-avoid">
@@ -313,6 +310,15 @@ export default function NotaDeSaidaPrintView({
                                     <Campo label="Fornecedor" valor={dados.fornecedor} />
                                 </div>
 
+                    {/* CAMPOS + FOTO */}
+                    <div className="flex gap-6 mb-6 mx-[30px] break-inside-avoid">
+                        <div className="flex-1 flex flex-col justify-end gap-5 pb-1">
+                            <div className="grid grid-cols-2 gap-4">
+                                <Campo label="Fornecedor" valor={dados.fornecedor} />
+                                <Campo label="Data" valor={dados.data} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <Campo label="Referência Interna" valor={dados.referenciaInterna} />
                                 {isProducaoSobDemanda ? (
                                     <>
                                         {/* Segunda linha: Data | Cliente */}
@@ -364,104 +370,95 @@ export default function NotaDeSaidaPrintView({
                                     </>
                                 )}
                             </div>
-
-                            {/* CONTAINER DE IMAGEM */}
-                            <div className="w-[240px] h-[240px] rounded-[10px] overflow-hidden border border-[#898C8F] shrink-0 bg-gray-50 flex items-center justify-center">
-                                {ficha?.produto?.foto ? (
-                                    <img
-                                        src={ficha.produto.foto}
-                                        alt="Produto"
-                                        className="w-full h-full object-cover"
-                                    />
+                                    <Campo label="Cliente" valor={dados.cliente} />
                                 ) : (
-                                    <img
-                                        src="/image-delete-02-2.png"
-                                        alt="Adicionar imagem"
-                                        className="w-16 h-16 object-contain opacity-70"
-                                    />
+                                    <Campo label="Tecido" valor={dados.tecido} />
                                 )}
                             </div>
+                            {isProducaoSobDemanda ? (
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Campo
+                                        label={labelReferenciaCliente}
+                                        valor={dados.referenciaCliente}
+                                    />
+                                    <Campo label="Tecido" valor={dados.tecido} />
+                                </div>
+                            ) : null}
                         </div>
+
+                        {/* CONTAINER DE IMAGEM */}
+                        <div className="w-[240px] h-[240px] rounded-[10px] overflow-hidden border border-[#666666] shrink-0 bg-gray-50 flex items-center justify-center">
+                            {ficha?.produto?.foto ? (
+                                <img
+                                    src={ficha.produto.foto}
+                                    alt="Produto"
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <img
+                                    src="/image-delete-02-2.png"
+                                    alt="Adicionar imagem"
+                                    className="w-16 h-16 object-contain opacity-70"
+                                />
+                            )}
+                        </div>
+                    </div>
 
                         {/* GRADE DE TAMANHOS */}
                         <div className="mb-4 mx-0 print-no-break">
                             <div className="mb-2 text-center text-[15px] font-light text-[#737373]">
                                 <TextoAjustado>Grade</TextoAjustado>
                             </div>
+                    {/* GRADE DE TAMANHOS */}
+                    <div className="mb-4 mx-[30px] break-inside-avoid">
+                        <div className="mb-2 text-center text-[15px] font-light text-[#555555]">
+                            Grade
+                        </div>
 
-                            <div className="relative w-full grade-table">
-                                {/* Proporções */}
-                                <div
-                                    className="grid"
-                                    style={{
-                                        gridTemplateColumns: `160px repeat(${tamanhos.length}, 1fr) 100px`,
-                                    }}
-                                >
-                                    <div className="bg-transparent" />
-                                    {tamanhos.map((tam, index) => {
-                                        const isFirst = index === 0;
-                                        const isLast = index === tamanhos.length - 1;
+                        <div className="w-full">
+                            <div
+                                style={{
+                                    display: "grid",
+                                    gridTemplateColumns: `160px repeat(${colunasGrid}, 1fr) 100px`,
+                                }}
+                            >
+                                {/* LINHA DE PROPORÇÕES */}
+                                <div className="bg-transparent" />
+                                {tamanhos.map((tam, index) => {
+                                    const isFirst = index === 0;
+                                    const isLast = index === tamanhos.length - 1;
+                                    return (
+                                        <div
+                                            key={`prop-${tam}`}
+                                            className={`h-[25px] flex items-center justify-center text-[13px] font-light text-[#555555] bg-[#F4F4F4] border-t border-b border-r border-[#666666] ${
+                                                isFirst ? "border-l rounded-tl-[8px]" : ""
+                                            } ${isLast ? "rounded-tr-[8px]" : ""}`}
+                                        >
+                                            {proporcoes[index] || ""}
+                                        </div>
+                                    );
+                                })}
+                                <div className="bg-transparent" />
 
-                                        return (
-                                            <div
-                                                key={`prop-${tam}`}
-                                                className="h-[25px] flex items-center justify-center text-[13px] font-light bg-[#F4F4F4]"
-                                                style={{
-                                                    borderTop: "0.5px solid #7B7D80",
-                                                    borderBottom: "0.5px solid #7B7D80",
-                                                    borderLeft: isFirst
-                                                        ? "0.5px solid #7B7D80"
-                                                        : "none",
-                                                    borderRight: "0.5px solid #7B7D80",
-                                                    borderTopLeftRadius: isFirst
-                                                        ? "8px"
-                                                        : undefined,
-                                                    borderTopRightRadius: isLast
-                                                        ? "8px"
-                                                        : undefined,
-                                                    color:
-                                                        Number(totaisPorTamanho[tam]) > 0
-                                                            ? "#898C8F"
-                                                            : "#D7D7D7",
-                                                }}
-                                            >
-                                                <TextoAjustado>
-                                                    {proporcoes[index] || ""}
-                                                </TextoAjustado>
-                                            </div>
-                                        );
-                                    })}
-                                    <div className="bg-transparent" />
+                                {/* CABEÇALHO */}
+                                <div className="h-[35px] flex items-center px-4 font-medium bg-[#C9EAF6] text-[#2c6e80] rounded-l-[8px]">
+                                    Cores
                                 </div>
-
-                                {/* Cabeçalho */}
-                                <div
-                                    className="grid"
-                                    style={{
-                                        gridTemplateColumns: `160px repeat(${tamanhos.length}, 1fr) 100px`,
-                                    }}
-                                >
-                                    <div className="h-[35px] flex items-center px-4 font-light text-[11px] bg-[#C9EAF6] text-[#4696AD] rounded-tl-[8px]">
-                                        <TextoAjustado>Cores</TextoAjustado>
-                                    </div>
-
-                                    {tamanhos.map((tam, index) => (
+                                {tamanhos.map((tam, index) => {
+                                    const isFirst = index === 0;
+                                    return (
                                         <div
                                             key={`header-${tam}`}
-                                            className="h-[35px] flex items-center justify-center text-[11px] font-light text-[#4696AD] bg-[#C9EAF6]"
-                                            style={{
-                                                borderLeft:
-                                                    index === 0 ? "0.5px solid #7B7D80" : "none",
-                                                borderRight: "0.5px solid #7B7D80",
-                                            }}
+                                            className={`h-[35px] flex items-center justify-center text-[14px] font-medium text-[#2c6e80] bg-[#C9EAF6] border-r border-[#666666] ${
+                                                isFirst ? "border-l" : ""
+                                            }`}
                                         >
-                                            <TextoAjustado>{tam}</TextoAjustado>
+                                            {tam}
                                         </div>
-                                    ))}
-
-                                    <div className="h-[35px] flex items-center justify-center text-[11px] font-light text-[#4696AD] bg-[#C9EAF6] rounded-tr-[8px]">
-                                        <TextoAjustado>Total (cor)</TextoAjustado>
-                                    </div>
+                                    );
+                                })}
+                                <div className="h-[35px] flex items-center justify-center text-[14px] font-medium text-[#2c6e80] bg-[#C9EAF6] rounded-r-[8px]">
+                                    Total (cor)
                                 </div>
 
                                 {/* Corpo + rodapé: borda externa apenas esquerda, direita e abaixo. */}
@@ -475,134 +472,89 @@ export default function NotaDeSaidaPrintView({
                                                     <div
                                                         key={item.id || item.corNome || index}
                                                         className={`grid w-full h-[35px] ${rowBg} grade-row`}
+                                {/* CORPO — LINHAS DE CORES */}
+                                {itens.length > 0 ? (
+                                    itens.map((item, index) => {
+                                        const rowBg = index % 2 === 1 ? "bg-[#F9F9F9]" : "bg-white";
+                                        return (
+                                            <React.Fragment key={item.id || item.corNome || index}>
+                                                <div
+                                                    className={`h-[35px] flex items-center gap-3 pl-4 pr-4 ${rowBg}`}
+                                                >
+                                                    <span
+                                                        className="w-[18px] h-[18px] rounded-[4px] shrink-0 shadow-sm border border-black/30"
                                                         style={{
-                                                            gridTemplateColumns: `160px repeat(${tamanhos.length}, 1fr) 100px`,
-                                                        }}
-                                                    >
-                                                        <div
-                                                            className="min-w-0 pl-4 pr-4 flex items-center gap-3"
-                                                            style={{
-                                                                borderLeft: "0.5px solid #D9D9D9",
-                                                            }}
-                                                        >
-                                                            <span
-                                                                className="w-[18px] h-[18px] rounded-[4px] shrink-0 shadow-sm border border-black/10"
-                                                                style={{
-                                                                    backgroundColor:
-                                                                        item.hexColor ||
-                                                                        item.corHex ||
-                                                                        "#E5E5E5",
-                                                                }}
-                                                            />
-                                                            <span className="min-w-0 truncate text-[14px] font-light text-[#898C8F] leading-none">
-                                                                <TextoAjustado>
-                                                                    {item.corNome || item.cor}
-                                                                </TextoAjustado>
-                                                            </span>
-                                                        </div>
-
-                                                        {tamanhos.map((tam, tIdx) => {
-                                                            const val =
-                                                                item.quantidades?.[tam] ?? "";
-                                                            return (
-                                                                <div
-                                                                    key={`qty-${item.id || index}-${tam}`}
-                                                                    className="min-w-0 flex items-center justify-center text-[14px] font-light text-[#898C8F]"
-                                                                    style={{
-                                                                        borderRight:
-                                                                            "0.5px solid #7B7D80",
-                                                                        borderLeft:
-                                                                            tIdx === 0
-                                                                                ? "0.5px solid #7B7D80"
-                                                                                : "none",
-                                                                    }}
-                                                                >
-                                                                    <TextoAjustado>
-                                                                        {val}
-                                                                    </TextoAjustado>
-                                                                </div>
-                                                            );
-                                                        })}
-
-                                                        <div
-                                                            className="min-w-0 flex items-center justify-center text-[14px] font-normal text-[#898C8F]"
-                                                            style={{
-                                                                borderRight: "0.5px solid #D9D9D9",
-                                                            }}
-                                                        >
-                                                            <TextoAjustado>
-                                                                {item.totalCor ?? item.total ?? ""}
-                                                            </TextoAjustado>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })
-                                        ) : (
-                                            <div
-                                                className="grid w-full h-[35px] bg-white"
-                                                style={{
-                                                    gridTemplateColumns: `160px repeat(${tamanhos.length}, 1fr) 100px`,
-                                                }}
-                                            >
-                                                <div className="pl-4 flex items-center text-[13px] text-[#898C8F]">
-                                                    <TextoAjustado>
-                                                        Nenhuma cor vinculada
-                                                    </TextoAjustado>
-                                                </div>
-                                                {tamanhos.map((tam, index) => (
-                                                    <div
-                                                        key={`empty-${tam}`}
-                                                        style={{
-                                                            borderLeft:
-                                                                index === 0
-                                                                    ? "0.5px solid #7B7D80"
-                                                                    : "none",
-                                                            borderRight: "0.5px solid #7B7D80",
+                                                            backgroundColor:
+                                                                item.hexColor || "#E5E5E5",
                                                         }}
                                                     />
-                                                ))}
-                                                <div />
-                                            </div>
-                                        )}
-
-                                        {/* Rodapé */}
-                                        <div
-                                            className="grid w-full h-[35px]"
-                                            style={{
-                                                gridTemplateColumns: `160px repeat(${tamanhos.length}, 1fr) 100px`,
-                                            }}
-                                        >
-                                            <div className="flex items-center justify-center text-[11px] font-light text-[#4696AD] bg-[#C9EAF6] rounded-bl-[8px]">
-                                                <TextoAjustado>Total (tamanho)</TextoAjustado>
-                                            </div>
-
-                                            {tamanhos.map((tam, aIdx) => (
-                                                <div
-                                                    key={`total-rodape-${tam}`}
-                                                    className={`flex items-center justify-center text-[14px] font-normal text-[#898C8F] ${footerRowBg}`}
-                                                    style={{
-                                                        borderRight: "0.5px solid #7B7D80",
-                                                        borderLeft:
-                                                            aIdx === 0
-                                                                ? "0.5px solid #7B7D80"
-                                                                : "none",
-                                                        borderBottom: "0.5px solid #D9D9D9",
-                                                    }}
-                                                >
-                                                    <TextoAjustado>
-                                                        {totaisPorTamanho[tam] || ""}
-                                                    </TextoAjustado>
+                                                    <span className="text-[14px] font-light text-[#333333] truncate">
+                                                        {item.corNome}
+                                                    </span>
                                                 </div>
-                                            ))}
-
-                                            <div className="flex items-center justify-center text-[14px] font-medium text-[#2c6e80] bg-[#C9EAF6] rounded-br-[8px]">
-                                                <TextoAjustado>{totalGeral || ""}</TextoAjustado>
-                                            </div>
+                                                {tamanhos.map((tam, tIdx) => {
+                                                    const isFirst = tIdx === 0;
+                                                    const val = item.quantidades?.[tam] || "";
+                                                    return (
+                                                        <div
+                                                            key={`qty-${item.id || index}-${tam}`}
+                                                            className={`h-[35px] flex items-center justify-center text-[14px] font-light text-[#333333] ${rowBg} border-r border-[#666666] ${
+                                                                isFirst ? "border-l" : ""
+                                                            }`}
+                                                        >
+                                                            {val}
+                                                        </div>
+                                                    );
+                                                })}
+                                                <div
+                                                    className={`h-[35px] flex items-center justify-center text-[14px] font-normal text-[#333333] ${rowBg}`}
+                                                >
+                                                    {""}
+                                                </div>
+                                            </React.Fragment>
+                                        );
+                                    })
+                                ) : (
+                                    <>
+                                        <div className="h-[35px] flex items-center pl-4 bg-white text-[13px] text-[#555555]">
+                                            Nenhuma cor vinculada
                                         </div>
-                                    </div>
+                                        {tamanhos.map((tam, tIdx) => (
+                                            <div
+                                                key={`empty-${tam}`}
+                                                className={`h-[35px] bg-white border-r border-[#666666] ${
+                                                    tIdx === 0 ? "border-l" : ""
+                                                }`}
+                                            />
+                                        ))}
+                                        <div className="h-[35px] bg-white" />
+                                    </>
+                                )}
+
+                                {/* RODAPÉ — TOTAIS */}
+                                <div className="h-[35px] flex items-center px-4 text-[14px] font-medium text-[#2c6e80] bg-[#C9EAF6] rounded-l-[8px]">
+                                    Total (tamanho)
+                                </div>
+                                {tamanhos.map((tam, index) => {
+                                    const isFirst = index === 0;
+                                    const isLast = index === tamanhos.length - 1;
+                                    return (
+                                        <div
+                                            key={`total-rodape-${tam}`}
+                                            className={`h-[35px] flex items-center justify-center text-[14px] font-normal text-[#333333] ${footerRowBg} border-b border-r border-[#666666] ${
+                                                isFirst ? "border-l rounded-bl-[8px]" : ""
+                                            } ${isLast ? "rounded-br-[8px]" : ""}`}
+                                        >
+                                            {totaisPorTamanho[tam] || ""}
+                                        </div>
+                                    );
+                                })}
+                                <div className="h-[35px] flex items-center justify-center text-[14px] font-medium text-[#2c6e80] bg-[#C9EAF6] rounded-r-[8px]">
+                                    {totalGeral || ""}
                                 </div>
                             </div>
                         </div>
+                    </div>
 
                         {/* ANOTAÇÕES */}
                         <div className="mx-0 relative mt-5 nota-observacoes break-inside-avoid">
@@ -632,14 +584,18 @@ export default function NotaDeSaidaPrintView({
                                     className="h-[35px] object-contain"
                                 />
                             ) : (
-                                <span className="text-[24px] font-bold text-[#4696AD]"></span>
+                                <span className="text-[24px] font-bold text-[#4696AD]">Filo</span>
                             )}
 
-                            <img
-                                src="/logo-FILO.png"
-                                alt="Logo filo"
-                                className="w-[59px] h-[35px] object-contain"
-                            />
+                            {dados.logoDireitaUrl ? (
+                                <img
+                                    src={dados.logoDireitaUrl}
+                                    alt="Logo filo"
+                                    className="w-[59px] h-[35px] object-contain"
+                                />
+                            ) : (
+                                <span className="text-[24px] font-bold text-[#4696AD]">Filo</span>
+                            )}
                         </div>
                     </div>
                 </div>

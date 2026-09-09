@@ -1,47 +1,12 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { getAllEtapasByFabricoId } from "../services/etapaService";
+import { getFabricoById } from "../services/fabricoService";
 import { getFichaTecnicaByFabrico } from "../services/fichasTecnicasService";
 import { getMe } from "../services/authService";
 import TransferenciaEtapaModal from "../components/fichas-tecnicas/TransferenciaEtapaModal";
 import FichaTecnicaDetalhesModal from "../components/fichas-tecnicas/FichaTecnicaDetalhesModal";
 import HomeSkeleton from "../components/home/HomeSkeleton";
-import OperationalSummaryCards from "../components/home/OperationalSummaryCards";
-import ProductionChart from "../components/home/ProductionChart";
-import NotificationsPanel from "../components/home/NotificationsPanel";
-
-const CATEGORIAS_DE_COSTURA = ["costur", "faccao", "confeccao", "costura"];
-
-const normalizarCategoria = (categoria) =>
-    String(categoria || "")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim()
-        .toLowerCase();
-
-const ehCategoriaDeCostura = (categoria) => {
-    const categoriaNormalizada = normalizarCategoria(categoria);
-
-    return CATEGORIAS_DE_COSTURA.some((categoriaAceita) =>
-        categoriaNormalizada.includes(categoriaAceita),
-    );
-};
-
-const formatarParceirosDeCostura = (ficha) => {
-    const parceirosDeCostura = (ficha?.ficha_parceiro || [])
-        .map((vinculo) => vinculo?.parceiro)
-        .filter((parceiro) => parceiro?.nome && ehCategoriaDeCostura(parceiro?.categoria))
-        .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
-
-    if (parceirosDeCostura.length === 0) return "Não designado";
-
-    const [primeiroParceiro] = parceirosDeCostura;
-    const quantidadeAdicional = parceirosDeCostura.length - 1;
-
-    return quantidadeAdicional > 0
-        ? `${primeiroParceiro.nome} +${quantidadeAdicional}`
-        : primeiroParceiro.nome;
-};
 
 export default function Home() {
     const location = useLocation();
@@ -53,16 +18,19 @@ export default function Home() {
     const [quadro, setQuadro] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const [mostrarSetaEsquerda, setMostrarSetaEsquerda] = useState(false);
-    const [mostrarSetaDireita, setMostrarSetaDireita] = useState(false);
+    const [mostrarSetaEsquerda, setMostrarSetaEsquerda] = useState(null);
+    const [mostrarSetaDireita, setMostrarSetaDireita] = useState(null);
+
+    const [producaoSobDemanda, setProducaoSobDemanda] = useState(null);
     const [transferenciaAtiva, setTransferenciaAtiva] = useState(null);
     const [fabricoId, setFabricoId] = useState(null);
 
     const [modalDetalhesAberto, setModalDetalhesAberto] = useState(false);
     const [fichaSelecionadaId, setFichaSelecionadaId] = useState(null);
-    const [dashboardRefreshKey, setDashboardRefreshKey] = useState(0);
 
     const mensagem = location.state?.error;
+    const labelNovaFicha =
+        producaoSobDemanda === null ? "" : producaoSobDemanda ? "Novo pedido" : "Nova produção";
 
     useEffect(() => {
         if (mostrarErro) {
@@ -74,7 +42,7 @@ export default function Home() {
         }
     }, [mostrarErro, location.pathname, navigate]);
 
-    const carregarDadosDoQuadro = useCallback(async () => {
+    const carregarDadosDoQuadro = async () => {
         setLoading(true);
         try {
             const dadosUsuario = await getMe();
@@ -84,6 +52,9 @@ export default function Home() {
             if (!fId) {
                 throw new Error("Usuário não possui um fabrico associado");
             }
+
+            const fabrico = await getFabricoById(fId);
+            setProducaoSobDemanda(fabrico?.fabricacao_sob_demanda === true);
 
             const [etapas, fichasTecnicas] = await Promise.all([
                 getAllEtapasByFabricoId(fId),
@@ -98,43 +69,28 @@ export default function Home() {
             }));
 
             setQuadro(colunasAgrupadas);
+
+            if (colunasAgrupadas.length > 4) {
+                setMostrarSetaDireita(true);
+            }
         } catch (error) {
             console.error("Erro ao carregar os dados", error);
         } finally {
             setLoading(false);
         }
-    }, []);
+    };
 
     useEffect(() => {
         carregarDadosDoQuadro();
-    }, [carregarDadosDoQuadro]);
+    }, []);
 
-    const handleScroll = useCallback(() => {
+    const handleScroll = () => {
         if (scrollRef.current) {
             const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
             setMostrarSetaEsquerda(scrollLeft > 0);
             setMostrarSetaDireita(Math.ceil(scrollLeft + clientWidth) < scrollWidth);
         }
-    }, []);
-
-    useEffect(() => {
-        const container = scrollRef.current;
-        if (!container) return undefined;
-
-        const frame = requestAnimationFrame(handleScroll);
-        const resizeObserver =
-            typeof ResizeObserver === "undefined" ? null : new ResizeObserver(handleScroll);
-
-        resizeObserver?.observe(container);
-        Array.from(container.children).forEach((column) => resizeObserver?.observe(column));
-        window.addEventListener("resize", handleScroll);
-
-        return () => {
-            cancelAnimationFrame(frame);
-            resizeObserver?.disconnect();
-            window.removeEventListener("resize", handleScroll);
-        };
-    }, [handleScroll, quadro]);
+    };
 
     const rolarParaDireita = () => {
         if (scrollRef.current) {
@@ -232,7 +188,7 @@ export default function Home() {
     };
 
     return (
-        <div className="mt-2 w-full min-w-0 px-3 pb-6 sm:mt-5 sm:px-5 lg:ml-6 lg:mr-10 lg:mt-[23px] lg:w-auto lg:px-0 lg:pb-[25px]">
+        <div className="p-6 pt-0 w-full min-w-0 mt-6">
             {mostrarErro && mensagem && (
                 <div className="fixed top-4 right-4 z-50 bg-red-500 text-white px-6 py-3 rounded-lg shadow-2xl animate-fade-in-out">
                     <div className="flex items-center gap-2">
@@ -241,19 +197,12 @@ export default function Home() {
                 </div>
             )}
 
-            <OperationalSummaryCards refreshKey={dashboardRefreshKey} />
-
-            <div className="mt-3 hidden min-w-0 grid-cols-1 gap-3 sm:mt-4 sm:grid sm:gap-[14px] xl:grid-cols-[minmax(0,639fr)_minmax(0,504fr)]">
-                <ProductionChart refreshKey={dashboardRefreshKey} />
-                <NotificationsPanel />
-            </div>
-
-            <div className="relative mt-3 flex h-[620px] w-full min-w-0 flex-col overflow-hidden rounded-[24px] bg-white px-4 py-6 sm:mt-[15px] sm:h-[664px] lg:px-[19px] lg:pb-[23px] lg:pt-[31px]">
+            <div className="bg-white px-6 py-8 rounded-[24px] shadow-sm h-[calc(100vh-120px)] w-full flex flex-col relative overflow-hidden min-w-0">
                 {loading ? (
                     <HomeSkeleton />
                 ) : (
                     <>
-                        <div className="mb-6 flex shrink-0 items-center justify-between lg:ml-[18px]">
+                        <div className="flex justify-between items-center mb-8 shrink-0">
                             <h1 className="font-normal text-base text-[#404040] flex items-center gap-2">
                                 <span className="flex items-center">
                                     <img
@@ -264,6 +213,21 @@ export default function Home() {
                                 </span>
                                 Quadro de produção
                             </h1>
+                            <button
+                                onClick={() => navigate("/pedidos/cadastrar")}
+                                disabled={producaoSobDemanda === null}
+                                aria-busy={producaoSobDemanda === null}
+                                className="w-[169px] h-[39px] bg-[#A9E2F2] text-[#4696AD] font-normal text-base rounded-full flex items-center justify-center gap-2 shrink-0"
+                            >
+                                <span className="flex items-center w-4 h-4 relative">
+                                    <img
+                                        src="nova-ficha-azul.png"
+                                        alt="Ícone Nova ficha"
+                                        className="w-full h-full object-contain"
+                                    />
+                                </span>
+                                <span className="min-w-[103px]">{labelNovaFicha}</span>
+                            </button>
                         </div>
 
                         <div className="relative flex-1 min-h-0 min-w-0 overflow-hidden">
@@ -279,7 +243,7 @@ export default function Home() {
                             <div
                                 ref={scrollRef}
                                 onScroll={handleScroll}
-                                className="flex h-full w-full gap-3.5 overflow-x-auto overflow-y-hidden pb-4 scroll-smooth no-scrollbar"
+                                className="flex gap-1 overflow-x-auto overflow-y-hidden h-full pb-4 scroll-smooth no-scrollbar w-full"
                                 style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}
                             >
                                 {quadro.map((coluna, index) => {
@@ -294,11 +258,11 @@ export default function Home() {
                                     return (
                                         <div
                                             key={coluna.id}
-                                            className={`flex max-h-full min-w-[260px] flex-1 flex-col bg-[#F4F4F4] ${rounded} px-3 pb-2 pt-1`}
+                                            className={`w-[270px] min-w-[270px] max-h-full bg-[#F4F4F4] ${rounded} p-1 flex flex-col shrink-0`}
                                             onDragOver={handleDragOver}
                                             onDrop={(e) => handleDrop(e, coluna.id)}
                                         >
-                                            <div className="mb-4 flex shrink-0 items-center justify-between px-2 pt-3">
+                                            <div className="flex justify-between items-center mb-4 px-3 pt-3 shrink-0">
                                                 <h2 className="font-normal text-base text-[#404040] flex items-center gap-2">
                                                     <img
                                                         src={coluna.icone?.link || ""}
@@ -307,7 +271,7 @@ export default function Home() {
                                                     />
                                                     {coluna.nome}
                                                 </h2>
-                                                <button className="hidden items-center justify-center transition-opacity hover:opacity-70">
+                                                <button className="hover:opacity-70 transition-opacity flex items-center justify-center">
                                                     <img
                                                         src="/tres-pontos.png"
                                                         alt="Três pontos"
@@ -316,10 +280,46 @@ export default function Home() {
                                                 </button>
                                             </div>
 
-                                            <div className="scrollbar-sutil -mr-2 flex min-h-0 flex-1 flex-col gap-1 overflow-y-scroll pb-2 pr-1">
+                                            <div className="flex-1 overflow-y-auto pr-1 pb-2 flex flex-col gap-1 min-h-0 scrollbar-sutil">
                                                 {coluna.fichas.map((ficha) => {
-                                                    const textoParceiro =
-                                                        formatarParceirosDeCostura(ficha);
+                                                    const parceirosVinculados =
+                                                        ficha.produto?.parceiro_produto || [];
+                                                    let textoParceiro = "Não designado";
+
+                                                    const categoriaAceitas = [
+                                                        "Costura",
+                                                        "costura",
+                                                        "Facção",
+                                                        "facção",
+                                                        "Facçao",
+                                                        "facçao",
+                                                        "Faccão",
+                                                        "faccão",
+                                                        "Faccao",
+                                                        "faccao",
+                                                        "Confecção",
+                                                        "confecção",
+                                                        "Confecçao",
+                                                        "confecçao",
+                                                        "Confeccão",
+                                                        "confeccão",
+                                                        "Confeccao",
+                                                        "confeccao",
+                                                    ];
+                                                    const parceiroPrioridade =
+                                                        parceirosVinculados.find((pv) =>
+                                                            categoriaAceitas.includes(
+                                                                pv.parceiro?.categoria,
+                                                            ),
+                                                        );
+
+                                                    if (parceiroPrioridade) {
+                                                        if (parceirosVinculados.length === 1) {
+                                                            textoParceiro = `${parceiroPrioridade.parceiro?.nome}`;
+                                                        } else {
+                                                            textoParceiro = `${parceiroPrioridade.parceiro?.nome} +${parceirosVinculados.length - 1}`;
+                                                        }
+                                                    }
 
                                                     let isAtrasado = false;
                                                     if (ficha.pedido?.data_prevista) {
@@ -348,7 +348,7 @@ export default function Home() {
                                                                 setModalDetalhesAberto(true);
                                                                 setFichaSelecionadaId(ficha.id);
                                                             }}
-                                                            className="relative flex w-full shrink-0 cursor-grab flex-col gap-1.5 rounded-[10px] border border-l-4 border-gray-100 bg-white p-4 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing"
+                                                            className="bg-white p-4 rounded-[10px] shadow-sm border border-gray-100 flex flex-col gap-1.5 relative border-l-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow shrink-0"
                                                             style={{
                                                                 borderLeftColor:
                                                                     ficha.pedido?.cor || "#ffffff",
@@ -489,7 +489,6 @@ export default function Home() {
                     proximaEtapa={transferenciaAtiva.proximaEtapa}
                     onSuccess={() => {
                         carregarDadosDoQuadro();
-                        setDashboardRefreshKey((key) => key + 1);
                     }}
                 />
             )}
@@ -498,10 +497,6 @@ export default function Home() {
                 <FichaTecnicaDetalhesModal
                     isOpen={modalDetalhesAberto}
                     fichaId={fichaSelecionadaId}
-                    onFichaAtualizada={async () => {
-                        await carregarDadosDoQuadro();
-                        setDashboardRefreshKey((key) => key + 1);
-                    }}
                     onClose={() => {
                         setModalDetalhesAberto(false);
                         setFichaSelecionadaId(null);

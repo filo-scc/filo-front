@@ -26,27 +26,23 @@ export default function OpcoesImpressaoModal({
                 {/* Botões de Ação */}
                 <div className="flex items-center justify-center gap-4 w-full">
                     <button
-                        onClick={async () => {
-                            if (onSelectFichaTecnica) await onSelectFichaTecnica();
+                        onClick={() => {
+                            if (onSelectFichaTecnica) onSelectFichaTecnica();
                             onClose();
                             window.location.href = "/";
                         }}
-                        className="bg-[#A9E2F2] hover:bg-[#A2DCED] text-[#4696AD] font-medium py-2.5 px-6 rounded-full text-[15px] transition-colors focus:outline-none"
+                        className="bg-[#AEE2F3] hover:bg-[#99D9EB] text-[#3B92A7] font-medium py-2.5 px-6 rounded-full text-[15px] transition-colors focus:outline-none"
                     >
                         Ficha técnica
                     </button>
 
                     <button
-                        onClick={async () => {
-                            const shouldNavigate = onSelectNotaSaida
-                                ? await onSelectNotaSaida()
-                                : true;
+                        onClick={() => {
+                            if (onSelectNotaSaida) onSelectNotaSaida();
                             onClose();
-                            if (shouldNavigate) {
-                                window.location.href = "/";
-                            }
+                            window.location.href = "/";
                         }}
-                        className="bg-[#A9E2F2] hover:bg-[#A2DCED] text-[#4696AD] font-medium py-2.5 px-6 rounded-full text-[15px] transition-colors focus:outline-none"
+                        className="bg-[#AEE2F3] hover:bg-[#99D9EB] text-[#3B92A7] font-medium py-2.5 px-6 rounded-full text-[15px] transition-colors focus:outline-none"
                     >
                         {isSobDemanda ? "Nota de saída" : "Conferência"}
                     </button>

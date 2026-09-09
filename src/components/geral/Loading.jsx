@@ -1,5 +1,5 @@
-export function SkeletonBox({ className = "", ...props }) {
-    return <div className={`bg-[#E8E9F0] rounded-[12px] animate-pulse ${className}`} {...props} />;
+export function SkeletonBox({ className = "" }) {
+    return <div className={`bg-[#E8E9F0] rounded-[12px] animate-pulse ${className}`} />;
 }
 
 export function InlineLoading({ label = "Carregando", className = "" }) {
@@ -214,23 +214,23 @@ export function ParceirosTableSkeleton({ rows = 5 }) {
     );
 }
 
-export function PedidosTableSkeleton({ rows = 5, mostrarCliente = true }) {
+export function PedidosTableSkeleton({ rows = 5 }) {
     return (
         <>
             {[...Array(rows)].map((_, index) => (
                 <tr
                     key={index}
-                    className={`border-b border-[#E8E8E8] last:border-none text-center ${
+                    className={`h-[64px] border-b border-[#E8E8E8] last:border-none text-center ${
                         index % 2 === 1 ? "bg-[#E8E8E8]" : ""
                     }`}
                 >
-                    <TextCellSkeleton className="py-4 px-6" width="w-10" />
-                    {mostrarCliente && <TextCellSkeleton className="py-4 px-6" width="w-28" />}
-                    <TextCellSkeleton className="py-4 px-6" width="w-12" />
-                    <TextCellSkeleton className="py-4 px-6" width="w-20" />
-                    <TextCellSkeleton className="py-4 px-6" width="w-14" />
-                    <TextCellSkeleton className="py-4 px-6" width="w-14" />
-                    <OptionsCellSkeleton className="py-4 px-6" />
+                    <TextCellSkeleton className="h-[64px] px-6" width="w-10" />
+                    <TextCellSkeleton className="h-[64px] px-6" width="w-28" />
+                    <TextCellSkeleton className="h-[64px] px-6" width="w-12" />
+                    <TextCellSkeleton className="h-[64px] px-6" width="w-20" />
+                    <TextCellSkeleton className="h-[64px] px-6" width="w-14" />
+                    <TextCellSkeleton className="h-[64px] px-6" width="w-14" />
+                    <OptionsCellSkeleton className="h-[64px] px-6" />
                 </tr>
             ))}
         </>

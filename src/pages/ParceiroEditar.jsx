@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getParceiroById, updateParceiro } from "../services/parceiroService";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import { getAllEtapasByFabricoId } from "../services/etapaService";
 import { FormPageSkeleton, LoadingButton, SkeletonBox } from "../components/geral/Loading";
-import { getEnderecoByCep } from "../services/apiCep";
 
 const FloatingInput = ({ label, name, value, onChange, containerClass, ...rest }) => (
     <div className={`relative group ${containerClass}`}>
@@ -64,10 +63,9 @@ const EditarParceiro = () => {
         conta: "",
         categoria: "",
     });
-    const cepRequestRef = useRef(null);
 
     const maskTelefone = (value) => {
-        return String(value ?? "")
+        return value
             .replace(/\D/g, "")
             .slice(0, 11)
             .replace(/^(\d{2})(\d)/, "($1) $2")
@@ -75,10 +73,10 @@ const EditarParceiro = () => {
     };
 
     const maskCep = (value) => {
-        return String(value ?? "")
+        return value
             .replace(/\D/g, "")
             .slice(0, 8)
-            .replace(/^(\d{5})(\d)/, "$1-$2");
+            .replace(/(\d{5})(\d{1,3})$/, "$1-$2");
     };
 
     const maskAgencia = (value) => {
@@ -97,50 +95,17 @@ const EditarParceiro = () => {
         return `${numeros.slice(0, -1)}-${numeros.slice(-1)}`;
     };
 
-    const handleMaskedChange = async (e) => {
+    const handleMaskedChange = (e) => {
         const { name, value } = e.target;
         let masked = value;
-
         if (name === "telefone") masked = maskTelefone(value);
-
-        if (name === "cep") {
-            masked = maskCep(value);
-            const cepLimpo = value.replace(/\D/g, "");
-
-            cepRequestRef.current?.abort();
-            cepRequestRef.current = null;
-            setFormData((prev) => ({ ...prev, cep: masked }));
-
-            if (cepLimpo.length === 8) {
-                const controller = new AbortController();
-                cepRequestRef.current = controller;
-                const endereco = await getEnderecoByCep(cepLimpo, {
-                    signal: controller.signal,
-                });
-                if (endereco && !controller.signal.aborted) {
-                    setFormData((prev) =>
-                        (prev.cep || "").replace(/\D/g, "") === cepLimpo
-                            ? {
-                                  ...prev,
-                                  ...endereco,
-                              }
-                            : prev,
-                    );
-                }
-                if (cepRequestRef.current === controller) {
-                    cepRequestRef.current = null;
-                }
-            }
-            return;
-        }
-
+        if (name === "cep") masked = maskCep(value);
         if (name === "agencia" && formData.forma_pagamento === "TED") {
             masked = maskAgencia(value);
         }
         if (name === "conta" && formData.forma_pagamento === "TED") {
             masked = maskConta(value);
         }
-
         setFormData((prev) => ({ ...prev, [name]: masked }));
     };
 
@@ -300,6 +265,9 @@ const EditarParceiro = () => {
             </div>
         );
     }
+
+    const inputClass =
+        "border border-[#D3D3D3] rounded-[10px] px-3 h-[39px] text-sm text-gray-600 focus:outline-none";
 
     return (
         <>
@@ -500,12 +468,12 @@ const EditarParceiro = () => {
                             </h2>
                             <div className="flex flex-col gap-4">
                                 <div className="flex flex-wrap gap-4">
-                                    {/* Dropdown Forma de Pagamento */}
+                                    {/* Dropdown estilo Produtos.jsx */}
                                     <div className="relative w-full md:w-[212px]">
                                         <button
                                             type="button"
                                             onClick={() => setDropdownAberto(!dropdownAberto)}
-                                            className="w-full bg-white flex items-center justify-between rounded-[10px] px-3 h-[39px] text-sm focus:outline-none border border-[#D3D3D3]"
+                                            className={`w-full bg-white flex items-center justify-between rounded-[10px] px-3 h-[39px] text-sm focus:outline-none border border-[#D3D3D3]`}
                                         >
                                             <span
                                                 className={
@@ -520,9 +488,7 @@ const EditarParceiro = () => {
                                                       "Dado de pagamento"}
                                             </span>
                                             <svg
-                                                className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${
-                                                    dropdownAberto ? "rotate-180" : ""
-                                                }`}
+                                                className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${dropdownAberto ? "rotate-180" : ""}`}
                                                 fill="none"
                                                 stroke="currentColor"
                                                 viewBox="0 0 24 24"
@@ -536,7 +502,7 @@ const EditarParceiro = () => {
                                             </svg>
                                         </button>
 
-                                        {/* Menu Forma de Pagamento */}
+                                        {/* Menu — sempre no DOM, animado via classes */}
                                         <div
                                             className={`absolute z-20 mt-2 w-full bg-white border border-[#D3D3D3] rounded-[10px] shadow-lg overflow-hidden origin-top transition-all duration-300 ${
                                                 dropdownAberto
@@ -620,7 +586,7 @@ const EditarParceiro = () => {
                                 loadingText="Salvando..."
                                 className="bg-[#a9e2f2] hover:bg-[#A2DCED] text-[#4696ad] w-[189px] h-[39px] rounded-full text-sm font-medium transition-colors disabled:opacity-50 shadow-sm"
                             >
-                                Concluir edição
+                                Finalizar edição
                             </LoadingButton>
                         </div>
                     </form>

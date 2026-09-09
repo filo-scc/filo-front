@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { getPedidosByFabricoId, deletPedido } from "../services/pedidoService";
-import { getFabricoById } from "../services/fabricoService";
 import { useNavigate } from "react-router-dom";
 import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
@@ -15,6 +14,7 @@ const formatarMoeda = (valor) =>
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     });
+import TabelaCabecalho, { TabelaCabecalhoCelula } from "../components/geral/TabelaCabecalho";
 
 const Pedidos = () => {
     const navigate = useNavigate();
@@ -24,7 +24,6 @@ const Pedidos = () => {
     const [pedidos, setPedidos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [busca, setBusca] = useState("");
-    const [producaoSobDemanda, setProducaoSobDemanda] = useState(null);
 
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
     const [pedidoSelecionado, setPedidoSelecionado] = useState(null);
@@ -41,15 +40,8 @@ const Pedidos = () => {
             try {
                 setLoading(true);
 
-                const [data, fabrico] = await Promise.all([
-                    getPedidosByFabricoId(fabrico_id),
-                    getFabricoById(fabrico_id),
-                ]);
-                setProducaoSobDemanda(fabrico?.fabricacao_sob_demanda === true);
-                const pedidosOrdenados = [...data].sort(
-                    (a, b) => (Number(b.numero) || b.id) - (Number(a.numero) || a.id),
-                );
-                setPedidos(pedidosOrdenados);
+                const data = await getPedidosByFabricoId(fabrico_id);
+                setPedidos(data);
             } catch (error) {
                 console.error("Erro ao carregar os pedids", error);
             } finally {
@@ -68,7 +60,7 @@ const Pedidos = () => {
     };
 
     const handleEdit = (id) => {
-        navigate(`/pedidos/editar/${id}`);
+        navigate(`/pedidos/${id}`);
     };
 
     const abrirModalExclusao = (pedido) => {
@@ -89,20 +81,11 @@ const Pedidos = () => {
             setModalConfirmacaoAberto(true);
         } catch (error) {
             console.error("Erro ao excluir pedido:", error);
-            alert(producaoSobDemanda ? "Erro ao excluir pedido." : "Erro ao excluir produção.");
+            alert("Erro ao excluir pedido.");
         } finally {
             setExcluindo(false);
         }
     };
-
-    const tituloLista =
-        producaoSobDemanda == null ? "" : producaoSobDemanda ? "Pedidos" : "Produções";
-    const labelNova =
-        producaoSobDemanda == null ? "" : producaoSobDemanda ? "Novo pedido" : "Nova produção";
-    const labelItemColuna = producaoSobDemanda ? "Pedido" : "Produção";
-    const labelVazio = producaoSobDemanda
-        ? "Nenhum pedido encontrado."
-        : "Nenhuma produção encontrada.";
 
     return (
         <div className="p-6 pt-0 mt-6 relative flex justify-start w-full">
@@ -112,10 +95,10 @@ const Pedidos = () => {
                     <h1 className="ml-6 font-light text-[30px] text-[#404040] flex items-center gap-4">
                         <img
                             src="/pedidos-ativado.png"
-                            alt=""
+                            alt="Ícone Pedidos"
                             className="w-[34px] h-[34px] object-contain"
                         />
-                        {tituloLista}
+                        Pedidos
                     </h1>
 
                     <div className="flex items-center gap-4">
@@ -144,51 +127,34 @@ const Pedidos = () => {
 
                         <button
                             onClick={() => navigate("/pedidos/cadastrar")}
-                            className="w-[169px] h-[39px] bg-[#A9E2F2] text-[#4696AD] font-normal text-[16px] rounded-full flex items-center justify-center gap-2 hover:bg-[#A2DCED] transition-colors shrink-0"
+                            className="w-[169px] h-[39px] bg-[#A9E2F2] text-[#FFFFFF] font-normal text-[16px] rounded-full flex items-center justify-center gap-2 hover:bg-[#8acbdc] transition-colors shrink-0"
                         >
                             <img
-                                src="/pedidos-azul.png"
-                                alt=""
+                                src="/pedido-adicionar.png"
+                                alt="Adicionar pedido ícone"
                                 className="w-6 h-6 object-contain"
                             />
-                            {labelNova}
+                            Novo pedido
                         </button>
                     </div>
                 </div>
 
                 {/* Tabela de Pedidos */}
                 <div className="w-full overflow-visible">
-                    <div className="min-w-max border border-[#D9D9D9] rounded-xl font-light text-[16px] overflow-hidden">
-                        <table className="w-full text-left border-collapse relative z-10">
-                            <thead>
-                                <tr className="bg-[#C9EAF6] text-[#4696AD]">
-                                    <th className="py-4 px-6 text-center font-normal">
-                                        {labelItemColuna}
-                                    </th>
-                                    {producaoSobDemanda && (
-                                        <th className="py-4 px-6 text-center font-normal">
-                                            Cliente
-                                        </th>
-                                    )}
-                                    <th className="py-4 px-6 text-center font-normal">
-                                        Total de peças
-                                    </th>
-                                    <th className="py-4 px-6 text-center font-normal">
-                                        {producaoSobDemanda ? "Valor" : "Custo"}
-                                    </th>
-                                    <th className="py-4 px-6 text-center font-normal">Criado</th>
-                                    <th className="py-4 px-6 text-center font-normal">
-                                        Finalizado
-                                    </th>
-                                    <th className="py-4 px-6 text-center font-normal">Opções</th>
-                                </tr>
-                            </thead>
+                    <div className="w-full overflow-x-auto border border-[#D9D9D9] rounded-xl bg-white font-light text-[16px]">
+                        <table className="w-full min-w-[760px] table-fixed border-separate border-spacing-0 text-left relative z-10">
+                            <TabelaCabecalho>
+                                <TabelaCabecalhoCelula>Pedido</TabelaCabecalhoCelula>
+                                <TabelaCabecalhoCelula>Cliente</TabelaCabecalhoCelula>
+                                <TabelaCabecalhoCelula>Total de peças</TabelaCabecalhoCelula>
+                                <TabelaCabecalhoCelula>Valor</TabelaCabecalhoCelula>
+                                <TabelaCabecalhoCelula>Criado</TabelaCabecalhoCelula>
+                                <TabelaCabecalhoCelula>Finalizado</TabelaCabecalhoCelula>
+                                <TabelaCabecalhoCelula>Opções</TabelaCabecalhoCelula>
+                            </TabelaCabecalho>
                             <tbody className="text-[#404040]">
                                 {loading ? (
-                                    <PedidosTableSkeleton
-                                        rows={5}
-                                        mostrarCliente={producaoSobDemanda !== false}
-                                    />
+                                    <PedidosTableSkeleton rows={5} />
                                 ) : (
                                     <>
                                         {pedidos.map((pedido, index) => {
@@ -231,29 +197,21 @@ const Pedidos = () => {
                                                 }
                                             }
 
-                                            const valorMonetario = producaoSobDemanda
-                                                ? pedido.valor_total
-                                                : pedido.custo_total;
-
                                             return (
                                                 <tr
                                                     key={pedido.id}
-                                                    className="border-b border-[#E8E8E8] last:border-none even:bg-[#E8E8E8] transition-colors text-center"
+                                                    className="border-b border-[#E8E8E8] last:border-none even:bg-[#F4F4F4] transition-colors text-center"
                                                 >
-                                                    <td className="py-4 px-6">
-                                                        {pedido.numero ?? pedido.id}
-                                                    </td>
+                                                    <td className="py-4 px-6">{pedido.id}</td>
 
-                                                    {producaoSobDemanda && (
-                                                        <td className="py-4 px-6">
-                                                            {pedido.cliente?.nome || "-"}
-                                                        </td>
-                                                    )}
+                                                    <td className="py-4 px-6">
+                                                        {pedido.cliente?.nome || "-"}
+                                                    </td>
                                                     <td className="py-4 px-6 ">{totalPecas}</td>
                                                     <td className="py-4 px-6 ">
-                                                        {producaoSobDemanda && !pedido.cliente
+                                                        {!pedido.cliente
                                                             ? "-"
-                                                            : formatarMoeda(valorMonetario)}
+                                                            : formatarMoeda(pedido.valor_total)}
                                                     </td>
 
                                                     <td className="py-4 px-6">
@@ -278,10 +236,10 @@ const Pedidos = () => {
                                         {pedidos.length === 0 && (
                                             <tr>
                                                 <td
-                                                    colSpan={producaoSobDemanda ? 7 : 6}
+                                                    colSpan="7"
                                                     className="text-center py-10 text-gray-400"
                                                 >
-                                                    {labelVazio}
+                                                    Nenhum pedido encontrado.
                                                 </td>
                                             </tr>
                                         )}
@@ -296,9 +254,9 @@ const Pedidos = () => {
                 isOpen={modalExclusaoAberto}
                 onClose={() => setModalExclusaoAberto(false)}
                 onConfirm={handleConfirmarExclusao}
-                titulo={producaoSobDemanda ? "Excluir pedido" : "Excluir produção"}
+                titulo="Excluir pedido"
                 nomeItem={pedidoSelecionado?.id.toString()}
-                tipoItem={producaoSobDemanda ? "o pedido" : "a produção"}
+                tipoItem="o pedido"
                 loading={excluindo}
             />
 

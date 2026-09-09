@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 
-export function Header({ onMenuOpen }) {
+export function Header() {
     const { user, logout, loading } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
@@ -26,41 +26,26 @@ export function Header({ onMenuOpen }) {
     }, []);
 
     if (loading) {
-        return <header className="h-[72px] w-full" />;
+        return <header className="w-full pt-8 pb-2 pr-10" />;
     }
 
     return (
-        <header className="relative z-20 flex w-full items-center justify-between bg-transparent px-4 pb-2 pt-4 sm:px-6 sm:pt-6 lg:justify-end lg:pr-10 lg:pt-8">
-            <button
-                type="button"
-                onClick={onMenuOpen}
-                aria-label="Abrir menu"
-                className="flex h-11 w-11 items-center justify-center rounded-full  text-[#6A838B] shadow-sm transition-colors hover:bg-white lg:hidden"
-            >
-                <svg
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                    className="h-6 w-6 fill-none stroke-current stroke-2"
-                >
-                    <path strokeLinecap="round" d="M4 7h16M4 12h16M4 17h16" />
-                </svg>
-            </button>
-
+        <header className="w-full pt-8 pb-2 flex items-center justify-end bg-transparent relative z-50 pr-10">
             <div className="relative" ref={dropdownRef}>
                 <div
                     className="flex items-center gap-3 cursor-pointer select-none"
                     onClick={() => setIsOpen(!isOpen)}
                 >
-                    <div className="hidden flex-col items-start sm:flex">
-                        <span className="text-[15px] font-normal leading-tight text-[#404040] lg:text-[17px]">
+                    <div className="flex flex-col items-start">
+                        <span className="text-[#404040] font-normal text-[17px] leading-tight">
                             {user?.nome || "Usuario Sem Nome"}
                         </span>
-                        <span className="text-[13px] font-normal leading-none text-[#7B7D80] lg:text-[15px]">
+                        <span className="text-[#7B7D80] font-normal text-[15px] leading-none">
                             {user?.cargo ? cargoMap[user.cargo] || user.cargo : "Gerente"}
                         </span>
                     </div>
 
-                    <div className="h-[42px] w-[42px] overflow-hidden rounded-full border border-[#A9E2F2] p-[1px] sm:h-[48px] sm:w-[48px]">
+                    <div className="w-[48px] h-[48px] rounded-full border border-[#A9E2F2] p-[1px] overflow-hidden">
                         <img
                             src={user?.foto_de_perfil || "/no-user-image.png"}
                             alt="Perfil"
@@ -71,7 +56,7 @@ export function Header({ onMenuOpen }) {
                     <img
                         src="/arrow-down.png"
                         alt="Seta"
-                        className={`ml-0 h-2 w-3 transition-transform duration-300 ease-in-out sm:ml-1 ${
+                        className={`w-3 h-2 ml-1 transition-transform duration-300 ease-in-out ${
                             isOpen ? "rotate-180" : "rotate-0"
                         }`}
                     />

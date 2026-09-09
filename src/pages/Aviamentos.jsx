@@ -8,6 +8,7 @@ import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import MenuOpcoes from "../components/geral/MenuOpcoes";
 import AviamentoModal from "../components/aviamentos/AviamentoModal";
+import TabelaCabecalho, { TabelaCabecalhoCelula } from "../components/geral/TabelaCabecalho";
 
 const formatarData = (dataString) => {
     if (!dataString) return "-";
@@ -175,10 +176,10 @@ const Aviamentos = () => {
                         <button
                             type="button"
                             onClick={abrirModalCadastro}
-                            className="w-[196px] h-[39px] bg-[#A9E2F2] text-[#4696AD] font-normal text-[16px] rounded-full flex items-center justify-center gap-2 hover:bg-[#A2DCED] transition-colors shrink-0"
+                            className="w-[196px] h-[39px] bg-[#A9E2F2] text-[#FFFFFF] font-normal text-[16px] rounded-full flex items-center justify-center gap-2 hover:bg-[#8acbdc] transition-colors shrink-0"
                         >
                             <img
-                                src="/aviamentos-azul.png"
+                                src="/add-aviamentos.png"
                                 alt="Adicionar aviamento ícone"
                                 className="w-6 h-6 object-contain"
                             />
@@ -193,17 +194,15 @@ const Aviamentos = () => {
                     </div>
                 ) : (
                     <div className="w-full overflow-visible">
-                        <div className="min-w-max border border-gray-200 rounded-xl overflow-hidden bg-[#D3EBF2]">
-                            <table className="w-full border-separate border-spacing-0 text-[16px] font-light text-center relative z-10">
-                                <thead className="bg-[#D3EBF2] text-[#4696AD]">
-                                    <tr className="h-[64px]">
-                                        <th className="px-6 font-light">Nome</th>
-                                        <th className="px-6 font-light">Unidade de medida</th>
-                                        <th className="px-6 font-light">Custo unitário</th>
-                                        <th className="px-6 font-light">Data de cadastro</th>
-                                        <th className="px-6 font-light">Opções</th>
-                                    </tr>
-                                </thead>
+                        <div className="w-full overflow-x-auto border border-gray-200 rounded-xl bg-white">
+                            <table className="w-full min-w-[760px] table-fixed border-separate border-spacing-0 text-[16px] font-['Outfit',_sans-serif] font-light text-center relative z-10">
+                                <TabelaCabecalho>
+                                    <TabelaCabecalhoCelula>Nome</TabelaCabecalhoCelula>
+                                    <TabelaCabecalhoCelula>Unidade de medida</TabelaCabecalhoCelula>
+                                    <TabelaCabecalhoCelula>Custo unitário</TabelaCabecalhoCelula>
+                                    <TabelaCabecalhoCelula>Data de cadastro</TabelaCabecalhoCelula>
+                                    <TabelaCabecalhoCelula>Opções</TabelaCabecalhoCelula>
+                                </TabelaCabecalho>
                                 <tbody className="bg-white text-[#404040]">
                                     {aviamentosFiltrados.map((aviamento, index) => {
                                         const isLast = index === aviamentosFiltrados.length - 1;
