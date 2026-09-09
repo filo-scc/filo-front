@@ -5,23 +5,11 @@ import {
     getClientes,
     getProdutosDoCliente,
     getProdutosPorFabrico,
-    atualizarClientesProdutos,
-    criarClientesProdutos,
 } from "../services/clientesService";
 import { getFabricoById } from "../services/fabricoService";
 import FichaTecnicaModal from "../components/fichas-tecnicas/FichaTecnicaModal";
 
-import { atualizarProduto, getProdutoById } from "../services/produtoService";
-import { createFichaTecnica } from "../services/fichaTecnicaService";
-import {
-    syncFichaTecnicaCores,
-    saveFichaTecnicaItens,
-    updateParceiroProdutoPrice,
-    createParceiroProduto,
-} from "../services/fichaTecnicaItemService";
-import { iniciarFichaEtapa } from "../services/fichasTecnicasService";
-import { createFichaParceiro } from "../services/fichaParceiroService";
-import { createPedido, getPedidosByFabricoId } from "../services/pedidoService";
+import { createPedidoCompleto, getPedidosByFabricoId } from "../services/pedidoService";
 
 import { getAllEtapasByFabricoId } from "../services/etapaService";
 import { DropdownOptionsSkeleton, LoadingButton, SkeletonBox } from "../components/geral/Loading";
@@ -189,6 +177,48 @@ const getProdutoId = (item) =>
 
 const getReferenciaInterna = (item) =>
     item?.produto?.nome ?? item?.produto?.referencia ?? item?.nome ?? "-";
+
+const extrairMensagemDeErro = (error) => {
+    const mensagem = error?.response?.data?.message;
+
+    if (Array.isArray(mensagem)) return mensagem.join(". ");
+
+    return typeof mensagem === "string" ? mensagem : "";
+};
+
+// Converte o rascunho local da ficha no formato aceito por POST /pedidos/completo.
+const montarFichaParaEnvio = (ficha, { etapaPadraoId, incluirDadosDoCliente }) => {
+    const gradeVersaoId = ficha.gradeVersaoIdNova || ficha.gradeVersaoIdOriginal;
+    const etapaAtualId = ficha.etapa_atual_id || etapaPadraoId;
+
+    const payload = {
+        produto_id: Number(ficha.produtoId ?? ficha.produto_id),
+        quantidade: Number(ficha.quantidade) || 0,
+        cores_ids: (ficha.selectedColorIds || []).map(Number),
+        itens: (ficha.itensPayload || []).map((item) => ({
+            cor_id: Number(item.cor_id),
+            grade_versao_item_id: Number(item.grade_versao_item_id),
+            quantidade: Number(item.quantidade) || 0,
+        })),
+        parceiros: (ficha.parceiroRows || []).map((parceiro) => ({
+            parceiro_id: Number(parceiro.parceiroId ?? parceiro.id),
+            operacao: parceiro.operacao || null,
+            preco: normalizarPrecoOpcional(parceiro.preco),
+        })),
+    };
+
+    if (gradeVersaoId) payload.grade_versao_id = Number(gradeVersaoId);
+    if (etapaAtualId) payload.etapa_atual_id = Number(etapaAtualId);
+
+    if (incluirDadosDoCliente) {
+        payload.nome_para_cliente = ficha.referenciaCliente ?? ficha.ref_cliente ?? "";
+        payload.preco_padrao = parsePreco(
+            ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? 0,
+        );
+    }
+
+    return payload;
+};
 
 export default function PedidosCadastrar() {
     const navigate = useNavigate();
@@ -599,213 +629,34 @@ export default function PedidosCadastrar() {
         setErro(null);
 
         try {
-            const quantidadeTotalPedido = fichas.reduce(
-                (acc, ficha) => acc + (Number(ficha.quantidade) || 0),
-                0,
-            );
-
-            const getFichaProdutoId = (ficha) => String(ficha.produtoId || ficha.produto_id || "");
-
-            const idsUnicos = [...new Set(fichas.map(getFichaProdutoId).filter(Boolean))];
-            const produtos = await Promise.all(idsUnicos.map((id) => getProdutoById(id)));
-            const mapaCustos = new Map(
-                (produtos || []).map((produto) => [
-                    String(produto?.id),
-                    Number(produto?.custo_total) || 0,
-                ]),
-            );
-
-            const custoTotalPedido = fichas.reduce((acc, ficha) => {
-                const quantidade = Number(ficha.quantidade) || 0;
-                const custo = mapaCustos.get(getFichaProdutoId(ficha)) || 0;
-                return acc + quantidade * custo;
-            }, 0);
-
-            let valorTotalPedido = null;
-
-            if (isSobDemanda && clienteSelecionado?.id) {
-                valorTotalPedido = fichas.reduce((acc, ficha) => {
-                    const quantidade = Number(ficha.quantidade) || 0;
-                    const preco = parsePreco(
-                        ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? 0,
-                    );
-                    return acc + quantidade * preco;
-                }, 0);
-            }
-
             let dataFormatadaBackend = undefined;
             if (dataPrevista && dataPrevista.length === 10) {
                 const [dia, mes, ano] = dataPrevista.split("/");
                 dataFormatadaBackend = new Date(`${ano}-${mes}-${dia}T12:00:00.000Z`).toISOString();
             }
 
-            const payloadPedido = {
-                cliente_id: clienteSelecionado?.id || null,
+            const clienteId = clienteSelecionado?.id ? Number(clienteSelecionado.id) : null;
+
+            await createPedidoCompleto({
+                cliente_id: clienteId,
                 finalizado: false,
                 data_prevista: dataFormatadaBackend,
-                observacoes: null,
-                quantidade: quantidadeTotalPedido,
-                valor_total: valorTotalPedido != null ? Number(valorTotalPedido.toFixed(2)) : null,
-                custo_total: Number(custoTotalPedido.toFixed(2)),
                 usarCorPaleta: fichas.length > 1,
-            };
-
-            const novoPedido = await createPedido(payloadPedido);
-
-            let etapaIdFallback = primeiraEtapaId;
-            if (!etapaIdFallback && fabricoId) {
-                try {
-                    const etapas = await getAllEtapasByFabricoId(fabricoId);
-                    if (etapas && etapas.length > 0) {
-                        const etapasOrdenadas = [...etapas].sort(
-                            (a, b) => (a.ordem || 0) - (b.ordem || 0),
-                        );
-                        etapaIdFallback = etapasOrdenadas[0].id;
-                    }
-                } catch (e) {
-                    console.error("Erro ao carregar etapas de segurança:", e);
-                }
-            }
-
-            for (const ficha of fichas) {
-                const pId = ficha.produtoId || ficha.produto_id;
-
-                if (
-                    ficha.gradeVersaoIdNova &&
-                    ficha.gradeVersaoIdNova !== ficha.gradeVersaoIdOriginal &&
-                    pId
-                ) {
-                    await atualizarProduto(pId, {
-                        grade_versao_id: ficha.gradeVersaoIdNova,
-                    });
-                }
-
-                const payloadFicha = {
-                    pedido_id: novoPedido.id,
-                    produto_id: pId,
-                    grade_versao_id: ficha.gradeVersaoIdNova || ficha.gradeVersaoIdOriginal,
-                    etapa_atual_id: ficha.etapa_atual_id || etapaIdFallback,
-                    quantidade: Number(ficha.quantidade) || 0,
-                    concluida: false,
-                    fabrico_id: fabricoId,
-                };
-
-                const novaFicha = await createFichaTecnica(payloadFicha);
-
-                if (ficha.selectedColorIds?.length > 0) {
-                    await syncFichaTecnicaCores(novaFicha.id, ficha.selectedColorIds);
-                }
-
-                if (ficha.itensPayload?.length > 0) {
-                    const itensParaSalvar = ficha.itensPayload.map((item) => ({
-                        ficha_tecnica_id: novaFicha.id,
-                        cor_id: item.cor_id,
-                        grade_versao_item_id: item.grade_versao_item_id,
-                        quantidade: item.quantidade,
-                    }));
-
-                    await saveFichaTecnicaItens(novaFicha.id, itensParaSalvar);
-                }
-
-                const etapaIdAtual = ficha.etapa_atual_id || etapaIdFallback;
-                if (etapaIdAtual) {
-                    try {
-                        await iniciarFichaEtapa(novaFicha.id, etapaIdAtual);
-                    } catch (err) {
-                        if (err?.response?.status !== 409) {
-                            console.error("Erro ao registrar ficha_etapa:", err);
-                        }
-                    }
-                }
-
-                if (ficha.parceiroRows?.length > 0) {
-                    const totalParceiros = ficha.parceiroRows.length;
-
-                    for (const parceiro of ficha.parceiroRows) {
-                        const precoFormatado = normalizarPrecoOpcional(parceiro.preco);
-                        const parceiroIdFinal = parceiro.parceiroId || parceiro.id;
-                        const produtoIdFinal = pId;
-
-                        try {
-                            if (parceiro.isNew === false) {
-                                await updateParceiroProdutoPrice(
-                                    parceiroIdFinal,
-                                    produtoIdFinal,
-                                    precoFormatado,
-                                );
-                            } else {
-                                await createParceiroProduto(
-                                    parceiroIdFinal,
-                                    produtoIdFinal,
-                                    precoFormatado,
-                                );
-                            }
-                        } catch (err) {
-                            console.error(
-                                `Erro ao processar parceiro ${parceiro.parceiroId || parceiro.id}:`,
-                                err,
-                            );
-                        }
-                        try {
-                            let valorFinal = undefined;
-                            let quantidadeFinal = undefined;
-
-                            if (totalParceiros === 1) {
-                                quantidadeFinal = Number(ficha.quantidade);
-                                if (precoFormatado !== null) {
-                                    const calculo = quantidadeFinal * precoFormatado;
-                                    valorFinal = Number(calculo.toFixed(2));
-                                }
-                            }
-
-                            await createFichaParceiro(
-                                novaFicha.id,
-                                parceiroIdFinal,
-                                parceiro.operacao || null,
-                                valorFinal,
-                                quantidadeFinal,
-                            );
-                        } catch (err) {
-                            console.error(
-                                `Erro ao criar Ficha-Parceiro para o id ${parceiroIdFinal}`,
-                                err,
-                            );
-                        }
-                    }
-                }
-            }
-
-            if (isSobDemanda && clienteSelecionado?.id) {
-                for (const ficha of fichas) {
-                    const pId = ficha.produtoId || ficha.produto_id;
-                    if (!pId) continue;
-
-                    const precoRaw = ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? 0;
-                    const dadosClienteProduto = {
-                        nome_para_cliente: ficha.referenciaCliente ?? ficha.ref_cliente ?? "",
-                        preco_padrao: parsePreco(precoRaw),
-                    };
-
-                    if (ficha.associadoAoCliente === false) {
-                        await criarClientesProdutos(clienteSelecionado.id, pId, {
-                            cliente_id: clienteSelecionado.id,
-                            produto_id: pId,
-                            ...dadosClienteProduto,
-                        });
-                    } else {
-                        await atualizarClientesProdutos(
-                            clienteSelecionado.id,
-                            pId,
-                            dadosClienteProduto,
-                        );
-                    }
-                }
-            }
+                fichas: fichas.map((ficha) =>
+                    montarFichaParaEnvio(ficha, {
+                        etapaPadraoId: primeiraEtapaId,
+                        incluirDadosDoCliente: isSobDemanda && Boolean(clienteId),
+                    }),
+                ),
+            });
 
             navigate("/pedidos");
         } catch (error) {
-            setErro("Falha ao salvar pedido. Verifique os dados e tente novamente.");
-            console.log(error);
+            console.error("Erro ao salvar pedido:", error);
+            setErro(
+                extrairMensagemDeErro(error) ||
+                    "Falha ao salvar pedido. Verifique os dados e tente novamente.",
+            );
         } finally {
             setSalvandoPedido(false);
         }

@@ -10,6 +10,17 @@ export const createPedido = async (pedidoData) => {
     }
 };
 
+// Cria o pedido, as fichas técnicas e todos os vínculos em uma única transação no backend.
+export const createPedidoCompleto = async (pedidoData) => {
+    try {
+        const response = await api.post("/pedidos/completo", pedidoData);
+        return response.data;
+    } catch (error) {
+        console.error("Error creating pedido completo:", error);
+        throw error;
+    }
+};
+
 export const getPedidosByFabricoId = async () => {
     try {
         const response = await api.get(`/pedidos`);
