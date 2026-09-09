@@ -20,10 +20,7 @@ import {
 import { upload } from "../services/utilsService";
 import { DropdownOptionsSkeleton, LoadingButton, SkeletonBox } from "../components/geral/Loading";
 import { getAllEtapasByFabricoId } from "../services/etapaService.js";
-import {
-    getParceirosByFabrico,
-    getParceirosByFabricoECategoria,
-} from "../services/parceiroService.js";
+import { getParceiros, getParceirosByCategoria } from "../services/parceiroService.js";
 
 // Função adicionada para formatar as unidades de medida
 function formatarUnidadeDeMedida(unidade) {
@@ -280,7 +277,7 @@ export default function ProdutoCadastar() {
                     getAviamentosByFabrico(fabricoId),
                     getTiposProdutoByFabrico(),
                     getAllEtapasByFabricoId(fabricoId),
-                    getParceirosByFabrico(fabricoId),
+                    getParceiros(),
                 ]);
 
                 if (ignorar) return;
@@ -613,7 +610,7 @@ export default function ProdutoCadastar() {
             }
 
             if (produtoId) {
-                await salvarCustosNoBanco(produtoId, fabricoId);
+                await salvarCustosNoBanco(produtoId);
             }
 
             navigate("/produtos");
@@ -686,33 +683,20 @@ export default function ProdutoCadastar() {
 
     // ProdutoCadastrar.jsx
 
-    const salvarCustosNoBanco = async (produtoId, fabricoId) => {
+    const salvarCustosNoBanco = async (produtoId) => {
         try {
             console.log("Conteúdo das colunas flexíveis antes do filtro:", colunasFlexiveis);
 
             const etapasParaSalvar = colunasFlexiveis.filter((etapa) => etapa.custo > 0);
 
-            // Se o fabricoId não veio como parâmetro, tenta pegar do objeto produto ou do usuário logado
-            const fabricoIdEfetivo = fabricoId || produto?.fabrico_id;
-
-            if (!fabricoIdEfetivo) {
-                console.error("Fabrico ID não encontrado ao tentar salvar os custos.");
-                return;
-            }
-
             for (const etapa of etapasParaSalvar) {
                 const precoInformado = etapa.custo;
                 const categoriaNome = etapa.nome;
 
-                const parceirosDaEtapa = await getParceirosByFabricoECategoria(
-                    fabricoIdEfetivo,
-                    categoriaNome,
-                );
+                const parceirosDaEtapa = await getParceirosByCategoria(categoriaNome);
 
                 if (!parceirosDaEtapa || parceirosDaEtapa.length === 0) {
-                    console.warn(
-                        `Nenhum parceiro encontrado para a categoria '${categoriaNome}' no fabrico ${fabricoIdEfetivo}`,
-                    );
+                    console.warn(`Nenhum parceiro encontrado para a categoria '${categoriaNome}'`);
                     continue;
                 }
 

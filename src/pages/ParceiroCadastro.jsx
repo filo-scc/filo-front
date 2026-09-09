@@ -243,13 +243,8 @@ export default function ParceiroCadastro() {
         setError("");
 
         try {
-            const userString = localStorage.getItem("user");
-            const usuarioLogado = JSON.parse(userString);
-            const fabricoId = usuarioLogado.fabrico_id;
-
             const payload = {
                 nome: formData.nome,
-                fabrico_id: Number(fabricoId),
             };
 
             if (formData.categoria) payload.categoria = formData.categoria;
