@@ -63,7 +63,6 @@ export default function ProdutoDetalhes() {
 
                 const userString = localStorage.getItem("user");
                 const usuarioLogado = userString ? JSON.parse(userString) : null;
-                const fabricoId = usuarioLogado?.fabrico_id;
 
                 const [
                     dadosProduto,
