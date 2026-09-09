@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { getAllEtapasByFabricoId } from "../services/etapaService";
+import { getAllEtapas } from "../services/etapaService";
 import { getFichaTecnicaByFabrico } from "../services/fichasTecnicasService";
 import { getMe } from "../services/authService";
 import TransferenciaEtapaModal from "../components/fichas-tecnicas/TransferenciaEtapaModal";
@@ -86,7 +86,7 @@ export default function Home() {
             }
 
             const [etapas, fichasTecnicas] = await Promise.all([
-                getAllEtapasByFabricoId(fId),
+                getAllEtapas(),
                 getFichaTecnicaByFabrico(fId),
             ]);
 

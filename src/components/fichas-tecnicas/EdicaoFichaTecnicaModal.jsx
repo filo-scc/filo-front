@@ -24,7 +24,7 @@ import { getParceirosByFabrico } from "../../services/parceiroService";
 import CorModal from "./CorModal";
 import EstampaModal from "./EstampaModal";
 import RelatorioDeAcabamento from "./RelatorioDeAcabamento";
-import { getAllEtapasByFabricoId } from "../../services/etapaService";
+import { getAllEtapas } from "../../services/etapaService";
 import {
     calcularProporcoesGrade,
     isReferenciaProporcao,
@@ -294,20 +294,18 @@ export default function EdicaoFichaTecnicaModal({
     useEffect(() => {
         let isCurrent = true;
 
-        if (dadosFicha?.fabrico_id) {
-            getAllEtapasByFabricoId(dadosFicha.fabrico_id)
-                .then((etapas) => {
-                    if (!isCurrent) return;
-                    const etapasAtivas = (etapas || []).filter((e) => e.ativa);
-                    const etapasOrdenadas = etapasAtivas.sort((a, b) => a.ordem - b.ordem);
-                    const ultima = etapasOrdenadas[etapasOrdenadas.length - 1];
-                    setUltimaEtapaId(ultima?.id ?? null);
-                })
-                .catch((error) => {
-                    console.error("Erro ao verificar última etapa", error);
-                    setUltimaEtapaId(null);
-                });
-        }
+        getAllEtapas()
+            .then((etapas) => {
+                if (!isCurrent) return;
+                const etapasAtivas = (etapas || []).filter((e) => e.ativa);
+                const etapasOrdenadas = etapasAtivas.sort((a, b) => a.ordem - b.ordem);
+                const ultima = etapasOrdenadas[etapasOrdenadas.length - 1];
+                setUltimaEtapaId(ultima?.id ?? null);
+            })
+            .catch((error) => {
+                console.error("Erro ao verificar última etapa", error);
+                setUltimaEtapaId(null);
+            });
 
         return () => {
             isCurrent = false;

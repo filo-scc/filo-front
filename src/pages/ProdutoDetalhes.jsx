@@ -9,7 +9,7 @@ import {
     getTiposProdutoByFabrico,
 } from "../services/produtoService";
 import { getFabricoById } from "../services/fabricoService";
-import { getAllEtapasByFabricoId } from "../services/etapaService";
+import { getAllEtapas } from "../services/etapaService";
 import { calcularCustosMediosDasEtapas } from "../utils/custosEtapasProduto";
 
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
@@ -63,7 +63,6 @@ export default function ProdutoDetalhes() {
 
                 const userString = localStorage.getItem("user");
                 const usuarioLogado = userString ? JSON.parse(userString) : null;
-                const fabricoId = usuarioLogado?.fabrico_id;
 
                 const [
                     dadosProduto,
@@ -77,7 +76,7 @@ export default function ProdutoDetalhes() {
                     getClientesDoProduto(id),
                     getAviamentosDoProduto(id),
                     getTiposProdutoByFabrico().catch(() => []),
-                    getAllEtapasByFabricoId(fabricoId).catch(() => []),
+                    getAllEtapas().catch(() => []),
                     getParceiroByProduto(id),
                 ]);
 
