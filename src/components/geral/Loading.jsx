@@ -237,18 +237,29 @@ export function PedidosTableSkeleton({ rows = 5, mostrarCliente = true }) {
     );
 }
 
-export function ProductGridSkeleton({ count = 8 }) {
+export function ProductGridSkeleton({ count = 7 }) {
     return (
         <>
             {[...Array(count)].map((_, index) => (
                 <div
                     key={index}
-                    className="w-full bg-[#F3F4FA] rounded-[16px] p-[6px] flex flex-col"
+                    className="w-full bg-[#F3F4FA] rounded-[16px] p-[6px] flex flex-col font-['Outfit',_sans-serif]"
                 >
-                    <SkeletonBox className="w-full h-[155px] rounded-t-[14px] rounded-b-[4px]" />
-                    <div className="flex flex-col px-1 pt-1.5 pb-1">
-                        <SkeletonBox className="h-[12px] w-24 rounded-[6px]" />
-                        <SkeletonBox className="h-[12px] w-20 rounded-[6px]" />
+                    {/* Imagem Placeholder com altura idêntica ao ProdutoCard (238px) */}
+                    <div className="relative w-full h-[238px] bg-[#E8E9F0] rounded-t-[14px] rounded-b-[4px] overflow-hidden animate-pulse">
+                        {/* Placeholder da etiqueta e nome do produto sobrepostos */}
+                        <div className="absolute bottom-[10px] left-[10px] right-[10px] flex items-center gap-1.5">
+                            <SkeletonBox className="h-[14px] w-[14px] rounded-[3px] bg-white/50" />
+                            <SkeletonBox className="h-[14px] w-2/3 rounded-[4px] bg-white/50" />
+                        </div>
+                    </div>
+
+                    {/* Legenda Inferior (Tipo e Data) */}
+                    <div className="flex items-end justify-between px-1 pt-1.5 pb-1">
+                        <div className="flex flex-col gap-1 min-w-0">
+                            <SkeletonBox className="h-[10px] w-16 rounded-[4px]" />
+                            <SkeletonBox className="h-[10px] w-24 rounded-[4px]" />
+                        </div>
                     </div>
                 </div>
             ))}
@@ -260,7 +271,7 @@ function DetailFieldSkeleton({ className = "" }) {
     return (
         <div className={className}>
             <SkeletonBox className="h-[20px] w-32 rounded-[8px]" />
-            <SkeletonBox className="mt-2 h-[16px] w-28 rounded-[8px]" />
+            <SkeletonBox className="mt-2 h-[16px] w  -28 rounded-[8px]" />
         </div>
     );
 }
