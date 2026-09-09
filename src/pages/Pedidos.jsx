@@ -59,13 +59,6 @@ const Pedidos = () => {
         });
     };
 
-    const formatarValor = (valor) => {
-        const valorNumerico = Number(valor);
-        return Number.isFinite(valorNumerico)
-            ? `R$ ${valorNumerico.toFixed(2).replace(".", ",")}`
-            : "R$ 0,00";
-    };
-
     const handleEdit = (id) => {
         navigate(`/pedidos/${id}`);
     };
@@ -218,7 +211,7 @@ const Pedidos = () => {
                                                     <td className="py-4 px-6 ">
                                                         {!pedido.cliente
                                                             ? "-"
-                                                            : formatarMoeda(valorMonetario)}
+                                                            : formatarMoeda(pedido.valor_total)}
                                                     </td>
 
                                                     <td className="py-4 px-6">
