@@ -1,5 +1,5 @@
-export function SkeletonBox({ className = "" }) {
-    return <div className={`bg-[#E8E9F0] rounded-[12px] animate-pulse ${className}`} />;
+export function SkeletonBox({ className = "", ...props }) {
+    return <div className={`bg-[#E8E9F0] rounded-[12px] animate-pulse ${className}`} {...props} />;
 }
 
 export function InlineLoading({ label = "Carregando", className = "" }) {
@@ -214,7 +214,7 @@ export function ParceirosTableSkeleton({ rows = 5 }) {
     );
 }
 
-export function PedidosTableSkeleton({ rows = 5 }) {
+export function PedidosTableSkeleton({ rows = 5, mostrarCliente = true }) {
     return (
         <>
             {[...Array(rows)].map((_, index) => (
@@ -225,7 +225,7 @@ export function PedidosTableSkeleton({ rows = 5 }) {
                     }`}
                 >
                     <TextCellSkeleton className="py-4 px-6" width="w-10" />
-                    <TextCellSkeleton className="py-4 px-6" width="w-28" />
+                    {mostrarCliente && <TextCellSkeleton className="py-4 px-6" width="w-28" />}
                     <TextCellSkeleton className="py-4 px-6" width="w-12" />
                     <TextCellSkeleton className="py-4 px-6" width="w-20" />
                     <TextCellSkeleton className="py-4 px-6" width="w-14" />

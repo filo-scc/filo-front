@@ -241,7 +241,7 @@ export default function ModalReferencias({
                         disabled={selecionados.length === 0}
                         className={`w-[189px] h-[39px] rounded-[18.9px] font-['Outfit',_sans-serif] text-[16px] transition-colors bg-[#A9E2F2] text-[#4696AD] ${
                             selecionados.length > 0 && !loadingSubmit
-                                ? "hover:bg-[#8acbdc]" // Leve hover para dar feedback
+                                ? "hover:bg-[#A2DCED]" // Leve hover para dar feedback
                                 : "opacity-50 cursor-not-allowed" // Transparente quando inativo
                         }`}
                     >

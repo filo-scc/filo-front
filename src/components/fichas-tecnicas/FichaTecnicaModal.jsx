@@ -1,3 +1,5 @@
+import ConfirmacaoFichaModal from "./ConfirmacaoFichaModal";
+import AvisoRepetirGrade from "./AvisoRepetirGrade";
 /* eslint-disable react-hooks/exhaustive-deps */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -11,7 +13,13 @@ import { getGradesLiberadasByFabricoId } from "../../services/gradeService";
 import { getParceiroByProduto } from "../../services/produtoService";
 
 import ProdutoParceiros from "../produtos/ProdutoParceiros";
+import { preventNumberInputWheel } from "../../utils/preventNumberInputWheel";
 import { InlineLoading, SkeletonBox } from "../geral/Loading";
+import {
+    calcularProporcoesGrade,
+    isReferenciaProporcao,
+    obterReferenciaProporcao,
+} from "../../utils/gradeProportions";
 
 function FloatingInput({ label, value, readOnly, onChange, placeholder }) {
     return (
@@ -36,40 +44,44 @@ function FloatingInput({ label, value, readOnly, onChange, placeholder }) {
     );
 }
 
-const calcularProporcao = (totaisPorTamanho) => {
-    const valoresValidos = totaisPorTamanho.map(Number).filter((t) => t > 0);
-    if (valoresValidos.length === 0) return totaisPorTamanho.map(() => 0);
-    const base = Math.min(...valoresValidos);
-    return totaisPorTamanho.map((t) => (t > 0 ? Math.round(t / base) : 0));
-};
-
-function QuantityCell({ value, onCommit }) {
+function QuantityCell({ value, onCommit, onDraftChange }) {
     const [editing, setEditing] = useState(false);
-    const [draft, setDraft] = useState(value > 0 ? String(value) : "");
+    const getInitialDraft = () => (value > 0 ? String(value) : "");
+    const [draft, setDraft] = useState(getInitialDraft());
     const inputRef = useRef(null);
+    const draftChangedRef = useRef(false);
+    const initialValueRef = useRef(value);
 
     useEffect(() => {
-        if (!editing) setDraft(value > 0 ? String(value) : "");
+        if (!editing) setDraft(getInitialDraft());
     }, [value, editing]);
 
     useEffect(() => {
-        if (editing && inputRef.current) inputRef.current.focus();
+        if (editing && inputRef.current) inputRef.current.select();
     }, [editing]);
 
+    const parseValue = (raw) => {
+        const parsed = Number.parseInt(String(raw || 0), 10);
+        return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+    };
+
     const commit = useCallback(() => {
-        const parsed = Number.parseInt(String(draft || 0), 10);
-        onCommit(Number.isFinite(parsed) && parsed >= 0 ? parsed : 0);
+        if (draftChangedRef.current || value > 0) {
+            onCommit(parseValue(draft));
+        }
         setEditing(false);
-    }, [draft, onCommit]);
+    }, [draft, onCommit, value]);
 
     if (!editing) {
         return (
             <button
                 type="button"
-                onClick={() => setEditing(true)}
-                className={`flex h-[40px] w-full items-center justify-center rounded-[6px] border border-transparent text-[14px] transition ${
-                    value > 0 ? "text-[#898C8F]" : "text-[#D7D7D7]"
-                }`}
+                onClick={() => {
+                    draftChangedRef.current = false;
+                    initialValueRef.current = value;
+                    setEditing(true);
+                }}
+                className={`flex h-[40px] w-full items-center justify-center rounded-[6px] border border-transparent text-[14px] transition ${value > 0 ? "text-[#898C8F]" : "text-[#D7D7D7]"}`}
             >
                 {value > 0 ? value : "-"}
             </button>
@@ -79,15 +91,27 @@ function QuantityCell({ value, onCommit }) {
     return (
         <input
             ref={inputRef}
+            onFocus={preventNumberInputWheel}
             type="number"
             min="0"
             step="1"
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => {
+                const raw = e.target.value;
+                draftChangedRef.current = true;
+                setDraft(raw);
+                if (onDraftChange) onDraftChange(parseValue(raw));
+            }}
             onBlur={commit}
+            placeholder="-"
             onKeyDown={(e) => {
                 if (e.key === "Enter") commit();
-                if (e.key === "Escape") setEditing(false);
+                if (e.key === "Escape") {
+                    const initialValue = initialValueRef.current;
+                    setDraft(initialValue > 0 ? String(initialValue) : "");
+                    onDraftChange?.(initialValue);
+                    setEditing(false);
+                }
             }}
             className="h-[40px] w-full bg-transparent text-center text-[14px] outline-none text-[#898C8F] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0"
         />
@@ -136,7 +160,6 @@ function syncMatrix(prevMatrix, selectedColorIds, sizeItems) {
 
 const BORDER_DARK_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#7B7D80" };
 const BORDER_LIGHT_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#E0E0E0" };
-const BORDER_SHELL_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#D9D9D9" };
 const PARCEIRO_ROW_HEIGHT = 40;
 
 export default function FichaTecnicaModal({
@@ -147,7 +170,11 @@ export default function FichaTecnicaModal({
     etapaAtualId = null,
     onFichaCreated,
     onRequestCreateColor,
+    fichaAnterior,
 }) {
+    const [confirmarSaida, setConfirmarSaida] = useState(false);
+    const [oferecerGrade, setOferecerGrade] = useState(false);
+    const dispensarGrade = useCallback(() => setOferecerGrade(false), []);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -171,6 +198,9 @@ export default function FichaTecnicaModal({
     const [parceiroScrollTop, setParceiroScrollTop] = useState(0);
     const [colorSearch, setColorSearch] = useState("");
     const [existingParceiroIds, setExistingParceiroIds] = useState([]);
+    const [validacaoPrecoExibida, setValidacaoPrecoExibida] = useState(false);
+
+    const [referenceSizeId, setReferenceSizeId] = useState(null);
 
     const parceiroScrollRef = useRef(null);
     const colorDropdownRef = useRef(null);
@@ -192,6 +222,21 @@ export default function FichaTecnicaModal({
     const currentSizeItems = currentGradeOption?.sizeItems || [];
     const effectiveGradeVersionId = currentGradeOption?.gradeVersaoId || null;
 
+    const handleQuantidadeDraftChange = useCallback((corId, tamanhoId, valorDigitado) => {
+        setMatrix((prevMatrix) => ({
+            ...prevMatrix,
+            [corId]: { ...prevMatrix[corId], [tamanhoId]: valorDigitado },
+        }));
+    }, []);
+
+    const handleCommitQuantidade = useCallback((corId, tamanhoId, valorDigitado) => {
+        setMatrix((prevMatrix) => {
+            const linhaAtual = prevMatrix[corId] || {};
+            const novaLinha = { ...linhaAtual, [tamanhoId]: valorDigitado };
+            return { ...prevMatrix, [corId]: novaLinha };
+        });
+    }, []);
+
     const selectedColors = useMemo(
         () =>
             selectedColorIds.map((id) => availableColors.find((c) => c.id === id)).filter(Boolean),
@@ -200,6 +245,19 @@ export default function FichaTecnicaModal({
 
     const selectedParceiroIds = useMemo(
         () => parceiroRows.map((row) => row.parceiroId).filter(Boolean),
+        [parceiroRows],
+    );
+
+    const parceirosSemPreco = useMemo(
+        () =>
+            parceiroRows.filter((parceiro) => {
+                const precoNormalizado =
+                    typeof parceiro.preco === "string"
+                        ? parceiro.preco.replace("R$", "").replace(",", ".").trim()
+                        : parceiro.preco;
+                const preco = Number(precoNormalizado);
+                return !Number.isFinite(preco) || preco <= 0;
+            }),
         [parceiroRows],
     );
 
@@ -214,7 +272,79 @@ export default function FichaTecnicaModal({
         [currentSizeItems, selectedColorIds, matrix],
     );
 
-    const proporcoes = useMemo(() => calcularProporcao(totalsBySize), [totalsBySize]);
+    const totalsBySizeId = useMemo(
+        () =>
+            currentSizeItems.reduce((totals, size, index) => {
+                totals[size.tamanhoId] = totalsBySize[index] || 0;
+                return totals;
+            }, {}),
+        [currentSizeItems, totalsBySize],
+    );
+
+    const totalsByColor = useMemo(
+        () =>
+            selectedColorIds.reduce((totals, corId) => {
+                totals[corId] = currentSizeItems.reduce(
+                    (sum, size) => sum + Number(matrix?.[corId]?.[size.tamanhoId] || 0),
+                    0,
+                );
+                return totals;
+            }, {}),
+        [currentSizeItems, selectedColorIds, matrix],
+    );
+
+    const totalGeral = useMemo(
+        () => totalsBySize.reduce((sum, total) => sum + Number(total || 0), 0),
+        [totalsBySize],
+    );
+
+    useEffect(() => {
+        setReferenceSizeId(
+            obterReferenciaProporcao({
+                sizeIds: currentSizeItems.map((size) => size.tamanhoId),
+                totalsBySize: totalsBySizeId,
+            }),
+        );
+    }, [currentSizeItems, totalsBySizeId]);
+
+    const proporcoes = useMemo(
+        () =>
+            calcularProporcoesGrade({
+                sizeIds: currentSizeItems.map((size) => size.tamanhoId),
+                colorIds: selectedColorIds,
+                referenceSizeId,
+                getQuantity: (colorId, sizeId) => matrix?.[colorId]?.[sizeId] || 0,
+            }),
+        [currentSizeItems, selectedColorIds, referenceSizeId, matrix],
+    );
+
+    const handleAplicarProporcao = useCallback(
+        (targetSizeId, rawMultiplier) => {
+            const multiplier = Number(rawMultiplier);
+            if (
+                referenceSizeId === null ||
+                !Number.isFinite(multiplier) ||
+                !Number.isInteger(multiplier) ||
+                multiplier < 0 ||
+                isReferenciaProporcao(targetSizeId, referenceSizeId)
+            ) {
+                return;
+            }
+
+            setMatrix((prevMatrix) => {
+                const nextMatrix = { ...prevMatrix };
+                selectedColorIds.forEach((colorId) => {
+                    const referenceQuantity = Number(prevMatrix?.[colorId]?.[referenceSizeId] || 0);
+                    nextMatrix[colorId] = {
+                        ...prevMatrix[colorId],
+                        [targetSizeId]: referenceQuantity * multiplier,
+                    };
+                });
+                return nextMatrix;
+            });
+        },
+        [referenceSizeId, selectedColorIds],
+    );
     const filteredColors = availableColors.filter((color) =>
         color.nome.toLowerCase().includes(colorSearch.toLowerCase()),
     );
@@ -222,6 +352,9 @@ export default function FichaTecnicaModal({
     const resetStates = useCallback(() => {
         setSelectedColorIds([]);
         setMatrix({});
+        setConfirmarSaida(false);
+        setOferecerGrade(false);
+        setReferenceSizeId(null);
         setParceiroRows([]);
         setError("");
         setColorDropdownOpen(false);
@@ -231,6 +364,7 @@ export default function FichaTecnicaModal({
         setParceiroModalOpen(false);
         setHoveredParceiroIndex(null);
         setParceiroScrollTop(0);
+        setValidacaoPrecoExibida(false);
     }, []);
 
     const handleForceClose = useCallback(() => {
@@ -303,6 +437,7 @@ export default function FichaTecnicaModal({
                     null;
 
                 setSelectedGradeVersionId(fallbackGrade);
+                setOferecerGrade(Boolean(fichaAnterior && normalizedGrades.length));
             } catch (err) {
                 if (alive) setError(err?.message || "Falha ao carregar dados.");
             } finally {
@@ -382,25 +517,28 @@ export default function FichaTecnicaModal({
     };
 
     const handleSave = () => {
+        setValidacaoPrecoExibida(true);
+
+        if (parceirosSemPreco.length > 0) {
+            return;
+        }
+
         if (!effectiveGradeVersionId) {
             setError("Selecione uma grade válida.");
             return;
         }
 
         // Construindo o array de itens para a matriz (cores/tamanhos x quantidades)
-        const itensPayload = selectedColorIds
-            .flatMap((corId) =>
-                currentSizeItems.map((s) => ({
-                    cor_id: corId,
-                    grade_versao_item_id: s.gradeVersaoItemId,
-                    quantidade: Number(matrix?.[corId]?.[s.tamanhoId] || 0),
-                })),
-            )
-            .filter((item) => item.quantidade > 0); // Só manda pro backend se a qtd for > 0!
+        const itensPayload = selectedColorIds.flatMap((corId) =>
+            currentSizeItems.map((s) => ({
+                cor_id: corId,
+                grade_versao_item_id: s.gradeVersaoItemId,
+                quantidade: Number(matrix?.[corId]?.[s.tamanhoId] || 0),
+            })),
+        );
 
         // Calculando a quantidade total para exibir na Tabela da tela de Pedidos
         const quantidadeTotal = itensPayload.reduce((acc, curr) => acc + curr.quantidade, 0);
-
         if (quantidadeTotal === 0) {
             setError(
                 "Informe a quantidade de pelo menos um tamanho/cor antes de adicionar a ficha.",
@@ -419,6 +557,10 @@ export default function FichaTecnicaModal({
             gradeVersaoIdOriginal: produto?.gradeVersaoId || produto?.grade_versao_id,
             gradeVersaoIdNova: effectiveGradeVersionId,
             selectedColorIds,
+            gradeParaCopia: currentSizeItems.map((size) => ({
+                tamanhoId: size.tamanhoId,
+                gradeVersaoItemId: size.gradeVersaoItemId,
+            })),
             cores: selectedColors,
             itensPayload,
             parceiroRows,
@@ -429,13 +571,51 @@ export default function FichaTecnicaModal({
         handleForceClose();
     };
 
+    const repetirGrade = () => {
+        const colorIds = (fichaAnterior.selectedColorIds || []).filter((id) =>
+            availableColors.some((cor) => String(cor.id) === String(id)),
+        );
+        const next = {};
+        colorIds.forEach((colorId) => {
+            next[colorId] = {};
+            currentSizeItems.forEach((size) => {
+                const previousSize = fichaAnterior.gradeParaCopia?.find(
+                    (item) => String(item.tamanhoId) === String(size.tamanhoId),
+                );
+                const item =
+                    previousSize &&
+                    fichaAnterior.itensPayload?.find(
+                        (item) =>
+                            String(item.cor_id) === String(colorId) &&
+                            String(item.grade_versao_item_id) ===
+                                String(previousSize.gradeVersaoItemId),
+                    );
+                next[colorId][size.tamanhoId] = Number(item?.quantidade) || 0;
+            });
+        });
+        setSelectedColorIds(colorIds);
+        setMatrix(next);
+        setOferecerGrade(false);
+    };
+
     if (!isOpen) return null;
 
     return (
         <>
+            <ConfirmacaoFichaModal
+                isOpen={confirmarSaida}
+                mensagem="Ao sair, você perderá o progresso desta ficha técnica. Deseja continuar?"
+                textoCancel="Continuar preenchendo"
+                textoConfirm="Sair e descartar"
+                onCancel={() => setConfirmarSaida(false)}
+                onConfirm={handleForceClose}
+            />
+            {oferecerGrade && (
+                <AvisoRepetirGrade onDismiss={dispensarGrade} onRepeat={repetirGrade} />
+            )}
             <div
                 className="fixed inset-0 z-[999] flex items-center justify-center bg-black/35 px-4 py-6 backdrop-blur-sm font-['Outfit',_sans-serif]"
-                onClick={handleForceClose}
+                onClick={() => setConfirmarSaida(true)}
             >
                 <div
                     className="flex max-h-[95vh] w-full max-w-[1160px] flex-col rounded-[28px] bg-white py-8 shadow-2xl overflow-x-hidden"
@@ -452,7 +632,7 @@ export default function FichaTecnicaModal({
                         </div>
                         <button
                             type="button"
-                            onClick={handleForceClose}
+                            onClick={() => setConfirmarSaida(true)}
                             className="text-[28px] leading-none text-[#8C8C8C] transition hover:text-black"
                         >
                             &times;
@@ -742,42 +922,80 @@ export default function FichaTecnicaModal({
                                                                 : "#D7D7D7",
                                                     }}
                                                 >
-                                                    {proporcoes[i]}
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        step="1"
+                                                        inputMode="numeric"
+                                                        value={proporcoes[s.tamanhoId] || ""}
+                                                        placeholder="0"
+                                                        readOnly={isReferenciaProporcao(
+                                                            s.tamanhoId,
+                                                            referenceSizeId,
+                                                        )}
+                                                        disabled={referenceSizeId === null}
+                                                        onFocus={(event) => {
+                                                            preventNumberInputWheel(event);
+                                                            event.target.select();
+                                                        }}
+                                                        onChange={(event) =>
+                                                            handleAplicarProporcao(
+                                                                s.tamanhoId,
+                                                                event.target.value,
+                                                            )
+                                                        }
+                                                        title={
+                                                            isReferenciaProporcao(
+                                                                s.tamanhoId,
+                                                                referenceSizeId,
+                                                            )
+                                                                ? "Coluna de referência"
+                                                                : referenceSizeId === null
+                                                                  ? "Preencha primeiro uma coluna da grade"
+                                                                  : "Digite a proporção para recalcular esta coluna"
+                                                        }
+                                                        className="h-full w-full bg-transparent text-center outline-none disabled:cursor-not-allowed [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                    />
                                                 </div>
                                             ))}
                                         </div>
+                                        <div className="w-[90px] shrink-0" />
                                     </div>
                                     <div className="flex h-[40px] items-stretch">
                                         <div className="w-[160px] shrink-0 rounded-tl-[10px] font-normal bg-[#C9EAF6] px-4 text-[#4696AD] flex items-center justify-center overflow-hidden">
                                             Cores
                                         </div>
                                         <div className="flex flex-1 min-w-0">
-                                            {currentSizeItems.map((s, idx) => (
+                                            {currentSizeItems.map((s, sizeIndex) => (
                                                 <div
                                                     key={s.gradeVersaoItemId}
                                                     className="flex-1 min-w-0 text-center font-normal text-[#4696AD] flex items-center justify-center bg-[#C9EAF6]"
                                                     style={{
-                                                        borderLeftWidth:
-                                                            idx === 0 ? "0.5px" : "0px",
-                                                        borderRightWidth: "0.5px",
+                                                        borderLeftWidth: "0.5px",
+                                                        borderRightWidth:
+                                                            sizeIndex ===
+                                                            currentSizeItems.length - 1
+                                                                ? "0.5px"
+                                                                : "0px",
                                                         borderBottomWidth: "0px",
                                                         borderTopWidth: "0px",
                                                         borderColor: "#7B7D80",
-                                                        borderRightColor:
-                                                            idx === currentSizeItems.length - 1
-                                                                ? "#C9EAF6"
-                                                                : "#7B7D80",
                                                     }}
                                                 >
                                                     {s.codigo}
                                                 </div>
                                             ))}
                                         </div>
+                                        <div
+                                            className="w-[90px] shrink-0 rounded-tr-[10px] bg-[#C9EAF6] px-2 text-center text-[14px] font-normal text-[#4696AD] flex items-center justify-center"
+                                            style={{
+                                                borderRight: "0.5px solid #D9D9D9",
+                                            }}
+                                        >
+                                            Total (cor)
+                                        </div>
                                     </div>
-                                    <div
-                                        className="rounded-b-[10px] bg-white"
-                                        style={BORDER_SHELL_05}
-                                    >
+                                    <div className="rounded-b-[10px] bg-white overflow-hidden">
                                         <div className="flex flex-col w-full">
                                             {selectedColors.length > 0 ? (
                                                 selectedColors.map((color, index) => (
@@ -788,11 +1006,8 @@ export default function FichaTecnicaModal({
                                                         <div
                                                             className="w-[160px] shrink-0 pl-2 pr-4 flex items-center"
                                                             style={{
-                                                                ...BORDER_DARK_05,
-                                                                borderTopWidth: "0px",
-                                                                borderLeftWidth: "0px",
-                                                                borderBottomWidth: "0px",
-                                                                borderRightWidth: "0.5px",
+                                                                borderLeftWidth: "0.5px",
+                                                                borderLeftColor: "#D9D9D9",
                                                             }}
                                                         >
                                                             {String(color.tipo).toUpperCase() ===
@@ -824,9 +1039,9 @@ export default function FichaTecnicaModal({
                                                                     ...BORDER_DARK_05,
                                                                     borderTopWidth: "0px",
                                                                     borderBottomWidth: "0px",
-                                                                    borderLeftWidth: "0px",
+                                                                    borderLeftWidth: "0.5px",
                                                                     borderRightWidth:
-                                                                        sizeIndex !==
+                                                                        sizeIndex ===
                                                                         currentSizeItems.length - 1
                                                                             ? "0.5px"
                                                                             : "0px",
@@ -839,23 +1054,71 @@ export default function FichaTecnicaModal({
                                                                         ] || 0
                                                                     }
                                                                     onCommit={(v) =>
-                                                                        setMatrix((p) => ({
-                                                                            ...p,
-                                                                            [color.id]: {
-                                                                                ...(p[color.id] ||
-                                                                                    {}),
-                                                                                [s.tamanhoId]: v,
-                                                                            },
-                                                                        }))
+                                                                        handleCommitQuantidade(
+                                                                            color.id,
+                                                                            s.tamanhoId,
+                                                                            v,
+                                                                        )
+                                                                    }
+                                                                    onDraftChange={(v) =>
+                                                                        handleQuantidadeDraftChange(
+                                                                            color.id,
+                                                                            s.tamanhoId,
+                                                                            v,
+                                                                        )
                                                                     }
                                                                 />
                                                             </div>
                                                         ))}
+                                                        <div
+                                                            className="w-[90px] shrink-0 px-2 flex items-center justify-center text-[14px] font-normal text-[#898C8F]"
+                                                            style={{
+                                                                borderRight: "0.5px solid #D9D9D9",
+                                                            }}
+                                                        >
+                                                            {totalsByColor[color.id] || "-"}
+                                                        </div>
                                                     </div>
                                                 ))
                                             ) : (
                                                 <div className="px-4 py-4 text-[13px] text-center text-[#888] bg-white w-full rounded-b-[10px]">
                                                     Nenhuma cor selecionada.
+                                                </div>
+                                            )}
+                                            {selectedColors.length > 0 && (
+                                                <div className="flex w-full min-h-[40px] items-stretch">
+                                                    <div className="w-[160px] shrink-0 bg-[#C9EAF6] px-3 text-center text-[14px] font-normal text-[#4696AD] flex items-center justify-center">
+                                                        Total (tamanho)
+                                                    </div>
+                                                    <div className="flex flex-1 min-w-0">
+                                                        {currentSizeItems.map((size, sizeIndex) => (
+                                                            <div
+                                                                key={`total-tamanho-${size.gradeVersaoItemId}`}
+                                                                className={`flex-1 min-w-0 px-2 flex items-center justify-center text-[14px] font-normal text-[#898C8F] border-l-[0.5px] border-[#7B7D80] ${
+                                                                    selectedColors.length % 2 === 1
+                                                                        ? "bg-[#F4F4F4]"
+                                                                        : "bg-[#FFFFFF]"
+                                                                }`}
+                                                                style={{
+                                                                    ...BORDER_DARK_05,
+                                                                    borderBottomColor: "#D9D9D9",
+                                                                    borderTopWidth: "0px",
+                                                                    borderBottomWidth: "0.5px",
+                                                                    borderLeftWidth: "0.5px",
+                                                                    borderRightWidth:
+                                                                        sizeIndex ===
+                                                                        currentSizeItems.length - 1
+                                                                            ? "0.5px"
+                                                                            : "0px",
+                                                                }}
+                                                            >
+                                                                {totalsBySize[sizeIndex] || "-"}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <div className="w-[90px] shrink-0 bg-[#C9EAF6] px-2 flex items-center justify-center text-[14px] font-normal text-[#4696AD]">
+                                                        {totalGeral || "-"}
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
@@ -865,6 +1128,13 @@ export default function FichaTecnicaModal({
 
                             {/* TABELA DE PARCEIROS */}
                             <div className="mt-8 mx-[30px]">
+                                {validacaoPrecoExibida && parceirosSemPreco.length > 0 && (
+                                    <div className="mb-3 rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-[14px] font-light text-red-700">
+                                        <span className="font-medium">Atenção:</span> cadastre o
+                                        preço unitário de todas as facções antes de adicionar a
+                                        ficha.
+                                    </div>
+                                )}
                                 <div className="w-full">
                                     <div className="grid grid-cols-3 items-center h-10 font-normal text-center text-[#4696AD]">
                                         <div className="bg-[#C9EAF6] px-4 py-2.5 border-r-[0.5px] rounded-tl-[10px] border-[#7B7D80] h-10">
@@ -1072,7 +1342,7 @@ export default function FichaTecnicaModal({
                                 <button
                                     type="button"
                                     onClick={handleSave}
-                                    className="rounded-[19px] bg-[#A9E2F2] px-10 h-[39px] text-[14px] font-medium text-[#4696AD] transition hover:bg-[#8acbdc]"
+                                    className="rounded-[19px] bg-[#A9E2F2] px-10 h-[39px] text-[14px] font-medium text-[#4696AD] transition hover:bg-[#A2DCED]"
                                 >
                                     Adicionar ficha
                                 </button>

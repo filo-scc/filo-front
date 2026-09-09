@@ -1,14 +1,20 @@
 import { useEffect, useState, useCallback } from "react";
 import { findOne } from "../../services/fichasTecnicasService";
 import { getProdutosDoCliente } from "../../services/clientesService";
+import { getAviamentosDoProduto } from "../../services/produtoService";
 import EdicaoFichaTecnicaModal from "./EdicaoFichaTecnicaModal";
 import NotaDeSaidaPrintView from "../NotaDeSaidaPrintView";
 import { useNavigate } from "react-router-dom";
 import FichaTecnicaPrintView from "../FichaTecnicaPrintView";
 import OpcoesImpressaoModal from "./OpcoesImpressaoModal";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import RelatorioDeAcabamento from "./RelatorioDeAcabamento";
+import { getAllEtapasByFabricoId } from "../../services/etapaService";
+import { getFabricoById } from "../../services/fabricoService";
 
 const CampoDetalhe = ({ label, valor }) => (
-    <div className="relative border border-[#898C8F] rounded-[10px] h-[39px] px-3 flex items-center mt-2 w-full bg-white">
+    <div className="relative border border-[#898C8F] rounded-[10px] h-[39px] px-3 flex items-center mt-0.5 w-full bg-white">
         <span className="absolute -top-[9px] left-2 bg-white px-1 text-[12px] text-[#898C8F]">
             {label}
         </span>
@@ -23,11 +29,23 @@ const calcularProporcao = (totaisPorTamanho) => {
     return totaisPorTamanho.map((t) => (t > 0 ? Math.round(t / base) : 0));
 };
 
-const BORDER_DARK_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#7B7D80" };
-const BORDER_SHELL_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#D9D9D9" };
+const simplificarUnidade = (unidade) => {
+    const unidadesSimplificadas = {
+        METRO: "m",
+        CENTIMETRO: "cm",
+        GRAMA: "g",
+        QUILOGRAMA: "kg",
+        UNIDADE: "und",
+        PAR: "par",
+    };
+    return unidadesSimplificadas[unidade] || unidade;
+};
 
-export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) {
+const BORDER_DARK_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#7B7D80" };
+
+export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, onFichaAtualizada }) {
     const [ficha, setFicha] = useState(null);
+    const [aviamentosProduto, setAviamentosProduto] = useState([]);
     const [loading, setLoading] = useState(false);
     const [referenciaCliente, setReferenciaCliente] = useState("-");
     const navigate = useNavigate();
@@ -36,11 +54,37 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
     const [modalEdicaoAberto, setModalEdicaoAberto] = useState(false);
     const [modalImpressaoAberto, setModalImpressaoAberto] = useState(false);
     const [printMode, setPrintMode] = useState(null);
+    const [ultimaEtapaId, setUltimaEtapaId] = useState(null);
+    const [relatorioAcabamento, setRelatorioAcabamento] = useState({
+        defeitoCostura: 0,
+        defeitoTecido: 0,
+        retiradas: 0,
+        sobras: 0,
+    });
 
     const carregarDados = useCallback(async () => {
         try {
             const dados = await findOne(fichaId);
+            if (dados && dados.fabrico?.fabricacao_sob_demanda == null && dados.fabrico_id) {
+                dados.fabrico = await getFabricoById(dados.fabrico_id);
+            }
             setFicha(dados);
+            setRelatorioAcabamento({
+                defeitoCostura: dados?.defeitos_costura ?? 0,
+                defeitoTecido: dados?.defeitos_tecido ?? 0,
+                retiradas: dados?.retiradas ?? 0,
+                sobras: dados?.sobras ?? 0,
+            });
+
+            if (dados?.produto?.id) {
+                try {
+                    const aviamentos = await getAviamentosDoProduto(dados.produto.id);
+                    setAviamentosProduto(aviamentos);
+                } catch (error) {
+                    console.error("Erro ao carregar aviamentos do produto", error);
+                    setAviamentosProduto([]);
+                }
+            }
 
             if (dados?.pedido?.cliente?.id && dados?.produto?.id) {
                 const produtoDoCliente = await getProdutosDoCliente(dados.pedido.cliente.id);
@@ -79,11 +123,158 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
         };
     }, [printMode]);
 
+    useEffect(() => {
+        let isCurrent = true;
+
+        if (ficha?.fabrico_id) {
+            getAllEtapasByFabricoId(ficha.fabrico_id)
+                .then((etapas) => {
+                    if (!isCurrent) return;
+                    const etapasAtivas = (etapas || []).filter((e) => e.ativa);
+                    const etapasOrdenadas = etapasAtivas.sort((a, b) => a.ordem - b.ordem);
+                    const ultima = etapasOrdenadas[etapasOrdenadas.length - 1];
+                    setUltimaEtapaId(ultima?.id ?? null);
+                })
+                .catch((error) => {
+                    console.error("Erro ao verificar última etapa", error);
+                    setUltimaEtapaId(null);
+                });
+        }
+
+        return () => {
+            isCurrent = false;
+        };
+    }, [ficha?.fabrico_id]);
+    const isUltimaEtapa = ultimaEtapaId != null && ficha?.etapa_atual_id == ultimaEtapaId;
+
     const handlePrintMode = useCallback((mode) => {
         document.body.classList.add(`print-mode-${mode}`);
         setPrintMode(mode);
         window.print();
     }, []);
+
+    const handleDownloadNotaSaidaPdf = useCallback(async () => {
+        if (!ficha) {
+            console.error("[PDF] ficha não definida");
+            return;
+        }
+
+        const sourceElement =
+            document.getElementById("nota-print-view") ||
+            document.getElementById("portal-impressao-nota");
+
+        if (!sourceElement) {
+            console.error("Elemento de nota de saída não encontrado para gerar PDF.");
+            return;
+        }
+
+        const snapshot = sourceElement.cloneNode(true);
+        snapshot.id = "nota-print-view-pdf-snapshot";
+
+        snapshot.className = snapshot.className
+            .split(" ")
+            .filter((cls) => cls !== "hidden" && cls !== "print:block")
+            .join(" ");
+
+        // Usamos absolute para garantir que o html2canvas capture toda a altura sem limitar pela janela
+        Object.assign(snapshot.style, {
+            position: "absolute",
+            top: "0",
+            left: "0",
+            width: "210mm",
+            boxSizing: "border-box",
+            backgroundColor: "#ffffff",
+            zIndex: "99999",
+            opacity: "1",
+            visibility: "visible",
+            pointerEvents: "none",
+        });
+
+        document.body.appendChild(snapshot);
+
+        // A rotina do PDF captura tudo como uma única imagem. Para preservar a
+        // regra visual de impressão, empurramos as Anotações para a página
+        // seguinte quando o bloco não couber integralmente na página atual.
+        const observacoes = snapshot.querySelector(".nota-observacoes");
+        if (observacoes) {
+            const cssPageHeight = (297 / 25.4) * 96;
+            const observacoesTop = observacoes.offsetTop;
+            const observacoesHeight = observacoes.offsetHeight;
+            const pageOffset = observacoesTop % cssPageHeight;
+            const remainingPageSpace = cssPageHeight - pageOffset;
+
+            if (observacoesHeight > remainingPageSpace) {
+                observacoes.style.marginTop = `${parseFloat(getComputedStyle(observacoes).marginTop) + remainingPageSpace + 8}px`;
+            }
+        }
+
+        const images = snapshot.querySelectorAll("img");
+        await Promise.all(
+            Array.from(images).map(
+                (img) =>
+                    new Promise((resolve) => {
+                        if (img.complete) resolve();
+                        else {
+                            img.onload = resolve;
+                            img.onerror = resolve;
+                        }
+                    }),
+            ),
+        );
+
+        try {
+            const canvas = await html2canvas(snapshot, {
+                useCORS: true,
+                allowTaint: true,
+                scale: 2,
+                backgroundColor: "#ffffff",
+                scrollX: 0,
+                scrollY: 0,
+                x: 0,
+                y: 0,
+                width: snapshot.offsetWidth,
+                height: snapshot.offsetHeight,
+                windowWidth: snapshot.offsetWidth,
+                windowHeight: snapshot.offsetHeight,
+            });
+
+            const imgData = canvas.toDataURL("image/png");
+            const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+
+            const pageWidth = pdf.internal.pageSize.getWidth(); // 210mm
+            const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
+
+            const imgProps = pdf.getImageProperties(imgData);
+            const imgHeight = (imgProps.height * pageWidth) / imgProps.width;
+
+            if (imgHeight <= pageHeight + 20) {
+                pdf.addImage(imgData, "PNG", 0, 0, pageWidth, Math.min(imgHeight, pageHeight));
+            } else {
+                let heightLeft = imgHeight;
+                let position = 0;
+
+                pdf.addImage(imgData, "PNG", 0, position, pageWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                while (heightLeft > 0) {
+                    position -= pageHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, "PNG", 0, position, pageWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+            }
+
+            const fileName = `${ficha.fabrico?.fabricacao_sob_demanda === false ? "nota-de-conferencia" : "nota-de-saida"}-${ficha.numero || "export"}.pdf`;
+            pdf.save(fileName);
+        } catch (error) {
+            console.error("Erro ao gerar PDF da nota de saída", error);
+        } finally {
+            const snapshotElement = document.getElementById("nota-print-view-pdf-snapshot");
+            if (snapshotElement && snapshotElement.parentNode) {
+                snapshotElement.parentNode.removeChild(snapshotElement);
+            }
+        }
+    }, [ficha]);
 
     const handleContentClick = (e) => {
         e.stopPropagation();
@@ -116,6 +307,16 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
         }, 0);
     });
 
+    const totalsByColor = coresList.reduce((totals, itemCor) => {
+        totals[itemCor.cor.id] = sizeItems.reduce((sum, size) => {
+            const tamanhoId = size.tamanho?.id || size.id;
+            return sum + Number(itemCor.quantidades[tamanhoId] || 0);
+        }, 0);
+        return totals;
+    }, {});
+
+    const totalGeral = totalsBySize.reduce((sum, total) => sum + Number(total || 0), 0);
+
     const proporcoes = calcularProporcao(totalsBySize);
 
     const categoriasAceitas = ["costura", "faccao", "confeccao"];
@@ -132,21 +333,21 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-2 backdrop-blur-sm sm:p-4"
             onClick={onClose}
         >
             <div
-                className="bg-white rounded-[24px] w-full max-w-[850px] max-h-[90vh] flex flex-col shadow-2xl relative overflow-hidden font-['Outfit',_sans-serif]"
+                className="relative flex max-h-[95dvh] w-full max-w-[850px] flex-col overflow-hidden rounded-[20px] bg-white shadow-2xl font-['Outfit',_sans-serif] sm:max-h-[90vh] sm:rounded-[24px]"
                 onClick={handleContentClick}
             >
-                <div className="flex justify-between items-center px-8 py-6 border-b border-gray-100 shrink-0">
+                <div className="flex shrink-0 items-center justify-between px-4 py-4 sm:px-8 sm:py-6">
                     <div className="flex items-center gap-3">
                         <img
                             src="/etiqueta-preta.png"
                             alt="Tag"
                             className="w-[30px] h-[30px] object-contain"
                         />
-                        <h2 className="text-[26px] font-light text-[#404040]">
+                        <h2 className="text-xl font-light text-[#404040] sm:text-[26px]">
                             Ficha Técnica {ficha?.numero}
                         </h2>
                     </div>
@@ -160,7 +361,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-8 space-y-8 scrollbar-sutil">
+                <div className="flex-1 space-y-8 overflow-y-auto px-4 pb-8 pt-1 scrollbar-sutil sm:px-8">
                     {loading ? (
                         <div className="text-center text-[#4696AD]">
                             Carregando dados da ficha...
@@ -176,7 +377,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                     />
                                 </div>
 
-                                <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-4 content-start pt-2">
+                                <div className="grid flex-1 grid-cols-1 content-start gap-x-6 gap-y-4 sm:grid-cols-2">
                                     <CampoDetalhe
                                         label="Referência Interna"
                                         valor={ficha?.produto?.nome}
@@ -185,10 +386,12 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                         label="Cliente"
                                         valor={ficha?.pedido?.cliente?.nome}
                                     />
-                                    <CampoDetalhe
-                                        label="Referência do Cliente"
-                                        valor={referenciaCliente}
-                                    />
+                                    {ficha?.fabrico?.fabricacao_sob_demanda !== false && (
+                                        <CampoDetalhe
+                                            label="Referência do Cliente"
+                                            valor={referenciaCliente}
+                                        />
+                                    )}
                                     <CampoDetalhe
                                         label="Tecido"
                                         valor={ficha?.produto?.tecido?.nome}
@@ -196,7 +399,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                 </div>
                             </div>
 
-                            <div className="mt-4">
+                            <div className="mt-2">
                                 <div className="mb-2 text-center text-[16px] font-light text-[#737373]">
                                     Grade
                                 </div>
@@ -233,6 +436,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                                 </div>
                                             ))}
                                         </div>
+                                        <div className="w-[90px] shrink-0" />
                                     </div>
 
                                     <div className="flex h-[40px] items-stretch">
@@ -240,14 +444,16 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                             Cores
                                         </div>
                                         <div className="flex flex-1 min-w-0">
-                                            {sizeItems.map((s, idx) => (
+                                            {sizeItems.map((s, sizeIndex) => (
                                                 <div
                                                     key={s.id}
                                                     className="flex-1 min-w-0 text-center font-normal text-[#4696AD] flex items-center justify-center bg-[#C9EAF6]"
                                                     style={{
-                                                        borderLeftWidth:
-                                                            idx === 0 ? "0.5px" : "0px",
-                                                        borderRightWidth: "0.5px",
+                                                        borderLeftWidth: "0.5px",
+                                                        borderRightWidth:
+                                                            sizeIndex === sizeItems.length - 1
+                                                                ? "0.5px"
+                                                                : "0px",
                                                         borderColor: "#7B7D80",
                                                     }}
                                                 >
@@ -255,12 +461,17 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                                 </div>
                                             ))}
                                         </div>
+                                        <div
+                                            className="w-[90px] shrink-0 rounded-tr-[10px] bg-[#C9EAF6] px-2 text-center text-[14px] font-normal text-[#4696AD] flex items-center justify-center"
+                                            style={{
+                                                borderRight: "0.5px solid #D9D9D9",
+                                            }}
+                                        >
+                                            Total (cor)
+                                        </div>
                                     </div>
 
-                                    <div
-                                        className="rounded-b-[10px] bg-white overflow-hidden"
-                                        style={BORDER_SHELL_05}
-                                    >
+                                    <div className="rounded-b-[10px] bg-white overflow-hidden">
                                         <div className="flex flex-col w-full">
                                             {coresList.length > 0 ? (
                                                 coresList.map((itemCor, index) => (
@@ -271,11 +482,8 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                                         <div
                                                             className="w-[160px] shrink-0 pl-2 pr-4 flex items-center gap-3"
                                                             style={{
-                                                                ...BORDER_DARK_05,
-                                                                borderTopWidth: "0px",
-                                                                borderLeftWidth: "0px",
-                                                                borderBottomWidth: "0px",
-                                                                borderRightWidth: "0.5px",
+                                                                borderLeftWidth: "0.5px",
+                                                                borderLeftColor: "#D9D9D9",
                                                             }}
                                                         >
                                                             {String(
@@ -303,10 +511,9 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                                         </div>
 
                                                         {sizeItems.map((s, sizeIndex) => {
+                                                            const tamanhoId = s.tamanho?.id || s.id;
                                                             const qtd =
-                                                                itemCor.quantidades[
-                                                                    s.tamanho?.id
-                                                                ] || 0;
+                                                                itemCor.quantidades[tamanhoId] || 0;
                                                             return (
                                                                 <div
                                                                     key={s.id}
@@ -315,9 +522,9 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                                                         ...BORDER_DARK_05,
                                                                         borderTopWidth: "0px",
                                                                         borderBottomWidth: "0px",
-                                                                        borderLeftWidth: "0px",
+                                                                        borderLeftWidth: "0.5px",
                                                                         borderRightWidth:
-                                                                            sizeIndex !==
+                                                                            sizeIndex ===
                                                                             sizeItems.length - 1
                                                                                 ? "0.5px"
                                                                                 : "0px",
@@ -327,6 +534,14 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                                                 </div>
                                                             );
                                                         })}
+                                                        <div
+                                                            className="w-[90px] shrink-0 px-2 flex items-center justify-center text-[14px] font-normal text-[#898C8F]"
+                                                            style={{
+                                                                borderRight: "0.5px solid #D9D9D9",
+                                                            }}
+                                                        >
+                                                            {totalsByColor[itemCor.cor.id] || "-"}
+                                                        </div>
                                                     </div>
                                                 ))
                                             ) : (
@@ -334,24 +549,60 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                                     Nenhuma cor vinculada a esta ficha.
                                                 </div>
                                             )}
+                                            <div className="flex w-full min-h-[40px] items-stretch">
+                                                <div className="w-[160px] shrink-0 bg-[#C9EAF6] px-3 text-center text-[14px] font-normal text-[#4696AD] flex items-center justify-center">
+                                                    Total (tamanho)
+                                                </div>
+                                                <div className="flex flex-1 min-w-0">
+                                                    {sizeItems.map((size, sizeIndex) => (
+                                                        <div
+                                                            key={`total-tamanho-${size.id}`}
+                                                            className={`flex-1 min-w-0 px-2 flex items-center justify-center text-[14px] font-normal text-[#898C8F] border-l-[0.5px] border-[#7B7D80] ${
+                                                                coresList.length % 2 === 1
+                                                                    ? "bg-[#F4F4F4]"
+                                                                    : "bg-[#FFFFFF]"
+                                                            }`}
+                                                            style={{
+                                                                borderLeftWidth: "0.5px",
+                                                                borderRightWidth:
+                                                                    sizeIndex ===
+                                                                    sizeItems.length - 1
+                                                                        ? "0.5px"
+                                                                        : "0px",
+                                                                borderColor: "#7B7D80",
+                                                            }}
+                                                        >
+                                                            {totalsBySize[sizeIndex] || "-"}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <div className="w-[90px] shrink-0 bg-[#C9EAF6] px-2 flex items-center justify-center text-[14px] font-normal text-[#4696AD]">
+                                                    {totalGeral || "-"}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="border border-[#E8E8E8] rounded-[10px] overflow-hidden">
-                                <table className="w-full text-center text-sm">
+                            <div className="overflow-hidden">
+                                <table className="w-full table-fixed border-separate border-spacing-0 text-center text-sm">
                                     <thead className="bg-[#C9EAF6] text-[#4696AD]">
                                         <tr>
-                                            <th className="py-3 border-r border-white/50 font-normal">
+                                            <th className="w-1/3 rounded-tl-[10px] py-3 border-r border-[#7B7D80] font-normal">
                                                 Facção
                                             </th>
-                                            <th className="py-3 border-r border-white/50 font-normal">
+
+                                            <th className="w-1/3 py-3 border-r border-[#7B7D80] font-normal">
                                                 Operação
                                             </th>
-                                            <th className="py-3 font-normal">Preço Unitário</th>
+
+                                            <th className="w-1/3 rounded-tr-[10px] py-3 font-normal">
+                                                Preço Unitário
+                                            </th>
                                         </tr>
                                     </thead>
+
                                     <tbody className="text-[#707070]">
                                         {parceirosFiltrados.length > 0 ? (
                                             parceirosFiltrados.map((vinculo, index) => {
@@ -364,19 +615,65 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
 
                                                 const precoFormatado =
                                                     preco !== undefined && preco !== null
-                                                        ? `R$ ${Number(preco).toFixed(2).replace(".", ",")}`
+                                                        ? `R$ ${Number(preco)
+                                                              .toFixed(2)
+                                                              .replace(".", ",")}`
                                                         : "-";
+
+                                                const isLastRow =
+                                                    index === parceirosFiltrados.length - 1;
 
                                                 return (
                                                     <tr
                                                         key={vinculo.id || index}
-                                                        className="border-t border-[#E8E8E8] first:border-t-0"
+                                                        className="odd:bg-[#FFFFFF] even:bg-[#F4F4F4]"
                                                     >
-                                                        <td className="py-3">{nome}</td>
-                                                        <td className="py-3 text-[#D3D3D3]">
-                                                            {operacao}
+                                                        {/* FACÇÃO */}
+                                                        <td
+                                                            className={`
+                                    w-1/3
+                                    py-3
+                                    border-l border-[#D9D9D9]
+                                    border-r border-r-[#7B7D80]
+                                    ${
+                                        isLastRow
+                                            ? "rounded-bl-[10px] border-b border-[#D9D9D9]"
+                                            : ""
+                                    }
+                                `}
+                                                        >
+                                                            {nome}
                                                         </td>
-                                                        <td className="py-3">{precoFormatado}</td>
+
+                                                        {/* OPERAÇÃO */}
+                                                        <td
+                                                            className={`
+                                    w-1/3
+                                    py-3
+                                    border-r border-[#7B7D80]
+                                    ${isLastRow ? "border-b border-b-[#D9D9D9]" : ""}
+                                `}
+                                                        >
+                                                            <span className="text-[#D3D3D3]">
+                                                                {operacao}
+                                                            </span>
+                                                        </td>
+
+                                                        {/* PREÇO UNITÁRIO */}
+                                                        <td
+                                                            className={`
+                                    w-1/3
+                                    py-3
+                                    border-r border-[#D9D9D9]
+                                    ${
+                                        isLastRow
+                                            ? "rounded-br-[10px] border-b border-[#D9D9D9]"
+                                            : ""
+                                    }
+                                `}
+                                                        >
+                                                            {precoFormatado}
+                                                        </td>
                                                     </tr>
                                                 );
                                             })
@@ -384,7 +681,18 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                             <tr>
                                                 <td
                                                     colSpan="3"
-                                                    className="py-4 text-center text-[13px] text-[#888]"
+                                                    className="
+                            rounded-bl-[10px]
+                            rounded-br-[10px]
+                            border-l
+                            border-r
+                            border-b
+                            border-[#D9D9D9]
+                            py-4
+                            text-center
+                            text-[13px]
+                            text-[#888]
+                        "
                                                 >
                                                     Nenhuma facção vinculada a esta ficha.
                                                 </td>
@@ -394,21 +702,62 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                 </table>
                             </div>
 
-                            <div className="bg-[#F8F8F8] border border-[#E8E8E8] rounded-[10px] p-4 relative mt-6">
-                                <span className="absolute -top-[9px] left-4 bg-[#F8F8F8] px-1 text-[11px] text-[#898C8F]">
+                            {/* Relatório de acabamento */}
+                            {isUltimaEtapa && (
+                                <RelatorioDeAcabamento
+                                    defeitoCostura={relatorioAcabamento.defeitoCostura}
+                                    defeitoTecido={relatorioAcabamento.defeitoTecido}
+                                    retiradas={relatorioAcabamento.retiradas}
+                                    sobras={relatorioAcabamento.sobras}
+                                    readonly
+                                />
+                            )}
+
+                            <div className="relative bg-[#F4F4F4] border border-[#D9D9D9] rounded-[14px] p-5 pt-5 mt-6">
+                                <span className="absolute -top-[12px] left-4 bg-gradient-to-b from-white via-white via-[35%] to-[#F4F4F4] px-3 py-0.5 text-[15px] font-normal text-[#898C8F] leading-none">
                                     Materiais necessários por peça:
                                 </span>
+
+                                {aviamentosProduto && aviamentosProduto.length > 0 ? (
+                                    <div className="flex flex-col gap-1 text-[14px] mt-1">
+                                        {aviamentosProduto.map((item, index) => {
+                                            const qtd = item.quantidade ?? "";
+                                            const unidade = simplificarUnidade(
+                                                item.aviamento?.unidade_de_medida ?? "",
+                                            );
+                                            const nome = item.aviamento?.nome ?? "";
+
+                                            return (
+                                                <div
+                                                    key={item.aviamento?.id ?? index}
+                                                    className="leading-relaxed"
+                                                >
+                                                    <span className="font-bold text-[#B0B4B8]">
+                                                        {qtd} {unidade}
+                                                    </span>{" "}
+                                                    <span className="text-[#B0B4B8] font-normal">
+                                                        de {nome}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <p className="text-[13px] text-[#898C8F] font-light px-2 pt-1">
+                                        Nenhum material cadastrado.
+                                    </p>
+                                )}
                             </div>
                         </>
                     )}
                 </div>
 
-                <div className="px-8 py-5 border-t border-gray-100 flex justify-between items-center shrink-0">
-                    {/* Botão de Impressora -> Agora abre o Modal de Opções */}
+                <div className="flex shrink-0 flex-col-reverse gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-5">
                     <button
                         type="button"
                         onClick={() => setModalImpressaoAberto(true)}
-                        className="w-[71px] h-[39px] bg-[#A9E2F2] rounded-full flex items-center justify-center hover:bg-[#97D8EA] transition-colors shadow-sm focus:outline-none"
+                        disabled={loading}
+                        className="w-[71px] h-[39px] bg-[#A9E2F2] rounded-full flex items-center justify-center hover:bg-[#A2DCED] transition-colors shadow-sm focus:outline-none"
                     >
                         <img
                             src="/impressora-azul.png"
@@ -417,10 +766,10 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                         />
                     </button>
 
-                    <div className="flex gap-4">
+                    <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:gap-4">
                         <button
                             onClick={() => setModalEdicaoAberto(true)}
-                            className="px-8 h-[39px] rounded-full border border-[#4696AD] text-[#4696AD] bg-[#F3F4FA] hover:bg-[#F3FBFC] transition-colors text-sm"
+                            className="h-[39px] rounded-full border border-[#4696AD] bg-[#F3F4FA] px-8 text-sm text-[#4696AD] transition-colors hover:bg-[#F3FBFC]"
                         >
                             Editar Ficha
                         </button>
@@ -429,7 +778,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                                 onClose();
                                 navigate("/");
                             }}
-                            className="px-10 h-[39px] rounded-full bg-[#A9E2F2] text-[#4696AD] hover:bg-[#97D8EA] transition-colors text-sm"
+                            className="h-[39px] rounded-full bg-[#A9E2F2] px-10 text-sm text-[#4696AD] transition-colors hover:bg-[#A2DCED]"
                         >
                             Concluir
                         </button>
@@ -437,41 +786,55 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId }) 
                 </div>
             </div>
 
-            {/* Modal de Escolha do Tipo de Impressão */}
             <OpcoesImpressaoModal
+                isSobDemanda={ficha?.fabrico?.fabricacao_sob_demanda !== false}
                 isOpen={modalImpressaoAberto}
                 onClose={() => setModalImpressaoAberto(false)}
                 onSelectFichaTecnica={() => {
                     setModalImpressaoAberto(false);
                     handlePrintMode("ficha");
                 }}
-                onSelectNotaSaida={() => {
+                onSelectNotaSaida={async () => {
                     setModalImpressaoAberto(false);
+                    if (ficha?.fabrico?.id === 3 || ficha?.fabrico_id === 3) {
+                        await handleDownloadNotaSaidaPdf();
+                        return false;
+                    }
+
                     handlePrintMode("nota");
+                    return true;
                 }}
             />
 
-            {/* Modal de Edição */}
             {modalEdicaoAberto && (
                 <EdicaoFichaTecnicaModal
                     isOpen={modalEdicaoAberto}
                     fichaId={fichaId}
                     dadosFicha={ficha}
                     onClose={() => setModalEdicaoAberto(false)}
-                    onSuccess={() => {
-                        setModalEdicaoAberto(false);
-                        carregarDados();
+                    onSuccess={async () => {
+                        await Promise.all([carregarDados(), onFichaAtualizada?.()]);
                     }}
                 />
             )}
 
-            {/* Layout de Impressão Oculto da Ficha Técnica */}
-            <FichaTecnicaPrintView
-                dadosFicha={ficha}
-                fichaId={fichaId}
-                referencia={referenciaCliente}
-            />
-            <NotaDeSaidaPrintView ficha={ficha} referenciaCliente={referenciaCliente} />
+            {ficha && (
+                <>
+                    <FichaTecnicaPrintView
+                        dadosFicha={ficha}
+                        fichaId={fichaId}
+                        referencia={referenciaCliente}
+                        aviamentosProduto={aviamentosProduto}
+                    />
+                    <NotaDeSaidaPrintView
+                        ficha={ficha}
+                        referenciaCliente={referenciaCliente}
+                        forceVisibleForPdf={Boolean(
+                            ficha?.fabrico?.id === 3 || ficha?.fabrico_id === 3,
+                        )}
+                    />
+                </>
+            )}
         </div>
     );
 }

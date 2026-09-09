@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getParceiroById, updateParceiro } from "../services/parceiroService";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import { getAllEtapasByFabricoId } from "../services/etapaService";
 import { FormPageSkeleton, LoadingButton, SkeletonBox } from "../components/geral/Loading";
+import { getEnderecoByCep } from "../services/apiCep";
 
 const FloatingInput = ({ label, name, value, onChange, containerClass, ...rest }) => (
     <div className={`relative group ${containerClass}`}>
@@ -26,6 +27,12 @@ const FloatingInput = ({ label, name, value, onChange, containerClass, ...rest }
     </div>
 );
 
+const getEtapasSelecionaveis = (etapas = []) =>
+    etapas
+        .filter((etapa) => etapa.ativa === true)
+        .sort((a, b) => Number(a.ordem ?? 0) - Number(b.ordem ?? 0))
+        .slice(0, -1);
+
 const EditarParceiro = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -37,6 +44,7 @@ const EditarParceiro = () => {
     const [dropdownEtapaAberto, setDropdownEtapaAberto] = useState(false);
     const [etapas, setEtapas] = useState([]);
     const [loadingEtapas, setLoadingEtapas] = useState(true);
+    const etapaDropdownRef = useRef(null);
 
     const [formData, setFormData] = useState({
         nome: "",
@@ -56,9 +64,10 @@ const EditarParceiro = () => {
         conta: "",
         categoria: "",
     });
+    const cepRequestRef = useRef(null);
 
     const maskTelefone = (value) => {
-        return value
+        return String(value ?? "")
             .replace(/\D/g, "")
             .slice(0, 11)
             .replace(/^(\d{2})(\d)/, "($1) $2")
@@ -66,10 +75,10 @@ const EditarParceiro = () => {
     };
 
     const maskCep = (value) => {
-        return value
+        return String(value ?? "")
             .replace(/\D/g, "")
             .slice(0, 8)
-            .replace(/(\d{5})(\d{1,3})$/, "$1-$2");
+            .replace(/^(\d{5})(\d)/, "$1-$2");
     };
 
     const maskAgencia = (value) => {
@@ -88,19 +97,78 @@ const EditarParceiro = () => {
         return `${numeros.slice(0, -1)}-${numeros.slice(-1)}`;
     };
 
-    const handleMaskedChange = (e) => {
+    const handleMaskedChange = async (e) => {
         const { name, value } = e.target;
         let masked = value;
+
         if (name === "telefone") masked = maskTelefone(value);
-        if (name === "cep") masked = maskCep(value);
+
+        if (name === "cep") {
+            masked = maskCep(value);
+            const cepLimpo = value.replace(/\D/g, "");
+
+            cepRequestRef.current?.abort();
+            cepRequestRef.current = null;
+            setFormData((prev) => ({ ...prev, cep: masked }));
+
+            if (cepLimpo.length === 8) {
+                const controller = new AbortController();
+                cepRequestRef.current = controller;
+                const endereco = await getEnderecoByCep(cepLimpo, {
+                    signal: controller.signal,
+                });
+                if (endereco && !controller.signal.aborted) {
+                    setFormData((prev) =>
+                        (prev.cep || "").replace(/\D/g, "") === cepLimpo
+                            ? {
+                                  ...prev,
+                                  ...endereco,
+                              }
+                            : prev,
+                    );
+                }
+                if (cepRequestRef.current === controller) {
+                    cepRequestRef.current = null;
+                }
+            }
+            return;
+        }
+
         if (name === "agencia" && formData.forma_pagamento === "TED") {
             masked = maskAgencia(value);
         }
         if (name === "conta" && formData.forma_pagamento === "TED") {
             masked = maskConta(value);
         }
+
         setFormData((prev) => ({ ...prev, [name]: masked }));
     };
+
+    useEffect(() => () => cepRequestRef.current?.abort(), []);
+
+    useEffect(() => {
+        if (!dropdownEtapaAberto) return undefined;
+
+        const handleClickOutside = (event) => {
+            if (etapaDropdownRef.current && !etapaDropdownRef.current.contains(event.target)) {
+                setDropdownEtapaAberto(false);
+            }
+        };
+
+        const handleKeyDown = (event) => {
+            if (event.key === "Escape") {
+                setDropdownEtapaAberto(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        document.addEventListener("keydown", handleKeyDown);
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [dropdownEtapaAberto]);
 
     useEffect(() => {
         const fetchParceiro = async () => {
@@ -149,8 +217,7 @@ const EditarParceiro = () => {
                     const fabricoId = usuarioLogado.fabrico_id;
                     if (fabricoId) {
                         const dados = await getAllEtapasByFabricoId(fabricoId);
-                        const etapasAtivas = (dados || []).filter((etapa) => etapa.ativa === true);
-                        setEtapas(etapasAtivas);
+                        setEtapas(getEtapasSelecionaveis(dados || []));
                     }
                 }
             } catch (err) {
@@ -213,6 +280,9 @@ const EditarParceiro = () => {
         }
     };
 
+    const inputClass =
+        "border border-[#D3D3D3] rounded-[10px] px-3 h-[39px] text-sm text-gray-600 focus:outline-none";
+
     if (loading) {
         return (
             <div className="p-6 pt-0 mt-6 w-full">
@@ -230,9 +300,6 @@ const EditarParceiro = () => {
             </div>
         );
     }
-
-    const inputClass =
-        "border border-[#D3D3D3] rounded-[10px] px-3 h-[39px] text-sm text-gray-600 focus:outline-none";
 
     return (
         <>
@@ -253,10 +320,11 @@ const EditarParceiro = () => {
                     )}
 
                     <form onSubmit={handleSubmit} className="space-y-8 w-full px-6">
-                        <div className="flex flex-warp gap-6 item-start">
-                            <div className="w-full md:w-[212px]">
+                        <div className="flex flex-wrap gap-6 items-start">
+                            {/* Dropdown Etapa de Produção */}
+                            <div className="w-full md:w-[212px]" ref={etapaDropdownRef}>
                                 <h2 className="text-[#404040] font-light mb-4">
-                                    Etapa de Produção
+                                    Etapa de produção
                                 </h2>
                                 <div className="relative w-full">
                                     <div
@@ -267,7 +335,7 @@ const EditarParceiro = () => {
                                         }`}
                                         onClick={() => {
                                             if (!loadingEtapas) {
-                                                setDropdownEtapaAberto(!dropdownEtapaAberto);
+                                                setDropdownEtapaAberto((aberto) => !aberto);
                                             }
                                         }}
                                     >
@@ -302,14 +370,9 @@ const EditarParceiro = () => {
                                     </div>
 
                                     {dropdownEtapaAberto && (
-                                        <>
-                                            <div
-                                                className="fixed inset-0 z-10"
-                                                onClick={() => setDropdownEtapaAberto(false)}
-                                            ></div>
-
-                                            <div className="absolute z-20 mt-1 w-full bg-white border border-[#D3D3D3] rounded-[10px] shadow-lg overflow-hidden max-h-60 overflow-y-auto">
-                                                {etapas.map((etapa) => (
+                                        <div className="absolute z-20 mt-1 w-full bg-white border border-[#D3D3D3] rounded-[10px] shadow-lg overflow-hidden max-h-60 overflow-y-auto scrollbar-sutil">
+                                            {etapas.length > 0 ? (
+                                                etapas.map((etapa) => (
                                                     <div
                                                         key={etapa.id}
                                                         className={`px-4 py-2 text-sm cursor-pointer transition-colors ${
@@ -327,18 +390,20 @@ const EditarParceiro = () => {
                                                     >
                                                         {etapa.nome}
                                                     </div>
-                                                ))}
-                                            </div>
-                                        </>
+                                                ))
+                                            ) : (
+                                                <div className="border-l-[3px] border-transparent px-4 py-2 text-sm text-gray-400">
+                                                    Nenhuma etapa disponível
+                                                </div>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             </div>
 
                             {/* Dados gerais */}
-                            <div>
-                                <h2 className="text-[#404040] text-[20px] font-light mb-4">
-                                    Dados gerais
-                                </h2>
+                            <div className="flex-1 min-w-[300px]">
+                                <h2 className="text-[#404040] font-light mb-4">Dados gerais</h2>
                                 <div className="flex flex-wrap gap-4">
                                     <FloatingInput
                                         label="Nome"
@@ -435,12 +500,12 @@ const EditarParceiro = () => {
                             </h2>
                             <div className="flex flex-col gap-4">
                                 <div className="flex flex-wrap gap-4">
-                                    {/* Dropdown estilo Produtos.jsx */}
+                                    {/* Dropdown Forma de Pagamento */}
                                     <div className="relative w-full md:w-[212px]">
                                         <button
                                             type="button"
                                             onClick={() => setDropdownAberto(!dropdownAberto)}
-                                            className={`w-full bg-white flex items-center justify-between rounded-[10px] px-3 h-[39px] text-sm focus:outline-none border border-[#D3D3D3]`}
+                                            className="w-full bg-white flex items-center justify-between rounded-[10px] px-3 h-[39px] text-sm focus:outline-none border border-[#D3D3D3]"
                                         >
                                             <span
                                                 className={
@@ -455,7 +520,9 @@ const EditarParceiro = () => {
                                                       "Dado de pagamento"}
                                             </span>
                                             <svg
-                                                className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${dropdownAberto ? "rotate-180" : ""}`}
+                                                className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${
+                                                    dropdownAberto ? "rotate-180" : ""
+                                                }`}
                                                 fill="none"
                                                 stroke="currentColor"
                                                 viewBox="0 0 24 24"
@@ -469,7 +536,7 @@ const EditarParceiro = () => {
                                             </svg>
                                         </button>
 
-                                        {/* Menu — sempre no DOM, animado via classes */}
+                                        {/* Menu Forma de Pagamento */}
                                         <div
                                             className={`absolute z-20 mt-2 w-full bg-white border border-[#D3D3D3] rounded-[10px] shadow-lg overflow-hidden origin-top transition-all duration-300 ${
                                                 dropdownAberto
@@ -553,7 +620,7 @@ const EditarParceiro = () => {
                                 loadingText="Salvando..."
                                 className="bg-[#a9e2f2] hover:bg-[#A2DCED] text-[#4696ad] w-[189px] h-[39px] rounded-full text-sm font-medium transition-colors disabled:opacity-50 shadow-sm"
                             >
-                                Finalizar edição
+                                Concluir edição
                             </LoadingButton>
                         </div>
                     </form>

@@ -163,10 +163,10 @@ export default function Clientes() {
                                 <button
                                     type="button"
                                     onClick={() => navigate("/clientes/cadastrar")}
-                                    className="bg-[#A9E2F2] hover:bg-[#8acbdc] text-white w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors"
+                                    className="bg-[#A9E2F2] hover:bg-[#A2DCED] text-[#4696AD] w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors"
                                 >
                                     <img
-                                        src="/add-star.png"
+                                        src="/clientes-azul.png"
                                         alt="Adicionar cliente"
                                         className="w-[20px] h-[20px]"
                                     />
