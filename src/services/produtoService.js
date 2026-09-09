@@ -15,8 +15,6 @@ export const getProdutos = async () => {
     }
 };
 
-
-
 export const getParceiroByProduto = async (produtoId) => {
     try {
         const response = await api.get(`/parceiros-produtos/produto/${produtoId}`);

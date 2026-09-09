@@ -1,9 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-    deleteAviamento,
-    getAviamentoById,
-    getAviamentos,
-} from "../services/aviamentoService";
+import { deleteAviamento, getAviamentoById, getAviamentos } from "../services/aviamentoService";
 import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import MenuOpcoes from "../components/geral/MenuOpcoes";

@@ -120,12 +120,12 @@ export default function ProdutoDetalhes() {
 
     useEffect(() => {
         async function carregarDadosDoFabrico() {
-                try {
-                    const dadosFabrico = await getFabricoById();
-                    setFabrico(dadosFabrico);
-                } catch (error) {
-                    console.error("Erro ao buscar dados do fabrico:", error);
-                }
+            try {
+                const dadosFabrico = await getFabricoById();
+                setFabrico(dadosFabrico);
+            } catch (error) {
+                console.error("Erro ao buscar dados do fabrico:", error);
+            }
         }
 
         carregarDadosDoFabrico();

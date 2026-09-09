@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { getTecidos}  from "../services/produtoService";
+import { getTecidos } from "../services/produtoService";
 import { TecidosTableSkeleton } from "../components/tecidos/TecidosTableSkeleton";
 import { CadastrarTecidoModal } from "../components/produtos/CadastrarTecidoModal";
 import MenuOpcoes from "../components/geral/MenuOpcoes";
