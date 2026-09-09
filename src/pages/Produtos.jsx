@@ -10,7 +10,7 @@ const ProdutoCard = ({ id, nome, tipo, data, foto }) => {
     return (
         <div
             onClick={() => navigate(`/produtos/${id}`)}
-            className="w-full bg-[#F3F4FA] rounded-[16px] p-[6px] flex flex-col transition-all hover:shadow-sm font-['Outfit',_sans-serif] cursor-pointer"
+            className="group w-full bg-[#F3F4FA] rounded-[16px] p-[6px] flex flex-col transition-all hover:shadow-sm font-['Outfit',_sans-serif] cursor-pointer"
         >
             {/* Contêiner da Imagem */}
             <div className="relative w-full h-[238px] bg-white rounded-t-[14px] rounded-b-[4px] overflow-hidden">
@@ -44,12 +44,19 @@ const ProdutoCard = ({ id, nome, tipo, data, foto }) => {
             </div>
 
             {/* Legenda inferior */}
-            <div className="flex flex-col px-1 pt-1.5 pb-1">
-                <span className="text-[#7B7D80] text-[10px] font-light truncate leading-tight">
-                    {tipo}
-                </span>
-                <span className="text-[#7B7D80] text-[10px] font-light truncate leading-tight">
-                    {data}
+            <div className="flex items-end justify-between px-1 pt-1.5 pb-1">
+                <div className="flex flex-col min-w-0">
+                    <span className="text-[#7B7D80] text-[10px] font-light truncate leading-tight">
+                        {tipo}
+                    </span>
+                    <span className="text-[#7B7D80] text-[10px] font-light truncate leading-tight">
+                        {data}
+                    </span>
+                </div>
+
+                {/* Efeito Hover: exibe 'Ver detalhes' ao passar o mouse */}
+                <span className="text-[#4696AD] text-[10px] font-normal opacity-0 transition-opacity duration-200 group-hover:opacity-100 shrink-0 ml-1">
+                    Ver detalhes
                 </span>
             </div>
         </div>
@@ -135,7 +142,7 @@ export default function Produtos() {
                     </div>
                 </div>
 
-                {/* Contém 5 colunas no desktop comum e usa 7 apenas em telas extra grandes. */}
+                {/* Grid de Produtos */}
                 <div
                     className="grid gap-[11px] pl-[16px] pr-[32px] 
                      grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 2xl:grid-cols-7"
@@ -153,7 +160,6 @@ export default function Produtos() {
                                 id={produto.id}
                                 nome={produto.nome}
                                 tipo={produto.tipo || "Geral"}
-                                // Exemplo de tratamento de data (ajuste conforme o retorno do seu banco)
                                 data={
                                     produto.created_at
                                         ? `Criado em ${new Date(produto.created_at).toLocaleDateString()}`
