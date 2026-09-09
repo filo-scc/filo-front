@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { getAllEtapasByFabricoId } from "../../services/etapaService";
+import { getAllEtapas } from "../../services/etapaService";
 import { getParceirosByFabrico } from "../../services/parceiroService";
 import { updateFichaTecnica } from "../../services/fichasTecnicasService";
 import {
@@ -242,8 +242,8 @@ export default function TransferenciaEtapaModal({
         const carregarDadosIniciais = async () => {
             setLoading(true);
             try {
-                // 1. Buscar todas as etapas do fabrico
-                const listaEtapas = await getAllEtapasByFabricoId(fabricoId);
+                // 1. Buscar todas as etapas do contexto autenticado
+                const listaEtapas = await getAllEtapas();
                 const ativasEOrdenadas = listaEtapas
                     .filter((e) => e.ativa)
                     .sort((a, b) => a.ordem - b.ordem);

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getParceiroById, updateParceiro } from "../services/parceiroService";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
-import { getAllEtapasByFabricoId } from "../services/etapaService";
+import { getAllEtapas } from "../services/etapaService";
 import { FormPageSkeleton, LoadingButton, SkeletonBox } from "../components/geral/Loading";
 import { getEnderecoByCep } from "../services/apiCep";
 
@@ -211,15 +211,8 @@ const EditarParceiro = () => {
         const fetchEtapas = async () => {
             setLoadingEtapas(true);
             try {
-                const userString = localStorage.getItem("user");
-                if (userString) {
-                    const usuarioLogado = JSON.parse(userString);
-                    const fabricoId = usuarioLogado.fabrico_id;
-                    if (fabricoId) {
-                        const dados = await getAllEtapasByFabricoId(fabricoId);
-                        setEtapas(getEtapasSelecionaveis(dados || []));
-                    }
-                }
+                const dados = await getAllEtapas();
+                setEtapas(getEtapasSelecionaveis(dados || []));
             } catch (err) {
                 console.error("Erro ao buscar etapas:", err);
             } finally {
