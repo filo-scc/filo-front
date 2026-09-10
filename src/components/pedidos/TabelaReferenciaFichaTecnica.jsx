@@ -395,7 +395,7 @@ export default function TabelaReferenciaFichaTecnica({
                                 <div>
                                     {isSobDemanda ? "Total do pedido: " : "Custo total: "}
                                     <span className="font-light font-['Outfit']">
-                                        {formatarMoeda(totalFinanceiro)}
+                                        {formatarMoeda(totalPedido)}
                                     </span>
                                 </div>
                             </div>
