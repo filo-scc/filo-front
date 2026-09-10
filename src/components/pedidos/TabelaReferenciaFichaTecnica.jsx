@@ -128,7 +128,7 @@ export default function TabelaReferenciaFichaTecnica({
                                 {isSobDemanda ? "Preço unit." : "Custo unit."}
                             </div>
                             <div className="flex items-center justify-center text-center px-2">
-                                Subtotal
+                                {isSobDemanda ? "Subtotal" : "Subcusto"}
                             </div>
                         </div>
                     </div>
@@ -395,7 +395,7 @@ export default function TabelaReferenciaFichaTecnica({
                                 <div>
                                     {isSobDemanda ? "Total do pedido: " : "Custo total: "}
                                     <span className="font-light font-['Outfit']">
-                                        {formatarMoeda(totalPedido)}
+                                        {formatarMoeda(totalFinanceiro)}
                                     </span>
                                 </div>
                             </div>

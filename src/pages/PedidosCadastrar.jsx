@@ -790,6 +790,7 @@ export default function PedidosCadastrar() {
                 isOpen={modalFichaAberto}
                 onClose={fecharModalFicha}
                 produto={referenciaParaModal}
+                fichaAnterior={fichas.at(-1)}
                 fabricoId={fabricoId}
                 onFichaCreated={(rascunhoFicha) => {
                     setFichas((prev) => [
