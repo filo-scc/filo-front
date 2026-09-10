@@ -33,16 +33,13 @@ export const iniciarFichaEtapa = async (ficha_tecnica_id, etapa_id) => {
     const response = await api.post(`/fichas-etapas`, {
         ficha_tecnica_id,
         etapa_id,
-        data_inicio: new Date().toISOString(),
     });
 
     return response.data;
 };
 
 export const finalizarFichaEtapa = async (ficha_etapa_id) => {
-    const response = await api.put(`/fichas-etapas/${ficha_etapa_id}`, {
-        data_fim: new Date().toISOString(),
-    });
+    const response = await api.put(`/fichas-etapas/${ficha_etapa_id}/finalizar`);
 
     return response.data;
 };

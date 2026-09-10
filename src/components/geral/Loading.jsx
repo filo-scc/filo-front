@@ -1,5 +1,5 @@
-export function SkeletonBox({ className = "" }) {
-    return <div className={`bg-[#E8E9F0] rounded-[12px] animate-pulse ${className}`} />;
+export function SkeletonBox({ className = "", ...props }) {
+    return <div className={`bg-[#E8E9F0] rounded-[12px] animate-pulse ${className}`} {...props} />;
 }
 
 export function InlineLoading({ label = "Carregando", className = "" }) {

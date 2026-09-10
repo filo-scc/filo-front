@@ -550,7 +550,7 @@ export default function ProdutoCadastar() {
         }
 
         if (!formData.modelo || !formData.tipo_produto_id) {
-            setErroCadastro("Selecione o modelo do produto.");
+            setErroCadastro("Selecione o tipo de produto.");
             return;
         }
 
@@ -813,11 +813,13 @@ export default function ProdutoCadastar() {
                                 </div>
 
                                 <div>
-                                    <FieldLabel>Modelo</FieldLabel>
+                                    <FieldLabel>Tipo de produto</FieldLabel>
                                     <DropdownField
                                         value={formData.modelo}
                                         placeholder={
-                                            carregandoModelos ? "Carregando modelos..." : "Modelo*"
+                                            carregandoModelos
+                                                ? "Carregando tipos de produto..."
+                                                : "Tipo de produto*"
                                         }
                                         options={modelosDisponiveis.map((m) => m.nome)}
                                         isOpen={openDropdown === "modelo"}
@@ -826,7 +828,7 @@ export default function ProdutoCadastar() {
                                         isSelectedOption={(option) => formData.modelo === option}
                                         maxVisibleOptions={6}
                                         actionButton={{
-                                            label: "Novo modelo",
+                                            label: "Novo tipo de produto",
                                             onClick: () => {
                                                 setOpenDropdown(null);
                                                 setModalModeloAberto(true);

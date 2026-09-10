@@ -2,6 +2,9 @@ import React, { useMemo, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { getFabricoById } from "../services/fabricoService";
 
+// AJUSTE: cinza das linhas alternadas da grade na impressão.
+const PRINT_ROW_GRAY = "bg-[#D9D9D9]";
+
 // Helper para padronizar o ajuste manual de alinhamento vertical em labels/textos
 const TextoAjustado = ({ children, className = "", printReset = true }) => (
     <span className={`${printReset ? "-translate-y-[6px] print:translate-y-0" : ""} ${className}`}>
@@ -21,7 +24,7 @@ const Campo = ({ label, valor }) => (
 );
 
 const Badge = ({ label, valor }) => (
-    <div className="border border-[#4696AD] rounded-[15px] h-[38px] min-w-[70px] relative flex items-center justify-center px-4 bg-white">
+    <div className="border border-[#4696AD] rounded-[14px] h-[38px] min-w-[70px] relative flex items-center justify-center px-4 bg-white">
         <span className="absolute -top-[9px] left-3 bg-white px-1 text-[11px] text-[#4696AD] flex items-center">
             <TextoAjustado>{label}</TextoAjustado>
         </span>
@@ -167,7 +170,7 @@ export default function NotaDeSaidaPrintView({
 
     if (!dados || !isMounted) return null;
 
-    const footerRowBg = itens.length % 2 === 1 ? "bg-[#F9F9F9]" : "bg-white";
+    const footerRowBg = itens.length % 2 === 1 ? PRINT_ROW_GRAY : "bg-white";
     const isProducaoSobDemanda = Boolean(
         ficha?.fabrico?.fabricacao_sob_demanda ??
         ficha?.fabrico?.producao_sob_demanda ??
@@ -183,7 +186,7 @@ export default function NotaDeSaidaPrintView({
                 {`
                         @page { 
                             size: A4 portrait; 
-                            margin: 10mm 0mm 15mm 0mm; 
+                            margin: 0mm;
                         }
 
                         #root {
@@ -239,17 +242,17 @@ export default function NotaDeSaidaPrintView({
                                 -webkit-print-color-adjust: exact !important;
                                 print-color-adjust: exact !important;
                                 display: block !important;
-                                padding-bottom: 60px !important;
+                                padding: 10mm !important;
                             }
 
                             .print-footer {
-                                position: fixed !important;
+                                position: static !important;
                                 bottom: 0 !important;
                                 left: 0 !important;
                                 right: 0 !important;
                                 width: 100% !important;
                                 background-color: white !important;
-                                padding-bottom: 5mm !important;
+                                padding-bottom: 0 !important;
                             }
 
                             .break-inside-avoid {
@@ -281,24 +284,29 @@ export default function NotaDeSaidaPrintView({
             >
                 <div
                     id="nota-print-view"
-                    className="bg-white text-black p-5 w-full max-w-[260mm] min-h-[280mm] mx-auto font-['Outfit',_sans-serif] flex flex-col justify-between box-border"
+                    className="bg-white text-black p-[10mm] w-full max-w-[210mm] mx-auto font-['Outfit',_sans-serif] flex flex-col justify-between box-border"
                 >
                     <div className="flex-1">
                         {/* HEADER */}
-                        <div className="flex justify-between items-start mb-6 mx-[30px] break-inside-avoid">
+                        <div className="flex justify-between items-start mb-6 mx-0 break-inside-avoid">
                             <h1 className="text-[28px] font-light text-[#4696AD] flex items-center">
-                                <TextoAjustado>Nota de saída</TextoAjustado>
+                                <TextoAjustado>
+                                    {isProducaoSobDemanda ? "Nota de saída" : "Nota de Conferência"}
+                                </TextoAjustado>
                             </h1>
                             <div className="flex gap-4 mt-2">
                                 <span className="flex items-center gap-2">
                                     <Badge label="Nº" valor={dados.numeroNota} />
                                 </span>
-                                <Badge label="Pedido" valor={dados.numeroPedido} />
+                                <Badge
+                                    label={isProducaoSobDemanda ? "Pedido" : "Produção"}
+                                    valor={dados.numeroPedido}
+                                />
                             </div>
                         </div>
 
                         {/* CAMPOS + FOTO */}
-                        <div className="flex gap-6 mb-6 mx-[30px] break-inside-avoid">
+                        <div className="flex gap-6 mb-6 mx-0 break-inside-avoid">
                             <div className="flex-1 flex flex-col justify-end gap-5 pb-1">
                                 {/* Primeira linha: Fornecedor */}
                                 <div className="grid grid-cols-2 gap-4">
@@ -320,7 +328,7 @@ export default function NotaDeSaidaPrintView({
                                                 valor={dados.referenciaInterna}
                                             />
                                             <Campo
-                                                label="Modelo"
+                                                label="Tipo de produto"
                                                 valor={ficha?.produto?.tipo_produto?.nome}
                                             />
                                         </div>
@@ -349,7 +357,7 @@ export default function NotaDeSaidaPrintView({
                                         <div className="grid grid-cols-2 gap-4">
                                             <Campo label="Tecido" valor={dados.tecido} />
                                             <Campo
-                                                label="Modelo"
+                                                label="Tipo de produto"
                                                 valor={ficha?.produto?.tipo_produto?.nome}
                                             />
                                         </div>
@@ -376,7 +384,7 @@ export default function NotaDeSaidaPrintView({
                         </div>
 
                         {/* GRADE DE TAMANHOS */}
-                        <div className="mb-4 mx-[30px] print-no-break">
+                        <div className="mb-4 mx-0 print-no-break">
                             <div className="mb-2 text-center text-[15px] font-light text-[#737373]">
                                 <TextoAjustado>Grade</TextoAjustado>
                             </div>
@@ -462,7 +470,7 @@ export default function NotaDeSaidaPrintView({
                                         {itens.length > 0 ? (
                                             itens.map((item, index) => {
                                                 const rowBg =
-                                                    index % 2 === 1 ? "bg-[#F4F4F4]" : "bg-white";
+                                                    index % 2 === 1 ? PRINT_ROW_GRAY : "bg-white";
                                                 return (
                                                     <div
                                                         key={item.id || item.corNome || index}
@@ -597,7 +605,7 @@ export default function NotaDeSaidaPrintView({
                         </div>
 
                         {/* ANOTAÇÕES */}
-                        <div className="mx-[30px] relative mt-5 nota-observacoes break-inside-avoid">
+                        <div className="mx-0 relative mt-5 nota-observacoes break-inside-avoid">
                             <fieldset className="border border-[#898C8F] rounded-[10px] p-4 bg-[#F4F4F4] min-h-[180px]">
                                 <legend className="px-2 text-[12px] text-[#898C8F] ml-2 font-light">
                                     <TextoAjustado>
@@ -616,7 +624,7 @@ export default function NotaDeSaidaPrintView({
 
                     {/* FOOTER */}
                     <div className="print-footer mt-auto pt-6 pb-2 w-full">
-                        <div className="mx-[50px] flex items-end justify-between">
+                        <div className="mx-0 flex items-end justify-between">
                             {fabricoInfo?.foto_de_perfil ? (
                                 <img
                                     src={fabricoInfo.foto_de_perfil}

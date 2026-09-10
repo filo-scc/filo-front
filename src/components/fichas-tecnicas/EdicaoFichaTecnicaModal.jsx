@@ -1,3 +1,4 @@
+import ConfirmacaoFichaModal from "./ConfirmacaoFichaModal";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import {
     syncFichaTecnicaCores,
@@ -15,6 +16,7 @@ import {
 } from "../../services/fichaParceiroService";
 import { getProdutosDoCliente } from "../../services/clientesService";
 import ProdutoParceiros from "../produtos/ProdutoParceiros";
+import { preventNumberInputWheel } from "../../utils/preventNumberInputWheel";
 import FichaTecnicaPrintView from "../FichaTecnicaPrintView";
 import { getAviamentosDoProduto, getParceiroByProduto } from "../../services/produtoService";
 import { updateFichaTecnica } from "../../services/fichasTecnicasService";
@@ -23,6 +25,27 @@ import CorModal from "./CorModal";
 import EstampaModal from "./EstampaModal";
 import RelatorioDeAcabamento from "./RelatorioDeAcabamento";
 import { getAllEtapasByFabricoId } from "../../services/etapaService";
+import {
+    calcularProporcoesGrade,
+    isReferenciaProporcao,
+    obterReferenciaProporcao,
+} from "../../utils/gradeProportions";
+
+function snapshotFicha(cores, matriz, parceiros, removidos, relatorio) {
+    return JSON.stringify({
+        cores: cores.map((cor) => cor.id).sort((a, b) => a - b),
+        quantidades: cores
+            .flatMap((cor) =>
+                Object.entries(matriz[cor.id] || {})
+                    .filter(([, item]) => Number(item.quantidade) > 0)
+                    .map(([sizeId, item]) => [cor.id, sizeId, Number(item.quantidade)]),
+            )
+            .sort((a, b) => String(a).localeCompare(String(b))),
+        parceiros,
+        removidos,
+        relatorio,
+    });
+}
 
 const FloatingInput = ({
     label,
@@ -66,13 +89,6 @@ const simplificarUnidade = (unidade) => {
         PAR: "par",
     };
     return unidadesSimplificadas[unidade] || unidade;
-};
-
-const calcularProporcao = (totaisPorTamanho) => {
-    const valoresValidos = totaisPorTamanho.map(Number).filter((t) => t > 0);
-    if (valoresValidos.length === 0) return totaisPorTamanho.map(() => 0);
-    const base = Math.min(...valoresValidos);
-    return totaisPorTamanho.map((t) => (t > 0 ? Math.round(t / base) : 0));
 };
 
 const ColorDropdown = ({
@@ -221,10 +237,14 @@ export default function EdicaoFichaTecnicaModal({
     dadosFicha,
 }) {
     const [loading, setLoading] = useState(false);
+    const [saveError, setSaveError] = useState("");
 
     const [coresSelecionadas, setCoresSelecionadas] = useState([]);
     const [todasCoresDisponiveis, setTodasCoresDisponiveis] = useState([]);
+    const [confirmarSaida, setConfirmarSaida] = useState(false);
+    const initialSnapshot = useRef("");
     const [matrizQuantidades, setMatrizQuantidades] = useState({});
+    const [referenceSizeId, setReferenceSizeId] = useState(null);
     const [parceiros, setParceiros] = useState([]);
     const [parceirosRemovidos, setParceirosRemovidos] = useState([]);
     const [referenciaCliente, setReferenciaCliente] = useState("-");
@@ -398,6 +418,7 @@ export default function EdicaoFichaTecnicaModal({
                 };
             });
             setMatrizQuantidades(matrizInicial);
+            setReferenceSizeId(null);
 
             const categoriasAceitas = ["costura", "faccao", "confeccao"];
 
@@ -423,6 +444,19 @@ export default function EdicaoFichaTecnicaModal({
                     };
                 });
             setParceiros(parceirosIniciais);
+            setConfirmarSaida(false);
+            initialSnapshot.current = snapshotFicha(
+                Object.values(coresUnicasMap),
+                matrizInicial,
+                parceirosIniciais,
+                [],
+                {
+                    defeitoCostura: dadosFicha.defeitos_costura ?? 0,
+                    defeitoTecido: dadosFicha.defeitos_tecido ?? 0,
+                    retiradas: dadosFicha.retiradas ?? 0,
+                    sobras: dadosFicha.sobras ?? 0,
+                },
+            );
             carregarReferencia();
         }
     }, [
@@ -528,16 +562,69 @@ export default function EdicaoFichaTecnicaModal({
         [totaisPorTamanho],
     );
 
-    const proporcoes = useMemo(() => {
-        const arrayDeTotais = sizeItems.map((s) => totaisPorTamanho[s.id] || 0);
-        const arrayDeProporcoes = calcularProporcao(arrayDeTotais);
-        const propsObj = {};
-        sizeItems.forEach((s, index) => {
-            propsObj[s.id] = arrayDeProporcoes[index];
-        });
+    const totalPerdas = useMemo(
+        () =>
+            Number(relatorioAcabamento.defeitoCostura || 0) +
+            Number(relatorioAcabamento.defeitoTecido || 0) +
+            Number(relatorioAcabamento.retiradas || 0) +
+            Number(relatorioAcabamento.sobras || 0),
+        [relatorioAcabamento],
+    );
+    const perdasValidas = !isUltimaEtapa || totalPerdas <= totalGeral;
 
-        return propsObj;
+    useEffect(() => {
+        setReferenceSizeId(
+            obterReferenciaProporcao({
+                sizeIds: sizeItems.map((size) => size.id),
+                totalsBySize: totaisPorTamanho,
+            }),
+        );
     }, [sizeItems, totaisPorTamanho]);
+
+    const proporcoes = useMemo(
+        () =>
+            calcularProporcoesGrade({
+                sizeIds: sizeItems.map((size) => size.id),
+                colorIds: coresSelecionadas.map((cor) => cor.id),
+                referenceSizeId,
+                getQuantity: (colorId, sizeId) =>
+                    matrizQuantidades[colorId]?.[sizeId]?.quantidade || 0,
+            }),
+        [sizeItems, coresSelecionadas, referenceSizeId, matrizQuantidades],
+    );
+
+    const handleAplicarProporcao = useCallback(
+        (targetSizeId, rawMultiplier) => {
+            const multiplier = Number(rawMultiplier);
+            if (
+                referenceSizeId === null ||
+                !Number.isFinite(multiplier) ||
+                !Number.isInteger(multiplier) ||
+                multiplier < 0 ||
+                isReferenciaProporcao(targetSizeId, referenceSizeId)
+            ) {
+                return;
+            }
+
+            setMatrizQuantidades((prev) => {
+                const next = { ...prev };
+                coresSelecionadas.forEach((cor) => {
+                    const referenceQuantity = Number(
+                        prev[cor.id]?.[referenceSizeId]?.quantidade || 0,
+                    );
+                    next[cor.id] = {
+                        ...prev[cor.id],
+                        [targetSizeId]: {
+                            ...prev[cor.id]?.[targetSizeId],
+                            quantidade: referenceQuantity * multiplier,
+                        },
+                    };
+                });
+                return next;
+            });
+        },
+        [referenceSizeId, coresSelecionadas],
+    );
 
     const handleQuantidadeChange = (corId, gradeItemId, novaQuantidade) => {
         setMatrizQuantidades((prev) => ({
@@ -573,8 +660,9 @@ export default function EdicaoFichaTecnicaModal({
 
     const handleConcluir = async () => {
         setValidacaoPrecoExibida(true);
+        setSaveError("");
 
-        if (parceirosSemPreco.length > 0) {
+        if (parceirosSemPreco.length > 0 || !perdasValidas) {
             return;
         }
 
@@ -688,39 +776,69 @@ export default function EdicaoFichaTecnicaModal({
             onClose();
         } catch (error) {
             console.error("Erro ao salvar edição", error);
+            const message = error?.response?.data?.message;
+            setSaveError(
+                Array.isArray(message)
+                    ? message.join(" ")
+                    : message || "Não foi possível salvar a ficha. Tente novamente.",
+            );
         } finally {
             setLoading(false);
         }
+    };
+
+    const solicitarSaida = () => {
+        if (loading) return;
+        const atual = snapshotFicha(
+            coresSelecionadas,
+            matrizQuantidades,
+            parceiros,
+            parceirosRemovidos,
+            relatorioAcabamento,
+        );
+        if (atual !== initialSnapshot.current) setConfirmarSaida(true);
+        else onClose();
     };
 
     if (!isOpen) return null;
 
     return (
         <>
+            <ConfirmacaoFichaModal
+                isOpen={confirmarSaida}
+                mensagem="Ao sair, você perderá as alterações desta ficha técnica. Deseja continuar?"
+                textoCancel="Continuar preenchendo"
+                textoConfirm="Sair e descartar"
+                onCancel={() => setConfirmarSaida(false)}
+                onConfirm={() => {
+                    setConfirmarSaida(false);
+                    onClose();
+                }}
+            />
             <div
-                className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4 backdrop-blur-sm print:hidden"
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-2 backdrop-blur-sm print:hidden sm:p-4"
                 onClick={() => {
                     if (!isProdutoParceirosOpen) {
-                        onClose();
+                        solicitarSaida();
                     }
                 }}
             >
                 <div
-                    className="bg-white rounded-[24px] w-full max-w-[850px] max-h-[95vh] flex flex-col shadow-2xl relative overflow-hidden font-['Outfit',_sans-serif]"
+                    className="relative flex max-h-[96dvh] w-full max-w-[850px] flex-col overflow-hidden rounded-[24px] bg-white shadow-2xl font-['Outfit',_sans-serif] sm:max-h-[95vh] sm:rounded-[24px]"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <div className="flex justify-between items-center px-8 py-6 shrink-0">
+                    <div className="flex shrink-0 items-center justify-between px-4 py-4 sm:px-8 sm:py-6">
                         <div className="flex items-center gap-3">
                             <img
                                 src="/etiqueta-preta.png"
                                 alt="Tag"
                                 className="w-[28px] h-[28px] object-contain opacity-70"
                             />
-                            <h2 className="text-[26px] font-light text-[#404040]">
+                            <h2 className="text-xl font-light text-[#404040] sm:text-[26px]">
                                 Editar Ficha Técnica {dadosFicha?.numero}
                             </h2>
                         </div>
-                        <button onClick={onClose}>
+                        <button onClick={solicitarSaida}>
                             <img
                                 src="/fechar-cinza.png"
                                 alt="icone de fechar"
@@ -729,7 +847,7 @@ export default function EdicaoFichaTecnicaModal({
                         </button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto pb-8 px-8 pt-1 space-y-6 scrollbar-sutil">
+                    <div className="flex-1 space-y-6 overflow-y-auto px-4 pb-8 pt-1 scrollbar-sutil sm:px-8">
                         <div className="flex flex-col md:flex-row gap-6">
                             <div className="w-[209px] h-[165px] shrink-0 rounded-[10px] overflow-hidden border border-dashed border-[#898C8F]">
                                 <img
@@ -739,7 +857,7 @@ export default function EdicaoFichaTecnicaModal({
                                 />
                             </div>
 
-                            <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-3 content-start">
+                            <div className="grid flex-1 grid-cols-1 content-start gap-x-6 gap-y-3 sm:grid-cols-2">
                                 <FloatingInput
                                     label="Referência Interna"
                                     valor={dadosFicha?.produto?.nome}
@@ -820,7 +938,37 @@ export default function EdicaoFichaTecnicaModal({
                                                             : "#D7D7D7",
                                                 }}
                                             >
-                                                {proporcoes[s.id] || 0}
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    step="1"
+                                                    inputMode="numeric"
+                                                    value={proporcoes[s.id] || ""}
+                                                    placeholder="0"
+                                                    readOnly={isReferenciaProporcao(
+                                                        s.id,
+                                                        referenceSizeId,
+                                                    )}
+                                                    disabled={referenceSizeId === null}
+                                                    onFocus={(event) => {
+                                                        preventNumberInputWheel(event);
+                                                        event.target.select();
+                                                    }}
+                                                    onChange={(event) =>
+                                                        handleAplicarProporcao(
+                                                            s.id,
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                    title={
+                                                        isReferenciaProporcao(s.id, referenceSizeId)
+                                                            ? "Coluna de referência"
+                                                            : referenceSizeId === null
+                                                              ? "Preencha primeiro uma coluna da grade"
+                                                              : "Digite a proporção para recalcular esta coluna"
+                                                    }
+                                                    className="h-full w-full bg-transparent text-center outline-none disabled:cursor-not-allowed [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                />
                                             </div>
                                         ))}
                                     </div>
@@ -916,6 +1064,9 @@ export default function EdicaoFichaTecnicaModal({
                                                             >
                                                                 <input
                                                                     type="number"
+                                                                    onFocus={
+                                                                        preventNumberInputWheel
+                                                                    }
                                                                     min="0"
                                                                     value={
                                                                         val === undefined ||
@@ -1158,6 +1309,25 @@ export default function EdicaoFichaTecnicaModal({
                             />
                         )}
 
+                        {!perdasValidas && (
+                            <div
+                                className="mt-4 rounded-[10px] border border-red-200 bg-red-50 p-4 text-[14px] font-light text-red-700"
+                                role="alert"
+                            >
+                                A soma das perdas ({totalPerdas}) não pode ultrapassar a quantidade
+                                da ficha ({totalGeral}).
+                            </div>
+                        )}
+
+                        {saveError && (
+                            <div
+                                className="mt-4 rounded-[10px] border border-red-200 bg-red-50 p-4 text-[14px] font-light text-red-700"
+                                role="alert"
+                            >
+                                {saveError}
+                            </div>
+                        )}
+
                         <div className="max-[30px] relative mt-5 break-inside-avoid">
                             <fieldset className="border border-[#E8E8E8] rounded-[10px] p-4 bg-[#F9F9F9] min-h-[80px]">
                                 <legend className="px-2 text-[12px] text-[#898C8F] ml-2 font-light bg-white">
@@ -1196,7 +1366,7 @@ export default function EdicaoFichaTecnicaModal({
                         <div className="py-5  flex justify-end items-center shrink-0">
                             <button
                                 onClick={handleConcluir}
-                                disabled={loading}
+                                disabled={loading || !perdasValidas}
                                 className="px-10 h-[42px] rounded-full bg-[#A9E2F2] text-[#347A8A] font-normal text-[15px] hover:bg-[#97D8EA] transition-colors shadow-sm disabled:opacity-50"
                             >
                                 {loading ? "Salvando..." : "Concluir edição"}

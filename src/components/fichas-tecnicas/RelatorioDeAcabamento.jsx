@@ -25,7 +25,7 @@ export default function RelatorioDeAcabamento({
 
     const wrapperClass = isPrint
         ? "rounded-[10px] border border-[#D9D9D9] overflow-hidden"
-        : "border border-[#E8E8E8] rounded-[10px] overflow-hidden";
+        : "border border-[#E8E8E8] rounded-[10px] overflow-x-auto";
 
     const theadClass = isPrint ? "bg-[#F4F4F4] text-[#737373]" : "bg-[#C9EAF6] text-[#4696AD]";
 
@@ -49,7 +49,7 @@ export default function RelatorioDeAcabamento({
 
             <div className={wrapperClass}>
                 <table
-                    className="w-full text-center text-sm"
+                    className="w-full min-w-[440px] text-center text-xs sm:text-sm"
                     style={isPrint ? { borderCollapse: "collapse" } : undefined}
                 >
                     <thead className={theadClass}>

@@ -129,6 +129,7 @@ export default function TransferenciaEtapaModal({
     const [dropdownAberto, setDropdownAberto] = useState(false);
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState("");
     const [parceirosIniciais, setParceirosIniciais] = useState([]);
 
     // Estados para o comportamento visual da nova tabela
@@ -177,6 +178,16 @@ export default function TransferenciaEtapaModal({
             (linha) => parseCurrencyToNumber(linha.precoUnitarioFormatado) > 0,
         );
     }, [linhasTabela]);
+
+    const totalPerdas = useMemo(
+        () =>
+            Number(relatorioPerdas.defeitoCostura || 0) +
+            Number(relatorioPerdas.defeitoTecido || 0) +
+            Number(relatorioPerdas.retiradas || 0) +
+            Number(relatorioPerdas.sobras || 0),
+        [relatorioPerdas],
+    );
+    const perdasValidas = !isUltimaEtapa || totalPerdas <= Number(fichaTecnica?.quantidade || 0);
 
     const gridTemplateColumnsTabela =
         linhasTabela.length > 1
@@ -446,10 +457,11 @@ export default function TransferenciaEtapaModal({
 
     // --- Submit / Processamento da Transferência ---
     const handleTransferir = async () => {
-        if (!quantidadeValida) {
+        if (!quantidadeValida || !perdasValidas) {
             return;
         }
 
+        setSubmitError("");
         setSubmitting(true);
         try {
             if (isUltimaEtapa) {
@@ -536,7 +548,6 @@ export default function TransferenciaEtapaModal({
             await createFichaEtapa({
                 ficha_tecnica_id: fichaTecnica.id,
                 etapa_id: proximaEtapa.id,
-                data_inicio: new Date().toISOString(),
             });
 
             // 5. Atualizar etapa_atual_id da ficha técnica para refletir a nova etapa
@@ -546,6 +557,12 @@ export default function TransferenciaEtapaModal({
             onClose();
         } catch (error) {
             console.error("Falha ao processar a transferência de etapa:", error);
+            const message = error?.response?.data?.message;
+            setSubmitError(
+                Array.isArray(message)
+                    ? message.join(" ")
+                    : message || "Não foi possível transferir a ficha. Tente novamente.",
+            );
         } finally {
             setSubmitting(false);
         }
@@ -554,9 +571,9 @@ export default function TransferenciaEtapaModal({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 px-4 font-['Outfit']">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-2 font-['Outfit'] sm:px-4">
             {/* CONTAINER PRINCIPAL DO MODAL */}
-            <div className="relative w-full max-w-6xl max-h-[90vh] overflow-y-auto custom-scrollbar bg-white p-8 shadow-2xl rounded-[24px]">
+            <div className="scrollbar-sutil relative max-h-[96dvh] w-full max-w-6xl overflow-y-auto rounded-[20px] bg-white p-4 shadow-2xl sm:max-h-[90vh] sm:rounded-[24px] sm:p-8">
                 {/* CABEÇALHO DO MODAL */}
                 <div className="mb-8 flex items-start justify-between">
                     <div className="flex flex-col">
@@ -1038,14 +1055,35 @@ export default function TransferenciaEtapaModal({
                             </div>
                         )}
 
+                        {!perdasValidas && (
+                            <div className="mb-6 mt-6 rounded-[10px] border border-red-200 bg-red-50 p-4 text-[14px] font-light text-red-700">
+                                A soma das perdas ({totalPerdas}) não pode ultrapassar a quantidade
+                                da ficha ({fichaTecnica.quantidade}).
+                            </div>
+                        )}
+
+                        {submitError && (
+                            <div
+                                className="mb-2 mt-4 rounded-[10px] border border-red-200 bg-red-50 p-4 text-[14px] font-light text-red-700"
+                                role="alert"
+                            >
+                                {submitError}
+                            </div>
+                        )}
+
                         {/* FOOTER / AÇÕES FINAIS DO MODAL */}
                         <div className="flex justify-end pt-4">
                             <button
                                 type="button"
                                 onClick={handleTransferir}
-                                disabled={submitting || !quantidadeValida || !precoUnitarioValido}
+                                disabled={
+                                    submitting ||
+                                    !quantidadeValida ||
+                                    !precoUnitarioValido ||
+                                    !perdasValidas
+                                }
                                 className={`h-[39px] w-[200px] rounded-full px-10 text-[15px] font-normal transition-all ${
-                                    !quantidadeValida || !precoUnitarioValido
+                                    !quantidadeValida || !precoUnitarioValido || !perdasValidas
                                         ? "cursor-not-allowed border border-[#D9D9D9] bg-[#F5F5F5] text-[#898C8F]"
                                         : "bg-[#A9E2F2] text-[#4696AD] hover:bg-[#A2DCED] active:scale-95"
                                 }`}

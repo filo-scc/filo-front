@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import TabelaReferencias from "../components/clientes/TabelaReferencias";
 import FloatingLabelInput from "../components/FloatingLabelInput";
@@ -8,6 +8,7 @@ import {
     getProdutosPorFabrico,
     vincularProdutoAoCliente,
 } from "../services/clientesService";
+import { getEnderecoByCep } from "../services/apiCep";
 import { apenasNumeros, formatarCep, formatarCnpj, formatarTelefone } from "../utils/formatters";
 import { LoadingButton, ReferenceCardsSkeleton } from "../components/geral/Loading";
 
@@ -38,6 +39,7 @@ export default function ClientesCadastrar() {
     const [loadingReferencias, setLoadingReferencias] = useState(false);
     const [salvando, setSalvando] = useState(false);
     const [erroCadastro, setErroCadastro] = useState("");
+    const cepRequestRef = useRef(null);
 
     const handleChange = (campo) => (e) => {
         setForm((prev) => ({ ...prev, [campo]: e.target.value }));
@@ -51,9 +53,45 @@ export default function ClientesCadastrar() {
         setForm((prev) => ({ ...prev, telefone: formatarTelefone(e.target.value) }));
     };
 
-    const handleChangeCep = (e) => {
-        setForm((prev) => ({ ...prev, cep: formatarCep(e.target.value) }));
+    const handleChangeCep = async (e) => {
+        const novoCep = formatarCep(e.target.value);
+        cepRequestRef.current?.abort();
+        cepRequestRef.current = null;
+        setForm((prev) => ({ ...prev, cep: novoCep }));
+
+        const cepNumerico = apenasNumeros(novoCep);
+        if (cepNumerico.length === 8) {
+            const controller = new AbortController();
+            cepRequestRef.current = controller;
+
+            try {
+                const dados = await getEnderecoByCep(cepNumerico, {
+                    signal: controller.signal,
+                });
+                if (dados && !controller.signal.aborted) {
+                    setForm((prev) =>
+                        apenasNumeros(prev.cep) === cepNumerico
+                            ? {
+                                  ...prev,
+                                  rua: dados.logradouro || dados.rua || prev.rua,
+                                  bairro: dados.bairro || prev.bairro,
+                                  cidade: dados.localidade || dados.cidade || prev.cidade,
+                                  estado: dados.uf || dados.estado || prev.estado,
+                              }
+                            : prev,
+                    );
+                }
+            } catch (error) {
+                console.error("Erro ao buscar o CEP fornecido:", error);
+            } finally {
+                if (cepRequestRef.current === controller) {
+                    cepRequestRef.current = null;
+                }
+            }
+        }
     };
+
+    useEffect(() => () => cepRequestRef.current?.abort(), []);
 
     const handleChangeNumeroEndereco = (e) => {
         setForm((prev) => ({ ...prev, numero: e.target.value }));
@@ -263,9 +301,7 @@ export default function ClientesCadastrar() {
                 const clientes = await getClientes(fabricoIdNumerico);
                 const clienteRecemCriado = [...(clientes || [])].reverse().find((cliente) => {
                     const cnpjCliente = valorOuUndefined(apenasNumeros(cliente?.cnpj));
-
                     const correspondenciaCnpj = cnpjCliente === cnpjNumerico;
-
                     const mesmoNome = String(cliente?.nome || "").trim() === nome;
 
                     return correspondenciaCnpj && mesmoNome;
@@ -426,7 +462,7 @@ export default function ClientesCadastrar() {
                     <button
                         type="button"
                         onClick={() => navigate("/clientes")}
-                        className="bg-[#D75757] hover:bg-[#c94a4a] text-white h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px]"
+                        className="border border-[#D75757] bg-[#FFFFFF] hover:bg-[#FDF1F1] text-[#D75757] h-[42px] px-8 rounded-full text-sm font-normal transition-colors shadow-sm min-w-[180px]"
                     >
                         Cancelar
                     </button>
