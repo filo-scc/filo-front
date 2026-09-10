@@ -168,6 +168,7 @@ export default function FichaTecnicaModal({
     produto,
     fabricoId,
     etapaAtualId = null,
+    fichaInicial = null,
     onFichaCreated,
     onRequestCreateColor,
     fichaAnterior,
@@ -431,13 +432,87 @@ export default function FichaTecnicaModal({
                 setGradeOptions(normalizedGrades);
 
                 const fallbackGrade =
+                    fichaInicial?.gradeVersaoIdNova ||
+                    fichaInicial?.gradeVersaoIdOriginal ||
                     produto?.gradeVersaoId ||
                     produto?.grade_versao_id ||
                     normalizedGrades[0]?.gradeVersaoId ||
                     null;
 
                 setSelectedGradeVersionId(fallbackGrade);
-                setOferecerGrade(Boolean(fichaAnterior && normalizedGrades.length));
+
+                if (fichaInicial) {
+                    const coresIniciais = (
+                        fichaInicial.selectedColorIds ||
+                        (fichaInicial.cores || []).map((cor) => cor?.id ?? cor).filter(Boolean) ||
+                        []
+                    ).map(Number);
+
+                    setSelectedColorIds(coresIniciais);
+
+                    if (Array.isArray(fichaInicial.parceiroRows)) {
+                        setParceiroRows(
+                            fichaInicial.parceiroRows.map((parceiro) => {
+                                const precoBruto = parceiro.preco;
+                                let precoFormatado = "";
+                                if (
+                                    precoBruto !== null &&
+                                    precoBruto !== undefined &&
+                                    precoBruto !== ""
+                                ) {
+                                    if (
+                                        typeof precoBruto === "string" &&
+                                        precoBruto.includes("R$")
+                                    ) {
+                                        precoFormatado = precoBruto;
+                                    } else {
+                                        const numerico =
+                                            typeof precoBruto === "string"
+                                                ? Number(
+                                                      precoBruto
+                                                          .replace("R$", "")
+                                                          .replace(",", ".")
+                                                          .trim(),
+                                                  )
+                                                : Number(precoBruto);
+                                        precoFormatado = Number.isFinite(numerico)
+                                            ? `R$ ${numerico.toFixed(2).replace(".", ",")}`
+                                            : "";
+                                    }
+                                }
+
+                                return {
+                                    parceiroId: parceiro.parceiroId ?? parceiro.id,
+                                    parceiroNome: parceiro.parceiroNome || parceiro.nome || "",
+                                    operacao: parceiro.operacao || "",
+                                    preco: precoFormatado,
+                                    isDirty: Boolean(parceiro.isDirty),
+                                    isNew: Boolean(parceiro.isNew),
+                                };
+                            }),
+                        );
+                    }
+
+                    const gradeEscolhida =
+                        normalizedGrades.find((g) => g.gradeVersaoId === fallbackGrade) ||
+                        normalizedGrades[0];
+
+                    if (gradeEscolhida && Array.isArray(fichaInicial.itensPayload)) {
+                        const matrizInicial = {};
+                        fichaInicial.itensPayload.forEach((item) => {
+                            const sizeItem = gradeEscolhida.sizeItems.find(
+                                (s) =>
+                                    Number(s.gradeVersaoItemId) ===
+                                    Number(item.grade_versao_item_id),
+                            );
+                            if (!sizeItem) return;
+                            const corId = Number(item.cor_id);
+                            if (!matrizInicial[corId]) matrizInicial[corId] = {};
+                            matrizInicial[corId][sizeItem.tamanhoId] = Number(item.quantidade) || 0;
+                        });
+                        setMatrix(matrizInicial);
+                    }
+                }
             } catch (err) {
                 if (alive) setError(err?.message || "Falha ao carregar dados.");
             } finally {
@@ -449,7 +524,7 @@ export default function FichaTecnicaModal({
         return () => {
             alive = false;
         };
-    }, [isOpen, fabricoId, produto?.id]);
+    }, [isOpen, fabricoId, produto?.id, fichaInicial?.id]);
 
     useEffect(() => {
         if (!currentGradeOption) return;
@@ -548,13 +623,23 @@ export default function FichaTecnicaModal({
 
         // Montamos um RASCUNHO e devolvemos pra tela pai!
         const rascunhoFicha = {
-            id: `temp-${Date.now()}`, // ID temporário para o frontend iterar na tabela
-            isDraft: true,
+            id: fichaInicial?.id ?? `temp-${Date.now()}`,
+            isDraft: fichaInicial ? Boolean(fichaInicial.isDraft) : true,
             produtoId: produto.id,
             nome: produto?.referenciaInterna || produto?.nome,
-            referenciaCliente: produto.referenciaInterna || null,
+            referenciaCliente:
+                produto.referenciaCliente ??
+                fichaInicial?.referenciaCliente ??
+                produto.referenciaInterna ??
+                null,
+            preco_padrao: produto.preco_padrao ?? fichaInicial?.preco_padrao ?? null,
+            custo_total: produto.custo_total ?? fichaInicial?.custo_total ?? null,
+            foto: produto.foto ?? fichaInicial?.foto,
             etapaAtualId,
-            gradeVersaoIdOriginal: produto?.gradeVersaoId || produto?.grade_versao_id,
+            gradeVersaoIdOriginal:
+                fichaInicial?.gradeVersaoIdOriginal ||
+                produto?.gradeVersaoId ||
+                produto?.grade_versao_id,
             gradeVersaoIdNova: effectiveGradeVersionId,
             selectedColorIds,
             gradeParaCopia: currentSizeItems.map((size) => ({
@@ -564,7 +649,7 @@ export default function FichaTecnicaModal({
             cores: selectedColors,
             itensPayload,
             parceiroRows,
-            quantidade: quantidadeTotal, // Utilizado para preencher a tabela visualmente
+            quantidade: quantidadeTotal,
         };
 
         onFichaCreated?.(rascunhoFicha);
@@ -1344,7 +1429,7 @@ export default function FichaTecnicaModal({
                                     onClick={handleSave}
                                     className="rounded-[19px] bg-[#A9E2F2] px-10 h-[39px] text-[14px] font-medium text-[#4696AD] transition hover:bg-[#A2DCED]"
                                 >
-                                    Adicionar ficha
+                                    {fichaInicial ? "Atualizar ficha" : "Adicionar ficha"}
                                 </button>
                             </div>
                         </div>

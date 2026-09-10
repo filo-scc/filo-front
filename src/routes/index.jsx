@@ -16,6 +16,8 @@ import ProdutoEditar from "../pages/ProdutoEditar";
 import ParceiroCadastro from "../pages/ParceiroCadastro";
 import ProdutoCadastar from "../pages/ProdutoCadastrar";
 import PedidosCadastar from "../pages/PedidosCadastrar";
+import PedidosDetalhes from "../pages/PedidosDetalhes";
+import PedidosEditar from "../pages/PedidosEditar";
 import Pedidos from "../pages/Pedidos";
 import Aviamentos from "../pages/Aviamentos";
 import Tecidos from "../pages/Tecidos";
@@ -179,9 +181,18 @@ function AppRoutes() {
                     element={
                         <PrivateRoute>
                             <Layout>
-                                <div className="flex justify-center items-center h-full text-gray-500 text-2xl font-light">
-                                    Página de edição de pedido em construção...
-                                </div>
+                                <PedidosEditar />
+                            </Layout>
+                        </PrivateRoute>
+                    }
+                />
+
+                <Route
+                    path="/pedidos/:id"
+                    element={
+                        <PrivateRoute>
+                            <Layout>
+                                <PedidosDetalhes />
                             </Layout>
                         </PrivateRoute>
                     }
