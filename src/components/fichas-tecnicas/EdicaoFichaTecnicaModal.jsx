@@ -220,8 +220,12 @@ const ColorPill = ({ nome, onRemove }) => (
     <div className="bg-[#A9E2F2] text-[#4696AD] px-3 py-1 rounded-full text-[13px] flex items-center gap-2">
         {nome}
         <button onClick={onRemove} className="flex items-center justify-center">
-            <div className="w-[14px] h-[14px] bg-[#4696AD] rounded-full flex items-center justify-center text-white text-[9px] font-bold">
-                ✕
+            <div className="w-[14px] h-[14px] bg-[#4696AD] rounded-full flex items-center justify-center">
+                <img
+                    src="/fechar-branco.png"
+                    alt="Remover cor"
+                    className="w-[9px] h-[9px] object-contain"
+                />
             </div>
         </button>
     </div>
@@ -1367,9 +1371,9 @@ export default function EdicaoFichaTecnicaModal({
                             <button
                                 onClick={handleConcluir}
                                 disabled={loading || !perdasValidas}
-                                className="px-10 h-[42px] rounded-full bg-[#A9E2F2] text-[#347A8A] font-normal text-[15px] hover:bg-[#97D8EA] transition-colors shadow-sm disabled:opacity-50"
+                                className="px-10 h-[39px] rounded-full bg-[#A9E2F2] text-[#4696AD] font-normal text-[16px] hover:bg-[#97D8EA] transition-colors shadow-sm disabled:opacity-50"
                             >
-                                {loading ? "Salvando..." : "Concluir edição"}
+                                {loading ? "Salvando..." : "Salvar Alterações"}
                             </button>
                         </div>
                     </div>
