@@ -12,12 +12,12 @@ export async function syncFichaTecnicaCores(fichaTecnicaId, coresIds) {
 }
 
 export async function updateFichaTecnicaItem(fichaIemId, data) {
-    const response = await api.put(`fichas-tecnicas/itens/${fichaIemId}`, data);
+    const response = await api.put(`/fichas-tecnicas/itens/${fichaIemId}`, data);
     return unwrap(response);
 }
 
 export async function deleteFichaTecnicaItem(fichaItemId) {
-    const response = await api.delete(`fichas-tecnicas/itens/${fichaItemId}`);
+    const response = await api.delete(`/fichas-tecnicas/itens/${fichaItemId}`);
     return unwrap(response);
 }
 

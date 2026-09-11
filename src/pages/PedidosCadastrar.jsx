@@ -687,7 +687,6 @@ export default function PedidosCadastrar() {
                     etapa_atual_id: ficha.etapa_atual_id || etapaIdFallback,
                     quantidade: Number(ficha.quantidade) || 0,
                     concluida: false,
-                    fabrico_id: fabricoId,
                 };
 
                 const novaFicha = await createFichaTecnica(payloadFicha);

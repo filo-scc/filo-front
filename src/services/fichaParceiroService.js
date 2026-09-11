@@ -33,7 +33,7 @@ export const createFichaParceiro = async (ficha_id, parceiro_id, operacao, valor
     if (valor !== undefined) payload.valor = valor;
     if (quantidade !== undefined) payload.quantidade = quantidade;
 
-    const response = await api.post(`fichas-tecnicas/parceiros`, payload);
+    const response = await api.post(`/fichas-tecnicas/parceiros`, payload);
     return response;
 };
 

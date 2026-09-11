@@ -1,7 +1,7 @@
 import api from "./api";
 
-export const getFichaTecnicaByFabrico = async (fabricoId) => {
-    const response = await api.get(`/fichas-tecnicas/fabrico/${fabricoId}`);
+export const getFichaTecnicaByFabrico = async () => {
+    const response = await api.get(`/fichas-tecnicas`);
     return response.data;
 };
 

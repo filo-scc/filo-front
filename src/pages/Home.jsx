@@ -87,7 +87,7 @@ export default function Home() {
 
             const [etapas, fichasTecnicas] = await Promise.all([
                 getAllEtapasByFabricoId(fId),
-                getFichaTecnicaByFabrico(fId),
+                getFichaTecnicaByFabrico(),
             ]);
 
             const etapas_ativas = etapas.filter((etapa) => etapa.ativa);
