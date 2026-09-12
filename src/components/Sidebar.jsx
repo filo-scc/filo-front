@@ -47,6 +47,8 @@ export function Sidebar({ isOpen = false, onClose }) {
     const [producaoSobDemanda, setProducaoSobDemanda] = useState(() =>
         getFabricacaoSobDemandaCache(fabricoId),
     );
+    const [statusModoFabrico, setStatusModoFabrico] = useState("idle");
+    const [tentativaModoFabrico, setTentativaModoFabrico] = useState(0);
     const fabricoResolvido =
         !fabricoId ||
         (producaoSobDemanda.fabricoId === fabricoId && producaoSobDemanda.valor !== null);
@@ -55,7 +57,13 @@ export function Sidebar({ isOpen = false, onClose }) {
             ? producaoSobDemanda.valor === true
             : false;
 
-    const labelNovaFicha = producaoSobDemandaAtiva ? "Novo pedido" : "Nova produção";
+    const labelNovaFicha = fabricoResolvido
+        ? producaoSobDemandaAtiva
+            ? "Novo pedido"
+            : "Nova produção"
+        : statusModoFabrico === "error"
+          ? "Modo indisponível"
+          : "Verificando...";
 
     useEffect(() => {
         if (!fabricoId) {
@@ -65,6 +73,8 @@ export function Sidebar({ isOpen = false, onClose }) {
         let ignorar = false;
 
         const carregarDados = async () => {
+            setStatusModoFabrico("loading");
+
             try {
                 const response = await getFabricoById(fabricoId);
 
@@ -75,12 +85,22 @@ export function Sidebar({ isOpen = false, onClose }) {
                     valor: response?.fabricacao_sob_demanda === true,
                 });
                 setFabricacaoSobDemandaCache(fabricoId, response?.fabricacao_sob_demanda === true);
+                setStatusModoFabrico("idle");
             } catch (error) {
                 if (ignorar) return;
 
                 console.error("Erro ao carregar dados do fabrico na Sidebar:", error);
-                setProducaoSobDemanda({ fabricoId, valor: false });
-                setFabricacaoSobDemandaCache(fabricoId, false);
+                setStatusModoFabrico("error");
+                setProducaoSobDemanda((valorAtual) => {
+                    if (
+                        valorAtual.fabricoId === fabricoId &&
+                        typeof valorAtual.valor === "boolean"
+                    ) {
+                        return valorAtual;
+                    }
+
+                    return { fabricoId, valor: null };
+                });
             }
         };
 
@@ -89,7 +109,11 @@ export function Sidebar({ isOpen = false, onClose }) {
         return () => {
             ignorar = true;
         };
-    }, [fabricoId]);
+    }, [fabricoId, tentativaModoFabrico]);
+
+    const tentarCarregarModoFabricoNovamente = () => {
+        setTentativaModoFabrico((tentativaAtual) => tentativaAtual + 1);
+    };
 
     const menuItems = useMemo(() => {
         const items = [
@@ -148,8 +172,18 @@ export function Sidebar({ isOpen = false, onClose }) {
 
             {/* 1. Botão Nova Ficha */}
             <button
-                className={`w-[169px] h-[39px] min-h-[39px] rounded-[18.5px] flex items-center justify-start px-4 gap-3 transition-all duration-200 shadow-sm ${isNovoPedido ? "bg-[#D7FE65]" : "bg-[#A9E2F2] hover:bg-[#A2DCED]"}`}
+                type="button"
+                disabled={!fabricoResolvido}
+                className={`w-[169px] h-[39px] min-h-[39px] rounded-[18.5px] flex items-center justify-start px-4 gap-3 transition-all duration-200 shadow-sm ${
+                    !fabricoResolvido
+                        ? "cursor-not-allowed bg-[#E7EEF2] opacity-80"
+                        : isNovoPedido
+                          ? "bg-[#D7FE65]"
+                          : "bg-[#A9E2F2] hover:bg-[#A2DCED]"
+                }`}
                 onClick={() => {
+                    if (!fabricoResolvido) return;
+
                     onClose?.();
                     navigate("/pedidos/cadastrar");
                 }}
@@ -160,11 +194,32 @@ export function Sidebar({ isOpen = false, onClose }) {
                     className="w-5 h-5 shrink-0"
                 />
                 <span
-                    className={`${isNovoPedido ? "text-[#404040]" : "text-[#4696AD]"} font-normal text-[13px] whitespace-nowrap`}
+                    className={`${
+                        !fabricoResolvido
+                            ? "text-[#7B7D80]"
+                            : isNovoPedido
+                              ? "text-[#404040]"
+                              : "text-[#4696AD]"
+                    } font-normal text-[13px] whitespace-nowrap`}
                 >
                     {labelNovaFicha}
                 </span>
             </button>
+
+            {!fabricoResolvido && statusModoFabrico === "error" && (
+                <div className="w-[169px] -mt-5 text-left">
+                    <p className="text-[12px] leading-4 text-[#7B7D80]">
+                        Não foi possível identificar o modo da fábrica.
+                    </p>
+                    <button
+                        type="button"
+                        onClick={tentarCarregarModoFabricoNovamente}
+                        className="mt-2 text-[13px] font-medium text-[#4696AD] hover:underline"
+                    >
+                        Tentar novamente
+                    </button>
+                </div>
+            )}
 
             {/* 2. Menu Itens */}
             <nav className="flex flex-col gap-2 w-full pb-8">
