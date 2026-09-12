@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { getTecidosByFabrico } from "../services/produtoService";
+import { getTecidos } from "../services/produtoService";
 import { TecidosTableSkeleton } from "../components/tecidos/TecidosTableSkeleton";
 import { CadastrarTecidoModal } from "../components/produtos/CadastrarTecidoModal";
 import MenuOpcoes from "../components/geral/MenuOpcoes";
@@ -43,7 +43,7 @@ export default function Tecidos() {
         if (!fabricoId) return;
         setLoading(true);
         try {
-            const dados = await getTecidosByFabrico(fabricoId);
+            const dados = await getTecidos();
             setTecidos(Array.isArray(dados) ? dados : []);
         } catch (error) {
             console.error("Erro ao carregar tecidos:", error);

@@ -16,14 +16,14 @@ import {
     atualizarProduto,
     excluirProduto,
     desvincularProdutoAviamento,
-    getAviamentosByFabrico,
+    getAviamentos,
     getAviamentosDoProduto,
     getClientesDoProduto,
-    getGradesByFabrico,
+    getGrades,
     getParceiroByProduto,
     getProdutoById,
-    getTecidosByFabrico,
-    getTiposProdutoByFabrico,
+    getTecidos,
+    getTiposProduto,
     vincularProdutoAviamento,
     atualizarProdutoAviamento,
 } from "../services/produtoService";
@@ -579,19 +579,15 @@ export default function ProdutoEditar() {
                     getProdutoById(id),
                     getClientesDoProduto(id),
                     Number.isFinite(fabricoId) ? getClientes(fabricoId) : Promise.resolve([]),
-                    Number.isFinite(fabricoId)
-                        ? getGradesByFabrico(fabricoId)
-                        : Promise.resolve([]),
-                    Number.isFinite(fabricoId)
-                        ? getTecidosByFabrico(fabricoId)
-                        : Promise.resolve([]),
-                    Number.isFinite(fabricoId)
-                        ? getAviamentosByFabrico(fabricoId)
-                        : Promise.resolve([]),
+                    getGrades().catch(() => []),
+                    getTecidos().catch(() => []),
+                    getAviamentos().catch(() => []),
                     getAviamentosDoProduto(id).catch(() => []),
-                    getTiposProdutoByFabrico().catch(() => []),
-                    Number.isFinite(fabricoId) ? getFabricoById(fabricoId) : Promise.resolve(null),
-                    getAllEtapasByFabricoId(fabricoId).catch(() => []),
+                    getTiposProduto().catch(() => []),
+                    getFabricoById().catch(() => null),
+                    Number.isFinite(fabricoId)
+                        ? getAllEtapasByFabricoId(fabricoId).catch(() => [])
+                        : Promise.resolve([]),
                     getParceiroByProduto(id),
                 ]);
 
@@ -946,7 +942,7 @@ export default function ProdutoEditar() {
 
     const recarregarTecidos = async () => {
         try {
-            const dados = await getTecidosByFabrico(fabricoId);
+            const dados = await getTecidos();
             const tecidosTratados = (dados || []).map((t) => ({
                 id: t?.id || t?.tecido?.id,
                 nome: t?.nome || t?.tecido?.nome || "Sem nome na API",

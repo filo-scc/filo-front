@@ -11,10 +11,10 @@ import { CadastrarTecidoModal } from "../components/produtos/CadastrarTecidoModa
 import AviamentoModal from "../components/aviamentos/AviamentoModal";
 import {
     criarProduto,
-    getAviamentosByFabrico,
-    getGradesByFabrico,
-    getTecidosByFabrico,
-    getTiposProdutoByFabrico,
+    getAviamentos,
+    getGrades,
+    getTecidos,
+    getTiposProduto,
     vincularProdutoAviamento,
 } from "../services/produtoService.js";
 import { upload } from "../services/utilsService";
@@ -275,10 +275,10 @@ export default function ProdutoCadastar() {
                     resEtapasReal,
                     resParceiros,
                 ] = await Promise.allSettled([
-                    getGradesByFabrico(fabricoId),
-                    getTecidosByFabrico(fabricoId),
-                    getAviamentosByFabrico(fabricoId),
-                    getTiposProdutoByFabrico(),
+                    getGrades(),
+                    getTecidos(),
+                    getAviamentos(),
+                    getTiposProduto(),
                     getAllEtapasByFabricoId(fabricoId),
                     getParceirosByFabrico(fabricoId),
                 ]);
@@ -525,7 +525,7 @@ export default function ProdutoCadastar() {
     // Função para atualizar a lista de tecidos após cadastrar um novo
     const recarregarTecidos = async () => {
         try {
-            const dados = await getTecidosByFabrico(fabricoId);
+            const dados = await getTecidos();
             const tecidosTratados = (dados || []).map((t) => ({
                 id: t?.id || t?.tecido?.id,
                 nome: t?.nome || t?.tecido?.nome || "Sem nome na API",

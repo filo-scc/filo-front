@@ -6,7 +6,7 @@ import {
     excluirProduto,
     getAviamentosDoProduto,
     getParceiroByProduto,
-    getTiposProdutoByFabrico,
+    getTiposProduto,
 } from "../services/produtoService";
 import { getFabricoById } from "../services/fabricoService";
 import { getAllEtapasByFabricoId } from "../services/etapaService";
@@ -76,7 +76,7 @@ export default function ProdutoDetalhes() {
                     getProdutoById(id),
                     getClientesDoProduto(id),
                     getAviamentosDoProduto(id),
-                    getTiposProdutoByFabrico().catch(() => []),
+                    getTiposProduto().catch(() => []),
                     getAllEtapasByFabricoId(fabricoId).catch(() => []),
                     getParceiroByProduto(id),
                 ]);
@@ -120,13 +120,11 @@ export default function ProdutoDetalhes() {
 
     useEffect(() => {
         async function carregarDadosDoFabrico() {
-            if (produto && produto.fabrico_id) {
-                try {
-                    const dadosFabrico = await getFabricoById(produto.fabrico_id);
-                    setFabrico(dadosFabrico);
-                } catch (error) {
-                    console.error("Erro ao buscar dados do fabrico:", error);
-                }
+            try {
+                const dadosFabrico = await getFabricoById();
+                setFabrico(dadosFabrico);
+            } catch (error) {
+                console.error("Erro ao buscar dados do fabrico:", error);
             }
         }
 
