@@ -347,9 +347,23 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
                             alt="Tag"
                             className="w-[30px] h-[30px] object-contain"
                         />
-                        <h2 className="text-xl font-light text-[#404040] sm:text-[26px]">
-                            Ficha Técnica {ficha?.numero}
-                        </h2>
+                        <div className="flex flex-col">
+                            <h2 className="text-xl font-light text-[#404040] leading-tight sm:text-[26px]">
+                                Ficha Técnica {ficha?.numero}
+                            </h2>
+                            {ficha?.pedido ? (
+                                <p className="text-[14px] font-light text-[#404040] -mt-2">
+                                    Pedido Nº{ficha?.pedido?.numero}{" "}
+                                    <span className="mx-1 text-[25px] align-middle">•</span>{" "}
+                                    <button
+                                        onClick={() => navigate("/pedidos")}
+                                        className="text-[14px] font-light text-[#4696AD]"
+                                    >
+                                        Ver pedido
+                                    </button>
+                                </p>
+                            ) : null}
+                        </div>
                     </div>
 
                     <button onClick={onClose}>
@@ -517,7 +531,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
                                                             return (
                                                                 <div
                                                                     key={s.id}
-                                                                    className="flex-1 min-w-0 px-2 flex items-center justify-center text-[14px] font-light text-[#898C8F]"
+                                                                    className="flex-1 min-w-0 px-2 flex items-center justify-center text-[14px] font-light"
                                                                     style={{
                                                                         ...BORDER_DARK_05,
                                                                         borderTopWidth: "0px",
@@ -530,17 +544,34 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
                                                                                 : "0px",
                                                                     }}
                                                                 >
-                                                                    {qtd > 0 ? qtd : "-"}
+                                                                    <span
+                                                                        className={
+                                                                            qtd > 0
+                                                                                ? "text-[#4696AD]"
+                                                                                : "text-[#898C8F]"
+                                                                        }
+                                                                    >
+                                                                        {qtd > 0 ? qtd : "-"}
+                                                                    </span>
                                                                 </div>
                                                             );
                                                         })}
                                                         <div
-                                                            className="w-[90px] shrink-0 px-2 flex items-center justify-center text-[14px] font-normal text-[#898C8F]"
+                                                            className="w-[90px] shrink-0 px-2 flex items-center justify-center text-[14px] font-normal"
                                                             style={{
                                                                 borderRight: "0.5px solid #D9D9D9",
                                                             }}
                                                         >
-                                                            {totalsByColor[itemCor.cor.id] || "-"}
+                                                            <span
+                                                                className={
+                                                                    totalsByColor[itemCor.cor.id]
+                                                                        ? "text-[#4696AD]"
+                                                                        : "text-[#898C8F]"
+                                                                }
+                                                            >
+                                                                {totalsByColor[itemCor.cor.id] ||
+                                                                    "-"}
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 ))
@@ -557,7 +588,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
                                                     {sizeItems.map((size, sizeIndex) => (
                                                         <div
                                                             key={`total-tamanho-${size.id}`}
-                                                            className={`flex-1 min-w-0 px-2 flex items-center justify-center text-[14px] font-normal text-[#898C8F] border-l-[0.5px] border-[#7B7D80] ${
+                                                            className={`flex-1 min-w-0 px-2 flex items-center justify-center text-[14px] font-normal border-l-[0.5px] border-[#7B7D80] ${
                                                                 coresList.length % 2 === 1
                                                                     ? "bg-[#F4F4F4]"
                                                                     : "bg-[#FFFFFF]"
@@ -572,12 +603,28 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
                                                                 borderColor: "#7B7D80",
                                                             }}
                                                         >
-                                                            {totalsBySize[sizeIndex] || "-"}
+                                                            <span
+                                                                className={
+                                                                    totalsBySize[sizeIndex]
+                                                                        ? "text-[#4696AD]"
+                                                                        : "text-[#898C8F]"
+                                                                }
+                                                            >
+                                                                {totalsBySize[sizeIndex] || "-"}
+                                                            </span>
                                                         </div>
                                                     ))}
                                                 </div>
-                                                <div className="w-[90px] shrink-0 bg-[#C9EAF6] px-2 flex items-center justify-center text-[14px] font-normal text-[#4696AD]">
-                                                    {totalGeral || "-"}
+                                                <div className="w-[90px] shrink-0 bg-[#C9EAF6] px-2 flex items-center justify-center text-[14px] font-normal">
+                                                    <span
+                                                        className={
+                                                            totalGeral
+                                                                ? "text-[#4696AD]"
+                                                                : "text-[#898C8F]"
+                                                        }
+                                                    >
+                                                        {totalGeral || "-"}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
@@ -635,6 +682,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
                                     py-3
                                     border-l border-[#D9D9D9]
                                     border-r border-r-[#7B7D80]
+                                    text-[#4696AD]
                                     ${
                                         isLastRow
                                             ? "rounded-bl-[10px] border-b border-[#D9D9D9]"
@@ -665,6 +713,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
                                     w-1/3
                                     py-3
                                     border-r border-[#D9D9D9]
+                                    text-[#4696AD]
                                     ${
                                         isLastRow
                                             ? "rounded-br-[10px] border-b border-[#D9D9D9]"
@@ -772,15 +821,6 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
                             className="h-[39px] rounded-full border border-[#4696AD] bg-[#F3F4FA] px-8 text-sm text-[#4696AD] transition-colors hover:bg-[#F3FBFC]"
                         >
                             Editar Ficha
-                        </button>
-                        <button
-                            onClick={() => {
-                                onClose();
-                                navigate("/");
-                            }}
-                            className="h-[39px] rounded-full bg-[#A9E2F2] px-10 text-sm text-[#4696AD] transition-colors hover:bg-[#A2DCED]"
-                        >
-                            Concluir
                         </button>
                     </div>
                 </div>
