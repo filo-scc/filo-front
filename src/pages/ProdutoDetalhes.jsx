@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
     getProdutoById,
     getClientesDoProduto,
-    excluirProduto,
+    softDeleteProduto,
     getAviamentosDoProduto,
     getParceiroByProduto,
     getTiposProduto,
@@ -120,8 +120,9 @@ export default function ProdutoDetalhes() {
 
     useEffect(() => {
         async function carregarDadosDoFabrico() {
+            if (!produto?.fabrico_id) return;
             try {
-                const dadosFabrico = await getFabricoById();
+                const dadosFabrico = await getFabricoById(produto?.fabrico_id);
                 setFabrico(dadosFabrico);
             } catch (error) {
                 console.error("Erro ao buscar dados do fabrico:", error);
@@ -129,7 +130,7 @@ export default function ProdutoDetalhes() {
         }
 
         carregarDadosDoFabrico();
-    }, [produto]);
+    }, [produto?.fabrico_id]);
 
     const handleAcessoNegadoConfirm = () => {
         setModalAtencaoAberto(false);
@@ -140,7 +141,7 @@ export default function ProdutoDetalhes() {
         if (excluindo) return;
         try {
             setExcluindo(true);
-            await excluirProduto(id);
+            await softDeleteProduto(id);
             setModalExclusaoAberto(false);
             setModalConfirmacaoAberto(true);
         } catch {
