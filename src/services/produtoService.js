@@ -75,7 +75,7 @@ export const getClientesDoProduto = async (id) => {
     }
 };
 
-export const excluirProduto = async (id) => {
+export const softDeleteProduto = async (id) => {
     try {
         const response = await api.delete(`/produtos/${id}`);
         return response.data;

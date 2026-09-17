@@ -14,7 +14,7 @@ import {
 } from "../components/geral/Loading";
 import {
     atualizarProduto,
-    excluirProduto,
+    softDeleteProduto,
     desvincularProdutoAviamento,
     getAviamentos,
     getAviamentosDoProduto,
@@ -1056,7 +1056,7 @@ export default function ProdutoEditar() {
         if (excluindo) return;
         try {
             setExcluindo(true);
-            await excluirProduto(id);
+            await softDeleteProduto(id);
             setModalExclusaoAberto(false);
             setModalExcluidoAberto(true);
         } catch (error) {
