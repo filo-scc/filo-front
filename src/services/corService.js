@@ -11,12 +11,23 @@ export function getApiErrorMessage(error, fallback = "Ocorreu um erro inesperado
     return fallback;
 }
 
-export async function getCoresByFabricoId(fabricoId) {
-    const response = await api.get(`/cores/fabrico/${fabricoId}`);
-    return unwrap(response);
+export async function getCores() {
+    try {
+        const response = await api.get("/cores");
+        return unwrap(response);
+    } catch (error) {
+        console.error("Erro ao buscar cores:", error);
+        return [];
+    }
 }
 
 export async function createCor(payload) {
-    const response = await api.post("/cores", payload);
-    return unwrap(response);
+    try {
+        const { ...cleanPayload } = payload ?? {};
+        const response = await api.post("/cores", cleanPayload);
+        return unwrap(response);
+    } catch (error) {
+        console.error("Erro ao criar cor:", error);
+        throw error;
+    }
 }

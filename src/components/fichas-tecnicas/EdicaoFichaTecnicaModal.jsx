@@ -8,7 +8,7 @@ import {
     createFichaTecnicaItem,
     createParceiroProduto,
 } from "../../services/fichaTecnicaItemService";
-import { getCoresByFabricoId } from "../../services/corService";
+import { getCores } from "../../services/corService";
 import {
     updateFichaTecnicaParceiro,
     deleteFichaTecnicaParceiro,
@@ -379,7 +379,7 @@ export default function EdicaoFichaTecnicaModal({
     const carregarCoresDaFabrica = useCallback(async () => {
         if (dadosFicha?.fabrico_id) {
             try {
-                const cores = await getCoresByFabricoId(dadosFicha.fabrico_id);
+                const cores = await getCores();
                 setTodasCoresDisponiveis(cores);
             } catch (error) {
                 console.error("Erro ao buscar cores", error);
