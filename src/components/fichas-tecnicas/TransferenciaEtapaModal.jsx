@@ -1,24 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { getAllEtapasByFabricoId } from "../../services/etapaService";
 import { getParceirosByFabrico } from "../../services/parceiroService";
-import { updateFichaTecnica } from "../../services/fichasTecnicasService";
-import {
-    createParceiroProduto,
-    getProdutoParceiro,
-    updateParceiroProdutoPrice,
-} from "../../services/fichaTecnicaItemService";
-import {
-    finalizarFichaEtapa,
-    getFichaEtapaByFichaTecnica,
-    updateEtapaFichaTecnica,
-} from "../../services/fichasTecnicasService";
+import { transferirEtapaFicha } from "../../services/fichasTecnicasService";
 
-import {
-    getFichaParceiroByFicha,
-    createFichaTecnicaParceiro,
-    updateFichaTecnicaParceiro,
-} from "../../services/fichaParceiroService";
-import { createFichaEtapa } from "../../services/fichaEtapaService";
+import { getFichaParceiroByFicha } from "../../services/fichaParceiroService";
 import RelatorioDeAcabamento from "./RelatorioDeAcabamento.jsx";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
@@ -464,94 +449,33 @@ export default function TransferenciaEtapaModal({
         setSubmitError("");
         setSubmitting(true);
         try {
+            const payload = {
+                ficha_tecnica_id: fichaTecnica.id,
+                etapa_origem_id: etapaConcluida?.id,
+                etapa_destino_id: proximaEtapa?.id,
+                parceiros: linhasTabela.map((linha) => ({
+                    parceiro_id: linha.id,
+                    operacao: linha.operacao,
+                    preco: parseCurrencyToNumber(linha.precoUnitarioFormatado),
+                    quantidade: getEffectiveQuantity(
+                        linha,
+                        linhasTabela.length,
+                        fichaTecnica?.quantidade,
+                    ),
+                })),
+            };
+
             if (isUltimaEtapa) {
-                const payloadRelatorio = {
+                payload.relatorio = {
                     quantidade: Number(fichaTecnica?.quantidade || 0),
                     defeitos_costura: Number(relatorioPerdas.defeitoCostura) || 0,
                     defeitos_tecido: Number(relatorioPerdas.defeitoTecido) || 0,
                     retiradas: Number(relatorioPerdas.retiradas) || 0,
                     sobras: Number(relatorioPerdas.sobras) || 0,
                 };
-                await updateFichaTecnica(fichaTecnica.id, payloadRelatorio);
             }
 
-            if (linhasTabela.length > 0) {
-                for (const [, linha] of linhasTabela.entries()) {
-                    const totalLinhas = linhasTabela.length;
-                    const quantidadeEfetiva = getEffectiveQuantity(
-                        linha,
-                        totalLinhas,
-                        fichaTecnica?.quantidade,
-                    );
-                    const precoUnitario = parseCurrencyToNumber(linha.precoUnitarioFormatado);
-                    const custoTotal = precoUnitario * quantidadeEfetiva;
-
-                    // Passos de Negócio mapeados:
-                    // 1 - Ver se existe parceiro_produto
-                    const parceiroProdutoExistente = await getProdutoParceiro(
-                        fichaTecnica.produto_id,
-                        linha.id,
-                    );
-
-                    if (parceiroProdutoExistente) {
-                        // 1. Atualizar preço da relação parceiro_produto
-                        await updateParceiroProdutoPrice(
-                            linha.id,
-                            fichaTecnica.produto_id,
-                            precoUnitario,
-                        );
-                    } else {
-                        // 2. Criar relação parceiro_produto
-                        await createParceiroProduto(
-                            linha.id,
-                            fichaTecnica.produto_id,
-                            precoUnitario,
-                        );
-                    }
-
-                    const payloadCusto = {
-                        operacao: linha.operacao,
-                        custo: custoTotal,
-                        quantidade: quantidadeEfetiva,
-                    };
-
-                    // Analisa se a relação já existia antes de fazer qualquer requisição
-                    const parceiroJaExistia = parceirosIniciais.some((p) => {
-                        const idEncontrado = p?.parceiro?.id ?? p?.parceiro_id ?? p?.id ?? null;
-                        return idEncontrado === linha.id;
-                    });
-
-                    if (parceiroJaExistia) {
-                        // Se já existia, atualiza
-                        await updateFichaTecnicaParceiro(fichaTecnica.id, linha.id, payloadCusto);
-                    } else {
-                        // Se não existia, cria
-                        await createFichaTecnicaParceiro({
-                            ficha_id: fichaTecnica.id,
-                            parceiro_id: linha.id,
-                            ...payloadCusto,
-                        });
-                    }
-                }
-            }
-
-            const fichasEtapas = await getFichaEtapaByFichaTecnica(fichaTecnica.id);
-            const fichaEtapaConcluida = fichasEtapas.find(
-                (fe) => fe.etapa_id === etapaConcluida?.id,
-            );
-
-            if (fichaEtapaConcluida) {
-                await finalizarFichaEtapa(fichaEtapaConcluida.id);
-            }
-
-            // 4. Iniciar a nova etapa do fluxo
-            await createFichaEtapa({
-                ficha_tecnica_id: fichaTecnica.id,
-                etapa_id: proximaEtapa.id,
-            });
-
-            // 5. Atualizar etapa_atual_id da ficha técnica para refletir a nova etapa
-            await updateEtapaFichaTecnica(fichaTecnica.id, proximaEtapa.id);
+            await transferirEtapaFicha(payload);
 
             if (onSuccess) onSuccess();
             onClose();

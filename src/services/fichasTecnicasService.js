@@ -43,3 +43,9 @@ export const finalizarFichaEtapa = async (ficha_etapa_id) => {
 
     return response.data;
 };
+
+// TRANSFERENCIA-ETAPA
+export const transferirEtapaFicha = async (payload) => {
+    const response = await api.post(`/fichas-tecnicas/transferir-etapa`, payload);
+    return response.data;
+};
