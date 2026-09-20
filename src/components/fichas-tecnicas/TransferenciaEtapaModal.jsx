@@ -115,7 +115,6 @@ export default function TransferenciaEtapaModal({
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState("");
-    const [parceirosIniciais, setParceirosIniciais] = useState([]);
 
     // Estados para o comportamento visual da nova tabela
     const [hoveredParceiroIndex, setHoveredParceiroIndex] = useState(null);
@@ -246,8 +245,6 @@ export default function TransferenciaEtapaModal({
                 const parceirosExistentes = Array.isArray(parceirosExistentesRaw)
                     ? parceirosExistentesRaw
                     : [];
-
-                setParceirosIniciais(parceirosExistentes);
 
                 const jaVinculadosDestaEtapa = parceirosExistentes
                     .filter(
