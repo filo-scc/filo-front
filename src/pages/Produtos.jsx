@@ -69,6 +69,7 @@ export default function Produtos() {
 
     const [produtos, setProdutos] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
 
     const fabricoId = userString ? JSON.parse(userString).fabrico_id : null;
@@ -76,11 +77,13 @@ export default function Produtos() {
     useEffect(() => {
         const fetchProdutos = async () => {
             setLoading(true);
+            setLoadError(false);
             try {
                 const dados = await getProdutos();
                 setProdutos(Array.isArray(dados) ? dados : []);
             } catch (error) {
                 console.error("Erro ao carregar produtos:", error);
+                setLoadError(true);
             } finally {
                 setLoading(false);
             }
@@ -147,13 +150,22 @@ export default function Produtos() {
                     className="grid gap-[11px] pl-[16px] pr-[32px] 
                      grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 2xl:grid-cols-7"
                 >
+                    {loadError && produtos.length > 0 && (
+                        <div className="col-span-full flex justify-center py-3 text-red-500 font-light">
+                            Não foi possível atualizar os produtos. Tente novamente.
+                        </div>
+                    )}
                     {loading ? (
                         <ProductGridSkeleton />
+                    ) : loadError && produtos.length === 0 ? (
+                        <div className="col-span-full flex justify-center py-10 text-red-500 font-light">
+                            Não foi possível carregar os produtos. Tente novamente.
+                        </div>
                     ) : produtos.length === 0 ? (
                         <div className="col-span-full flex justify-center py-10 text-gray-400 font-light">
                             Nenhum produto encontrado.
                         </div>
-                    ) : (
+                    ) : produtos.length > 0 ? (
                         produtos.map((produto) => (
                             <ProdutoCard
                                 key={produto.id}
@@ -168,7 +180,7 @@ export default function Produtos() {
                                 foto={produto.foto}
                             />
                         ))
-                    )}
+                    ) : null}
                 </div>
             </div>
         </div>

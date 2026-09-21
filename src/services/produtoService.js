@@ -11,7 +11,7 @@ export const getProdutos = async () => {
         return response.data;
     } catch (error) {
         console.error("Erro ao buscar produtos:", error);
-        return [];
+        throw error;
     }
 };
 
@@ -91,7 +91,7 @@ export const getTecidos = async () => {
         return response.data;
     } catch (error) {
         console.error("Erro ao buscar tecidos do fabrico:", error);
-        return [];
+        throw error;
     }
 };
 
@@ -101,7 +101,7 @@ export const getAviamentos = async () => {
         return response.data;
     } catch (error) {
         console.error("Erro ao buscar aviamentos do fabrico:", error);
-        return [];
+        throw error;
     }
 };
 
