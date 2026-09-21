@@ -271,7 +271,7 @@ function DetailFieldSkeleton({ className = "" }) {
     return (
         <div className={className}>
             <SkeletonBox className="h-[20px] w-32 rounded-[8px]" />
-            <SkeletonBox className="mt-2 h-[16px] w  -28 rounded-[8px]" />
+            <SkeletonBox className="mt-2 h-[16px] w-28 rounded-[8px]" />
         </div>
     );
 }
