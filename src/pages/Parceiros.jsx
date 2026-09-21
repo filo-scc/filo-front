@@ -129,7 +129,7 @@ const Parceiros = () => {
     return (
         <div className="p-6 pt-0 mt-6 w-full">
             {/* Card Branco Principal */}
-            <div className="bg-white p-8 rounded-[24px] shadow-sm w-full mx-auto">
+            <div className="bg-white px-10 py-8 rounded-[24px] shadow-sm w-full mx-auto">
                 <div className="w-full">
                     {/* Header */}
                     <div className="w-full flex items-center justify-between mb-8 pl-6 font-['Outfit',_sans-serif]">

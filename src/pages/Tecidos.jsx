@@ -94,7 +94,7 @@ export default function Tecidos() {
             {/* Container Branco Principal */}
             <div className="bg-white rounded-[24px] shadow-sm min-h-[400px] w-full overflow-hidden pb-8">
                 {/* Cabeçalho */}
-                <div className="p-8 pb-4">
+                <div className="p-8 pb-8">
                     <div className="flex flex-wrap items-center justify-between gap-4 pl-[21px]">
                         <div className="flex items-center gap-2 flex-shrink-0">
                             <img src="/tecidos-ativado.png" alt="" className="w-7 h-7" />
@@ -143,7 +143,7 @@ export default function Tecidos() {
                 </div>
 
                 {/* Tabela de Tecidos */}
-                <div className="px-8">
+                <div className="px-10">
                     <div className="rounded-[16px] overflow-hidden border border-[#E8E8E8]">
                         <table className="w-full text-center border-collapse">
                             <thead className="bg-[#CBEBF6] font-['Outfit'] text-[#4696AD] font-light text-[16px]">
