@@ -246,7 +246,8 @@ const Aviamentos = () => {
                                                 colSpan="5"
                                                 className="text-center py-10 text-red-500"
                                             >
-                                                Não foi possível carregar os aviamentos. Tente novamente.
+                                                Não foi possível carregar os aviamentos. Tente
+                                                novamente.
                                             </td>
                                         </tr>
                                     ) : aviamentosFiltrados.length === 0 ? (
