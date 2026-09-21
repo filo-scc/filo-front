@@ -146,7 +146,7 @@ export default function Tecidos() {
                 <div className="px-8">
                     <div className="rounded-[16px] overflow-hidden border border-[#E8E8E8]">
                         <table className="w-full text-center border-collapse">
-                            <thead className="bg-[#CBEBF6] text-[#4696AD] font-light text-[16px]">
+                            <thead className="bg-[#CBEBF6] font-['Outfit'] text-[#4696AD] font-light text-[16px]">
                                 <tr className="h-[64px]">
                                     <th className="font-light py-3 px-6">Nome</th>
                                     <th className="font-light py-3 px-6">Un. de medida</th>
