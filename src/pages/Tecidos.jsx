@@ -28,6 +28,7 @@ export default function Tecidos() {
 
     const [tecidos, setTecidos] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
 
     // Estados para controle dos Modais
@@ -42,11 +43,13 @@ export default function Tecidos() {
     const fetchTecidos = useCallback(async () => {
         if (!fabricoId) return;
         setLoading(true);
+        setLoadError(false);
         try {
             const dados = await getTecidos();
             setTecidos(Array.isArray(dados) ? dados : []);
         } catch (error) {
             console.error("Erro ao carregar tecidos:", error);
+            setLoadError(true);
         } finally {
             setLoading(false);
         }
@@ -201,10 +204,23 @@ export default function Tecidos() {
                                             </tr>
                                         );
                                     })
+                                ) : loadError ? (
+                                    <tr>
+                                        <td colSpan="4" className="py-8 text-center text-red-500">
+                                            Não foi possível carregar os tecidos. Tente novamente.
+                                        </td>
+                                    </tr>
                                 ) : (
                                     <tr>
                                         <td colSpan="4" className="py-8 text-center text-gray-400">
                                             Nenhum tecido encontrado.
+                                        </td>
+                                    </tr>
+                                )}
+                                {loadError && tecidos.length > 0 && (
+                                    <tr>
+                                        <td colSpan="4" className="py-3 text-center text-red-500">
+                                            Não foi possível atualizar os tecidos. Tente novamente.
                                         </td>
                                     </tr>
                                 )}

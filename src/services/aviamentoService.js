@@ -11,7 +11,7 @@ export const getAviamentos = async () => {
         return response.data;
     } catch (error) {
         console.error("Erro ao buscar aviamentos:", error);
-        return [];
+        throw error;
     }
 };
 
@@ -21,7 +21,7 @@ export const getAviamentoById = async (aviamentoId) => {
         return response.data;
     } catch (error) {
         console.error("Erro ao buscar aviamento por id:", error);
-        return null;
+        throw error;
     }
 };
 

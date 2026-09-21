@@ -11,7 +11,7 @@ export const listarTecidos = async () => {
         return response.data;
     } catch (error) {
         console.error("Erro ao buscar tecidos:", error);
-        return [];
+        throw error;
     }
 };
 
@@ -21,7 +21,7 @@ export const obterTecidoPorId = async (id) => {
         return response.data;
     } catch (error) {
         console.error("Erro ao buscar tecido por id:", error);
-        return null;
+        throw error;
     }
 };
 
