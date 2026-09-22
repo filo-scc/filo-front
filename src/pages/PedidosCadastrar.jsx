@@ -254,6 +254,16 @@ export default function PedidosCadastrar() {
     const [clientePendente, setClientePendente] = useState(null);
     const [trocandoCliente, setTrocandoCliente] = useState(false);
 
+    // Chave estável por tentativa lógica: reutilizada em retries do mesmo formulário.
+    const idempotencyKeyRef = useRef(null);
+
+    const obterChaveIdempotencia = () => {
+        if (!idempotencyKeyRef.current) {
+            idempotencyKeyRef.current = crypto.randomUUID();
+        }
+        return idempotencyKeyRef.current;
+    };
+
     useEffect(() => {
         if (!fabricoId) return;
 
@@ -637,18 +647,21 @@ export default function PedidosCadastrar() {
 
             const clienteId = clienteSelecionado?.id ? Number(clienteSelecionado.id) : null;
 
-            await createPedidoCompleto({
-                cliente_id: clienteId,
-                finalizado: false,
-                data_prevista: dataFormatadaBackend,
-                usarCorPaleta: fichas.length > 1,
-                fichas: fichas.map((ficha) =>
-                    montarFichaParaEnvio(ficha, {
-                        etapaPadraoId: primeiraEtapaId,
-                        incluirDadosDoCliente: isSobDemanda && Boolean(clienteId),
-                    }),
-                ),
-            });
+            await createPedidoCompleto(
+                {
+                    cliente_id: clienteId,
+                    finalizado: false,
+                    data_prevista: dataFormatadaBackend,
+                    usarCorPaleta: fichas.length > 1,
+                    fichas: fichas.map((ficha) =>
+                        montarFichaParaEnvio(ficha, {
+                            etapaPadraoId: primeiraEtapaId,
+                            incluirDadosDoCliente: isSobDemanda && Boolean(clienteId),
+                        }),
+                    ),
+                },
+                obterChaveIdempotencia(),
+            );
 
             navigate("/pedidos");
         } catch (error) {

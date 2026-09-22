@@ -11,9 +11,12 @@ export const createPedido = async (pedidoData) => {
 };
 
 // Cria o pedido, as fichas técnicas e todos os vínculos em uma única transação no backend.
-export const createPedidoCompleto = async (pedidoData) => {
+// idempotencyKey deve ser estável por tentativa lógica (reutilizar em retries).
+export const createPedidoCompleto = async (pedidoData, idempotencyKey) => {
     try {
-        const response = await api.post("/pedidos/completo", pedidoData);
+        const response = await api.post("/pedidos/completo", pedidoData, {
+            headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined,
+        });
         return response.data;
     } catch (error) {
         console.error("Error creating pedido completo:", error);
