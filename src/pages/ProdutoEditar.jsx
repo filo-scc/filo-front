@@ -27,6 +27,7 @@ import {
     vincularProdutoAviamento,
     atualizarProdutoAviamento,
 } from "../services/produtoService";
+import { getFabricoById } from "../services/fabricoService";
 import {
     desvincularProdutoDoCliente,
     getClientes,
@@ -583,6 +584,9 @@ export default function ProdutoEditar() {
                     getAviamentos().catch(() => []),
                     getAviamentosDoProduto(id).catch(() => []),
                     getTiposProduto().catch(() => []),
+                    Number.isFinite(fabricoId)
+                        ? getFabricoById(fabricoId).catch(() => null)
+                        : Promise.resolve(null),
                     Number.isFinite(fabricoId)
                         ? getAllEtapasByFabricoId(fabricoId).catch(() => [])
                         : Promise.resolve([]),
