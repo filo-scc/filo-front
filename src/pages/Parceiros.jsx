@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { excluirParceiro, getParceirosByFabrico } from "../services/parceiroService";
+import { excluirParceiro, getParceiros } from "../services/parceiroService";
 
 import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
@@ -8,8 +8,6 @@ import MenuOpcoes from "../components/geral/MenuOpcoes";
 import { ParceirosTableSkeleton } from "../components/geral/Loading";
 
 const Parceiros = () => {
-    const userString = localStorage.getItem("user");
-
     const [parceiros, setParceiros] = useState([]);
     const [loading, setLoading] = useState(true);
     const [dropdownOpenId, setDropdownOpenId] = useState(null);
@@ -22,19 +20,12 @@ const Parceiros = () => {
 
     const navigate = useNavigate();
 
-    const fabricoId = userString ? JSON.parse(userString).fabrico_id : null;
-
     useEffect(() => {
         const fetchParceiros = async () => {
-            if (!fabricoId) {
-                setLoading(false);
-                return;
-            }
-
             try {
                 setLoading(true);
 
-                const data = await getParceirosByFabrico(fabricoId);
+                const data = await getParceiros();
                 setParceiros(data);
             } catch (error) {
                 console.error("Erro ao carregar parceiros", error);
@@ -44,7 +35,7 @@ const Parceiros = () => {
         };
 
         fetchParceiros();
-    }, [fabricoId]);
+    }, []);
 
     useEffect(() => {
         const handleClickOutside = () => setDropdownOpenId(null);

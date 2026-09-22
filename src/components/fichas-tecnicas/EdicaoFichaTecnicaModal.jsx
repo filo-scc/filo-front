@@ -20,7 +20,7 @@ import { preventNumberInputWheel } from "../../utils/preventNumberInputWheel";
 import FichaTecnicaPrintView from "../FichaTecnicaPrintView";
 import { getAviamentosDoProduto, getParceiroByProduto } from "../../services/produtoService";
 import { updateFichaTecnica } from "../../services/fichasTecnicasService";
-import { getParceirosByFabrico } from "../../services/parceiroService";
+import { getParceiros } from "../../services/parceiroService";
 import CorModal from "./CorModal";
 import EstampaModal from "./EstampaModal";
 import RelatorioDeAcabamento from "./RelatorioDeAcabamento";
@@ -316,10 +316,10 @@ export default function EdicaoFichaTecnicaModal({
     const isUltimaEtapa = ultimaEtapaId != null && dadosFicha?.etapa_atual_id == ultimaEtapaId;
 
     const carregarParceirosDisponiveis = useCallback(async () => {
-        if (!dadosFicha?.produto_id || !dadosFicha?.fabrico_id) return;
+        if (!dadosFicha?.produto_id) return;
         try {
             const [parceirosDoFabrico, parceirosDoProduto] = await Promise.all([
-                getParceirosByFabrico(dadosFicha.fabrico_id),
+                getParceiros(),
                 getParceiroByProduto(dadosFicha.produto_id),
             ]);
 
@@ -342,7 +342,7 @@ export default function EdicaoFichaTecnicaModal({
             console.error("Erro ao buscar parceiros", error);
             setParceirosDisponiveis([]);
         }
-    }, [dadosFicha?.produto_id, dadosFicha?.fabrico_id]);
+    }, [dadosFicha?.produto_id]);
 
     const parceirosFiltrados = useMemo(() => {
         return parceirosDisponiveis.filter((parceiro) => {
