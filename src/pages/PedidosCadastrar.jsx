@@ -16,6 +16,7 @@ import { DropdownOptionsSkeleton, LoadingButton, SkeletonBox } from "../componen
 import ModalConfirmacaoEscolha from "../components/geral/ModalConfirmacaoEscolha";
 
 import { parsePreco } from "../utils/preco";
+import { dataPrevistaParaBackend } from "../utils/dataPrevista";
 
 const sectionTitleClass = "text-[20px] font-light text-[#404040] mb-4 font-['Outfit']";
 
@@ -639,19 +640,13 @@ export default function PedidosCadastrar() {
         setErro(null);
 
         try {
-            let dataFormatadaBackend = undefined;
-            if (dataPrevista && dataPrevista.length === 10) {
-                const [dia, mes, ano] = dataPrevista.split("/");
-                dataFormatadaBackend = new Date(`${ano}-${mes}-${dia}T12:00:00.000Z`).toISOString();
-            }
-
             const clienteId = clienteSelecionado?.id ? Number(clienteSelecionado.id) : null;
 
             await createPedidoCompleto(
                 {
                     cliente_id: clienteId,
                     finalizado: false,
-                    data_prevista: dataFormatadaBackend,
+                    data_prevista: dataPrevistaParaBackend(dataPrevista),
                     usarCorPaleta: fichas.length > 1,
                     fichas: fichas.map((ficha) =>
                         montarFichaParaEnvio(ficha, {

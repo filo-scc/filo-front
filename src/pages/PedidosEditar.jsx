@@ -26,6 +26,7 @@ import {
     SkeletonBox,
 } from "../components/geral/Loading";
 import { parsePreco } from "../utils/preco";
+import { dataPrevistaParaBackend } from "../utils/dataPrevista";
 
 const sectionTitleClass = "text-[20px] font-light text-[#404040] mb-4 font-['Outfit']";
 
@@ -998,17 +999,11 @@ export default function PedidosEditar() {
         setErro("");
 
         try {
-            let dataFormatadaBackend = undefined;
-            if (dataPrevista && dataPrevista.length === 10) {
-                const [dia, mes, ano] = dataPrevista.split("/");
-                dataFormatadaBackend = new Date(`${ano}-${mes}-${dia}T12:00:00.000Z`).toISOString();
-            }
-
             const clienteId = clienteSelecionado?.id ? Number(clienteSelecionado.id) : null;
 
             await updatePedidoCompleto(id, {
                 cliente_id: clienteId,
-                data_prevista: dataFormatadaBackend,
+                data_prevista: dataPrevistaParaBackend(dataPrevista),
                 fichas: fichas.map((ficha) => {
                     const incluirDadosDoCliente = isSobDemanda && Boolean(clienteId);
                     const persistida = isFichaPersistida(ficha);
