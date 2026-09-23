@@ -19,7 +19,7 @@ import {
 } from "../services/produtoService.js";
 import { upload } from "../services/utilsService";
 import { DropdownOptionsSkeleton, LoadingButton, SkeletonBox } from "../components/geral/Loading";
-import { getAllEtapasByFabricoId } from "../services/etapaService.js";
+import { getAllEtapas } from "../services/etapaService.js";
 import { getParceiros, getParceirosByCategoria } from "../services/parceiroService.js";
 
 // Função adicionada para formatar as unidades de medida
@@ -276,7 +276,7 @@ export default function ProdutoCadastar() {
                     getTecidos(),
                     getAviamentos(),
                     getTiposProduto(),
-                    getAllEtapasByFabricoId(fabricoId),
+                    getAllEtapas(),
                     getParceiros(),
                 ]);
 

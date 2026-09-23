@@ -120,7 +120,7 @@ const Parceiros = () => {
     return (
         <div className="p-6 pt-0 mt-6 w-full">
             {/* Card Branco Principal */}
-            <div className="bg-white p-8 rounded-[24px] shadow-sm w-full mx-auto">
+            <div className="bg-white px-10 py-8 rounded-[24px] shadow-sm w-full mx-auto">
                 <div className="w-full">
                     {/* Header */}
                     <div className="w-full flex items-center justify-between mb-8 pl-6 font-['Outfit',_sans-serif]">
@@ -177,10 +177,10 @@ const Parceiros = () => {
 
                     {/* Tabela */}
                     <div className="w-full pb-16">
-                        <div className="w-full border border-gray-200 rounded-xl overflow-hidden bg-[#D3EBF2]">
-                            <table className="w-full border-separate border-spacing-0 text-[16px] font-['Outfit',_sans-serif] font-light text-center">
-                                <thead className="bg-[#D3EBF2] text-[#4696AD]">
-                                    <tr className="h-[64px]">
+                        <div className="w-full border border-[#DEDEDE] rounded-xl overflow-hidden bg-[#D3EBF2]">
+                            <table className="w-full border-separate border-spacing-0 text-[16px] font-['Outfit'] font-light text-center">
+                                <thead className="bg-[#C9EAF6] text-[#4696AD]">
+                                    <tr className="bg-[#C9EAF6] text-[#4696AD] h-[64px]">
                                         <th className="px-6 font-light">Parceiro</th>
                                         <th className="px-6 font-light">Possui pedido</th>
 

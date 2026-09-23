@@ -33,7 +33,7 @@ import {
     vincularProdutoAoCliente,
 } from "../services/clientesService";
 import { upload } from "../services/utilsService";
-import { getAllEtapasByFabricoId } from "../services/etapaService";
+import { getAllEtapas } from "../services/etapaService";
 import { CadastrarTecidoModal } from "../components/produtos/CadastrarTecidoModal";
 import { calcularCustosMediosDasEtapas } from "../utils/custosEtapasProduto";
 
@@ -584,6 +584,16 @@ export default function ProdutoEditar() {
                     Number.isFinite(fabricoId)
                         ? getAllEtapasByFabricoId(fabricoId).catch(() => [])
                         : Promise.resolve([]),
+                    Number.isFinite(fabricoId)
+                        ? getTecidosByFabrico(fabricoId)
+                        : Promise.resolve([]),
+                    Number.isFinite(fabricoId)
+                        ? getAviamentosByFabrico(fabricoId)
+                        : Promise.resolve([]),
+                    getAviamentosDoProduto(id).catch(() => []),
+                    getTiposProdutoByFabrico().catch(() => []),
+                    Number.isFinite(fabricoId) ? getFabricoById(fabricoId) : Promise.resolve(null),
+                    getAllEtapas().catch(() => []),
                     getParceiroByProduto(id),
                 ]);
 
