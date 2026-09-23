@@ -40,7 +40,6 @@ const Aviamentos = () => {
 
     const [aviamentos, setAviamentos] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [loadError, setLoadError] = useState(false);
     const [carregandoEdicao, setCarregandoEdicao] = useState(false);
     const [busca, setBusca] = useState("");
 
@@ -57,12 +56,10 @@ const Aviamentos = () => {
         }
         try {
             setLoading(true);
-            setLoadError(false);
             const data = await getAviamentos();
             setAviamentos(Array.isArray(data) ? data : data?.data || []);
         } catch (error) {
             console.error("Erro ao carregar os aviamentos", error);
-            setLoadError(true);
         } finally {
             setLoading(false);
         }
@@ -134,9 +131,8 @@ const Aviamentos = () => {
     };
 
     return (
-        <div className="p-6 pt-0 mt-6 relative flex justify-start w-full font-['Outfit']">
+        <div className="p-6 pt-0 mt-6 relative flex justify-start w-full">
             <div className="bg-white px-10 py-8 rounded-[24px] shadow-sm w-full flex flex-col relative h-fit">
-                {/* Cabeçalho */}
                 <div className="flex justify-between items-center mb-8">
                     <h1 className="ml-6 font-light text-[30px] text-[#404040] flex items-center gap-4">
                         <img
@@ -174,7 +170,7 @@ const Aviamentos = () => {
                         <button
                             type="button"
                             onClick={abrirModalCadastro}
-                            className="w-[196px] h-[39px] bg-[#A9E2F2] text-[#4696AD] font-light text-[16px] rounded-full flex items-center justify-center gap-2 hover:bg-[#A2DCED] transition-colors shrink-0 cursor-pointer"
+                            className="w-[196px] h-[39px] bg-[#A9E2F2] text-[#4696AD] font-normal text-[16px] rounded-full flex items-center justify-center gap-2 hover:bg-[#A2DCED] transition-colors shrink-0"
                         >
                             <img
                                 src="/aviamentos-azul.png"
@@ -187,23 +183,23 @@ const Aviamentos = () => {
                 </div>
 
                 {loading ? (
-                    <div className="flex-1 flex items-center justify-center text-gray-400 py-10 font-light">
+                    <div className="flex-1 flex items-center justify-center text-gray-400">
                         Carregando aviamentos...
                     </div>
                 ) : (
                     <div className="w-full overflow-visible">
-                        <div className="min-w-max border border-[#DEDEDE] rounded-xl font-light text-[16px] overflow-hidden">
-                            <table className="w-full text-center border-collapse relative z-10">
-                                <thead className="font-['Outfit']">
-                                    <tr className="bg-[#C9EAF6] text-[#4696AD] h-[64px]">
-                                        <th className="py-4 px-6 font-light">Nome</th>
-                                        <th className="py-4 px-6 font-light">Unidade de medida</th>
-                                        <th className="py-4 px-6 font-light">Custo unitário</th>
-                                        <th className="py-4 px-6 font-light">Data de cadastro</th>
-                                        <th className="py-4 px-6 font-light">Opções</th>
+                        <div className="min-w-max border border-gray-200 rounded-xl overflow-hidden bg-[#D3EBF2]">
+                            <table className="w-full border-separate border-spacing-0 text-[16px] font-light text-center relative z-10">
+                                <thead className="bg-[#D3EBF2] text-[#4696AD]">
+                                    <tr className="h-[64px]">
+                                        <th className="px-6 font-light">Nome</th>
+                                        <th className="px-6 font-light">Unidade de medida</th>
+                                        <th className="px-6 font-light">Custo unitário</th>
+                                        <th className="px-6 font-light">Data de cadastro</th>
+                                        <th className="px-6 font-light">Opções</th>
                                     </tr>
                                 </thead>
-                                <tbody className="text-[#404040]">
+                                <tbody className="bg-white text-[#404040]">
                                     {aviamentosFiltrados.map((aviamento, index) => {
                                         const isLast = index === aviamentosFiltrados.length - 1;
                                         const isPar = index % 2 === 0;
@@ -211,57 +207,41 @@ const Aviamentos = () => {
                                         return (
                                             <tr
                                                 key={aviamento.id}
-                                                className={`h-[60px] border-b border-[#E8E8E8] last:border-none transition-colors text-center hover:text-[#4696AD] ${
-                                                    isPar
-                                                        ? "bg-white hover:bg-[#FBFBFB]"
-                                                        : "bg-[#F4F4F4] hover:bg-[#EDEDED]"
-                                                }`}
+                                                className={`h-[64px] border-b last:border-0 transition-colors ${isPar ? "bg-white" : "bg-[#F4F4F4]"}`}
                                             >
-                                                <td className="py-4 px-6 font-light">
+                                                <td className="px-6 text-[14px]">
                                                     {aviamento.nome || "-"}
                                                 </td>
-                                                <td className="py-4 px-6 font-light">
+                                                <td className="px-6 text-[14px]">
                                                     {formatarUnidade(aviamento)}
                                                 </td>
-                                                <td className="py-4 px-6 font-light">
+                                                <td className="px-6 text-[14px]">
                                                     {formatarCusto(aviamento)}
                                                 </td>
-                                                <td className="py-4 px-6 font-light">
+                                                <td className="px-6 text-[14px]">
                                                     {formatarData(
                                                         aviamento.created_at ||
                                                             aviamento.data_cadastro,
                                                     )}
                                                 </td>
-                                                <td className="py-4 px-6">
-                                                    <div className="flex justify-center items-center">
-                                                        <MenuOpcoes
-                                                            onEdit={() => handleEdit(aviamento.id)}
-                                                            onDelete={() =>
-                                                                abrirModalExclusao(aviamento)
-                                                            }
-                                                            isLast={isLast}
-                                                        />
-                                                    </div>
+                                                <td className="px-6">
+                                                    <MenuOpcoes
+                                                        onEdit={() => handleEdit(aviamento.id)}
+                                                        onDelete={() =>
+                                                            abrirModalExclusao(aviamento)
+                                                        }
+                                                        isLast={isLast}
+                                                    />
                                                 </td>
                                             </tr>
                                         );
                                     })}
 
-                                    {loadError ? (
+                                    {aviamentosFiltrados.length === 0 ? (
                                         <tr>
                                             <td
                                                 colSpan="5"
-                                                className="text-center py-10 text-red-500"
-                                            >
-                                                Não foi possível carregar os aviamentos. Tente
-                                                novamente.
-                                            </td>
-                                        </tr>
-                                    ) : aviamentosFiltrados.length === 0 ? (
-                                        <tr>
-                                            <td
-                                                colSpan="5"
-                                                className="text-center py-10 text-gray-400 font-light"
+                                                className="text-center py-10 text-gray-400"
                                             >
                                                 Nenhum aviamento encontrado.
                                             </td>
@@ -275,7 +255,7 @@ const Aviamentos = () => {
             </div>
 
             {carregandoEdicao && (
-                <div className="fixed inset-0 z-[1090] flex items-center justify-center bg-black/20 backdrop-blur-sm font-['Outfit'] text-[#4696AD]">
+                <div className="fixed inset-0 z-[1090] flex items-center justify-center bg-black/20 backdrop-blur-sm font-Outfit text-[#4696AD]">
                     Carregando aviamento...
                 </div>
             )}

@@ -329,9 +329,7 @@ export default function ProdutoDetalhes() {
                                 clientes={clientesAssociados}
                                 produtoId={id}
                                 referenciaInterna={produto.nome}
-                                fabricacao_sob_demanda={
-                                    produto.fabrico?.fabricacao_sob_demanda
-                                }
+                                fabricacao_sob_demanda={produto.fabrico?.fabricacao_sob_demanda}
                             />
                         </>
                     ) : (

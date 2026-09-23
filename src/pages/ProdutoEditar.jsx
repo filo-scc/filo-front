@@ -581,9 +581,7 @@ export default function ProdutoEditar() {
                     getAviamentos(),
                     getAviamentosDoProduto(id),
                     getTiposProduto(),
-                    Number.isFinite(fabricoId)
-                        ? getAllEtapas()
-                        : Promise.resolve([]),
+                    Number.isFinite(fabricoId) ? getAllEtapas() : Promise.resolve([]),
                     getParceiroByProduto(id),
                 ]);
 
@@ -1481,9 +1479,7 @@ export default function ProdutoEditar() {
                             clientes={clientesAssociados}
                             referenciaInterna={formData.referencia}
                             produtoId={id}
-                            fabricacao_sob_demanda={
-                                produto?.fabrico?.fabricacao_sob_demanda
-                            }
+                            fabricacao_sob_demanda={produto?.fabrico?.fabricacao_sob_demanda}
                             onAbrirModal={() => setModalClientesAberto(true)}
                             onRemoverLinha={handleRemoverReferencia}
                             onSalvarEdicao={handleSalvarReferencia}
