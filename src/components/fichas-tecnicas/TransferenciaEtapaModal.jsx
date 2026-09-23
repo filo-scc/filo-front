@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { getAllEtapas } from "../../services/etapaService";
-import { getParceirosByFabrico } from "../../services/parceiroService";
+import { getParceiros } from "../../services/parceiroService";
 import { transferirEtapaFicha } from "../../services/fichasTecnicasService";
 
 import { getFichaParceiroByFicha } from "../../services/fichaParceiroService";
