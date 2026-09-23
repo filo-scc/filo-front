@@ -11,7 +11,7 @@ export const createPedido = async (pedidoData) => {
 };
 
 // Cria o pedido, as fichas técnicas e todos os vínculos em uma única transação no backend.
-// idempotencyKey deve ser estável por tentativa lógica (reutilizar em retries).
+// idempotencyKey: reutilizar só em retry com o mesmo payload; renovar se o body mudar.
 export const createPedidoCompleto = async (pedidoData, idempotencyKey) => {
     try {
         const response = await api.post("/pedidos/completo", pedidoData, {

@@ -221,6 +221,10 @@ const montarFichaParaEnvio = (ficha, { etapaPadraoId, incluirDadosDoCliente }) =
     return payload;
 };
 
+// Fingerprint estável do body enviado: retries idênticos reutilizam a chave;
+// qualquer mudança no payload gera uma Idempotency-Key nova.
+const fingerprintPayloadPedido = (payload) => JSON.stringify(payload);
+
 export default function PedidosCadastrar() {
     const navigate = useNavigate();
     const usuarioLogado = JSON.parse(localStorage.getItem("user") || "{}");
@@ -255,12 +259,17 @@ export default function PedidosCadastrar() {
     const [clientePendente, setClientePendente] = useState(null);
     const [trocandoCliente, setTrocandoCliente] = useState(false);
 
-    // Chave estável por tentativa lógica: reutilizada em retries do mesmo formulário.
+    // Chave estável só enquanto o payload normalizado for o mesmo.
     const idempotencyKeyRef = useRef(null);
+    const ultimoPayloadFingerprintRef = useRef(null);
 
-    const obterChaveIdempotencia = () => {
-        if (!idempotencyKeyRef.current) {
+    const obterChaveIdempotencia = (payloadFingerprint) => {
+        if (
+            !idempotencyKeyRef.current ||
+            ultimoPayloadFingerprintRef.current !== payloadFingerprint
+        ) {
             idempotencyKeyRef.current = crypto.randomUUID();
+            ultimoPayloadFingerprintRef.current = payloadFingerprint;
         }
         return idempotencyKeyRef.current;
     };
@@ -642,20 +651,22 @@ export default function PedidosCadastrar() {
         try {
             const clienteId = clienteSelecionado?.id ? Number(clienteSelecionado.id) : null;
 
+            const payloadPedido = {
+                cliente_id: clienteId,
+                finalizado: false,
+                data_prevista: dataPrevistaParaBackend(dataPrevista),
+                usarCorPaleta: fichas.length > 1,
+                fichas: fichas.map((ficha) =>
+                    montarFichaParaEnvio(ficha, {
+                        etapaPadraoId: primeiraEtapaId,
+                        incluirDadosDoCliente: isSobDemanda && Boolean(clienteId),
+                    }),
+                ),
+            };
+
             await createPedidoCompleto(
-                {
-                    cliente_id: clienteId,
-                    finalizado: false,
-                    data_prevista: dataPrevistaParaBackend(dataPrevista),
-                    usarCorPaleta: fichas.length > 1,
-                    fichas: fichas.map((ficha) =>
-                        montarFichaParaEnvio(ficha, {
-                            etapaPadraoId: primeiraEtapaId,
-                            incluirDadosDoCliente: isSobDemanda && Boolean(clienteId),
-                        }),
-                    ),
-                },
-                obterChaveIdempotencia(),
+                payloadPedido,
+                obterChaveIdempotencia(fingerprintPayloadPedido(payloadPedido)),
             );
 
             navigate("/pedidos");
