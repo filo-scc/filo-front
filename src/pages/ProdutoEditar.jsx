@@ -576,24 +576,14 @@ export default function ProdutoEditar() {
                     getProdutoById(id),
                     getClientesDoProduto(id),
                     Number.isFinite(fabricoId) ? getClientes(fabricoId) : Promise.resolve([]),
-                    getGrades().catch(() => []),
-                    getTecidos().catch(() => []),
-                    getAviamentos().catch(() => []),
-                    getAviamentosDoProduto(id).catch(() => []),
-                    getTiposProduto().catch(() => []),
+                    getGrades(),
+                    getTecidos(),
+                    getAviamentos(),
+                    getAviamentosDoProduto(id),
+                    getTiposProduto(),
                     Number.isFinite(fabricoId)
-                        ? getAllEtapasByFabricoId(fabricoId).catch(() => [])
+                        ? getAllEtapas()
                         : Promise.resolve([]),
-                    Number.isFinite(fabricoId)
-                        ? getTecidosByFabrico(fabricoId)
-                        : Promise.resolve([]),
-                    Number.isFinite(fabricoId)
-                        ? getAviamentosByFabrico(fabricoId)
-                        : Promise.resolve([]),
-                    getAviamentosDoProduto(id).catch(() => []),
-                    getTiposProdutoByFabrico().catch(() => []),
-                    Number.isFinite(fabricoId) ? getFabricoById(fabricoId) : Promise.resolve(null),
-                    getAllEtapas().catch(() => []),
                     getParceiroByProduto(id),
                 ]);
 
