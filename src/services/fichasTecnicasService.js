@@ -1,7 +1,7 @@
 import api from "./api";
 
-export const getFichaTecnicaByFabrico = async (fabricoId) => {
-    const response = await api.get(`/fichas-tecnicas/fabrico/${fabricoId}`);
+export const getFichaTecnicaByFabrico = async () => {
+    const response = await api.get(`/fichas-tecnicas`);
     return response.data;
 };
 
@@ -41,5 +41,11 @@ export const iniciarFichaEtapa = async (ficha_tecnica_id, etapa_id) => {
 export const finalizarFichaEtapa = async (ficha_etapa_id) => {
     const response = await api.put(`/fichas-etapas/${ficha_etapa_id}/finalizar`);
 
+    return response.data;
+};
+
+// TRANSFERENCIA-ETAPA
+export const transferirEtapaFicha = async (payload) => {
+    const response = await api.post(`/fichas-tecnicas/transferir-etapa`, payload);
     return response.data;
 };
