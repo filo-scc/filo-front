@@ -17,4 +17,18 @@ describe("dataPrevistaParaBackend", () => {
     it("retorna ISO quando a data está completa (dd/mm/aaaa)", () => {
         assert.equal(dataPrevistaParaBackend("15/03/2026"), "2026-03-15T12:00:00.000Z");
     });
+
+    it("retorna null para dia inexistente em fevereiro não bissexto", () => {
+        assert.equal(dataPrevistaParaBackend("29/02/2026"), null);
+        assert.equal(dataPrevistaParaBackend("30/02/2026"), null);
+    });
+
+    it("retorna null para dias excedentes no mês", () => {
+        assert.equal(dataPrevistaParaBackend("31/02/2026"), null);
+        assert.equal(dataPrevistaParaBackend("31/04/2026"), null);
+    });
+
+    it("aceita 29/02 em ano bissexto", () => {
+        assert.equal(dataPrevistaParaBackend("29/02/2024"), "2024-02-29T12:00:00.000Z");
+    });
 });

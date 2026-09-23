@@ -995,6 +995,11 @@ export default function PedidosEditar() {
             return;
         }
 
+        if (dataPrevista && dataPrevista.length === 10 && !dataPrevistaParaBackend(dataPrevista)) {
+            setErro("Por favor, insira uma data de previsão válida.");
+            return;
+        }
+
         setSalvandoPedido(true);
         setErro("");
 
