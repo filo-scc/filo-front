@@ -8,7 +8,7 @@ import { getFabricoById } from "../../services/fabricoService";
 import { getCoresByFabricoId } from "../../services/corService";
 import CorModal from "./CorModal";
 import EstampaModal from "./EstampaModal";
-import { getParceirosByFabrico } from "../../services/parceiroService";
+import { getParceiros } from "../../services/parceiroService";
 import { getGradesLiberadasByFabricoId } from "../../services/gradeService";
 import { getParceiroByProduto } from "../../services/produtoService";
 
@@ -390,7 +390,7 @@ export default function FichaTecnicaModal({
                     getCoresByFabricoId(fabricoId),
                     getGradesLiberadasByFabricoId(fabricoId),
                     getParceiroByProduto(produto.id),
-                    getParceirosByFabrico(fabricoId),
+                    getParceiros(),
                 ]);
 
                 if (!alive) return;

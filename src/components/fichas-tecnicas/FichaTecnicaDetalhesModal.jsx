@@ -10,7 +10,7 @@ import OpcoesImpressaoModal from "./OpcoesImpressaoModal";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import RelatorioDeAcabamento from "./RelatorioDeAcabamento";
-import { getAllEtapasByFabricoId } from "../../services/etapaService";
+import { getAllEtapas } from "../../services/etapaService";
 import { getFabricoById } from "../../services/fabricoService";
 
 const CampoDetalhe = ({ label, valor }) => (
@@ -126,20 +126,18 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
     useEffect(() => {
         let isCurrent = true;
 
-        if (ficha?.fabrico_id) {
-            getAllEtapasByFabricoId(ficha.fabrico_id)
-                .then((etapas) => {
-                    if (!isCurrent) return;
-                    const etapasAtivas = (etapas || []).filter((e) => e.ativa);
-                    const etapasOrdenadas = etapasAtivas.sort((a, b) => a.ordem - b.ordem);
-                    const ultima = etapasOrdenadas[etapasOrdenadas.length - 1];
-                    setUltimaEtapaId(ultima?.id ?? null);
-                })
-                .catch((error) => {
-                    console.error("Erro ao verificar última etapa", error);
-                    setUltimaEtapaId(null);
-                });
-        }
+        getAllEtapas()
+            .then((etapas) => {
+                if (!isCurrent) return;
+                const etapasAtivas = (etapas || []).filter((e) => e.ativa);
+                const etapasOrdenadas = etapasAtivas.sort((a, b) => a.ordem - b.ordem);
+                const ultima = etapasOrdenadas[etapasOrdenadas.length - 1];
+                setUltimaEtapaId(ultima?.id ?? null);
+            })
+            .catch((error) => {
+                console.error("Erro ao verificar última etapa", error);
+                setUltimaEtapaId(null);
+            });
 
         return () => {
             isCurrent = false;

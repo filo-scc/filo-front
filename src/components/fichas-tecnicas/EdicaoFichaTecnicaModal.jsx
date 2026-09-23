@@ -20,11 +20,11 @@ import { preventNumberInputWheel } from "../../utils/preventNumberInputWheel";
 import FichaTecnicaPrintView from "../FichaTecnicaPrintView";
 import { getAviamentosDoProduto, getParceiroByProduto } from "../../services/produtoService";
 import { updateFichaTecnica } from "../../services/fichasTecnicasService";
-import { getParceirosByFabrico } from "../../services/parceiroService";
+import { getParceiros } from "../../services/parceiroService";
 import CorModal from "./CorModal";
 import EstampaModal from "./EstampaModal";
 import RelatorioDeAcabamento from "./RelatorioDeAcabamento";
-import { getAllEtapasByFabricoId } from "../../services/etapaService";
+import { getAllEtapas } from "../../services/etapaService";
 import {
     calcularProporcoesGrade,
     isReferenciaProporcao,
@@ -298,20 +298,18 @@ export default function EdicaoFichaTecnicaModal({
     useEffect(() => {
         let isCurrent = true;
 
-        if (dadosFicha?.fabrico_id) {
-            getAllEtapasByFabricoId(dadosFicha.fabrico_id)
-                .then((etapas) => {
-                    if (!isCurrent) return;
-                    const etapasAtivas = (etapas || []).filter((e) => e.ativa);
-                    const etapasOrdenadas = etapasAtivas.sort((a, b) => a.ordem - b.ordem);
-                    const ultima = etapasOrdenadas[etapasOrdenadas.length - 1];
-                    setUltimaEtapaId(ultima?.id ?? null);
-                })
-                .catch((error) => {
-                    console.error("Erro ao verificar última etapa", error);
-                    setUltimaEtapaId(null);
-                });
-        }
+        getAllEtapas()
+            .then((etapas) => {
+                if (!isCurrent) return;
+                const etapasAtivas = (etapas || []).filter((e) => e.ativa);
+                const etapasOrdenadas = etapasAtivas.sort((a, b) => a.ordem - b.ordem);
+                const ultima = etapasOrdenadas[etapasOrdenadas.length - 1];
+                setUltimaEtapaId(ultima?.id ?? null);
+            })
+            .catch((error) => {
+                console.error("Erro ao verificar última etapa", error);
+                setUltimaEtapaId(null);
+            });
 
         return () => {
             isCurrent = false;
@@ -320,10 +318,10 @@ export default function EdicaoFichaTecnicaModal({
     const isUltimaEtapa = ultimaEtapaId != null && dadosFicha?.etapa_atual_id == ultimaEtapaId;
 
     const carregarParceirosDisponiveis = useCallback(async () => {
-        if (!dadosFicha?.produto_id || !dadosFicha?.fabrico_id) return;
+        if (!dadosFicha?.produto_id) return;
         try {
             const [parceirosDoFabrico, parceirosDoProduto] = await Promise.all([
-                getParceirosByFabrico(dadosFicha.fabrico_id),
+                getParceiros(),
                 getParceiroByProduto(dadosFicha.produto_id),
             ]);
 
@@ -346,7 +344,7 @@ export default function EdicaoFichaTecnicaModal({
             console.error("Erro ao buscar parceiros", error);
             setParceirosDisponiveis([]);
         }
-    }, [dadosFicha?.produto_id, dadosFicha?.fabrico_id]);
+    }, [dadosFicha?.produto_id]);
 
     const parceirosFiltrados = useMemo(() => {
         return parceirosDisponiveis.filter((parceiro) => {
