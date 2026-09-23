@@ -1,7 +1,7 @@
 import api from "./api";
 
-// Buscar todas as etapas de um fabrico
-export const getAllEtapasByFabricoId = async (fabricoId) => {
-    const response = await api.get(`/etapas/fabrico/${fabricoId}`);
+// Buscar todas as etapas do fabrico autenticado
+export const getAllEtapas = async () => {
+    const response = await api.get("/etapas");
     return response.data;
 };

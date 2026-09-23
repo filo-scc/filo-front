@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { createParceiro } from "../services/parceiroService";
-import { getAllEtapasByFabricoId } from "../services/etapaService";
+import { getAllEtapas } from "../services/etapaService";
 import { LoadingButton, SkeletonBox } from "../components/geral/Loading";
 import { getEnderecoByCep } from "../services/apiCep";
 
@@ -43,15 +43,8 @@ const EtapaSelect = ({ value, onChange, inputClass }) => {
         const fetchEtapas = async () => {
             setLoadingEtapas(true);
             try {
-                const userString = localStorage.getItem("user");
-                if (userString) {
-                    const usuarioLogado = JSON.parse(userString);
-                    const fabricoId = usuarioLogado.fabrico_id;
-                    if (fabricoId) {
-                        const dados = await getAllEtapasByFabricoId(fabricoId);
-                        setEtapas(getEtapasSelecionaveis(dados || []));
-                    }
-                }
+                const dados = await getAllEtapas();
+                setEtapas(getEtapasSelecionaveis(dados || []));
             } catch (err) {
                 console.error("Erro ao buscar etapas de produção:", err);
             } finally {

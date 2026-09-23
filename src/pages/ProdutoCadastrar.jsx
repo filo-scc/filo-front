@@ -19,8 +19,11 @@ import {
 } from "../services/produtoService.js";
 import { upload } from "../services/utilsService";
 import { DropdownOptionsSkeleton, LoadingButton, SkeletonBox } from "../components/geral/Loading";
-import { getAllEtapasByFabricoId } from "../services/etapaService.js";
-import { getParceiros, getParceirosByCategoria } from "../services/parceiroService.js";
+import { getAllEtapas } from "../services/etapaService.js";
+import {
+    getParceirosByFabrico,
+    getParceirosByFabricoECategoria,
+} from "../services/parceiroService.js";
 
 // Função adicionada para formatar as unidades de medida
 function formatarUnidadeDeMedida(unidade) {
@@ -276,8 +279,8 @@ export default function ProdutoCadastar() {
                     getTecidosByFabrico(fabricoId),
                     getAviamentosByFabrico(fabricoId),
                     getTiposProdutoByFabrico(),
-                    getAllEtapasByFabricoId(fabricoId),
-                    getParceiros(),
+                    getAllEtapas(),
+                    getParceirosByFabrico(fabricoId),
                 ]);
 
                 if (ignorar) return;
