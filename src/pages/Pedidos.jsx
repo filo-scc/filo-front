@@ -42,7 +42,7 @@ const Pedidos = () => {
                 setLoading(true);
 
                 const [data, fabrico] = await Promise.all([
-                    getPedidosByFabricoId(fabrico_id),
+                    getPedidosByFabricoId(),
                     getFabricoById(fabrico_id),
                 ]);
                 setProducaoSobDemanda(fabrico?.fabricacao_sob_demanda === true);
