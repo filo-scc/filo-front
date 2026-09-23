@@ -11,7 +11,7 @@ import FichaTecnicaModal from "../components/fichas-tecnicas/FichaTecnicaModal";
 
 import { createPedidoCompleto, getPedidosByFabricoId } from "../services/pedidoService";
 
-import { getAllEtapasByFabricoId } from "../services/etapaService";
+import { getAllEtapas } from "../services/etapaService";
 import { DropdownOptionsSkeleton, LoadingButton, SkeletonBox } from "../components/geral/Loading";
 import ModalConfirmacaoEscolha from "../components/geral/ModalConfirmacaoEscolha";
 
@@ -311,13 +311,11 @@ export default function PedidosCadastrar() {
     }, [fabricoId]);
 
     useEffect(() => {
-        if (!fabricoId) return;
-
         let ignorar = false;
 
         const carregarEtapas = async () => {
             try {
-                const etapas = await getAllEtapasByFabricoId(fabricoId);
+                const etapas = await getAllEtapas();
 
                 if (ignorar) return;
 
@@ -340,7 +338,7 @@ export default function PedidosCadastrar() {
         return () => {
             ignorar = true;
         };
-    }, [fabricoId]);
+    }, []);
 
     useEffect(() => {
         if (!fabricoId) {

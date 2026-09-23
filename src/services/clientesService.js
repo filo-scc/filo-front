@@ -5,9 +5,9 @@ const limparUndefined = (obj) => {
     return Object.fromEntries(Object.entries(obj).filter(([, valor]) => valor !== undefined));
 };
 
-export const getClientes = async (fabricoId) => {
+export const getClientes = async () => {
     try {
-        const response = await api.get(`/clientes/fabrico/${fabricoId}`);
+        const response = await api.get(`/clientes`);
         return response.data;
     } catch (error) {
         console.error("Erro ao buscar clientes:", error);
