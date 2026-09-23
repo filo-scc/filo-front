@@ -16,7 +16,7 @@ import {
     updatePedidoCompleto,
 } from "../services/pedidoService";
 import FichaTecnicaModal from "../components/fichas-tecnicas/FichaTecnicaModal";
-import { getAllEtapasByFabricoId } from "../services/etapaService";
+import { getAllEtapas } from "../services/etapaService";
 import ModalAtencao from "../components/geral/ModalAtencao";
 import ModalConfirmacaoEscolha from "../components/geral/ModalConfirmacaoEscolha";
 import {
@@ -416,7 +416,7 @@ export default function PedidosEditar() {
 
         const carregarEtapas = async () => {
             try {
-                const etapas = await getAllEtapasByFabricoId(fabricoId);
+                const etapas = await getAllEtapas();
                 if (ignorar) return;
 
                 if (etapas && etapas.length > 0) {

@@ -20,10 +20,7 @@ import {
 import { upload } from "../services/utilsService";
 import { DropdownOptionsSkeleton, LoadingButton, SkeletonBox } from "../components/geral/Loading";
 import { getAllEtapas } from "../services/etapaService.js";
-import {
-    getParceirosByFabrico,
-    getParceirosByFabricoECategoria,
-} from "../services/parceiroService.js";
+import { getParceiros, getParceirosByCategoria } from "../services/parceiroService.js";
 
 // Função adicionada para formatar as unidades de medida
 function formatarUnidadeDeMedida(unidade) {
@@ -280,7 +277,7 @@ export default function ProdutoCadastar() {
                     getAviamentosByFabrico(fabricoId),
                     getTiposProdutoByFabrico(),
                     getAllEtapas(),
-                    getParceirosByFabrico(fabricoId),
+                    getParceiros(),
                 ]);
 
                 if (ignorar) return;
