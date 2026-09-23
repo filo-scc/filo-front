@@ -1,11 +1,17 @@
 import api from "./api";
 
-export const getParceirosByFabrico = async (fabricoId) => {
+const semFabricoId = (data) => {
+    const payload = { ...(data || {}) };
+    delete payload.fabrico_id;
+    return payload;
+};
+
+export const getParceiros = async () => {
     try {
-        const response = await api.get(`/parceiros/fabrico/${fabricoId}`);
+        const response = await api.get("/parceiros");
         return response.data;
     } catch (error) {
-        console.error("Erro ao buscar parceiros do fabrico:", error);
+        console.error("Erro ao buscar parceiros:", error);
         throw error;
     }
 };
@@ -17,7 +23,7 @@ export const getParceiroById = async (id) => {
 
 export const createParceiro = async (data) => {
     try {
-        const response = await api.post("/parceiros", data);
+        const response = await api.post("/parceiros", semFabricoId(data));
         return response.data;
     } catch (error) {
         console.error("Erro ao cadastrar um parceiro: ", error);
@@ -27,7 +33,7 @@ export const createParceiro = async (data) => {
 
 export const updateParceiro = async (id, data) => {
     try {
-        const response = await api.put(`/parceiros/${id}`, data);
+        const response = await api.put(`/parceiros/${id}`, semFabricoId(data));
         return response.data;
     } catch (error) {
         console.error("Erro ao atualizar parceiro:", error);
@@ -39,14 +45,12 @@ export const excluirParceiro = async (id) => {
     await api.delete(`/parceiros/${id}`);
 };
 
-export const getParceirosByFabricoECategoria = async (fabricoId, categoria) => {
+export const getParceirosByCategoria = async (categoria) => {
     try {
-        const response = await api.get(
-            `/parceiros/fabrico/${fabricoId}/categoria/${encodeURIComponent(categoria)}`,
-        );
+        const response = await api.get(`/parceiros/categoria/${encodeURIComponent(categoria)}`);
         return response.data;
     } catch (error) {
-        console.error("Erro ao buscar parceiros por fabrico e categoria:", error);
+        console.error("Erro ao buscar parceiros por categoria:", error);
         throw error;
     }
 };

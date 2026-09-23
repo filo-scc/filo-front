@@ -250,7 +250,7 @@ export default function TransferenciaEtapaModal({
                 setEtapas(ativasEOrdenadas);
 
                 // 2. Buscar parceiros do fabrico filtrando pela categoria da etapa concluída
-                const listaParceiros = await getParceirosByFabrico(fabricoId);
+                const listaParceiros = await getParceiros();
                 const filtradosPorCategoria = listaParceiros.filter(
                     (p) => p.categoria?.toLowerCase() === etapaConcluida?.nome?.toLowerCase(),
                 );
