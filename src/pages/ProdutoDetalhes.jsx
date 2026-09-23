@@ -8,7 +8,6 @@ import {
     getParceiroByProduto,
     getTiposProduto,
 } from "../services/produtoService";
-import { getFabricoById } from "../services/fabricoService";
 import { getAllEtapasByFabricoId } from "../services/etapaService";
 import { calcularCustosMediosDasEtapas } from "../utils/custosEtapasProduto";
 
@@ -52,7 +51,6 @@ export default function ProdutoDetalhes() {
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
     const [modalAtencaoAberto, setModalAtencaoAberto] = useState(false);
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
-    const [fabrico, setFabrico] = useState(null);
     const [excluindo, setExcluindo] = useState(false);
     const [colunasFlexiveis, setColunasFlexiveis] = useState([]);
 
@@ -117,20 +115,6 @@ export default function ProdutoDetalhes() {
 
         fetchData();
     }, [id, navigate]);
-
-    useEffect(() => {
-        async function carregarDadosDoFabrico() {
-            if (!produto?.fabrico_id) return;
-            try {
-                const dadosFabrico = await getFabricoById(produto?.fabrico_id);
-                setFabrico(dadosFabrico);
-            } catch (error) {
-                console.error("Erro ao buscar dados do fabrico:", error);
-            }
-        }
-
-        carregarDadosDoFabrico();
-    }, [produto?.fabrico_id]);
 
     const handleAcessoNegadoConfirm = () => {
         setModalAtencaoAberto(false);
@@ -346,7 +330,9 @@ export default function ProdutoDetalhes() {
                                 clientes={clientesAssociados}
                                 produtoId={id}
                                 referenciaInterna={produto.nome}
-                                fabricacao_sob_demanda={fabrico?.fabricacao_sob_demanda}
+                                fabricacao_sob_demanda={
+                                    produto.fabrico?.fabricacao_sob_demanda
+                                }
                             />
                         </>
                     ) : (

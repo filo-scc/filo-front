@@ -27,7 +27,6 @@ import {
     vincularProdutoAviamento,
     atualizarProdutoAviamento,
 } from "../services/produtoService";
-import { getFabricoById } from "../services/fabricoService";
 import {
     desvincularProdutoDoCliente,
     getClientes,
@@ -509,7 +508,6 @@ export default function ProdutoEditar() {
     const [salvando, setSalvando] = useState(false);
     const [erro, setErro] = useState("");
     const [produto, setProduto] = useState(null);
-    const [fabrico, setFabrico] = useState(null);
     const [clientesAssociados, setClientesAssociados] = useState([]);
     const [arquivoImagem, setArquivoImagem] = useState(null);
     const [imagemPreview, setImagemPreview] = useState("");
@@ -572,7 +570,6 @@ export default function ProdutoEditar() {
                     resAviamentos,
                     resAviamentosProduto,
                     resTiposProduto,
-                    dadosFabrico,
                     todasEtapas,
                     vinculosParceiroProduto,
                 ] = await Promise.all([
@@ -584,9 +581,6 @@ export default function ProdutoEditar() {
                     getAviamentos().catch(() => []),
                     getAviamentosDoProduto(id).catch(() => []),
                     getTiposProduto().catch(() => []),
-                    Number.isFinite(fabricoId)
-                        ? getFabricoById(fabricoId).catch(() => null)
-                        : Promise.resolve(null),
                     Number.isFinite(fabricoId)
                         ? getAllEtapasByFabricoId(fabricoId).catch(() => [])
                         : Promise.resolve([]),
@@ -667,7 +661,6 @@ export default function ProdutoEditar() {
                     dadosProduto.tipo_produto_id || tipoProdutoRelacionado?.id || undefined;
 
                 setProduto(dadosProduto);
-                setFabrico(dadosFabrico);
                 setClientesAssociados(
                     enriquecerClientesAssociados(
                         Array.isArray(dadosClientes) ? dadosClientes : [],
@@ -1488,7 +1481,9 @@ export default function ProdutoEditar() {
                             clientes={clientesAssociados}
                             referenciaInterna={formData.referencia}
                             produtoId={id}
-                            fabricacao_sob_demanda={fabrico?.fabricacao_sob_demanda}
+                            fabricacao_sob_demanda={
+                                produto?.fabrico?.fabricacao_sob_demanda
+                            }
                             onAbrirModal={() => setModalClientesAberto(true)}
                             onRemoverLinha={handleRemoverReferencia}
                             onSalvarEdicao={handleSalvarReferencia}
