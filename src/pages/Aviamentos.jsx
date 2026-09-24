@@ -237,7 +237,7 @@ const Aviamentos = () => {
                                         );
                                     })}
 
-                                    {aviamentosFiltrados.length === 0 ? (
+                                    {aviamentosFiltrados.length === 0 && (
                                         <tr>
                                             <td
                                                 colSpan="5"
@@ -246,7 +246,7 @@ const Aviamentos = () => {
                                                 Nenhum aviamento encontrado.
                                             </td>
                                         </tr>
-                                    ) : null}
+                                    )}
                                 </tbody>
                             </table>
                         </div>
