@@ -27,6 +27,7 @@ import {
 } from "../components/geral/Loading";
 import { parsePreco } from "../utils/preco";
 import { dataPrevistaParaBackend } from "../utils/dataPrevista";
+import { obterPrecoUnitarioParceiro } from "../utils/precoParceiro";
 
 const sectionTitleClass = "text-[20px] font-light text-[#404040] mb-4 font-['Outfit']";
 
@@ -281,6 +282,11 @@ const converterDetalheParaRascunhoModal = (detalhe, fichaLinha = {}) => {
     const coresMapa = {};
     const selectedColorIds = [];
     const itensPayload = [];
+    const produtoId =
+        detalhe?.produto?.id ??
+        detalhe?.produto_id ??
+        fichaLinha.produtoId ??
+        fichaLinha.produto_id;
 
     itens.forEach((item) => {
         const corId = item?.cor_id ?? item?.cor?.id;
@@ -302,16 +308,10 @@ const converterDetalheParaRascunhoModal = (detalhe, fichaLinha = {}) => {
         parceiroId: vinculo.parceiro_id ?? vinculo.parceiro?.id,
         parceiroNome: vinculo.parceiro?.nome || "",
         operacao: vinculo.operacao || "",
-        preco: vinculo.parceiro?.preco ?? vinculo.valor ?? null,
+        preco: obterPrecoUnitarioParceiro(vinculo, produtoId),
         isDirty: false,
         isNew: false,
     }));
-
-    const produtoId =
-        detalhe?.produto?.id ??
-        detalhe?.produto_id ??
-        fichaLinha.produtoId ??
-        fichaLinha.produto_id;
 
     return {
         id: detalhe?.id ?? fichaLinha.id,
