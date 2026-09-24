@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { excluirParceiro, getParceirosByFabrico } from "../services/parceiroService";
+import { excluirParceiro, getParceiros } from "../services/parceiroService";
 
 import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
@@ -8,8 +8,6 @@ import MenuOpcoes from "../components/geral/MenuOpcoes";
 import { ParceirosTableSkeleton } from "../components/geral/Loading";
 
 const Parceiros = () => {
-    const userString = localStorage.getItem("user");
-
     const [parceiros, setParceiros] = useState([]);
     const [loading, setLoading] = useState(true);
     const [dropdownOpenId, setDropdownOpenId] = useState(null);
@@ -22,19 +20,12 @@ const Parceiros = () => {
 
     const navigate = useNavigate();
 
-    const fabricoId = userString ? JSON.parse(userString).fabrico_id : null;
-
     useEffect(() => {
         const fetchParceiros = async () => {
-            if (!fabricoId) {
-                setLoading(false);
-                return;
-            }
-
             try {
                 setLoading(true);
 
-                const data = await getParceirosByFabrico(fabricoId);
+                const data = await getParceiros();
                 setParceiros(data);
             } catch (error) {
                 console.error("Erro ao carregar parceiros", error);
@@ -44,7 +35,7 @@ const Parceiros = () => {
         };
 
         fetchParceiros();
-    }, [fabricoId]);
+    }, []);
 
     useEffect(() => {
         const handleClickOutside = () => setDropdownOpenId(null);
@@ -129,7 +120,7 @@ const Parceiros = () => {
     return (
         <div className="p-6 pt-0 mt-6 w-full">
             {/* Card Branco Principal */}
-            <div className="bg-white p-8 rounded-[24px] shadow-sm w-full mx-auto">
+            <div className="bg-white px-10 py-8 rounded-[24px] shadow-sm w-full mx-auto">
                 <div className="w-full">
                     {/* Header */}
                     <div className="w-full flex items-center justify-between mb-8 pl-6 font-['Outfit',_sans-serif]">
@@ -186,10 +177,10 @@ const Parceiros = () => {
 
                     {/* Tabela */}
                     <div className="w-full pb-16">
-                        <div className="w-full border border-gray-200 rounded-xl overflow-hidden bg-[#D3EBF2]">
-                            <table className="w-full border-separate border-spacing-0 text-[16px] font-['Outfit',_sans-serif] font-light text-center">
-                                <thead className="bg-[#D3EBF2] text-[#4696AD]">
-                                    <tr className="h-[64px]">
+                        <div className="w-full border border-[#DEDEDE] rounded-xl overflow-hidden bg-[#D3EBF2]">
+                            <table className="w-full border-separate border-spacing-0 text-[16px] font-['Outfit'] font-light text-center">
+                                <thead className="bg-[#C9EAF6] text-[#4696AD]">
+                                    <tr className="bg-[#C9EAF6] text-[#4696AD] h-[64px]">
                                         <th className="px-6 font-light">Parceiro</th>
                                         <th className="px-6 font-light">Possui pedido</th>
 

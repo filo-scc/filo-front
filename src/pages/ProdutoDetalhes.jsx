@@ -3,13 +3,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
     getProdutoById,
     getClientesDoProduto,
-    excluirProduto,
+    softDeleteProduto,
     getAviamentosDoProduto,
     getParceiroByProduto,
-    getTiposProdutoByFabrico,
+    getTiposProduto,
 } from "../services/produtoService";
-import { getFabricoById } from "../services/fabricoService";
-import { getAllEtapasByFabricoId } from "../services/etapaService";
+import { getAllEtapas } from "../services/etapaService";
 import { calcularCustosMediosDasEtapas } from "../utils/custosEtapasProduto";
 
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
@@ -52,7 +51,6 @@ export default function ProdutoDetalhes() {
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
     const [modalAtencaoAberto, setModalAtencaoAberto] = useState(false);
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
-    const [fabrico, setFabrico] = useState(null);
     const [excluindo, setExcluindo] = useState(false);
     const [colunasFlexiveis, setColunasFlexiveis] = useState([]);
 
@@ -63,7 +61,6 @@ export default function ProdutoDetalhes() {
 
                 const userString = localStorage.getItem("user");
                 const usuarioLogado = userString ? JSON.parse(userString) : null;
-                const fabricoId = usuarioLogado?.fabrico_id;
 
                 const [
                     dadosProduto,
@@ -76,8 +73,8 @@ export default function ProdutoDetalhes() {
                     getProdutoById(id),
                     getClientesDoProduto(id),
                     getAviamentosDoProduto(id),
-                    getTiposProdutoByFabrico().catch(() => []),
-                    getAllEtapasByFabricoId(fabricoId).catch(() => []),
+                    getTiposProduto().catch(() => []),
+                    getAllEtapas().catch(() => []),
                     getParceiroByProduto(id),
                 ]);
 
@@ -118,21 +115,6 @@ export default function ProdutoDetalhes() {
         fetchData();
     }, [id, navigate]);
 
-    useEffect(() => {
-        async function carregarDadosDoFabrico() {
-            if (produto && produto.fabrico_id) {
-                try {
-                    const dadosFabrico = await getFabricoById(produto.fabrico_id);
-                    setFabrico(dadosFabrico);
-                } catch (error) {
-                    console.error("Erro ao buscar dados do fabrico:", error);
-                }
-            }
-        }
-
-        carregarDadosDoFabrico();
-    }, [produto]);
-
     const handleAcessoNegadoConfirm = () => {
         setModalAtencaoAberto(false);
         navigate("/produtos", { replace: true });
@@ -142,7 +124,7 @@ export default function ProdutoDetalhes() {
         if (excluindo) return;
         try {
             setExcluindo(true);
-            await excluirProduto(id);
+            await softDeleteProduto(id);
             setModalExclusaoAberto(false);
             setModalConfirmacaoAberto(true);
         } catch {
@@ -347,7 +329,7 @@ export default function ProdutoDetalhes() {
                                 clientes={clientesAssociados}
                                 produtoId={id}
                                 referenciaInterna={produto.nome}
-                                fabricacao_sob_demanda={fabrico?.fabricacao_sob_demanda}
+                                fabricacao_sob_demanda={produto.fabrico?.fabricacao_sob_demanda}
                             />
                         </>
                     ) : (

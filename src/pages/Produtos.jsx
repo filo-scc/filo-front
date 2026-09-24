@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getProdutosByFabrico } from "../services/produtoService";
+import { getProdutos } from "../services/produtoService";
 import { useNavigate } from "react-router-dom";
 import { ProductGridSkeleton } from "../components/geral/Loading";
 
@@ -10,7 +10,7 @@ const ProdutoCard = ({ id, nome, tipo, data, foto }) => {
     return (
         <div
             onClick={() => navigate(`/produtos/${id}`)}
-            className="w-full bg-[#F3F4FA] rounded-[16px] p-[6px] flex flex-col transition-all hover:shadow-sm font-['Outfit',_sans-serif] cursor-pointer"
+            className="group w-full bg-[#F3F4FA] rounded-[16px] p-[6px] flex flex-col transition-all hover:shadow-sm font-['Outfit',_sans-serif] cursor-pointer"
         >
             {/* Contêiner da Imagem */}
             <div className="relative w-full h-[238px] bg-white rounded-t-[14px] rounded-b-[4px] overflow-hidden">
@@ -44,12 +44,19 @@ const ProdutoCard = ({ id, nome, tipo, data, foto }) => {
             </div>
 
             {/* Legenda inferior */}
-            <div className="flex flex-col px-1 pt-1.5 pb-1">
-                <span className="text-[#7B7D80] text-[10px] font-light truncate leading-tight">
-                    {tipo}
-                </span>
-                <span className="text-[#7B7D80] text-[10px] font-light truncate leading-tight">
-                    {data}
+            <div className="flex items-end justify-between px-1 pt-1.5 pb-1">
+                <div className="flex flex-col min-w-0">
+                    <span className="text-[#7B7D80] text-[10px] font-light truncate leading-tight">
+                        {tipo}
+                    </span>
+                    <span className="text-[#7B7D80] text-[10px] font-light truncate leading-tight">
+                        {data}
+                    </span>
+                </div>
+
+                {/* Efeito Hover: exibe 'Ver detalhes' ao passar o mouse */}
+                <span className="text-[#4696AD] text-[10px] font-normal opacity-0 transition-opacity duration-200 group-hover:opacity-100 shrink-0 ml-1">
+                    Ver detalhes
                 </span>
             </div>
         </div>
@@ -62,6 +69,7 @@ export default function Produtos() {
 
     const [produtos, setProdutos] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
 
     const fabricoId = userString ? JSON.parse(userString).fabrico_id : null;
@@ -69,11 +77,13 @@ export default function Produtos() {
     useEffect(() => {
         const fetchProdutos = async () => {
             setLoading(true);
+            setLoadError(false);
             try {
-                const dados = await getProdutosByFabrico(fabricoId);
+                const dados = await getProdutos();
                 setProdutos(Array.isArray(dados) ? dados : []);
             } catch (error) {
                 console.error("Erro ao carregar produtos:", error);
+                setLoadError(true);
             } finally {
                 setLoading(false);
             }
@@ -135,13 +145,22 @@ export default function Produtos() {
                     </div>
                 </div>
 
-                {/* Contém 5 colunas no desktop comum e usa 7 apenas em telas extra grandes. */}
+                {/* Grid de Produtos */}
                 <div
                     className="grid gap-[11px] pl-[16px] pr-[32px] 
                      grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 2xl:grid-cols-7"
                 >
+                    {loadError && produtos.length > 0 && (
+                        <div className="col-span-full flex justify-center py-3 text-red-500 font-light">
+                            Não foi possível atualizar os produtos. Tente novamente.
+                        </div>
+                    )}
                     {loading ? (
                         <ProductGridSkeleton />
+                    ) : loadError && produtos.length === 0 ? (
+                        <div className="col-span-full flex justify-center py-10 text-red-500 font-light">
+                            Não foi possível carregar os produtos. Tente novamente.
+                        </div>
                     ) : produtos.length === 0 ? (
                         <div className="col-span-full flex justify-center py-10 text-gray-400 font-light">
                             Nenhum produto encontrado.
@@ -153,7 +172,6 @@ export default function Produtos() {
                                 id={produto.id}
                                 nome={produto.nome}
                                 tipo={produto.tipo || "Geral"}
-                                // Exemplo de tratamento de data (ajuste conforme o retorno do seu banco)
                                 data={
                                     produto.created_at
                                         ? `Criado em ${new Date(produto.created_at).toLocaleDateString()}`
