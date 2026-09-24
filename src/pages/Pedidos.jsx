@@ -190,7 +190,6 @@ const Pedidos = () => {
                                 ) : (
                                     <>
                                         {pedidos.map((pedido, index) => {
-                                            const isPar = index % 2 === 0;
                                             const totalPecas =
                                                 pedido.fichas_tecnicas?.reduce(
                                                     (acc, ficha) => acc + ficha.quantidade,
@@ -236,11 +235,10 @@ const Pedidos = () => {
                                             return (
                                                 <tr
                                                     key={pedido.id}
-                                                    className={`h-[60px] border-b border-[#E8E8E8] last:border-none transition-colors text-center hover:text-[#4696AD] ${
-                                                        isPar
-                                                            ? "bg-white hover:bg-[#FBFBFB]"
-                                                            : "bg-[#F4F4F4] hover:bg-[#EDEDED]"
-                                                    }`}
+                                                    onClick={() =>
+                                                        navigate(`/pedidos/${pedido.id}`)
+                                                    }
+                                                    className="border-b border-[#E8E8E8] last:border-none even:bg-[#E8E8E8] transition-colors text-center cursor-pointer hover:text-[#4696ad]"
                                                 >
                                                     <td className="py-4 px-6 font-light">
                                                         {pedido.numero ?? pedido.id}
@@ -266,16 +264,17 @@ const Pedidos = () => {
                                                     <td className="py-4 px-6 font-light">
                                                         {textoDataFinalizado}
                                                     </td>
-                                                    <td className="py-4 px-6">
-                                                        <div className="flex justify-center items-center">
-                                                            <MenuOpcoes
-                                                                onEdit={() => handleEdit(pedido.id)}
-                                                                onDelete={() =>
-                                                                    abrirModalExclusao(pedido)
-                                                                }
-                                                                isLast={isLast}
-                                                            />
-                                                        </div>
+                                                    <td
+                                                        className="py-4 px-6"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <MenuOpcoes
+                                                            onEdit={() => handleEdit(pedido.id)}
+                                                            onDelete={() =>
+                                                                abrirModalExclusao(pedido)
+                                                            }
+                                                            isLast={isLast}
+                                                        />
                                                     </td>
                                                 </tr>
                                             );
