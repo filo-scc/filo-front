@@ -27,14 +27,13 @@ import {
     vincularProdutoAviamento,
     atualizarProdutoAviamento,
 } from "../services/produtoService";
-import { getFabricoById } from "../services/fabricoService";
 import {
     desvincularProdutoDoCliente,
     getClientes,
     vincularProdutoAoCliente,
 } from "../services/clientesService";
 import { upload } from "../services/utilsService";
-import { getAllEtapasByFabricoId } from "../services/etapaService";
+import { getAllEtapas } from "../services/etapaService";
 import { CadastrarTecidoModal } from "../components/produtos/CadastrarTecidoModal";
 import { calcularCustosMediosDasEtapas } from "../utils/custosEtapasProduto";
 
@@ -509,7 +508,6 @@ export default function ProdutoEditar() {
     const [salvando, setSalvando] = useState(false);
     const [erro, setErro] = useState("");
     const [produto, setProduto] = useState(null);
-    const [fabrico, setFabrico] = useState(null);
     const [clientesAssociados, setClientesAssociados] = useState([]);
     const [arquivoImagem, setArquivoImagem] = useState(null);
     const [imagemPreview, setImagemPreview] = useState("");
@@ -572,22 +570,18 @@ export default function ProdutoEditar() {
                     resAviamentos,
                     resAviamentosProduto,
                     resTiposProduto,
-                    dadosFabrico,
                     todasEtapas,
                     vinculosParceiroProduto,
                 ] = await Promise.all([
                     getProdutoById(id),
                     getClientesDoProduto(id),
                     Number.isFinite(fabricoId) ? getClientes(fabricoId) : Promise.resolve([]),
-                    getGrades().catch(() => []),
-                    getTecidos().catch(() => []),
-                    getAviamentos().catch(() => []),
-                    getAviamentosDoProduto(id).catch(() => []),
-                    getTiposProduto().catch(() => []),
-                    getFabricoById().catch(() => null),
-                    Number.isFinite(fabricoId)
-                        ? getAllEtapasByFabricoId(fabricoId).catch(() => [])
-                        : Promise.resolve([]),
+                    getGrades(),
+                    getTecidos(),
+                    getAviamentos(),
+                    getAviamentosDoProduto(id),
+                    getTiposProduto(),
+                    Number.isFinite(fabricoId) ? getAllEtapas() : Promise.resolve([]),
                     getParceiroByProduto(id),
                 ]);
 
@@ -665,7 +659,6 @@ export default function ProdutoEditar() {
                     dadosProduto.tipo_produto_id || tipoProdutoRelacionado?.id || undefined;
 
                 setProduto(dadosProduto);
-                setFabrico(dadosFabrico);
                 setClientesAssociados(
                     enriquecerClientesAssociados(
                         Array.isArray(dadosClientes) ? dadosClientes : [],
@@ -1486,7 +1479,7 @@ export default function ProdutoEditar() {
                             clientes={clientesAssociados}
                             referenciaInterna={formData.referencia}
                             produtoId={id}
-                            fabricacao_sob_demanda={fabrico?.fabricacao_sob_demanda}
+                            fabricacao_sob_demanda={produto?.fabrico?.fabricacao_sob_demanda}
                             onAbrirModal={() => setModalClientesAberto(true)}
                             onRemoverLinha={handleRemoverReferencia}
                             onSalvarEdicao={handleSalvarReferencia}

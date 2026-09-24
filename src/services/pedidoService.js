@@ -10,12 +10,46 @@ export const createPedido = async (pedidoData) => {
     }
 };
 
-export const getPedidosByFabricoId = async (fabricoId) => {
+// Cria o pedido, as fichas técnicas e todos os vínculos em uma única transação no backend.
+// idempotencyKey: reutilizar só em retry com o mesmo payload; renovar se o body mudar.
+export const createPedidoCompleto = async (pedidoData, idempotencyKey) => {
     try {
-        const response = await api.get(`/pedidos/fabrico/${fabricoId}`);
+        const response = await api.post("/pedidos/completo", pedidoData, {
+            headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined,
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error creating pedido completo:", error);
+        throw error;
+    }
+};
+
+export const updatePedidoCompleto = async (pedidoId, pedidoData) => {
+    try {
+        const response = await api.put(`/pedidos/completo/${pedidoId}`, pedidoData);
+        return response.data;
+    } catch (error) {
+        console.error("Error updating pedido completo:", error);
+        throw error;
+    }
+};
+
+export const getPedidosByFabricoId = async () => {
+    try {
+        const response = await api.get(`/pedidos`);
         return response.data;
     } catch (error) {
         console.error("Error fetching pedidos:", error);
+        throw error;
+    }
+};
+
+export const getPedidoById = async (pedidoId) => {
+    try {
+        const response = await api.get(`/pedidos/${pedidoId}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching pedido:", error);
         throw error;
     }
 };

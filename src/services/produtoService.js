@@ -21,7 +21,7 @@ export const getParceiroByProduto = async (produtoId) => {
         return response.data;
     } catch (error) {
         console.error("Erro ao buscar parceiros do produto:", error);
-        return [];
+        throw error;
     }
 };
 
@@ -51,7 +51,7 @@ export const getGrades = async () => {
         return response.data;
     } catch (error) {
         console.error("Erro ao buscar grades do fabrico:", error);
-        return [];
+        throw error;
     }
 };
 
@@ -61,7 +61,7 @@ export const getProdutoById = async (id) => {
         return response.data;
     } catch (error) {
         console.error("Erro ao buscar produto por id:", error);
-        return null;
+        throw error;
     }
 };
 
@@ -71,7 +71,7 @@ export const getClientesDoProduto = async (id) => {
         return response.data;
     } catch (error) {
         console.error("Erro ao buscar clientes do produto:", error);
-        return [];
+        throw error;
     }
 };
 
@@ -111,7 +111,7 @@ export const getTiposProduto = async () => {
         return response.data;
     } catch (error) {
         console.error("Erro ao buscar tipos de produto:", error);
-        return [];
+        throw error;
     }
 };
 
@@ -164,6 +164,6 @@ export const getAviamentosDoProduto = async (produtoId) => {
         return response.data;
     } catch (error) {
         console.error("Erro ao buscar aviamentos do produto:", error);
-        return [];
+        throw error;
     }
 };

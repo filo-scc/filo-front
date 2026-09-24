@@ -40,7 +40,6 @@ const Aviamentos = () => {
 
     const [aviamentos, setAviamentos] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [loadError, setLoadError] = useState(false);
     const [carregandoEdicao, setCarregandoEdicao] = useState(false);
     const [busca, setBusca] = useState("");
 
@@ -57,12 +56,10 @@ const Aviamentos = () => {
         }
         try {
             setLoading(true);
-            setLoadError(false);
             const data = await getAviamentos();
             setAviamentos(Array.isArray(data) ? data : data?.data || []);
         } catch (error) {
             console.error("Erro ao carregar os aviamentos", error);
-            setLoadError(true);
         } finally {
             setLoading(false);
         }
@@ -240,16 +237,7 @@ const Aviamentos = () => {
                                         );
                                     })}
 
-                                    {loadError ? (
-                                        <tr>
-                                            <td
-                                                colSpan="5"
-                                                className="text-center py-10 text-red-500"
-                                            >
-                                                Não foi possível carregar os aviamentos. Tente novamente.
-                                            </td>
-                                        </tr>
-                                    ) : aviamentosFiltrados.length === 0 ? (
+                                    {aviamentosFiltrados.length === 0 && (
                                         <tr>
                                             <td
                                                 colSpan="5"
@@ -258,7 +246,7 @@ const Aviamentos = () => {
                                                 Nenhum aviamento encontrado.
                                             </td>
                                         </tr>
-                                    ) : null}
+                                    )}
                                 </tbody>
                             </table>
                         </div>

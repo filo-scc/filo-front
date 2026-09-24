@@ -21,7 +21,7 @@ export const getAviamentoById = async (aviamentoId) => {
         return response.data;
     } catch (error) {
         console.error("Erro ao buscar aviamento por id:", error);
-        return null;
+        throw error;
     }
 };
 

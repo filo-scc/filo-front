@@ -17,7 +17,7 @@ export async function getCores() {
         return unwrap(response);
     } catch (error) {
         console.error("Erro ao buscar cores:", error);
-        return [];
+        throw error;
     }
 }
 
