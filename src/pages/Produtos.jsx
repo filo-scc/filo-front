@@ -165,7 +165,7 @@ export default function Produtos() {
                         <div className="col-span-full flex justify-center py-10 text-gray-400 font-light">
                             Nenhum produto encontrado.
                         </div>
-                    ) : (
+                    ) : produtos.length > 0 ? (
                         produtos.map((produto) => (
                             <ProdutoCard
                                 key={produto.id}
@@ -180,7 +180,7 @@ export default function Produtos() {
                                 foto={produto.foto}
                             />
                         ))
-                    )}
+                    ) : null}
                 </div>
             </div>
         </div>
