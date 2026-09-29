@@ -440,6 +440,10 @@ export default function FichaTecnicaModal({
                     null;
 
                 setSelectedGradeVersionId(fallbackGrade);
+                // Só ficha nova oferece repetir a grade da anterior; na edição a matriz já vem preenchida.
+                setOferecerGrade(
+                    Boolean(!fichaInicial && fichaAnterior && normalizedGrades.length),
+                );
 
                 if (fichaInicial) {
                     const coresIniciais = (
