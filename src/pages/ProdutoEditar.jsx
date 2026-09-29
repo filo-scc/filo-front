@@ -14,20 +14,19 @@ import {
 } from "../components/geral/Loading";
 import {
     atualizarProduto,
-    excluirProduto,
+    softDeleteProduto,
     desvincularProdutoAviamento,
-    getAviamentosByFabrico,
+    getAviamentos,
     getAviamentosDoProduto,
     getClientesDoProduto,
-    getGradesByFabrico,
+    getGrades,
     getParceiroByProduto,
     getProdutoById,
-    getTecidosByFabrico,
-    getTiposProdutoByFabrico,
+    getTecidos,
+    getTiposProduto,
     vincularProdutoAviamento,
     atualizarProdutoAviamento,
 } from "../services/produtoService";
-import { getFabricoById } from "../services/fabricoService";
 import {
     desvincularProdutoDoCliente,
     getClientes,
@@ -509,7 +508,6 @@ export default function ProdutoEditar() {
     const [salvando, setSalvando] = useState(false);
     const [erro, setErro] = useState("");
     const [produto, setProduto] = useState(null);
-    const [fabrico, setFabrico] = useState(null);
     const [clientesAssociados, setClientesAssociados] = useState([]);
     const [arquivoImagem, setArquivoImagem] = useState(null);
     const [imagemPreview, setImagemPreview] = useState("");
@@ -572,26 +570,18 @@ export default function ProdutoEditar() {
                     resAviamentos,
                     resAviamentosProduto,
                     resTiposProduto,
-                    dadosFabrico,
                     todasEtapas,
                     vinculosParceiroProduto,
                 ] = await Promise.all([
                     getProdutoById(id),
                     getClientesDoProduto(id),
                     Number.isFinite(fabricoId) ? getClientes(fabricoId) : Promise.resolve([]),
-                    Number.isFinite(fabricoId)
-                        ? getGradesByFabrico(fabricoId)
-                        : Promise.resolve([]),
-                    Number.isFinite(fabricoId)
-                        ? getTecidosByFabrico(fabricoId)
-                        : Promise.resolve([]),
-                    Number.isFinite(fabricoId)
-                        ? getAviamentosByFabrico(fabricoId)
-                        : Promise.resolve([]),
-                    getAviamentosDoProduto(id).catch(() => []),
-                    getTiposProdutoByFabrico().catch(() => []),
-                    Number.isFinite(fabricoId) ? getFabricoById(fabricoId) : Promise.resolve(null),
-                    getAllEtapas().catch(() => []),
+                    getGrades(),
+                    getTecidos(),
+                    getAviamentos(),
+                    getAviamentosDoProduto(id),
+                    getTiposProduto(),
+                    Number.isFinite(fabricoId) ? getAllEtapas() : Promise.resolve([]),
                     getParceiroByProduto(id),
                 ]);
 
@@ -669,7 +659,6 @@ export default function ProdutoEditar() {
                     dadosProduto.tipo_produto_id || tipoProdutoRelacionado?.id || undefined;
 
                 setProduto(dadosProduto);
-                setFabrico(dadosFabrico);
                 setClientesAssociados(
                     enriquecerClientesAssociados(
                         Array.isArray(dadosClientes) ? dadosClientes : [],
@@ -946,7 +935,7 @@ export default function ProdutoEditar() {
 
     const recarregarTecidos = async () => {
         try {
-            const dados = await getTecidosByFabrico(fabricoId);
+            const dados = await getTecidos();
             const tecidosTratados = (dados || []).map((t) => ({
                 id: t?.id || t?.tecido?.id,
                 nome: t?.nome || t?.tecido?.nome || "Sem nome na API",
@@ -1060,7 +1049,7 @@ export default function ProdutoEditar() {
         if (excluindo) return;
         try {
             setExcluindo(true);
-            await excluirProduto(id);
+            await softDeleteProduto(id);
             setModalExclusaoAberto(false);
             setModalExcluidoAberto(true);
         } catch (error) {
@@ -1490,7 +1479,7 @@ export default function ProdutoEditar() {
                             clientes={clientesAssociados}
                             referenciaInterna={formData.referencia}
                             produtoId={id}
-                            fabricacao_sob_demanda={fabrico?.fabricacao_sob_demanda}
+                            fabricacao_sob_demanda={produto?.fabrico?.fabricacao_sob_demanda}
                             onAbrirModal={() => setModalClientesAberto(true)}
                             onRemoverLinha={handleRemoverReferencia}
                             onSalvarEdicao={handleSalvarReferencia}
