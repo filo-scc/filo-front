@@ -281,7 +281,7 @@ export default function PedidosCadastrar() {
 
         const carregarNumeroDoPedido = async () => {
             try {
-                const resposta = await getPedidosByFabricoId(fabricoId);
+                const resposta = await getPedidosByFabricoId();
 
                 if (ignorar) return;
 
