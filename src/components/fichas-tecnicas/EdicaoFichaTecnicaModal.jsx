@@ -8,7 +8,7 @@ import {
     createFichaTecnicaItem,
     createParceiroProduto,
 } from "../../services/fichaTecnicaItemService";
-import { getCoresByFabricoId } from "../../services/corService";
+import { getCores } from "../../services/corService";
 import {
     updateFichaTecnicaParceiro,
     deleteFichaTecnicaParceiro,
@@ -20,11 +20,11 @@ import { preventNumberInputWheel } from "../../utils/preventNumberInputWheel";
 import FichaTecnicaPrintView from "../FichaTecnicaPrintView";
 import { getAviamentosDoProduto, getParceiroByProduto } from "../../services/produtoService";
 import { updateFichaTecnica } from "../../services/fichasTecnicasService";
-import { getParceirosByFabrico } from "../../services/parceiroService";
+import { getParceiros } from "../../services/parceiroService";
 import CorModal from "./CorModal";
 import EstampaModal from "./EstampaModal";
 import RelatorioDeAcabamento from "./RelatorioDeAcabamento";
-import { getAllEtapasByFabricoId } from "../../services/etapaService";
+import { getAllEtapas } from "../../services/etapaService";
 import {
     calcularProporcoesGrade,
     isReferenciaProporcao,
@@ -220,8 +220,12 @@ const ColorPill = ({ nome, onRemove }) => (
     <div className="bg-[#A9E2F2] text-[#4696AD] px-3 py-1 rounded-full text-[13px] flex items-center gap-2">
         {nome}
         <button onClick={onRemove} className="flex items-center justify-center">
-            <div className="w-[14px] h-[14px] bg-[#4696AD] rounded-full flex items-center justify-center text-white text-[9px] font-bold">
-                ✕
+            <div className="w-[14px] h-[14px] bg-[#4696AD] rounded-full flex items-center justify-center">
+                <img
+                    src="/fechar-branco.png"
+                    alt="Remover cor"
+                    className="w-[9px] h-[9px] object-contain"
+                />
             </div>
         </button>
     </div>
@@ -294,20 +298,18 @@ export default function EdicaoFichaTecnicaModal({
     useEffect(() => {
         let isCurrent = true;
 
-        if (dadosFicha?.fabrico_id) {
-            getAllEtapasByFabricoId(dadosFicha.fabrico_id)
-                .then((etapas) => {
-                    if (!isCurrent) return;
-                    const etapasAtivas = (etapas || []).filter((e) => e.ativa);
-                    const etapasOrdenadas = etapasAtivas.sort((a, b) => a.ordem - b.ordem);
-                    const ultima = etapasOrdenadas[etapasOrdenadas.length - 1];
-                    setUltimaEtapaId(ultima?.id ?? null);
-                })
-                .catch((error) => {
-                    console.error("Erro ao verificar última etapa", error);
-                    setUltimaEtapaId(null);
-                });
-        }
+        getAllEtapas()
+            .then((etapas) => {
+                if (!isCurrent) return;
+                const etapasAtivas = (etapas || []).filter((e) => e.ativa);
+                const etapasOrdenadas = etapasAtivas.sort((a, b) => a.ordem - b.ordem);
+                const ultima = etapasOrdenadas[etapasOrdenadas.length - 1];
+                setUltimaEtapaId(ultima?.id ?? null);
+            })
+            .catch((error) => {
+                console.error("Erro ao verificar última etapa", error);
+                setUltimaEtapaId(null);
+            });
 
         return () => {
             isCurrent = false;
@@ -316,10 +318,10 @@ export default function EdicaoFichaTecnicaModal({
     const isUltimaEtapa = ultimaEtapaId != null && dadosFicha?.etapa_atual_id == ultimaEtapaId;
 
     const carregarParceirosDisponiveis = useCallback(async () => {
-        if (!dadosFicha?.produto_id || !dadosFicha?.fabrico_id) return;
+        if (!dadosFicha?.produto_id) return;
         try {
             const [parceirosDoFabrico, parceirosDoProduto] = await Promise.all([
-                getParceirosByFabrico(dadosFicha.fabrico_id),
+                getParceiros(),
                 getParceiroByProduto(dadosFicha.produto_id),
             ]);
 
@@ -342,7 +344,7 @@ export default function EdicaoFichaTecnicaModal({
             console.error("Erro ao buscar parceiros", error);
             setParceirosDisponiveis([]);
         }
-    }, [dadosFicha?.produto_id, dadosFicha?.fabrico_id]);
+    }, [dadosFicha?.produto_id]);
 
     const parceirosFiltrados = useMemo(() => {
         return parceirosDisponiveis.filter((parceiro) => {
@@ -379,7 +381,7 @@ export default function EdicaoFichaTecnicaModal({
     const carregarCoresDaFabrica = useCallback(async () => {
         if (dadosFicha?.fabrico_id) {
             try {
-                const cores = await getCoresByFabricoId(dadosFicha.fabrico_id);
+                const cores = await getCores();
                 setTodasCoresDisponiveis(cores);
             } catch (error) {
                 console.error("Erro ao buscar cores", error);
@@ -1367,9 +1369,9 @@ export default function EdicaoFichaTecnicaModal({
                             <button
                                 onClick={handleConcluir}
                                 disabled={loading || !perdasValidas}
-                                className="px-10 h-[42px] rounded-full bg-[#A9E2F2] text-[#347A8A] font-normal text-[15px] hover:bg-[#97D8EA] transition-colors shadow-sm disabled:opacity-50"
+                                className="px-10 h-[39px] rounded-full bg-[#A9E2F2] text-[#4696AD] font-normal text-[16px] hover:bg-[#97D8EA] transition-colors shadow-sm disabled:opacity-50"
                             >
-                                {loading ? "Salvando..." : "Concluir edição"}
+                                {loading ? "Salvando..." : "Salvar Alterações"}
                             </button>
                         </div>
                     </div>

@@ -22,9 +22,11 @@ export function AuthProvider({ children }) {
             try {
                 const userData = await authService.getMe();
 
+                localStorage.setItem("user", JSON.stringify(userData));
                 setUser(userData);
                 // eslint-disable-next-line no-unused-vars
             } catch (error) {
+                localStorage.removeItem("user");
                 setUser(null);
             } finally {
                 setLoading(false);

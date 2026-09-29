@@ -7,7 +7,6 @@ import { formatarTelefone } from "../utils/formatters";
 import SecaoEndereco from "../components/parceiros/SecaoEndereco";
 import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
-import ModalAtencao from "../components/geral/ModalAtencao";
 import { DetailPageSkeleton } from "../components/geral/Loading";
 
 const ParceiroDetalhes = () => {
@@ -18,7 +17,6 @@ const ParceiroDetalhes = () => {
     const [loading, setLoading] = useState(true);
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
-    const [modalAtencaoAberto, setModalAtencaoAberto] = useState(false);
     const [excluindo, setExcluindo] = useState(false);
 
     useEffect(() => {
@@ -32,26 +30,24 @@ const ParceiroDetalhes = () => {
 
                 // Verifica se o parceiro pertence ao fabrico do usuário
                 if (usuarioLogado && data.fabrico_id !== usuarioLogado.fabrico_id) {
-                    setModalAtencaoAberto(true);
-                    return; // Interrompe para não setar o parceiro no estado
+                    navigate("/parceiros", { replace: true });
+                    return;
                 }
 
                 setParceiro(data);
             } catch (error) {
                 console.error("Erro ao buscar parceiro", error);
-                setModalAtencaoAberto(true);
+
+                if (error.response?.status === 404) {
+                    navigate("/parceiros", { replace: true });
+                }
             } finally {
                 setLoading(false);
             }
         };
 
         fetchParceiro();
-    }, [id]);
-
-    const handleAcessoNegadoConfirm = () => {
-        setModalAtencaoAberto(false);
-        navigate("/Parceiros", { replace: true });
-    };
+    }, [id, navigate]);
 
     const abrirModalExclusao = () => {
         setModalExclusaoAberto(true);
@@ -90,11 +86,11 @@ const ParceiroDetalhes = () => {
         );
     }
 
-    if (!parceiro && !modalAtencaoAberto) {
+    if (!parceiro) {
         return (
             <div className="p-6">
                 <p>Parceiro não encontrado.</p>
-                <button onClick={() => navigate("/Parceiros")}>Voltar</button>
+                <button onClick={() => navigate("/parceiros")}>Voltar</button>
             </div>
         );
     }
@@ -247,15 +243,8 @@ const ParceiroDetalhes = () => {
 
             <ModalConfirmacao
                 isOpen={modalConfirmacaoAberto}
-                onClose={() => navigate("/Parceiros", { replace: true })}
+                onClose={() => navigate("/parceiros", { replace: true })}
                 type="excluído"
-            />
-
-            <ModalAtencao
-                isOpen={modalAtencaoAberto}
-                onConfirm={handleAcessoNegadoConfirm}
-                titulo="Atenção!"
-                mensagem="Este parceiro não pertence ou não existe no seu fabrico. Você será redirecionado para a lista de parceiros."
             />
         </div>
     );

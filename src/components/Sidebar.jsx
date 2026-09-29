@@ -3,18 +3,67 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 
 import { getFabricoById } from "../services/fabricoService";
 
+const FABRICACAO_SOB_DEMANDA_CACHE_KEY = "filo:fabricacaoSobDemanda";
+
+const getFabricacaoSobDemandaCache = (fabricoId) => {
+    if (!fabricoId) {
+        return { fabricoId: null, valor: null };
+    }
+
+    try {
+        const cached = JSON.parse(
+            sessionStorage.getItem(FABRICACAO_SOB_DEMANDA_CACHE_KEY) || "null",
+        );
+
+        if (cached?.fabricoId === fabricoId && typeof cached.valor === "boolean") {
+            return cached;
+        }
+    } catch (error) {
+        console.error("Erro ao ler cache de fabricação sob demanda:", error);
+    }
+
+    return { fabricoId: null, valor: null };
+};
+
+const setFabricacaoSobDemandaCache = (fabricoId, valor) => {
+    try {
+        sessionStorage.setItem(
+            FABRICACAO_SOB_DEMANDA_CACHE_KEY,
+            JSON.stringify({ fabricoId, valor }),
+        );
+    } catch (error) {
+        console.error("Erro ao salvar cache de fabricação sob demanda:", error);
+    }
+};
+
 export function Sidebar({ isOpen = false, onClose }) {
     const [hoveredPath, setHoveredPath] = useState(null);
     const navigate = useNavigate();
     const { pathname } = useLocation();
     const isNovoPedido = pathname.replace(/\/$/, "") === "/pedidos/cadastrar";
-    const [producaoSobDemanda, setProducaoSobDemanda] = useState(null);
 
     const usuarioLogado = JSON.parse(localStorage.getItem("user") || "{}");
     const fabricoId = usuarioLogado?.fabrico_id;
+    const [producaoSobDemanda, setProducaoSobDemanda] = useState(() =>
+        getFabricacaoSobDemandaCache(fabricoId),
+    );
+    const [statusModoFabrico, setStatusModoFabrico] = useState("idle");
+    const [tentativaModoFabrico, setTentativaModoFabrico] = useState(0);
+    const fabricoResolvido =
+        !fabricoId ||
+        (producaoSobDemanda.fabricoId === fabricoId && producaoSobDemanda.valor !== null);
+    const producaoSobDemandaAtiva =
+        fabricoId && producaoSobDemanda.fabricoId === fabricoId
+            ? producaoSobDemanda.valor === true
+            : false;
 
-    const labelNovaFicha =
-        producaoSobDemanda === null ? "" : producaoSobDemanda ? "Novo pedido" : "Nova produção";
+    const labelNovaFicha = fabricoResolvido
+        ? producaoSobDemandaAtiva
+            ? "Novo pedido"
+            : "Nova produção"
+        : statusModoFabrico === "error"
+          ? "Modo indisponível"
+          : "Verificando...";
 
     useEffect(() => {
         if (!fabricoId) {
@@ -24,15 +73,34 @@ export function Sidebar({ isOpen = false, onClose }) {
         let ignorar = false;
 
         const carregarDados = async () => {
+            setStatusModoFabrico("loading");
+
             try {
                 const response = await getFabricoById(fabricoId);
 
                 if (ignorar) return;
 
-                setProducaoSobDemanda(response?.fabricacao_sob_demanda === true);
+                setProducaoSobDemanda({
+                    fabricoId,
+                    valor: response?.fabricacao_sob_demanda === true,
+                });
+                setFabricacaoSobDemandaCache(fabricoId, response?.fabricacao_sob_demanda === true);
+                setStatusModoFabrico("idle");
             } catch (error) {
+                if (ignorar) return;
+
                 console.error("Erro ao carregar dados do fabrico na Sidebar:", error);
-                setProducaoSobDemanda(false);
+                setStatusModoFabrico("error");
+                setProducaoSobDemanda((valorAtual) => {
+                    if (
+                        valorAtual.fabricoId === fabricoId &&
+                        typeof valorAtual.valor === "boolean"
+                    ) {
+                        return valorAtual;
+                    }
+
+                    return { fabricoId, valor: null };
+                });
             }
         };
 
@@ -41,16 +109,15 @@ export function Sidebar({ isOpen = false, onClose }) {
         return () => {
             ignorar = true;
         };
-    }, [fabricoId]);
+    }, [fabricoId, tentativaModoFabrico]);
+
+    const tentarCarregarModoFabricoNovamente = () => {
+        setTentativaModoFabrico((tentativaAtual) => tentativaAtual + 1);
+    };
 
     const menuItems = useMemo(() => {
         const items = [
             { name: "Início", slug: "inicio", path: "/" },
-            {
-                name: producaoSobDemanda ? "Pedidos" : "Produções",
-                slug: "pedidos",
-                path: "/pedidos",
-            },
             { name: "Parceiros", slug: "parceiros", path: "/parceiros" },
             { name: "Produtos", slug: "produtos", path: "/produtos" },
             { name: "Aviamentos", slug: "aviamentos", path: "/aviamentos" },
@@ -59,12 +126,22 @@ export function Sidebar({ isOpen = false, onClose }) {
             { name: "Configurações", slug: "configuracoes", path: "/configuracoes" },
         ];
 
-        if (producaoSobDemanda) {
+        if (!fabricoResolvido) {
+            return items;
+        }
+
+        items.splice(1, 0, {
+            name: producaoSobDemandaAtiva ? "Pedidos" : "Produções",
+            slug: "pedidos",
+            path: "/pedidos",
+        });
+
+        if (producaoSobDemandaAtiva) {
             items.splice(3, 0, { name: "Clientes", slug: "clientes", path: "/clientes" });
         }
 
         return items;
-    }, [producaoSobDemanda]);
+    }, [fabricoResolvido, producaoSobDemandaAtiva]);
 
     return (
         <aside
@@ -95,8 +172,18 @@ export function Sidebar({ isOpen = false, onClose }) {
 
             {/* 1. Botão Nova Ficha */}
             <button
-                className={`w-[169px] h-[39px] min-h-[39px] rounded-[18.5px] flex items-center justify-start px-4 gap-3 transition-all duration-200 shadow-sm ${isNovoPedido ? "bg-[#D7FE65]" : "bg-[#A9E2F2] hover:bg-[#A2DCED]"}`}
+                type="button"
+                disabled={!fabricoResolvido}
+                className={`w-[169px] h-[39px] min-h-[39px] rounded-[18.5px] flex items-center justify-start px-4 gap-3 transition-all duration-200 shadow-sm ${
+                    !fabricoResolvido
+                        ? "cursor-not-allowed bg-[#E7EEF2] opacity-80"
+                        : isNovoPedido
+                          ? "bg-[#D7FE65]"
+                          : "bg-[#A9E2F2] hover:bg-[#A2DCED]"
+                }`}
                 onClick={() => {
+                    if (!fabricoResolvido) return;
+
                     onClose?.();
                     navigate("/pedidos/cadastrar");
                 }}
@@ -107,11 +194,32 @@ export function Sidebar({ isOpen = false, onClose }) {
                     className="w-5 h-5 shrink-0"
                 />
                 <span
-                    className={`${isNovoPedido ? "text-[#404040]" : "text-[#4696AD]"} font-normal text-[13px] whitespace-nowrap`}
+                    className={`${
+                        !fabricoResolvido
+                            ? "text-[#7B7D80]"
+                            : isNovoPedido
+                              ? "text-[#404040]"
+                              : "text-[#4696AD]"
+                    } font-normal text-[13px] whitespace-nowrap`}
                 >
                     {labelNovaFicha}
                 </span>
             </button>
+
+            {!fabricoResolvido && statusModoFabrico === "error" && (
+                <div className="w-[169px] -mt-5 text-left">
+                    <p className="text-[12px] leading-4 text-[#7B7D80]">
+                        Não foi possível identificar o modo da fábrica.
+                    </p>
+                    <button
+                        type="button"
+                        onClick={tentarCarregarModoFabricoNovamente}
+                        className="mt-2 text-[13px] font-medium text-[#4696AD] hover:underline"
+                    >
+                        Tentar novamente
+                    </button>
+                </div>
+            )}
 
             {/* 2. Menu Itens */}
             <nav className="flex flex-col gap-2 w-full pb-8">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { getTecidosByFabrico } from "../services/produtoService";
+import { getTecidos } from "../services/produtoService";
 import { TecidosTableSkeleton } from "../components/tecidos/TecidosTableSkeleton";
 import { CadastrarTecidoModal } from "../components/produtos/CadastrarTecidoModal";
 import MenuOpcoes from "../components/geral/MenuOpcoes";
@@ -28,6 +28,7 @@ export default function Tecidos() {
 
     const [tecidos, setTecidos] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
 
     // Estados para controle dos Modais
@@ -42,11 +43,13 @@ export default function Tecidos() {
     const fetchTecidos = useCallback(async () => {
         if (!fabricoId) return;
         setLoading(true);
+        setLoadError(false);
         try {
-            const dados = await getTecidosByFabrico(fabricoId);
+            const dados = await getTecidos();
             setTecidos(Array.isArray(dados) ? dados : []);
         } catch (error) {
             console.error("Erro ao carregar tecidos:", error);
+            setLoadError(true);
         } finally {
             setLoading(false);
         }
@@ -90,11 +93,11 @@ export default function Tecidos() {
     );
 
     return (
-        <div className="p-6 pt-0 mt-6 font-['Outfit',_sans-serif]">
+        <div className="p-6 pt-0 mt-6 font-['Outfit']">
             {/* Container Branco Principal */}
             <div className="bg-white rounded-[24px] shadow-sm min-h-[400px] w-full overflow-hidden pb-8">
                 {/* Cabeçalho */}
-                <div className="p-8 pb-4">
+                <div className="p-8 pb-8">
                     <div className="flex flex-wrap items-center justify-between gap-4 pl-[21px]">
                         <div className="flex items-center gap-2 flex-shrink-0">
                             <img src="/tecidos-ativado.png" alt="" className="w-7 h-7" />
@@ -129,7 +132,7 @@ export default function Tecidos() {
                             {/* Botão Cadastrar Tecido */}
                             <button
                                 onClick={handleAbrirCadastro}
-                                className="bg-[#A9E2F2] hover:bg-[#A2DCED] text-[#4696AD] w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-normal transition-colors cursor-pointer"
+                                className="bg-[#A9E2F2] hover:bg-[#A2DCED] text-[#4696AD] w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-light transition-colors cursor-pointer"
                             >
                                 <img
                                     src="/add-fabric-pin-azul.png"
@@ -143,15 +146,15 @@ export default function Tecidos() {
                 </div>
 
                 {/* Tabela de Tecidos */}
-                <div className="px-8">
+                <div className="px-10">
                     <div className="rounded-[16px] overflow-hidden border border-[#E8E8E8]">
                         <table className="w-full text-center border-collapse">
-                            <thead className="bg-[#CBEBF6] h-[48px] text-[#4696AD] font-normal text-[14px]">
-                                <tr>
-                                    <th className="font-normal py-3 px-6">Nome</th>
-                                    <th className="font-normal py-3 px-6">Un. de medida</th>
-                                    <th className="font-normal py-3 px-6">Preço</th>
-                                    <th className="font-normal py-3 px-6">Opções</th>
+                            <thead className="bg-[#CBEBF6] font-['Outfit'] text-[#4696AD] font-light text-[16px]">
+                                <tr className="h-[64px]">
+                                    <th className="font-light py-3 px-6">Nome</th>
+                                    <th className="font-light py-3 px-6">Un. de medida</th>
+                                    <th className="font-light py-3 px-6">Preço</th>
+                                    <th className="font-light py-3 px-6">Opções</th>
                                 </tr>
                             </thead>
                             <tbody className="text-[14px] text-gray-700">
@@ -172,13 +175,13 @@ export default function Tecidos() {
                                                         : "bg-[#F4F4F4] hover:bg-[#EDEDED]"
                                                 }`}
                                             >
-                                                <td className="px-6 py-4 font-normal">
+                                                <td className="px-6 py-4 font-light">
                                                     {tecido.nome}
                                                 </td>
-                                                <td className="px-6 py-4 font-normal">
+                                                <td className="px-6 py-4 font-light">
                                                     {formatarUnidade(tecido.unidade_de_medida)}
                                                 </td>
-                                                <td className="px-6 py-4 font-normal">
+                                                <td className="px-6 py-4 font-light">
                                                     {!isNaN(valorNumerico) &&
                                                     tecido.custo_unitario !== null
                                                         ? valorNumerico.toLocaleString("pt-BR", {
@@ -201,10 +204,23 @@ export default function Tecidos() {
                                             </tr>
                                         );
                                     })
+                                ) : loadError ? (
+                                    <tr>
+                                        <td colSpan="4" className="py-8 text-center text-red-500">
+                                            Não foi possível carregar os tecidos. Tente novamente.
+                                        </td>
+                                    </tr>
                                 ) : (
                                     <tr>
                                         <td colSpan="4" className="py-8 text-center text-gray-400">
                                             Nenhum tecido encontrado.
+                                        </td>
+                                    </tr>
+                                )}
+                                {loadError && tecidos.length > 0 && (
+                                    <tr>
+                                        <td colSpan="4" className="py-3 text-center text-red-500">
+                                            Não foi possível atualizar os tecidos. Tente novamente.
                                         </td>
                                     </tr>
                                 )}

@@ -92,9 +92,14 @@ api.interceptors.response.use(
 
             const newAccessToken = response.data.accessToken;
             const newRefreshToken = response.data.refreshToken;
+            const refreshedUser = response.data.user;
 
             localStorage.setItem("accessToken", newAccessToken);
             localStorage.setItem("refreshToken", newRefreshToken);
+
+            if (refreshedUser) {
+                localStorage.setItem("user", JSON.stringify(refreshedUser));
+            }
 
             processQueue(null, newAccessToken);
 
@@ -106,6 +111,7 @@ api.interceptors.response.use(
 
             localStorage.removeItem("accessToken");
             localStorage.removeItem("refreshToken");
+            localStorage.removeItem("user");
             window.location.href = "/login";
 
             return Promise.reject(refreshError);

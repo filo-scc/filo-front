@@ -1,9 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-    deleteAviamento,
-    getAviamentoById,
-    getAviamentosByFabrico,
-} from "../services/aviamentoService";
+import { deleteAviamento, getAviamentoById, getAviamentos } from "../services/aviamentoService";
 import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import MenuOpcoes from "../components/geral/MenuOpcoes";
@@ -60,11 +56,10 @@ const Aviamentos = () => {
         }
         try {
             setLoading(true);
-            const data = await getAviamentosByFabrico(fabrico_id);
+            const data = await getAviamentos();
             setAviamentos(Array.isArray(data) ? data : data?.data || []);
         } catch (error) {
             console.error("Erro ao carregar os aviamentos", error);
-            setAviamentos([]);
         } finally {
             setLoading(false);
         }
