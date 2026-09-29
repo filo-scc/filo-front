@@ -354,7 +354,11 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
                                     Pedido Nº{ficha?.pedido?.numero}{" "}
                                     <span className="mx-1 text-[25px] align-middle">•</span>{" "}
                                     <button
-                                        onClick={() => navigate("/pedidos")}
+                                        onClick={() =>
+                                            navigate(
+                                                `/pedidos/${ficha?.pedido?.id ?? ficha?.pedido_id}`,
+                                            )
+                                        }
                                         className="text-[14px] font-light text-[#4696AD]"
                                     >
                                         Ver pedido
