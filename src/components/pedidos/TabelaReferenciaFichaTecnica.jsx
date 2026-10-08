@@ -7,6 +7,9 @@ export default function TabelaReferenciaFichaTecnica({
     onRemoverFicha,
     onAtualizarFicha,
     onEditarFicha,
+    onAbrirFicha,
+    somenteLeitura = false,
+    bloqueada = false,
 }) {
     const [idEmEdicao, setIdEmEdicao] = useState(null);
 
@@ -47,7 +50,7 @@ export default function TabelaReferenciaFichaTecnica({
 
     const gridColsClass = isSobDemanda
         ? "grid grid-cols-7 w-full items-stretch"
-        : "grid grid-cols-5 w-full items-stretch";
+        : "grid grid-cols-6 w-full items-stretch";
 
     const formatarCores = (cores) => {
         if (!cores || cores.length === 0) return "-";
@@ -62,12 +65,16 @@ export default function TabelaReferenciaFichaTecnica({
         0,
     );
 
-    const totalFinanceiro = fichas.reduce((acc, ficha) => {
-        const qtd = Number(ficha.quantidade) || Number(ficha.quantidade_pecas) || 0;
-        const valorUnitarioRaw = isSobDemanda
+    const obterValorUnitario = (ficha) => {
+        const valorRaw = isSobDemanda
             ? (ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? 0)
             : (ficha.custo_total ?? ficha.custo_unitario ?? ficha.custo ?? 0);
-        const valorUnitario = parsePreco(valorUnitarioRaw);
+        return parsePreco(valorRaw);
+    };
+
+    const totalPedido = fichas.reduce((acc, ficha) => {
+        const qtd = Number(ficha.quantidade) || Number(ficha.quantidade_pecas) || 0;
+        const valorUnitario = obterValorUnitario(ficha);
         const subtotal =
             isSobDemanda && ficha.subtotal !== undefined
                 ? parsePreco(ficha.subtotal)
@@ -75,7 +82,11 @@ export default function TabelaReferenciaFichaTecnica({
         return acc + subtotal;
     }, 0);
 
+    const campoBloqueadoClass =
+        "flex items-center justify-center text-center px-2 break-all text-light md:text-base text-[#404040] cursor-not-allowed";
+
     const handleAlternarEdicao = (itemKey) => {
+        if (bloqueada) return;
         setIdEmEdicao((prevKey) => (prevKey === itemKey ? null : itemKey));
         onEditarFicha?.(itemKey);
     };
@@ -113,17 +124,15 @@ export default function TabelaReferenciaFichaTecnica({
                             <div className="flex items-center justify-center text-center px-2">
                                 Quantidade
                             </div>
-                            {isSobDemanda && (
-                                <div className="flex items-center justify-center text-center px-2">
-                                    Preço unit.
-                                </div>
-                            )}
+                            <div className="flex items-center justify-center text-center px-2">
+                                {isSobDemanda ? "Preço unit." : "Custo unit."}
+                            </div>
                             <div className="flex items-center justify-center text-center px-2">
                                 {isSobDemanda ? "Subtotal" : "Subcusto"}
                             </div>
                         </div>
                     </div>
-                    <div className="w-9" />
+                    {!somenteLeitura && <div className="w-9" />}
                 </div>
 
                 {/* 2. CORPO DA TABELA */}
@@ -135,18 +144,18 @@ export default function TabelaReferenciaFichaTecnica({
                                 Number(ficha.quantidade) || Number(ficha.quantidade_pecas) || 0;
                             const valPrecoRaw =
                                 ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? "";
-                            const precoUnit = parsePreco(valPrecoRaw);
-                            const custoUnit = parsePreco(
-                                ficha.custo_total ?? ficha.custo_unitario ?? ficha.custo ?? 0,
-                            );
+                            const valorUnitario = obterValorUnitario(ficha);
 
                             const subtotal =
                                 isSobDemanda && ficha.subtotal !== undefined
                                     ? parsePreco(ficha.subtotal)
-                                    : qtd * (isSobDemanda ? precoUnit : custoUnit);
+                                    : qtd * valorUnitario;
                             const refClienteValor =
                                 ficha.referenciaCliente ?? ficha.ref_cliente ?? "";
-                            const isEditando = idEmEdicao === itemKey;
+                            const isEditando =
+                                !somenteLeitura && !bloqueada && idEmEdicao === itemKey;
+
+                            const podeAbrirFicha = Boolean(onAbrirFicha) && !bloqueada;
 
                             return (
                                 <div
@@ -154,12 +163,31 @@ export default function TabelaReferenciaFichaTecnica({
                                     className="group flex flex-row items-center w-full"
                                 >
                                     {/* Linha da Tabela */}
-                                    <div className="flex-1 border-l border-r border-b border-[#d9d9d9] bg-white">
+                                    <div
+                                        role={podeAbrirFicha ? "button" : undefined}
+                                        tabIndex={podeAbrirFicha ? 0 : undefined}
+                                        onClick={() => {
+                                            if (!podeAbrirFicha) return;
+                                            onAbrirFicha?.(ficha, itemKey);
+                                        }}
+                                        onKeyDown={(e) => {
+                                            if (!podeAbrirFicha) return;
+                                            if (e.key === "Enter" || e.key === " ") {
+                                                e.preventDefault();
+                                                onAbrirFicha?.(ficha, itemKey);
+                                            }
+                                        }}
+                                        className={`flex-1 border-l border-r border-b border-[#d9d9d9] bg-white ${
+                                            podeAbrirFicha
+                                                ? "cursor-pointer hover:bg-[#F7FCFD] transition-colors"
+                                                : ""
+                                        }`}
+                                    >
                                         <div
                                             className={`${gridColsClass} text-[#404040] font-['Outfit'] font-light min-h-[120px] md:min-h-[140px]`}
                                         >
                                             {/* 1. Foto */}
-                                            <div className="border-r border-[#d9d9d9] p-3 flex items-center justify-center bg-white">
+                                            <div className="border-r border-[#d9d9d9] p-3 flex items-center justify-center bg-white cursor-not-allowed">
                                                 {ficha.foto ? (
                                                     <img
                                                         src={ficha.foto}
@@ -174,7 +202,9 @@ export default function TabelaReferenciaFichaTecnica({
                                             </div>
 
                                             {/* 2. Ref. interna */}
-                                            <div className="border-r border-[#d9d9d9] flex items-center justify-center text-center px-2 break-all text-light md:text-base text-[#404040]">
+                                            <div
+                                                className={`border-r border-[#d9d9d9] ${campoBloqueadoClass}`}
+                                            >
                                                 {ficha.referenciaInterna ||
                                                     ficha.ref_interna ||
                                                     "-"}
@@ -182,12 +212,17 @@ export default function TabelaReferenciaFichaTecnica({
 
                                             {/* 3. Ref. cliente */}
                                             {isSobDemanda && (
-                                                <div className="border-r border-[#d9d9d9] flex items-center justify-center px-2 text-center text-light md:text-base text-[#404040]">
+                                                <div
+                                                    className="border-r border-[#d9d9d9] flex items-center justify-center px-2 text-center text-light md:text-base text-[#404040]"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    onKeyDown={(e) => e.stopPropagation()}
+                                                >
                                                     {isEditando ? (
                                                         <input
                                                             type="text"
                                                             data-itemkey={itemKey}
                                                             value={refClienteValor}
+                                                            onClick={(e) => e.stopPropagation()}
                                                             onChange={(e) => {
                                                                 onAtualizarFicha?.(
                                                                     itemKey,
@@ -208,96 +243,127 @@ export default function TabelaReferenciaFichaTecnica({
                                             )}
 
                                             {/* 4. Cores */}
-                                            <div className="border-r border-[#d9d9d9] flex items-center justify-center text-center px-2 break-words text-light md:text-base text-[#404040]">
+                                            <div
+                                                className={`border-r border-[#d9d9d9] ${campoBloqueadoClass} break-words`}
+                                            >
                                                 {formatarCores(ficha.cores)}
                                             </div>
 
                                             {/* 5. Quantidade */}
-                                            <div className="border-r border-[#d9d9d9] flex items-center justify-center text-center px-2 font-light text-light md:text-base text-[#404040]">
+                                            <div
+                                                className={`border-r border-[#d9d9d9] ${campoBloqueadoClass} font-light`}
+                                            >
                                                 {qtd}
                                             </div>
 
-                                            {/* 6. Preço unit. */}
-                                            {isSobDemanda && (
-                                                <div className="border-r border-[#d9d9d9] flex flex-col items-center justify-center px-2 text-center text-light md:text-base text-[#404040]">
-                                                    {isEditando ? (
-                                                        <div className="relative w-full min-w-0 flex items-center justify-center">
-                                                            <input
-                                                                type="text"
-                                                                data-itemkey={itemKey}
-                                                                value={`R$ ${formatarInputMoeda(valPrecoRaw)}`}
-                                                                onChange={(e) => {
-                                                                    const valFormatado =
-                                                                        formatarInputMoeda(
-                                                                            e.target.value,
-                                                                        );
-                                                                    onAtualizarFicha?.(
-                                                                        itemKey,
-                                                                        "preco_padrao",
-                                                                        valFormatado,
+                                            {/* 6. Preço unit. / Custo unit. */}
+                                            <div
+                                                className="border-r border-[#d9d9d9] flex flex-col items-center justify-center px-2 text-center text-light md:text-base text-[#404040]"
+                                                onClick={(e) => e.stopPropagation()}
+                                                onKeyDown={(e) => e.stopPropagation()}
+                                            >
+                                                {isSobDemanda && isEditando ? (
+                                                    <div className="relative w-full min-w-0 flex items-center justify-center">
+                                                        <input
+                                                            type="text"
+                                                            data-itemkey={itemKey}
+                                                            value={`R$ ${formatarInputMoeda(valPrecoRaw)}`}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            onChange={(e) => {
+                                                                const valFormatado =
+                                                                    formatarInputMoeda(
+                                                                        e.target.value,
                                                                     );
-                                                                }}
-                                                                onBlur={(e) =>
-                                                                    handleInputBlur(e, itemKey)
-                                                                }
-                                                                placeholder="R$ 0,00"
-                                                                className="w-full text-center bg-transparent outline-none focus:outline-none text-light md:text-base font-['Outfit'] text-[#404040] p-0"
-                                                            />
-                                                        </div>
-                                                    ) : (
-                                                        formatarMoeda(precoUnit)
-                                                    )}
-                                                </div>
-                                            )}
+                                                                onAtualizarFicha?.(
+                                                                    itemKey,
+                                                                    "preco_padrao",
+                                                                    valFormatado,
+                                                                );
+                                                            }}
+                                                            onBlur={(e) =>
+                                                                handleInputBlur(e, itemKey)
+                                                            }
+                                                            placeholder="R$ 0,00"
+                                                            className="w-full text-center bg-transparent outline-none focus:outline-none text-light md:text-base font-['Outfit'] text-[#404040] p-0"
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <span
+                                                        className={
+                                                            !isSobDemanda
+                                                                ? "cursor-not-allowed"
+                                                                : undefined
+                                                        }
+                                                    >
+                                                        {formatarMoeda(valorUnitario)}
+                                                    </span>
+                                                )}
+                                            </div>
 
                                             {/* 7. Subtotal */}
-                                            <div className="flex items-center justify-center text-center px-2 font-light text-light md:text-base text-[#404040]">
+                                            <div className={`${campoBloqueadoClass} font-light`}>
                                                 {formatarMoeda(subtotal)}
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Botões de Ação */}
-                                    <div className="w-9 flex flex-col items-center justify-center gap-2 pl-2 transition-opacity duration-200">
-                                        <button
-                                            type="button"
-                                            data-itemkey={itemKey}
-                                            onClick={() => handleAlternarEdicao(itemKey)}
-                                            className={`group/edit p-1 transition-transform hover:scale-110 ${
-                                                isEditando ? "opacity-100 scale-110" : ""
-                                            }`}
-                                            title={isEditando ? "Concluir edição" : "Editar ficha"}
+                                    {!somenteLeitura && (
+                                        <div
+                                            className="w-9 flex flex-col items-center justify-center gap-2 pl-2 transition-opacity duration-200"
+                                            onClick={(e) => e.stopPropagation()}
                                         >
-                                            <img
-                                                src="/editar-branco.png"
-                                                alt="Editar"
-                                                className="w-4 h-4 block group-hover/edit:hidden"
-                                            />
-                                            <img
-                                                src="/editar-azul.png"
-                                                alt="Editar"
-                                                className="w-4 h-4 hidden group-hover/edit:block"
-                                            />
-                                        </button>
+                                            <button
+                                                type="button"
+                                                data-itemkey={itemKey}
+                                                disabled={bloqueada}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleAlternarEdicao(itemKey);
+                                                }}
+                                                className={`group/edit p-1 transition-transform hover:scale-110 disabled:cursor-not-allowed disabled:opacity-50 ${
+                                                    isEditando ? "opacity-100 scale-110" : ""
+                                                }`}
+                                                title={
+                                                    isEditando
+                                                        ? "Concluir edição"
+                                                        : "Editar preço/referência"
+                                                }
+                                            >
+                                                <img
+                                                    src="/editar-branco.png"
+                                                    alt="Editar"
+                                                    className="w-4 h-4 block group-hover/edit:hidden"
+                                                />
+                                                <img
+                                                    src="/editar-azul.png"
+                                                    alt="Editar"
+                                                    className="w-4 h-4 hidden group-hover/edit:block"
+                                                />
+                                            </button>
 
-                                        <button
-                                            type="button"
-                                            onClick={() => onRemoverFicha?.(itemKey)}
-                                            className="group/delete p-1 transition-transform hover:scale-110"
-                                            title="Excluir ficha"
-                                        >
-                                            <img
-                                                src="/excluir-cinza-claro.png"
-                                                alt="Remover"
-                                                className="w-4 h-4 block group-hover/delete:hidden"
-                                            />
-                                            <img
-                                                src="/excluir-vermelho.png"
-                                                alt="Remover"
-                                                className="w-4 h-4 hidden group-hover/delete:block"
-                                            />
-                                        </button>
-                                    </div>
+                                            <button
+                                                type="button"
+                                                disabled={bloqueada}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onRemoverFicha?.(itemKey);
+                                                }}
+                                                className="group/delete p-1 transition-transform hover:scale-110 disabled:cursor-not-allowed disabled:opacity-50"
+                                                title="Excluir ficha"
+                                            >
+                                                <img
+                                                    src="/excluir-cinza-claro.png"
+                                                    alt="Remover"
+                                                    className="w-4 h-4 block group-hover/delete:hidden"
+                                                />
+                                                <img
+                                                    src="/excluir-vermelho.png"
+                                                    alt="Remover"
+                                                    className="w-4 h-4 hidden group-hover/delete:block"
+                                                />
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}
@@ -307,7 +373,7 @@ export default function TabelaReferenciaFichaTecnica({
                         <div className="flex-1 border-l border-r border-b border-[#d9d9d9] py-12 text-center text-[#898C8F] font-['Outfit'] font-light bg-[#F9F9F9] text-light md:text-base">
                             Nenhuma ficha técnica adicionada ao pedido.
                         </div>
-                        <div className="w-9" />
+                        {!somenteLeitura && <div className="w-9" />}
                     </div>
                 )}
 
@@ -327,14 +393,14 @@ export default function TabelaReferenciaFichaTecnica({
                                 </div>
                                 <div className="h-4 w-[1px] bg-[#a0a3a6] font-['Outfit']" />
                                 <div>
-                                    {isSobDemanda ? "Total do pedido" : "Custo total da produção"}:{" "}
+                                    {isSobDemanda ? "Total do pedido: " : "Custo total: "}
                                     <span className="font-light font-['Outfit']">
-                                        {formatarMoeda(totalFinanceiro)}
+                                        {formatarMoeda(totalPedido)}
                                     </span>
                                 </div>
                             </div>
                         </div>
-                        <div className="w-9" />
+                        {!somenteLeitura && <div className="w-9" />}
                     </div>
                 )}
             </div>

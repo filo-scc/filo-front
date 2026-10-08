@@ -124,7 +124,7 @@ export default function Clientes() {
     return (
         <Layout>
             <div className="p-6 pt-0 mt-6 w-full">
-                <div className="bg-white p-8 rounded-[24px] shadow-sm w-full mx-auto">
+                <div className="bg-white px-10 py-8 rounded-[24px] shadow-sm w-full mx-auto">
                     <div className="w-full">
                         <div className="w-full flex items-center justify-between mb-8 pl-6 font-['Outfit',_sans-serif]">
                             <div className="flex items-center gap-3">
@@ -176,9 +176,9 @@ export default function Clientes() {
                         </div>
 
                         <div className="w-full">
-                            <div className="w-full border border-gray-200 rounded-xl overflow-hidden bg-[#D3EBF2]">
-                                <table className="w-full border-separate border-spacing-0 text-[16px] font-['Outfit',_sans-serif] font-light text-center relative z-10">
-                                    <thead className="bg-[#D3EBF2] text-[#4696AD]">
+                            <div className="w-full border border-[#DEDEDE] rounded-xl overflow-hidden bg-[#D3EBF2]">
+                                <table className="w-full border-separate border-spacing-0 text-[16px] font-['Outfit'] font-light text-center relative z-10">
+                                    <thead className="bg-[#C9EAF6] text-[#4696AD]">
                                         <tr className="h-[64px]">
                                             <th className="px-6 font-light">Cliente</th>
                                             <th className="px-6 font-light">Responsável</th>
