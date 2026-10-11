@@ -45,6 +45,9 @@ const EditarParceiro = () => {
     const [etapas, setEtapas] = useState([]);
     const [loadingEtapas, setLoadingEtapas] = useState(true);
     const etapaDropdownRef = useRef(null);
+    const etapaTriggerRef = useRef(null);
+    const etapaOptionRefs = useRef([]);
+    const [etapaAtivaIndex, setEtapaAtivaIndex] = useState(-1);
 
     const [formData, setFormData] = useState({
         nome: "",
@@ -155,20 +158,18 @@ const EditarParceiro = () => {
             }
         };
 
-        const handleKeyDown = (event) => {
-            if (event.key === "Escape") {
-                setDropdownEtapaAberto(false);
-            }
-        };
-
         document.addEventListener("mousedown", handleClickOutside);
-        document.addEventListener("keydown", handleKeyDown);
 
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
-            document.removeEventListener("keydown", handleKeyDown);
         };
     }, [dropdownEtapaAberto]);
+
+    useEffect(() => {
+        if (dropdownEtapaAberto && etapaAtivaIndex >= 0) {
+            etapaOptionRefs.current[etapaAtivaIndex]?.focus();
+        }
+    }, [dropdownEtapaAberto, etapaAtivaIndex]);
 
     useEffect(() => {
         const fetchParceiro = async () => {
@@ -225,6 +226,55 @@ const EditarParceiro = () => {
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const abrirSeletorEtapa = (indiceInicial) => {
+        if (loadingEtapas || etapas.length === 0) return;
+
+        const indiceSelecionado = etapas.findIndex(
+            (etapa) => etapa.nome === formData.categoria,
+        );
+        setEtapaAtivaIndex(
+            indiceInicial ?? (indiceSelecionado >= 0 ? indiceSelecionado : 0),
+        );
+        setDropdownEtapaAberto(true);
+    };
+
+    const fecharSeletorEtapa = () => {
+        setDropdownEtapaAberto(false);
+        etapaTriggerRef.current?.focus();
+    };
+
+    const selecionarEtapa = (etapa) => {
+        setFormData((prev) => ({ ...prev, categoria: etapa.nome }));
+        fecharSeletorEtapa();
+    };
+
+    const handleEtapaTriggerKeyDown = (event) => {
+        if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+            abrirSeletorEtapa(event.key === "ArrowUp" ? etapas.length - 1 : undefined);
+        }
+
+        if (event.key === "Escape" && dropdownEtapaAberto) {
+            event.preventDefault();
+            fecharSeletorEtapa();
+        }
+    };
+
+    const handleEtapaOptionKeyDown = (event, index) => {
+        if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+            const direcao = event.key === "ArrowDown" ? 1 : -1;
+            const proximoIndex = (index + direcao + etapas.length) % etapas.length;
+            setEtapaAtivaIndex(proximoIndex);
+        } else if (event.key === "Escape") {
+            event.preventDefault();
+            fecharSeletorEtapa();
+        } else if (event.key === "Home" || event.key === "End") {
+            event.preventDefault();
+            setEtapaAtivaIndex(event.key === "Home" ? 0 : etapas.length - 1);
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -320,17 +370,24 @@ const EditarParceiro = () => {
                                     Etapa de produção
                                 </h2>
                                 <div className="relative w-full">
-                                    <div
+                                    <button
+                                        ref={etapaTriggerRef}
+                                        type="button"
+                                        aria-haspopup="listbox"
+                                        aria-expanded={dropdownEtapaAberto}
+                                        aria-controls="etapas-producao-listbox"
+                                        aria-label={`Etapa de produção: ${formData.categoria || "nenhuma selecionada"}`}
+                                        disabled={loadingEtapas}
                                         className={`${inputClass} bg-white flex justify-between items-center ${
                                             loadingEtapas
                                                 ? "cursor-not-allowed opacity-60"
                                                 : "cursor-pointer"
-                                        }`}
+                                        } w-full focus-visible:ring-2 focus-visible:ring-[#4696AD] focus-visible:ring-offset-2`}
                                         onClick={() => {
-                                            if (!loadingEtapas) {
-                                                setDropdownEtapaAberto((aberto) => !aberto);
-                                            }
+                                            if (dropdownEtapaAberto) fecharSeletorEtapa();
+                                            else abrirSeletorEtapa();
                                         }}
+                                        onKeyDown={handleEtapaTriggerKeyDown}
                                     >
                                         {loadingEtapas ? (
                                             <SkeletonBox className="h-[14px] w-24 rounded-[7px]" />
@@ -360,29 +417,40 @@ const EditarParceiro = () => {
                                                 d="M19 9l-7 7-7-7"
                                             />
                                         </svg>
-                                    </div>
+                                    </button>
 
                                     {dropdownEtapaAberto && (
-                                        <div className="absolute z-20 mt-1 w-full bg-white border border-[#D3D3D3] rounded-[10px] shadow-lg overflow-hidden max-h-60 overflow-y-auto scrollbar-sutil">
+                                        <div
+                                            id="etapas-producao-listbox"
+                                            role="listbox"
+                                            aria-label="Etapas de produção"
+                                            className="absolute z-20 mt-1 w-full bg-white border border-[#D3D3D3] rounded-[10px] shadow-lg overflow-hidden max-h-60 overflow-y-auto scrollbar-sutil"
+                                        >
                                             {etapas.length > 0 ? (
-                                                etapas.map((etapa) => (
-                                                    <div
+                                                etapas.map((etapa, index) => (
+                                                    <button
                                                         key={etapa.id}
-                                                        className={`px-4 py-2 text-sm cursor-pointer transition-colors ${
+                                                        ref={(element) => {
+                                                            etapaOptionRefs.current[index] = element;
+                                                        }}
+                                                        type="button"
+                                                        role="option"
+                                                        aria-selected={
+                                                            formData.categoria === etapa.nome
+                                                        }
+                                                        tabIndex={-1}
+                                                        className={`block w-full px-4 py-2 text-left text-sm cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#4696AD] ${
                                                             formData.categoria === etapa.nome
                                                                 ? "border-l-[3px] border-[#C4F042] text-gray-700 bg-white"
                                                                 : "border-l-[3px] border-transparent text-gray-600 hover:bg-[#F5F5F5]"
                                                         }`}
-                                                        onClick={() => {
-                                                            setFormData((prev) => ({
-                                                                ...prev,
-                                                                categoria: etapa.nome,
-                                                            }));
-                                                            setDropdownEtapaAberto(false);
-                                                        }}
+                                                        onClick={() => selecionarEtapa(etapa)}
+                                                        onKeyDown={(event) =>
+                                                            handleEtapaOptionKeyDown(event, index)
+                                                        }
                                                     >
                                                         {etapa.nome}
-                                                    </div>
+                                                    </button>
                                                 ))
                                             ) : (
                                                 <div className="border-l-[3px] border-transparent px-4 py-2 text-sm text-gray-400">
@@ -391,6 +459,11 @@ const EditarParceiro = () => {
                                             )}
                                         </div>
                                     )}
+                                    <span className="sr-only" aria-live="polite">
+                                        {formData.categoria
+                                            ? `Etapa selecionada: ${formData.categoria}`
+                                            : "Nenhuma etapa selecionada"}
+                                    </span>
                                 </div>
                             </div>
 
