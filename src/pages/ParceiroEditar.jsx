@@ -231,12 +231,8 @@ const EditarParceiro = () => {
     const abrirSeletorEtapa = (indiceInicial) => {
         if (loadingEtapas || etapas.length === 0) return;
 
-        const indiceSelecionado = etapas.findIndex(
-            (etapa) => etapa.nome === formData.categoria,
-        );
-        setEtapaAtivaIndex(
-            indiceInicial ?? (indiceSelecionado >= 0 ? indiceSelecionado : 0),
-        );
+        const indiceSelecionado = etapas.findIndex((etapa) => etapa.nome === formData.categoria);
+        setEtapaAtivaIndex(indiceInicial ?? (indiceSelecionado >= 0 ? indiceSelecionado : 0));
         setDropdownEtapaAberto(true);
     };
 
@@ -431,7 +427,8 @@ const EditarParceiro = () => {
                                                     <button
                                                         key={etapa.id}
                                                         ref={(element) => {
-                                                            etapaOptionRefs.current[index] = element;
+                                                            etapaOptionRefs.current[index] =
+                                                                element;
                                                         }}
                                                         type="button"
                                                         role="option"
