@@ -24,9 +24,7 @@ function Login() {
             const apiMessage = error.response?.data?.message;
 
             setError(
-                apiMessage === "Usuário sem fábrico ativo"
-                    ? apiMessage
-                    : "Credenciais inválidas",
+                apiMessage === "Usuário sem fábrico ativo" ? apiMessage : "Credenciais inválidas",
             );
         } finally {
             setLoading(false);
