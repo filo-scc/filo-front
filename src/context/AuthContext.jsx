@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import * as authService from "@/services/authService";
+import { AUTH_USER_UPDATED_EVENT } from "@/services/api";
 
 const AuthContext = createContext();
 
@@ -34,6 +35,30 @@ export function AuthProvider({ children }) {
         };
 
         loadUser();
+    }, []);
+
+    useEffect(() => {
+        const checkStoredSession = () => {
+            if (!localStorage.getItem("accessToken")) {
+                setUser(null);
+            }
+        };
+
+        const handleUserUpdated = (event) => {
+            setUser(event.detail);
+        };
+
+        window.addEventListener("storage", checkStoredSession);
+        window.addEventListener("focus", checkStoredSession);
+        window.addEventListener(AUTH_USER_UPDATED_EVENT, handleUserUpdated);
+        const sessionCheckInterval = window.setInterval(checkStoredSession, 500);
+
+        return () => {
+            window.removeEventListener("storage", checkStoredSession);
+            window.removeEventListener("focus", checkStoredSession);
+            window.removeEventListener(AUTH_USER_UPDATED_EVENT, handleUserUpdated);
+            window.clearInterval(sessionCheckInterval);
+        };
     }, []);
 
     // ============================
