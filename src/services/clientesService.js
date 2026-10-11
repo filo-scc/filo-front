@@ -1,8 +1,5 @@
 import api from "./api";
-import {
-    telefoneParaCadastro,
-    telefoneParaPayloadAtualizacao,
-} from "../utils/clienteTelefone";
+import { telefoneParaCadastro, telefoneParaPayloadAtualizacao } from "../utils/clienteTelefone";
 
 const limparUndefined = (obj) => {
     if (!obj || typeof obj !== "object") return obj;

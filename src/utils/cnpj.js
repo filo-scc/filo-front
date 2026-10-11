@@ -12,9 +12,10 @@ export const cnpjValido = (valor) => {
     if (cnpj.length !== 14 || /^(\d)\1{13}$/.test(cnpj)) return false;
 
     const primeiroDigito = calcularDigito(cnpj.slice(0, 12), [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
-    const segundoDigito = calcularDigito(`${cnpj.slice(0, 12)}${primeiroDigito}`, [
-        6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2,
-    ]);
+    const segundoDigito = calcularDigito(
+        `${cnpj.slice(0, 12)}${primeiroDigito}`,
+        [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2],
+    );
 
     return cnpj.endsWith(`${primeiroDigito}${segundoDigito}`);
 };
