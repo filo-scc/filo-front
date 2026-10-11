@@ -1,4 +1,8 @@
 import api from "./api";
+import {
+    telefoneParaCadastro,
+    telefoneParaPayloadAtualizacao,
+} from "../utils/clienteTelefone";
 
 const limparUndefined = (obj) => {
     if (!obj || typeof obj !== "object") return obj;
@@ -68,7 +72,7 @@ export const cadastrarCliente = async (data) => {
         const payloadBase = limparUndefined({
             nome: data?.nome,
             cnpj: data?.cnpj,
-            telefone: data?.telefone,
+            telefone: telefoneParaCadastro(data?.telefone),
             status: data?.status,
             responsavel: data?.responsavel,
             fabrico_id: data?.fabrico_id,
@@ -125,7 +129,7 @@ export const atualizarCliente = async (id, data) => {
         const payloadBase = limparUndefined({
             nome: data?.nome,
             cnpj: data?.cnpj,
-            telefone: data?.telefone,
+            telefone: telefoneParaPayloadAtualizacao(data?.telefone),
             status: data?.status,
             responsavel: data?.responsavel,
             fabrico_id: data?.fabrico_id,
