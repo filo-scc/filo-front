@@ -5,6 +5,7 @@ import { transferirEtapaFicha } from "../../services/fichasTecnicasService";
 
 import { getFichaParceiroByFicha } from "../../services/fichaParceiroService";
 import RelatorioDeAcabamento from "./RelatorioDeAcabamento.jsx";
+import { getEffectiveQuantity } from "../../utils/quantidadesTransferencia.js";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -25,10 +26,6 @@ function formatCurrencyBR(value) {
     return currencyFormatter.format(parseCurrencyToNumber(value));
 }
 
-function getEffectiveQuantity(line, totalLines, fichaQuantidade) {
-    if (totalLines === 1) return Number(fichaQuantidade || 0);
-    return Number(line?.quantidade || 0);
-}
 import { InlineLoading, SkeletonBox } from "../geral/Loading";
 
 function TransferenciaEtapaLoading() {
@@ -246,30 +243,39 @@ export default function TransferenciaEtapaModal({
                     ? parceirosExistentesRaw
                     : [];
 
-                const jaVinculadosDestaEtapa = parceirosExistentes
-                    .filter(
-                        (fp) =>
-                            fp?.parceiro?.categoria?.toLowerCase() ===
-                            etapaConcluida?.nome?.toLowerCase(),
-                    )
-                    .map((fp) => {
-                        const quantidade = Number(fp?.quantidade || fichaTecnica?.quantidade || 0);
+                const vinculadosDestaEtapa = parceirosExistentes.filter(
+                    (fp) =>
+                        fp?.parceiro?.categoria?.toLowerCase() ===
+                        etapaConcluida?.nome?.toLowerCase(),
+                );
 
-                        // o backend pode devolver "valor" ou "custo";
-                        const valorBruto = Number(fp?.valor ?? fp?.custo ?? 0);
+                const jaVinculadosDestaEtapa = vinculadosDestaEtapa.map((fp) => {
+                    // Zero registrado é zero: só com parceiro único a linha assume o total da ficha.
+                    const quantidade = getEffectiveQuantity(
+                        fp,
+                        vinculadosDestaEtapa.length,
+                        fichaTecnica?.quantidade,
+                    );
 
-                        // se o valor recebido for o total, o unitário é o total dividido pela quantidade
-                        const precoUnitario = quantidade > 0 ? valorBruto / quantidade : 0;
+                    // o backend pode devolver "valor" ou "custo";
+                    const valorBruto = Number(fp?.valor ?? fp?.custo ?? 0);
 
-                        return {
-                            id: fp.parceiro.id,
-                            nome: fp.parceiro.nome,
-                            operacao: fp.operacao || "",
-                            quantidade,
-                            precoUnitarioFormatado: formatCurrencyBR(precoUnitario),
-                            custoTotalFormatado: formatCurrencyBR(valorBruto),
-                        };
-                    });
+                    // se o valor recebido for o total, o unitário é o total dividido pela quantidade
+                    // com que ele foi registrado (a exibida só substitui quando não havia registro)
+                    const quantidadeRegistrada = Number(fp?.quantidade || 0);
+                    const quantidadeBase =
+                        quantidadeRegistrada > 0 ? quantidadeRegistrada : quantidade;
+                    const precoUnitario = quantidadeBase > 0 ? valorBruto / quantidadeBase : 0;
+
+                    return {
+                        id: fp.parceiro.id,
+                        nome: fp.parceiro.nome,
+                        operacao: fp.operacao || "",
+                        quantidade,
+                        precoUnitarioFormatado: formatCurrencyBR(precoUnitario),
+                        custoTotalFormatado: formatCurrencyBR(valorBruto),
+                    };
+                });
 
                 setLinhasTabela(jaVinculadosDestaEtapa);
 
