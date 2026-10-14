@@ -104,7 +104,7 @@ export default function TabelaReferenciaFichaTecnica({
 
     return (
         <section className="w-full min-w-0 max-w-full overflow-x-auto">
-            <div className="flex flex-col w-full md:min-w-[700px]">
+            <div className="flex flex-col w-full md:min-w-[700px] lg:min-w-0">
                 {/* 1. CABEÇALHO DA TABELA */}
                 <div className="hidden md:flex flex-row items-center w-full">
                     <div className="flex-1 min-w-0 rounded-t-[16px] border-t border-l border-r border-[#d9d9d9] bg-[#d9d9d9] overflow-hidden">

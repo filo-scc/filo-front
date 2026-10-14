@@ -368,14 +368,14 @@ export default function PedidosDetalhes() {
                             <button
                                 type="button"
                                 onClick={() => navigate("/pedidos")}
-                                className="w-full sm:w-auto px-8 h-11 lg:h-[39px] rounded-full border border-[#4696AD] text-[#4696AD] bg-[#F3F4FA] hover:bg-[#F3FBFC] transition-colors text-sm sm:min-w-[180px]"
+                                className="w-full sm:w-auto px-8 h-11 min-h-11 rounded-full border border-[#4696AD] text-[#4696AD] bg-[#F3F4FA] hover:bg-[#F3FBFC] transition-colors text-sm sm:min-w-[180px]"
                             >
                                 Voltar
                             </button>
                             <button
                                 type="button"
                                 onClick={() => navigate(`/pedidos/editar/${id}`)}
-                                className="w-full sm:w-[189px] h-11 lg:h-[39px] rounded-[18.9px] bg-[#a9e2f2] text-[#4696ad] font-Outfit text-[16px] transition-colors hover:bg-[#A2DCED]"
+                                className="w-full sm:w-[189px] h-11 min-h-11 rounded-[18.9px] bg-[#a9e2f2] text-[#4696ad] font-Outfit text-[16px] transition-colors hover:bg-[#A2DCED]"
                             >
                                 {isSobDemanda ? "Editar pedido" : "Editar produção"}
                             </button>
