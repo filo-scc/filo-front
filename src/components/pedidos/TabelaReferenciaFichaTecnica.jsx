@@ -49,8 +49,8 @@ export default function TabelaReferenciaFichaTecnica({
     };
 
     const gridColsClass = isSobDemanda
-        ? "grid grid-cols-7 w-full items-stretch"
-        : "grid grid-cols-6 w-full items-stretch";
+        ? "grid grid-cols-1 md:grid-cols-7 w-full items-stretch"
+        : "grid grid-cols-1 md:grid-cols-6 w-full items-stretch";
 
     const formatarCores = (cores) => {
         if (!cores || cores.length === 0) return "-";
@@ -83,7 +83,9 @@ export default function TabelaReferenciaFichaTecnica({
     }, 0);
 
     const campoBloqueadoClass =
-        "flex items-center justify-center text-center px-2 break-all text-light md:text-base text-[#404040] cursor-not-allowed";
+        "flex flex-col items-start md:items-center justify-center md:text-center gap-1 md:gap-0 px-4 py-2 md:px-2 md:py-0 min-w-0 break-words [overflow-wrap:anywhere] text-sm md:text-base text-[#404040] cursor-not-allowed";
+
+    const rotuloMobileClass = "md:hidden text-base font-light text-[#898C8F]";
 
     const handleAlternarEdicao = (itemKey) => {
         if (bloqueada) return;
@@ -101,13 +103,13 @@ export default function TabelaReferenciaFichaTecnica({
     };
 
     return (
-        <section className="w-full">
-            <div className="flex flex-col w-full">
+        <section className="w-full min-w-0 max-w-full overflow-x-auto">
+            <div className="flex flex-col w-full md:min-w-[700px]">
                 {/* 1. CABEÇALHO DA TABELA */}
-                <div className="flex flex-row items-center w-full">
-                    <div className="flex-1 rounded-t-[16px] border-t border-l border-r border-[#d9d9d9] bg-[#d9d9d9] overflow-hidden">
+                <div className="hidden md:flex flex-row items-center w-full">
+                    <div className="flex-1 min-w-0 rounded-t-[16px] border-t border-l border-r border-[#d9d9d9] bg-[#d9d9d9] overflow-hidden">
                         <div
-                            className={`${gridColsClass} text-[#898C8F] text-light md:text-light font-['Outfit'] font-light min-h-[48px]`}
+                            className={`${gridColsClass} text-[#898C8F] text-base font-['Outfit'] font-light min-h-[48px]`}
                         >
                             <div className="flex items-center justify-center px-2" />
                             <div className="flex items-center justify-center text-center px-2">
@@ -137,7 +139,7 @@ export default function TabelaReferenciaFichaTecnica({
 
                 {/* 2. CORPO DA TABELA */}
                 {fichas.length > 0 ? (
-                    <div className="flex flex-col w-full">
+                    <div className="flex flex-col gap-4 md:gap-0 w-full">
                         {fichas.map((ficha, index) => {
                             const itemKey = ficha.id ?? index;
                             const qtd =
@@ -160,7 +162,7 @@ export default function TabelaReferenciaFichaTecnica({
                             return (
                                 <div
                                     key={itemKey}
-                                    className="group flex flex-row items-center w-full"
+                                    className="group flex flex-col md:flex-row md:items-center w-full min-w-0 rounded-2xl border border-[#d9d9d9] overflow-hidden md:rounded-none md:border-0 md:overflow-visible"
                                 >
                                     {/* Linha da Tabela */}
                                     <div
@@ -177,7 +179,7 @@ export default function TabelaReferenciaFichaTecnica({
                                                 onAbrirFicha?.(ficha, itemKey);
                                             }
                                         }}
-                                        className={`flex-1 border-l border-r border-b border-[#d9d9d9] bg-white ${
+                                        className={`w-full min-w-0 flex-1 md:border-l md:border-r md:border-b border-[#d9d9d9] bg-white ${
                                             podeAbrirFicha
                                                 ? "cursor-pointer hover:bg-[#F7FCFD] transition-colors"
                                                 : ""
@@ -187,7 +189,7 @@ export default function TabelaReferenciaFichaTecnica({
                                             className={`${gridColsClass} text-[#404040] font-['Outfit'] font-light min-h-[120px] md:min-h-[140px]`}
                                         >
                                             {/* 1. Foto */}
-                                            <div className="border-r border-[#d9d9d9] p-3 flex items-center justify-center bg-white cursor-not-allowed">
+                                            <div className="md:border-r border-[#d9d9d9] p-3 flex items-center justify-center bg-white cursor-not-allowed">
                                                 {ficha.foto ? (
                                                     <img
                                                         src={ficha.foto}
@@ -203,8 +205,11 @@ export default function TabelaReferenciaFichaTecnica({
 
                                             {/* 2. Ref. interna */}
                                             <div
-                                                className={`border-r border-[#d9d9d9] ${campoBloqueadoClass}`}
+                                                className={`md:border-r border-[#d9d9d9] ${campoBloqueadoClass}`}
                                             >
+                                                <span className={rotuloMobileClass}>
+                                                    Ref. interna
+                                                </span>
                                                 {ficha.referenciaInterna ||
                                                     ficha.ref_interna ||
                                                     "-"}
@@ -213,13 +218,17 @@ export default function TabelaReferenciaFichaTecnica({
                                             {/* 3. Ref. cliente */}
                                             {isSobDemanda && (
                                                 <div
-                                                    className="border-r border-[#d9d9d9] flex items-center justify-center px-2 text-center text-light md:text-base text-[#404040]"
+                                                    className="md:border-r border-[#d9d9d9] flex flex-col items-start md:items-center justify-center gap-1 md:gap-0 px-4 py-2 md:px-2 md:py-0 min-w-0 break-words [overflow-wrap:anywhere] md:text-center text-sm md:text-base text-[#404040]"
                                                     onClick={(e) => e.stopPropagation()}
                                                     onKeyDown={(e) => e.stopPropagation()}
                                                 >
+                                                    <span className={rotuloMobileClass}>
+                                                        Ref. cliente
+                                                    </span>
                                                     {isEditando ? (
                                                         <input
                                                             type="text"
+                                                            aria-label="Referência do cliente"
                                                             data-itemkey={itemKey}
                                                             value={refClienteValor}
                                                             onClick={(e) => e.stopPropagation()}
@@ -234,7 +243,7 @@ export default function TabelaReferenciaFichaTecnica({
                                                                 handleInputBlur(e, itemKey)
                                                             }
                                                             placeholder="Ref. Cliente"
-                                                            className="w-full text-center bg-transparent outline-none focus:outline-none text-light md:text-base font-['Outfit'] text-[#404040] min-w-0 p-0"
+                                                            className="w-full min-h-11 md:min-h-0 text-left md:text-center bg-transparent outline-none focus:outline-none text-sm md:text-base font-['Outfit'] text-[#404040] min-w-0 p-0"
                                                         />
                                                     ) : (
                                                         refClienteValor || "-"
@@ -244,28 +253,37 @@ export default function TabelaReferenciaFichaTecnica({
 
                                             {/* 4. Cores */}
                                             <div
-                                                className={`border-r border-[#d9d9d9] ${campoBloqueadoClass} break-words`}
+                                                className={`md:border-r border-[#d9d9d9] ${campoBloqueadoClass}`}
                                             >
+                                                <span className={rotuloMobileClass}>Cores</span>
                                                 {formatarCores(ficha.cores)}
                                             </div>
 
                                             {/* 5. Quantidade */}
                                             <div
-                                                className={`border-r border-[#d9d9d9] ${campoBloqueadoClass} font-light`}
+                                                className={`border-t md:border-t-0 md:border-r border-[#d9d9d9] ${campoBloqueadoClass} font-light`}
                                             >
+                                                <span className={rotuloMobileClass}>
+                                                    Quantidade
+                                                </span>
                                                 {qtd}
                                             </div>
 
                                             {/* 6. Preço unit. / Custo unit. */}
                                             <div
-                                                className="border-r border-[#d9d9d9] flex flex-col items-center justify-center px-2 text-center text-light md:text-base text-[#404040]"
+                                                className="md:border-r border-[#d9d9d9] flex flex-col items-start md:items-center justify-center gap-1 md:gap-0 px-4 py-2 md:px-2 md:py-0 min-w-0 break-words [overflow-wrap:anywhere] md:text-center text-sm md:text-base text-[#404040]"
                                                 onClick={(e) => e.stopPropagation()}
                                                 onKeyDown={(e) => e.stopPropagation()}
                                             >
+                                                <span className={rotuloMobileClass}>
+                                                    {isSobDemanda ? "Preço unit." : "Custo unit."}
+                                                </span>
                                                 {isSobDemanda && isEditando ? (
                                                     <div className="relative w-full min-w-0 flex items-center justify-center">
                                                         <input
                                                             type="text"
+                                                            aria-label="Preço unitário"
+                                                            inputMode="decimal"
                                                             data-itemkey={itemKey}
                                                             value={`R$ ${formatarInputMoeda(valPrecoRaw)}`}
                                                             onClick={(e) => e.stopPropagation()}
@@ -284,7 +302,7 @@ export default function TabelaReferenciaFichaTecnica({
                                                                 handleInputBlur(e, itemKey)
                                                             }
                                                             placeholder="R$ 0,00"
-                                                            className="w-full text-center bg-transparent outline-none focus:outline-none text-light md:text-base font-['Outfit'] text-[#404040] p-0"
+                                                            className="w-full min-w-0 min-h-11 md:min-h-0 text-left md:text-center bg-transparent outline-none focus:outline-none text-sm md:text-base font-['Outfit'] text-[#404040] p-0"
                                                         />
                                                     </div>
                                                 ) : (
@@ -302,6 +320,9 @@ export default function TabelaReferenciaFichaTecnica({
 
                                             {/* 7. Subtotal */}
                                             <div className={`${campoBloqueadoClass} font-light`}>
+                                                <span className={rotuloMobileClass}>
+                                                    {isSobDemanda ? "Subtotal" : "Subcusto"}
+                                                </span>
                                                 {formatarMoeda(subtotal)}
                                             </div>
                                         </div>
@@ -309,7 +330,7 @@ export default function TabelaReferenciaFichaTecnica({
 
                                     {!somenteLeitura && (
                                         <div
-                                            className="w-9 flex flex-col items-center justify-center gap-2 pl-2 transition-opacity duration-200"
+                                            className="w-full md:w-9 shrink-0 flex flex-row md:flex-col items-center justify-end md:justify-center gap-2 p-2 md:p-0 md:pl-2 border-t md:border-t-0 border-[#d9d9d9] transition-opacity duration-200"
                                             onClick={(e) => e.stopPropagation()}
                                         >
                                             <button
@@ -320,7 +341,7 @@ export default function TabelaReferenciaFichaTecnica({
                                                     e.stopPropagation();
                                                     handleAlternarEdicao(itemKey);
                                                 }}
-                                                className={`group/edit p-1 transition-transform hover:scale-110 disabled:cursor-not-allowed disabled:opacity-50 ${
+                                                className={`group/edit min-w-11 min-h-11 md:min-w-0 md:min-h-0 flex items-center justify-center p-1 transition-transform hover:scale-110 disabled:cursor-not-allowed disabled:opacity-50 ${
                                                     isEditando ? "opacity-100 scale-110" : ""
                                                 }`}
                                                 title={
@@ -348,7 +369,7 @@ export default function TabelaReferenciaFichaTecnica({
                                                     e.stopPropagation();
                                                     onRemoverFicha?.(itemKey);
                                                 }}
-                                                className="group/delete p-1 transition-transform hover:scale-110 disabled:cursor-not-allowed disabled:opacity-50"
+                                                className="group/delete min-w-11 min-h-11 md:min-w-0 md:min-h-0 flex items-center justify-center p-1 transition-transform hover:scale-110 disabled:cursor-not-allowed disabled:opacity-50"
                                                 title="Excluir ficha"
                                             >
                                                 <img
@@ -370,28 +391,28 @@ export default function TabelaReferenciaFichaTecnica({
                     </div>
                 ) : (
                     <div className="flex flex-row items-center w-full">
-                        <div className="flex-1 border-l border-r border-b border-[#d9d9d9] py-12 text-center text-[#898C8F] font-['Outfit'] font-light bg-[#F9F9F9] text-light md:text-base">
+                        <div className="min-w-0 flex-1 rounded-2xl md:rounded-none border md:border-t-0 border-[#d9d9d9] px-4 py-12 text-center text-[#898C8F] font-['Outfit'] font-light bg-[#F9F9F9] text-sm md:text-base">
                             Nenhuma ficha técnica adicionada ao pedido.
                         </div>
-                        {!somenteLeitura && <div className="w-9" />}
+                        {!somenteLeitura && <div className="hidden md:block w-9 shrink-0" />}
                     </div>
                 )}
 
                 {/* 3. RODAPÉ DA TABELA */}
                 {fichas.length > 0 && (
-                    <div className="flex flex-row items-center w-full">
-                        <div className="flex-1 rounded-b-[16px] border-l border-r border-b border-[#d9d9d9] bg-[#d9d9d9] px-6 py-3.5 flex flex-row items-center justify-between text-[#898C8F] font-['Outfit'] text-light md:text-base">
+                    <div className="flex flex-row items-center w-full mt-4 md:mt-0">
+                        <div className="min-w-0 flex-1 rounded-2xl md:rounded-t-none border md:border-t-0 border-[#d9d9d9] bg-[#d9d9d9] px-4 md:px-6 py-3.5 flex flex-col md:flex-row md:flex-wrap items-start md:items-center gap-3 lg:gap-0 justify-between text-[#898C8F] font-['Outfit'] text-sm md:text-base">
                             <span className="font-['Outfit'] text-[#898C8F]">
                                 {isSobDemanda ? "Resumo do pedido" : "Resumo da produção"}
                             </span>
-                            <div className="flex items-center font-['Outfit'] gap-6 text-[#898C8F]">
+                            <div className="flex flex-col md:flex-row md:items-center font-['Outfit'] gap-2 md:gap-6 text-[#898C8F]">
                                 <div>
                                     Total de peças:{" "}
                                     <span className="font-light font-['Outfit']">
                                         {totalQuantidade}
                                     </span>
                                 </div>
-                                <div className="h-4 w-[1px] bg-[#a0a3a6] font-['Outfit']" />
+                                <div className="hidden md:block h-4 w-[1px] bg-[#a0a3a6] font-['Outfit']" />
                                 <div>
                                     {isSobDemanda ? "Total do pedido: " : "Custo total: "}
                                     <span className="font-light font-['Outfit']">
@@ -400,7 +421,7 @@ export default function TabelaReferenciaFichaTecnica({
                                 </div>
                             </div>
                         </div>
-                        {!somenteLeitura && <div className="w-9" />}
+                        {!somenteLeitura && <div className="hidden md:block w-9 shrink-0" />}
                     </div>
                 )}
             </div>
