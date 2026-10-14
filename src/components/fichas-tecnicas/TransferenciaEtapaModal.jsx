@@ -6,6 +6,10 @@ import { transferirEtapaFicha } from "../../services/fichasTecnicasService";
 import { getFichaParceiroByFicha } from "../../services/fichaParceiroService";
 import RelatorioDeAcabamento from "./RelatorioDeAcabamento.jsx";
 import { getEffectiveQuantity } from "../../utils/quantidadesTransferencia.js";
+import {
+    montarAvisoPrecoInvalido,
+    obterMensagemErroTransferencia,
+} from "../../utils/mensagensTransferencia.js";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -154,11 +158,13 @@ export default function TransferenciaEtapaModal({
         return somaQuantidades === Number(fichaTecnica?.quantidade || 0);
     }, [linhasTabela.length, somaQuantidades, fichaTecnica?.quantidade]);
 
-    const precoUnitarioValido = useMemo(() => {
-        return linhasTabela.every(
-            (linha) => parseCurrencyToNumber(linha.precoUnitarioFormatado) > 0,
+    const parceirosComPrecoInvalido = useMemo(() => {
+        return linhasTabela.filter(
+            (linha) => parseCurrencyToNumber(linha.precoUnitarioFormatado) <= 0,
         );
     }, [linhasTabela]);
+
+    const precoUnitarioValido = parceirosComPrecoInvalido.length === 0;
 
     const totalPerdas = useMemo(
         () =>
@@ -445,7 +451,7 @@ export default function TransferenciaEtapaModal({
 
     // --- Submit / Processamento da Transferência ---
     const handleTransferir = async () => {
-        if (!quantidadeValida || !perdasValidas) {
+        if (!quantidadeValida || !precoUnitarioValido || !perdasValidas) {
             return;
         }
 
@@ -484,12 +490,7 @@ export default function TransferenciaEtapaModal({
             onClose();
         } catch (error) {
             console.error("Falha ao processar a transferência de etapa:", error);
-            const message = error?.response?.data?.message;
-            setSubmitError(
-                Array.isArray(message)
-                    ? message.join(" ")
-                    : message || "Não foi possível transferir a ficha. Tente novamente.",
-            );
+            setSubmitError(obterMensagemErroTransferencia(error));
         } finally {
             setSubmitting(false);
         }
@@ -974,11 +975,12 @@ export default function TransferenciaEtapaModal({
                             </div>
                         )}
 
-                        {!precoUnitarioValido && linhasTabela.length > 0 && (
+                        {!precoUnitarioValido && (
                             <div className="mb-6 mt-6 rounded-[10px] border border-red-200 bg-red-50 p-4 text-[14px] font-light text-red-700">
-                                <span className="font-medium">Atenção:</span> Para prosseguir com a
-                                transferência, cadastre o valor do(a){" "}
-                                {etapaConcluida.nome.toUpperCase()};
+                                <span className="font-medium">Atenção:</span>{" "}
+                                {montarAvisoPrecoInvalido(
+                                    parceirosComPrecoInvalido.map((linha) => linha.nome),
+                                )}
                             </div>
                         )}
 
