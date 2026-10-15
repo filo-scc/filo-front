@@ -6,6 +6,7 @@ export default function RelatorioDeAcabamento({
     readonly = false,
     onChange,
     variant = "modal",
+    responsivo = false,
 }) {
     const campos = [
         { key: "defeitoCostura", label: "Defeito de costura", valor: defeitoCostura },
@@ -35,7 +36,7 @@ export default function RelatorioDeAcabamento({
 
     const tdClass = isPrint ? "py-1.5" : "py-3";
 
-    return (
+    const blocoTabela = (
         <div className={isPrint ? "mb-4 mx-[30px] break-inside-avoid" : "mt-6"}>
             <div
                 className={
@@ -112,5 +113,43 @@ export default function RelatorioDeAcabamento({
                 </table>
             </div>
         </div>
+    );
+
+    if (!responsivo || isPrint) return blocoTabela;
+
+    // Tablet e mobile: campos soltos em grade (4 colunas no tablet, 2x2 no celular).
+    return (
+        <>
+            <div className="hidden lg:block">{blocoTabela}</div>
+
+            <div className="mt-6 lg:hidden">
+                <div className="mb-2 text-[16px] font-medium text-[#4696AD]">
+                    Relatório de acabamento
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4 md:gap-3">
+                    {campos.map((campo) => (
+                        <label
+                            key={campo.key}
+                            className="flex flex-col gap-1 text-[12px] text-[#6B6E72] md:text-[13px]"
+                        >
+                            {campo.label}
+                            {readonly ? (
+                                <span className="text-[16px] text-[#404040]">{campo.valor}</span>
+                            ) : (
+                                <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={campo.valor === 0 ? "" : campo.valor}
+                                    placeholder="0"
+                                    onChange={(e) => handleChange(campo.key, e.target.value)}
+                                    className="h-[48px] w-full rounded-[12px] border border-[#898C8F] bg-white px-3 text-[16px] text-[#404040] outline-none placeholder:text-[#D3D3D3] md:h-[44px] md:rounded-[10px] md:text-[15px]"
+                                />
+                            )}
+                        </label>
+                    ))}
+                </div>
+            </div>
+        </>
     );
 }
