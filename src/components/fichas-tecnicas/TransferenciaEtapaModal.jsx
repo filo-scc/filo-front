@@ -5,11 +5,13 @@ import { transferirEtapaFicha } from "../../services/fichasTecnicasService";
 
 import { getFichaParceiroByFicha } from "../../services/fichaParceiroService";
 import RelatorioDeAcabamento from "./RelatorioDeAcabamento.jsx";
+import NovoParceiroModal from "../parceiros/NovoParceiroModal.jsx";
 import { getEffectiveQuantity } from "../../utils/quantidadesTransferencia.js";
 import {
     montarAvisoPrecoInvalido,
     obterMensagemErroTransferencia,
 } from "../../utils/mensagensTransferencia.js";
+import { encontrarParceiroPorNome, filtrarParceirosDaEtapa } from "../../utils/parceiroForm.js";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -116,6 +118,7 @@ export default function TransferenciaEtapaModal({
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState("");
+    const [novoParceiroAberto, setNovoParceiroAberto] = useState(false);
 
     // Estados para o comportamento visual da nova tabela
     const [hoveredParceiroIndex, setHoveredParceiroIndex] = useState(null);
@@ -238,8 +241,9 @@ export default function TransferenciaEtapaModal({
 
                 // 2. Buscar parceiros do fabrico filtrando pela categoria da etapa concluída
                 const listaParceiros = await getParceiros();
-                const filtradosPorCategoria = listaParceiros.filter(
-                    (p) => p.categoria?.toLowerCase() === etapaConcluida?.nome?.toLowerCase(),
+                const filtradosPorCategoria = filtrarParceirosDaEtapa(
+                    listaParceiros,
+                    etapaConcluida?.nome,
                 );
                 setParceirosDisponiveis(filtradosPorCategoria);
 
@@ -360,6 +364,29 @@ export default function TransferenciaEtapaModal({
             return !jaAdicionado && bateBusca;
         });
     }, [parceirosDisponiveis, linhasTabela, buscaParceiro]);
+
+    // --- Cadastro de parceiro novo dentro do modal ---
+    // O cadastro responde só com uma mensagem; por isso a lista é recarregada para achar o parceiro criado.
+    const aoCadastrarParceiro = async ({ nome }) => {
+        setNovoParceiroAberto(false);
+
+        try {
+            const listaAtualizada = await getParceiros();
+            setParceirosDisponiveis(filtrarParceirosDaEtapa(listaAtualizada, etapaConcluida?.nome));
+
+            const criado = encontrarParceiroPorNome(listaAtualizada, nome);
+            if (criado) {
+                adicionarParceiroNaTabela(criado);
+                return;
+            }
+        } catch (error) {
+            console.error("Erro ao atualizar a lista de parceiros:", error);
+        }
+
+        setSubmitError(
+            "Parceiro cadastrado, mas não foi possível selecioná-lo. Escolha-o na lista.",
+        );
+    };
 
     // --- Ações da Tabela ---
     const adicionarParceiroNaTabela = (parceiro) => {
@@ -672,6 +699,18 @@ export default function TransferenciaEtapaModal({
 
                                 {dropdownAberto && (
                                     <ul className="absolute left-0 right-0 top-[45px] z-50 max-h-[200px] overflow-y-auto rounded-[10px] border border-[#D9D9D9] bg-white shadow-lg scrollbar-sutil">
+                                        <li className="sticky top-0 z-10 border-b border-[#E8E8E8] bg-white">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setDropdownAberto(false);
+                                                    setNovoParceiroAberto(true);
+                                                }}
+                                                className="w-full px-4 py-2.5 text-left text-[14px] font-normal text-[#4696AD] transition-colors hover:bg-[#F5F5F5]"
+                                            >
+                                                + Novo Parceiro
+                                            </button>
+                                        </li>
                                         {parceirosFiltrados.length === 0 ? (
                                             <li className="px-4 py-3 text-[14px] font-light text-[#898C8F]">
                                                 Nenhum colaborador disponível para esta categoria
@@ -1023,6 +1062,13 @@ export default function TransferenciaEtapaModal({
                     </>
                 )}
             </div>
+
+            <NovoParceiroModal
+                isOpen={novoParceiroAberto}
+                onClose={() => setNovoParceiroAberto(false)}
+                categoria={etapaConcluida?.nome}
+                onSuccess={aoCadastrarParceiro}
+            />
         </div>
     );
 }
