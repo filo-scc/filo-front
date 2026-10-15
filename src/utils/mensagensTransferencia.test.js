@@ -35,10 +35,7 @@ describe("obterMensagemErroTransferencia", () => {
             erroHttp(400, ["parceiros.0.preco must be a positive number"]),
         );
 
-        assert.equal(
-            mensagem,
-            "Informe um preço unitário maior que zero para todos os colaboradores.",
-        );
+        assert.equal(mensagem, "Informe um preço unitário maior que zero para todos os parceiros.");
     });
 
     it("usa mensagem amigável para outras validações em inglês", () => {
@@ -88,14 +85,14 @@ describe("obterMensagemErroTransferencia", () => {
 });
 
 describe("montarAvisoPrecoInvalido", () => {
-    it("cita o colaborador quando só um está sem preço", () => {
+    it("cita o parceiro quando só um está sem preço", () => {
         assert.equal(
             montarAvisoPrecoInvalido(["Maria Souza"]),
             "Informe um preço unitário maior que zero para Maria Souza.",
         );
     });
 
-    it("lista os colaboradores quando mais de um está sem preço", () => {
+    it("lista os parceiros quando mais de um está sem preço", () => {
         assert.equal(
             montarAvisoPrecoInvalido(["Maria Souza", "João Lima"]),
             "Informe um preço unitário maior que zero para: Maria Souza, João Lima.",
