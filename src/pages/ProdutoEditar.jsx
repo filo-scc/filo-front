@@ -1092,7 +1092,7 @@ export default function ProdutoEditar() {
 
                 <form onSubmit={handleSalvar} className="mt-8 flex flex-col min-h-[520px]">
                     <div className="flex flex-col xl:flex-row gap-9 xl:gap-10">
-                        <div className="w-[260px] shrink-0">
+                        <div className="w-[204px] shrink-0">
                             <FieldLabel>Imagem</FieldLabel>
                             <input
                                 ref={inputFileRef}
@@ -1104,7 +1104,7 @@ export default function ProdutoEditar() {
                             <button
                                 type="button"
                                 onClick={() => inputFileRef.current?.click()}
-                                className="w-[260px] h-[170px] rounded-[10px] overflow-hidden bg-[#D9D9D9] hover:opacity-90 transition-opacity flex items-center justify-center border border-dashed border-[#898C8F]"
+                                className="w-[204px] h-[238px] rounded-[10px] overflow-hidden bg-[#D9D9D9] hover:opacity-90 transition-opacity flex items-center justify-center border border-dashed border-[#898C8F]"
                             >
                                 {imagemPreview ? (
                                     <img
