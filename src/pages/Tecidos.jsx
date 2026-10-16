@@ -152,7 +152,7 @@ export default function Tecidos() {
                             <thead className="bg-[#CBEBF6] font-['Outfit'] text-[#4696AD] font-light text-[16px]">
                                 <tr className="h-[64px]">
                                     <th className="font-light py-3 px-6">Nome</th>
-                                    <th className="font-light py-3 px-6">Un. de medida</th>
+                                    <th className="font-light py-3 px-6">Unidade de medida</th>
                                     <th className="font-light py-3 px-6">Preço</th>
                                     <th className="font-light py-3 px-6">Opções</th>
                                 </tr>
