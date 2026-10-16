@@ -96,9 +96,9 @@ export default function Tecidos() {
         <div className="p-6 pt-0 mt-6 font-['Outfit']">
             {/* Container Branco Principal */}
             <div className="bg-white rounded-[24px] shadow-sm min-h-[400px] w-full overflow-hidden pb-8">
-                {/* Cabeçalho */}
-                <div className="p-8 pb-8">
-                    <div className="flex flex-wrap items-center justify-between gap-4 pl-[21px]">
+                {/* Cabeçalho — mesmo px-10 da tabela para alinhar o botão à borda direita */}
+                <div className="px-10 pt-8 pb-8">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
                         <div className="flex items-center gap-2 flex-shrink-0">
                             <img src="/tecidos-ativado.png" alt="" className="w-7 h-7" />
                             <h1 className="text-[30px] font-light text-gray-800">Tecidos</h1>
@@ -132,7 +132,7 @@ export default function Tecidos() {
                             {/* Botão Cadastrar Tecido */}
                             <button
                                 onClick={handleAbrirCadastro}
-                                className="bg-[#A9E2F2] hover:bg-[#A2DCED] text-[#4696AD] w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-light transition-colors cursor-pointer"
+                                className="bg-[#A9E2F2] hover:bg-[#A2DCED] text-[#4696AD] w-[196px] h-[39px] rounded-[18.9px] flex items-center justify-center gap-2 text-sm font-light transition-colors cursor-pointer shrink-0"
                             >
                                 <img
                                     src="/add-fabric-pin-azul.png"
