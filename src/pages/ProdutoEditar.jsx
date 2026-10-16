@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
 import TabelaClientesDoProduto from "../components/produtos/TabelaClientesDoProduto";
+import ModeloModal from "../components/produtos/ModeloModal";
 import AviamentoModal from "../components/aviamentos/AviamentoModal";
 import ModalAtencao from "../components/geral/ModalAtencao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
@@ -517,6 +518,7 @@ export default function ProdutoEditar() {
     const [aviamentosDisponiveis, setAviamentosDisponiveis] = useState([]);
     const [modelosDisponiveis, setModelosDisponiveis] = useState([]);
     const [modalClientesAberto, setModalClientesAberto] = useState(false);
+    const [modalModeloAberto, setModalModeloAberto] = useState(false);
     const [modalAviamentoAberto, setModalAviamentoAberto] = useState(false);
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
     const [modalAtencaoAberto, setModalAtencaoAberto] = useState(false);
@@ -790,6 +792,25 @@ export default function ProdutoEditar() {
             tipo_produto_id: modeloSelecionado?.id,
         }));
         setOpenDropdown(null);
+    };
+
+    const handleModeloCriado = (nomeModelo, tipoCriado) => {
+        const novoModelo = {
+            id: tipoCriado?.id,
+            nome: tipoCriado?.nome || nomeModelo,
+        };
+
+        if (!novoModelo.id) return;
+
+        setModelosDisponiveis((prev) => {
+            if (prev.some((m) => m.id === novoModelo.id)) return prev;
+            return [...prev, novoModelo];
+        });
+        setFormData((prev) => ({
+            ...prev,
+            modelo: novoModelo.nome,
+            tipo_produto_id: novoModelo.id,
+        }));
     };
 
     const handleAviamentoCriado = (aviamentoCriado) => {
@@ -1142,6 +1163,15 @@ export default function ProdutoEditar() {
                                         onToggle={() => toggleDropdown("modelo")}
                                         onSelect={handleModeloSelect}
                                         isSelectedOption={(option) => formData.modelo === option}
+                                        maxVisibleOptions={6}
+                                        actionButton={{
+                                            label: "Novo tipo de produto",
+                                            onClick: () => {
+                                                setOpenDropdown(null);
+                                                setModalModeloAberto(true);
+                                            },
+                                        }}
+                                        actionButtonPosition="start"
                                     />
                                 </div>
                             </div>
@@ -1523,6 +1553,12 @@ export default function ProdutoEditar() {
                 fabricoId={fabricoId}
                 clientesAssociados={clientesAssociados}
                 onSuccess={carregarClientesDoProduto}
+            />
+
+            <ModeloModal
+                isOpen={modalModeloAberto}
+                onClose={() => setModalModeloAberto(false)}
+                onSuccess={handleModeloCriado}
             />
 
             <AviamentoModal
