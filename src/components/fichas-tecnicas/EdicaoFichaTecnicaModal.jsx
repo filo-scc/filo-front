@@ -16,6 +16,7 @@ import {
 } from "../../services/fichaParceiroService";
 import { getProdutosDoCliente } from "../../services/clientesService";
 import ProdutoParceiros from "../produtos/ProdutoParceiros";
+import ImagePreview from "../geral/ImagePreview";
 import { preventNumberInputWheel } from "../../utils/preventNumberInputWheel";
 import FichaTecnicaPrintView from "../FichaTecnicaPrintView";
 import { getAviamentosDoProduto, getParceiroByProduto } from "../../services/produtoService";
@@ -103,6 +104,9 @@ const ColorDropdown = ({
 
     useEffect(() => {
         const handleClickOutside = (event) => {
+            if (event.target instanceof Element && event.target.closest("[data-image-preview]")) {
+                return;
+            }
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setAberto(false);
             }
@@ -161,51 +165,53 @@ const ColorDropdown = ({
                         ) : (
                             coresDisponiveis.map((cor) => {
                                 const isSelected = coresSelecionadas.some((c) => c.id === cor.id);
+                                const isEstampa = String(cor.tipo).toUpperCase() === "ESTAMPA";
                                 return (
-                                    <button
-                                        type="button"
+                                    <div
                                         key={cor.id}
-                                        onClick={() => onToggleCor(cor)}
+                                        title={cor.nome}
                                         className={`flex w-full items-center border-l-[4px] px-4 py-2.5 transition-colors bg-white text-[#707070] hover:bg-[#F4F4F4] ${
                                             isSelected
                                                 ? "border-l-[3px] border-l-[#C4F042]"
                                                 : "border-l-transparent"
                                         }`}
                                     >
-                                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                                            {String(cor.tipo).toUpperCase() === "ESTAMPA" ? (
-                                                <img
-                                                    src={cor.foto}
-                                                    alt={cor.nome}
-                                                    className="w-[20px] h-[20px] rounded-[6px] shrink-0 border border-[#D9D9D9] object-cover"
-                                                />
-                                            ) : (
-                                                <span
-                                                    className="w-[20px] h-[20px] rounded-[6px] border border-[#D9D9D9] shrink-0"
-                                                    style={{
-                                                        backgroundColor:
-                                                            cor.codigo_hex || "#E5E5E5",
-                                                    }}
-                                                />
-                                            )}
-                                            <span className="flex-1 truncate text-left font-light">
-                                                {cor.nome}
-                                            </span>
-                                        </div>
-                                        {isSelected ? (
-                                            <img
-                                                src="/check_cinza.png"
-                                                className="w-[12px] h-[8px] shrink-0"
-                                                alt=""
+                                        {isEstampa ? (
+                                            <ImagePreview
+                                                src={cor.foto}
+                                                alt={cor.nome}
+                                                title={cor.nome}
                                             />
                                         ) : (
-                                            <img
-                                                src="/mais_cinza.png"
-                                                className="w-[12px] h-[12px] shrink-0"
-                                                alt=""
+                                            <span
+                                                className="h-[20px] w-[20px] shrink-0 rounded-[6px] border border-[#D9D9D9]"
+                                                style={{
+                                                    backgroundColor: cor.codigo_hex || "#E5E5E5",
+                                                }}
                                             />
                                         )}
-                                    </button>
+                                        <button
+                                            type="button"
+                                            title={cor.nome}
+                                            onClick={() => onToggleCor(cor)}
+                                            className="ml-3 flex min-w-0 flex-1 items-center justify-between text-left"
+                                        >
+                                            <span className="truncate font-light">{cor.nome}</span>
+                                            {isSelected ? (
+                                                <img
+                                                    src="/check_cinza.png"
+                                                    className="ml-2 h-[8px] w-[12px] shrink-0"
+                                                    alt=""
+                                                />
+                                            ) : (
+                                                <img
+                                                    src="/mais_cinza.png"
+                                                    className="ml-2 h-[12px] w-[12px] shrink-0"
+                                                    alt=""
+                                                />
+                                            )}
+                                        </button>
+                                    </div>
                                 );
                             })
                         )}
@@ -1017,6 +1023,7 @@ export default function EdicaoFichaTecnicaModal({
                                                     }`}
                                                 >
                                                     <div
+                                                        title={cor.nome}
                                                         className="w-[160px] shrink-0 pl-2 pr-4 flex items-center gap-3"
                                                         style={{
                                                             borderLeftWidth: "0.5px",
