@@ -41,33 +41,42 @@ import { InlineLoading, SkeletonBox } from "../geral/Loading";
 
 function TransferenciaEtapaLoading() {
     return (
-        <div className="px-4 py-2">
-            <div className="flex justify-center pb-7">
+        <div className="flex flex-1 flex-col md:block">
+            <div className="flex justify-center pb-4 md:pb-7">
                 <InlineLoading label="Carregando modal de transferência" />
             </div>
 
-            <div className="mb-9 w-full overflow-hidden pb-3">
-                <div className="flex items-center justify-center px-2">
+            {/* Etapas (mobile): os dois chips */}
+            <div className="mb-4 flex w-full items-center gap-1 md:hidden">
+                <SkeletonBox className="h-8 min-w-0 flex-1 rounded-full" />
+                <SkeletonBox className="h-[14px] w-[14px] shrink-0 rounded-full" />
+                <SkeletonBox className="h-8 min-w-0 flex-1 rounded-full" />
+            </div>
+
+            {/* Etapas (tablet e desktop): barra de progressão */}
+            <div className="hidden w-full overflow-hidden pb-8 md:block">
+                <div className="flex w-full items-center justify-center px-2 py-2 lg:min-w-max">
                     {[0, 1, 2, 3].map((item) => (
                         <React.Fragment key={item}>
-                            <div className="flex flex-col items-center gap-3">
-                                <SkeletonBox className="h-[83px] w-[83px] rounded-[30px]" />
-                                <SkeletonBox className="h-[16px] w-[72px] rounded-[8px]" />
+                            <div className="relative">
+                                <SkeletonBox className="h-[62px] w-[62px] rounded-[22px] lg:h-[83px] lg:w-[83px] lg:rounded-[30px]" />
+                                <SkeletonBox className="absolute -bottom-6 left-1/2 h-[14px] w-[56px] -translate-x-1/2 rounded-[8px] lg:-bottom-7 lg:h-4 lg:w-[72px]" />
                             </div>
                             {item < 3 && (
-                                <SkeletonBox className="mx-1 mb-8 h-[2px] w-[60px] rounded-none" />
+                                <SkeletonBox className="mx-1 h-[2px] min-w-[12px] flex-1 rounded-none lg:w-[60px] lg:flex-none" />
                             )}
                         </React.Fragment>
                     ))}
                 </div>
             </div>
 
-            <div className="mb-6">
-                <SkeletonBox className="mb-2 h-[18px] w-[230px] rounded-[8px]" />
-                <SkeletonBox className="h-[39px] w-[45%] max-w-[320px] rounded-[10px]" />
+            <div className="mb-6 flex flex-col items-start">
+                <SkeletonBox className="mb-2 h-[18px] w-[230px] max-w-full rounded-[8px]" />
+                <SkeletonBox className="h-[48px] w-full rounded-[10px] md:h-[44px] md:max-w-[360px] lg:h-[39px] lg:w-[45%] lg:max-w-[320px]" />
             </div>
 
-            <div className="mb-6 w-full">
+            {/* Tabela (desktop) */}
+            <div className="mb-6 hidden w-full lg:block">
                 <div className="grid h-10 grid-cols-3 overflow-hidden rounded-t-[10px]">
                     {[0, 1, 2].map((item) => (
                         <SkeletonBox
@@ -97,8 +106,56 @@ function TransferenciaEtapaLoading() {
                 </div>
             </div>
 
-            <div className="flex justify-end pt-4">
+            {/* Cartões de parceiros (tablet e mobile) */}
+            <div className="mb-6 flex flex-col gap-3 lg:hidden">
+                {[0, 1].map((cartao) => (
+                    <div
+                        key={cartao}
+                        className="rounded-[16px] border border-[#D5E4EA] p-3.5 md:rounded-[14px] md:p-4"
+                    >
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="flex min-w-0 items-center gap-2.5">
+                                <SkeletonBox className="h-9 w-9 shrink-0 rounded-full md:hidden" />
+                                <SkeletonBox className="h-4 w-[120px] rounded-[8px]" />
+                            </div>
+                            <SkeletonBox className="h-5 w-[90px] rounded-[8px]" />
+                        </div>
+                        <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-3">
+                            {[0, 1, 2].map((campo) => (
+                                <div
+                                    key={campo}
+                                    className={`flex flex-col gap-1 ${
+                                        campo === 0 ? "col-span-2 md:col-span-1" : ""
+                                    }`}
+                                >
+                                    <SkeletonBox className="h-3 w-[60px] rounded-[8px]" />
+                                    <SkeletonBox className="h-9 w-full rounded-[10px]" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Botão (desktop) */}
+            <div className="hidden justify-end pt-4 lg:flex">
                 <SkeletonBox className="h-[39px] w-[200px] rounded-full" />
+            </div>
+
+            {/* Rodapé fixo (tablet e mobile): empurrado para o fim da tela no celular */}
+            <div className="min-h-6 flex-1 md:hidden" aria-hidden="true" />
+            <div className="sticky -bottom-4 z-20 -mx-4 -mb-4 flex flex-col gap-3 border-t border-[#EEEEEE] bg-white px-4 pb-4 pt-3 md:-bottom-8 md:-mx-8 md:-mb-8 md:mt-6 md:flex-row md:items-center md:gap-6 md:px-8 md:py-4 lg:hidden">
+                <div className="flex items-end justify-between gap-6 md:flex-1 md:items-center">
+                    <div className="flex flex-col gap-1.5 md:flex-1">
+                        <SkeletonBox className="h-[14px] w-[100px] rounded-[8px]" />
+                        <SkeletonBox className="hidden h-2 w-full rounded-full md:block" />
+                    </div>
+                    <div className="ml-auto flex flex-col items-end gap-1 md:ml-0 md:items-start">
+                        <SkeletonBox className="h-3 w-[70px] rounded-[8px]" />
+                        <SkeletonBox className="h-[22px] w-[90px] rounded-[8px]" />
+                    </div>
+                </div>
+                <SkeletonBox className="h-[52px] w-full rounded-full md:h-[48px] md:w-[180px] md:shrink-0" />
             </div>
         </div>
     );
