@@ -1,6 +1,18 @@
 import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL;
+export const AUTH_USER_UPDATED_EVENT = "auth:user-updated";
+
+const updateAuthenticatedUser = (user) => {
+    if (!user) return;
+
+    localStorage.setItem("user", JSON.stringify(user));
+    window.dispatchEvent(
+        new CustomEvent(AUTH_USER_UPDATED_EVENT, {
+            detail: user,
+        }),
+    );
+};
 
 const api = axios.create({
     baseURL: API_URL,
@@ -44,7 +56,13 @@ const processQueue = (error, token = null) => {
 // INTERCEPTOR DE RESPONSE
 // ================================
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        if (response.config?.url?.includes("/usuarios/me")) {
+            updateAuthenticatedUser(response.data);
+        }
+
+        return response;
+    },
     async (error) => {
         const originalRequest = error.config;
 
@@ -98,7 +116,7 @@ api.interceptors.response.use(
             localStorage.setItem("refreshToken", newRefreshToken);
 
             if (refreshedUser) {
-                localStorage.setItem("user", JSON.stringify(refreshedUser));
+                updateAuthenticatedUser(refreshedUser);
             }
 
             processQueue(null, newAccessToken);
