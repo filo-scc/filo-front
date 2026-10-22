@@ -46,7 +46,6 @@ Esta é a forma recomendada para garantir que toda a equipe trabalhe no mesmo am
    ```bash
    # No repositório do backend
    docker compose up -d
-
    ```
 
 4. **Suba o frontend (primeira vez):**
