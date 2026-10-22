@@ -5,6 +5,13 @@ import { transferirEtapaFicha } from "../../services/fichasTecnicasService";
 
 import { getFichaParceiroByFicha } from "../../services/fichaParceiroService";
 import RelatorioDeAcabamento from "./RelatorioDeAcabamento.jsx";
+import NovoParceiroModal from "../parceiros/NovoParceiroModal.jsx";
+import { getEffectiveQuantity } from "../../utils/quantidadesTransferencia.js";
+import {
+    montarAvisoPrecoInvalido,
+    obterMensagemErroTransferencia,
+} from "../../utils/mensagensTransferencia.js";
+import { encontrarParceiroPorNome, filtrarParceirosDaEtapa } from "../../utils/parceiroForm.js";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -25,10 +32,6 @@ function formatCurrencyBR(value) {
     return currencyFormatter.format(parseCurrencyToNumber(value));
 }
 
-function getEffectiveQuantity(line, totalLines, fichaQuantidade) {
-    if (totalLines === 1) return Number(fichaQuantidade || 0);
-    return Number(line?.quantidade || 0);
-}
 import { InlineLoading, SkeletonBox } from "../geral/Loading";
 
 function TransferenciaEtapaLoading() {
@@ -115,6 +118,7 @@ export default function TransferenciaEtapaModal({
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState("");
+    const [novoParceiroAberto, setNovoParceiroAberto] = useState(false);
 
     // Estados para o comportamento visual da nova tabela
     const [hoveredParceiroIndex, setHoveredParceiroIndex] = useState(null);
@@ -157,11 +161,13 @@ export default function TransferenciaEtapaModal({
         return somaQuantidades === Number(fichaTecnica?.quantidade || 0);
     }, [linhasTabela.length, somaQuantidades, fichaTecnica?.quantidade]);
 
-    const precoUnitarioValido = useMemo(() => {
-        return linhasTabela.every(
-            (linha) => parseCurrencyToNumber(linha.precoUnitarioFormatado) > 0,
+    const parceirosComPrecoInvalido = useMemo(() => {
+        return linhasTabela.filter(
+            (linha) => parseCurrencyToNumber(linha.precoUnitarioFormatado) <= 0,
         );
     }, [linhasTabela]);
+
+    const precoUnitarioValido = parceirosComPrecoInvalido.length === 0;
 
     const totalPerdas = useMemo(
         () =>
@@ -235,8 +241,9 @@ export default function TransferenciaEtapaModal({
 
                 // 2. Buscar parceiros do fabrico filtrando pela categoria da etapa concluída
                 const listaParceiros = await getParceiros();
-                const filtradosPorCategoria = listaParceiros.filter(
-                    (p) => p.categoria?.toLowerCase() === etapaConcluida?.nome?.toLowerCase(),
+                const filtradosPorCategoria = filtrarParceirosDaEtapa(
+                    listaParceiros,
+                    etapaConcluida?.nome,
                 );
                 setParceirosDisponiveis(filtradosPorCategoria);
 
@@ -246,30 +253,39 @@ export default function TransferenciaEtapaModal({
                     ? parceirosExistentesRaw
                     : [];
 
-                const jaVinculadosDestaEtapa = parceirosExistentes
-                    .filter(
-                        (fp) =>
-                            fp?.parceiro?.categoria?.toLowerCase() ===
-                            etapaConcluida?.nome?.toLowerCase(),
-                    )
-                    .map((fp) => {
-                        const quantidade = Number(fp?.quantidade || fichaTecnica?.quantidade || 0);
+                const vinculadosDestaEtapa = parceirosExistentes.filter(
+                    (fp) =>
+                        fp?.parceiro?.categoria?.toLowerCase() ===
+                        etapaConcluida?.nome?.toLowerCase(),
+                );
 
-                        // o backend pode devolver "valor" ou "custo";
-                        const valorBruto = Number(fp?.valor ?? fp?.custo ?? 0);
+                const jaVinculadosDestaEtapa = vinculadosDestaEtapa.map((fp) => {
+                    // Zero registrado é zero: só com parceiro único a linha assume o total da ficha.
+                    const quantidade = getEffectiveQuantity(
+                        fp,
+                        vinculadosDestaEtapa.length,
+                        fichaTecnica?.quantidade,
+                    );
 
-                        // se o valor recebido for o total, o unitário é o total dividido pela quantidade
-                        const precoUnitario = quantidade > 0 ? valorBruto / quantidade : 0;
+                    // o backend pode devolver "valor" ou "custo";
+                    const valorBruto = Number(fp?.valor ?? fp?.custo ?? 0);
 
-                        return {
-                            id: fp.parceiro.id,
-                            nome: fp.parceiro.nome,
-                            operacao: fp.operacao || "",
-                            quantidade,
-                            precoUnitarioFormatado: formatCurrencyBR(precoUnitario),
-                            custoTotalFormatado: formatCurrencyBR(valorBruto),
-                        };
-                    });
+                    // se o valor recebido for o total, o unitário é o total dividido pela quantidade
+                    // com que ele foi registrado (a exibida só substitui quando não havia registro)
+                    const quantidadeRegistrada = Number(fp?.quantidade || 0);
+                    const quantidadeBase =
+                        quantidadeRegistrada > 0 ? quantidadeRegistrada : quantidade;
+                    const precoUnitario = quantidadeBase > 0 ? valorBruto / quantidadeBase : 0;
+
+                    return {
+                        id: fp.parceiro.id,
+                        nome: fp.parceiro.nome,
+                        operacao: fp.operacao || "",
+                        quantidade,
+                        precoUnitarioFormatado: formatCurrencyBR(precoUnitario),
+                        custoTotalFormatado: formatCurrencyBR(valorBruto),
+                    };
+                });
 
                 setLinhasTabela(jaVinculadosDestaEtapa);
 
@@ -348,6 +364,29 @@ export default function TransferenciaEtapaModal({
             return !jaAdicionado && bateBusca;
         });
     }, [parceirosDisponiveis, linhasTabela, buscaParceiro]);
+
+    // --- Cadastro de parceiro novo dentro do modal ---
+    // O cadastro responde só com uma mensagem; por isso a lista é recarregada para achar o parceiro criado.
+    const aoCadastrarParceiro = async ({ nome }) => {
+        setNovoParceiroAberto(false);
+
+        try {
+            const listaAtualizada = await getParceiros();
+            setParceirosDisponiveis(filtrarParceirosDaEtapa(listaAtualizada, etapaConcluida?.nome));
+
+            const criado = encontrarParceiroPorNome(listaAtualizada, nome);
+            if (criado) {
+                adicionarParceiroNaTabela(criado);
+                return;
+            }
+        } catch (error) {
+            console.error("Erro ao atualizar a lista de parceiros:", error);
+        }
+
+        setSubmitError(
+            "Parceiro cadastrado, mas não foi possível selecioná-lo. Escolha-o na lista.",
+        );
+    };
 
     // --- Ações da Tabela ---
     const adicionarParceiroNaTabela = (parceiro) => {
@@ -439,7 +478,7 @@ export default function TransferenciaEtapaModal({
 
     // --- Submit / Processamento da Transferência ---
     const handleTransferir = async () => {
-        if (!quantidadeValida || !perdasValidas) {
+        if (!quantidadeValida || !precoUnitarioValido || !perdasValidas) {
             return;
         }
 
@@ -478,12 +517,7 @@ export default function TransferenciaEtapaModal({
             onClose();
         } catch (error) {
             console.error("Falha ao processar a transferência de etapa:", error);
-            const message = error?.response?.data?.message;
-            setSubmitError(
-                Array.isArray(message)
-                    ? message.join(" ")
-                    : message || "Não foi possível transferir a ficha. Tente novamente.",
-            );
+            setSubmitError(obterMensagemErroTransferencia(error));
         } finally {
             setSubmitting(false);
         }
@@ -665,6 +699,18 @@ export default function TransferenciaEtapaModal({
 
                                 {dropdownAberto && (
                                     <ul className="absolute left-0 right-0 top-[45px] z-50 max-h-[200px] overflow-y-auto rounded-[10px] border border-[#D9D9D9] bg-white shadow-lg scrollbar-sutil">
+                                        <li className="sticky top-0 z-10 border-b border-[#E8E8E8] bg-white">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setDropdownAberto(false);
+                                                    setNovoParceiroAberto(true);
+                                                }}
+                                                className="w-full px-4 py-2.5 text-left text-[14px] font-normal text-[#4696AD] transition-colors hover:bg-[#F5F5F5]"
+                                            >
+                                                + Novo Parceiro
+                                            </button>
+                                        </li>
                                         {parceirosFiltrados.length === 0 ? (
                                             <li className="px-4 py-3 text-[14px] font-light text-[#898C8F]">
                                                 Nenhum colaborador disponível para esta categoria
@@ -968,11 +1014,12 @@ export default function TransferenciaEtapaModal({
                             </div>
                         )}
 
-                        {!precoUnitarioValido && linhasTabela.length > 0 && (
+                        {!precoUnitarioValido && (
                             <div className="mb-6 mt-6 rounded-[10px] border border-red-200 bg-red-50 p-4 text-[14px] font-light text-red-700">
-                                <span className="font-medium">Atenção:</span> Para prosseguir com a
-                                transferência, cadastre o valor do(a){" "}
-                                {etapaConcluida.nome.toUpperCase()};
+                                <span className="font-medium">Atenção:</span>{" "}
+                                {montarAvisoPrecoInvalido(
+                                    parceirosComPrecoInvalido.map((linha) => linha.nome),
+                                )}
                             </div>
                         )}
 
@@ -1015,6 +1062,13 @@ export default function TransferenciaEtapaModal({
                     </>
                 )}
             </div>
+
+            <NovoParceiroModal
+                isOpen={novoParceiroAberto}
+                onClose={() => setNovoParceiroAberto(false)}
+                categoria={etapaConcluida?.nome}
+                onSuccess={aoCadastrarParceiro}
+            />
         </div>
     );
 }
