@@ -285,6 +285,13 @@ export default function TransferenciaEtapaModal({
         [etapas, indiceProximaEtapa],
     );
 
+    // Etapas entre a origem e o destino quando a ficha é arrastada para além da etapa seguinte.
+    const etapasPuladas = useMemo(() => {
+        const indiceConcluida = etapas.findIndex((e) => e.id === etapaConcluida?.id);
+        if (indiceConcluida < 0 || indiceProximaEtapa < 0) return [];
+        return etapas.slice(indiceConcluida + 1, indiceProximaEtapa);
+    }, [etapas, etapaConcluida?.id, indiceProximaEtapa]);
+
     const totalPerdas = useMemo(
         () =>
             Number(relatorioPerdas.defeitoCostura || 0) +
@@ -766,6 +773,12 @@ export default function TransferenciaEtapaModal({
                                     />
                                 )}
                             </div>
+                            {etapasPuladas.length > 0 && (
+                                <p className="text-[12px] text-[#6B6E72]">
+                                    <span className="font-medium">Pulando:</span>{" "}
+                                    {etapasPuladas.map((etapa) => etapa.nome).join(" · ")}
+                                </p>
+                            )}
                             {etapasAnterioresAbertas && (
                                 <p className="text-[12px] text-[#6B6E72]">
                                     Anteriores:{" "}
