@@ -99,7 +99,7 @@ export default function Tecidos() {
                 {/* Cabeçalho — mesmo px-10 da tabela para alinhar o botão à borda direita */}
                 <div className="px-10 pt-8 pb-8">
                     <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="ml-6 flex items-center gap-2 flex-shrink-0">
                             <img src="/tecidos-ativado.png" alt="" className="w-7 h-7" />
                             <h1 className="text-[30px] font-light text-gray-800">Tecidos</h1>
                         </div>
