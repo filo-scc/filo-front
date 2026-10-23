@@ -379,13 +379,27 @@ export default function PedidosDetalhes() {
                             >
                                 Voltar
                             </button>
-                            <button
-                                type="button"
-                                onClick={() => navigate(`/pedidos/editar/${id}`)}
-                                className="w-full md:w-[189px] min-h-11 rounded-full bg-[#a9e2f2] text-[#4696ad] font-Outfit text-[16px] transition-colors hover:bg-[#A2DCED]"
+                            <span
+                                className="w-full md:w-[189px]"
+                                title={
+                                    pedido.finalizado
+                                        ? isSobDemanda
+                                            ? "Pedidos finalizados não podem ser alterados ou excluídos."
+                                            : "Produções finalizadas não podem ser alteradas ou excluídas."
+                                        : undefined
+                                }
                             >
-                                {isSobDemanda ? "Editar pedido" : "Editar produção"}
-                            </button>
+                                <button
+                                    type="button"
+                                    disabled={pedido.finalizado === true}
+                                    onClick={() => {
+                                        if (!pedido.finalizado) navigate(`/pedidos/editar/${id}`);
+                                    }}
+                                    className="w-full min-h-11 rounded-full bg-[#a9e2f2] text-[#4696ad] font-Outfit text-[16px] transition-colors hover:bg-[#A2DCED] disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isSobDemanda ? "Editar pedido" : "Editar produção"}
+                                </button>
+                            </span>
                         </div>
                     </div>
                 )}
