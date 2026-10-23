@@ -2,8 +2,7 @@ const MENSAGEM_ERRO_GENERICA = "Não foi possível transferir a ficha. Tente nov
 const MENSAGEM_SEM_CONEXAO =
     "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.";
 const MENSAGEM_SEM_PERMISSAO = "Você não tem permissão para realizar esta transferência.";
-const MENSAGEM_PRECO_INVALIDO =
-    "Informe um preço unitário maior que zero para todos os colaboradores.";
+const MENSAGEM_PRECO_INVALIDO = "Informe um preço unitário maior que zero para todos os parceiros.";
 const MENSAGEM_DADOS_INVALIDOS =
     "Alguns dados da transferência são inválidos. Revise os campos e tente novamente.";
 
