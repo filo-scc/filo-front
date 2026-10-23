@@ -7,6 +7,7 @@ import ModalConfirmacao from "../components/geral/ModalConfirmacao";
 import MenuOpcoes from "../components/geral/MenuOpcoes";
 import { PedidosTableSkeleton } from "../components/geral/Loading";
 import { parsePreco } from "../utils/preco";
+import { extrairMensagemDeErro } from "../utils/mensagemApi";
 
 const formatarMoeda = (valor) =>
     parsePreco(valor).toLocaleString("pt-BR", {
@@ -31,6 +32,7 @@ const Pedidos = () => {
 
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
     const [excluindo, setExcluindo] = useState(false);
+    const [erroExclusao, setErroExclusao] = useState("");
 
     useEffect(() => {
         const fetchPedidos = async () => {
@@ -67,20 +69,24 @@ const Pedidos = () => {
         });
     };
 
-    const handleEdit = (id) => {
-        navigate(`/pedidos/editar/${id}`);
+    const handleEdit = (pedido) => {
+        if (pedido.finalizado) return;
+        navigate(`/pedidos/editar/${pedido.id}`);
     };
 
     const abrirModalExclusao = (pedido) => {
+        if (pedido.finalizado) return;
+        setErroExclusao("");
         setPedidoSelecionado(pedido);
         setModalExclusaoAberto(true);
     };
 
     const handleConfirmarExclusao = async () => {
-        if (!pedidoSelecionado || excluindo) return;
+        if (!pedidoSelecionado || pedidoSelecionado.finalizado || excluindo) return;
 
         try {
             setExcluindo(true);
+            setErroExclusao("");
             await deletPedido(pedidoSelecionado.id);
 
             setPedidos(pedidos.filter((c) => c.id !== pedidoSelecionado.id));
@@ -89,6 +95,13 @@ const Pedidos = () => {
             setModalConfirmacaoAberto(true);
         } catch (error) {
             console.error("Erro ao excluir pedido:", error);
+            if (error?.response?.status === 409) {
+                setErroExclusao(
+                    extrairMensagemDeErro(error) ||
+                        "Não foi possível excluir: o pedido não permite exclusão.",
+                );
+                return;
+            }
             alert(producaoSobDemanda ? "Erro ao excluir pedido." : "Erro ao excluir produção.");
         } finally {
             setExcluindo(false);
@@ -269,11 +282,22 @@ const Pedidos = () => {
                                                         onClick={(e) => e.stopPropagation()}
                                                     >
                                                         <MenuOpcoes
-                                                            onEdit={() => handleEdit(pedido.id)}
+                                                            onEdit={() => handleEdit(pedido)}
                                                             onDelete={() =>
                                                                 abrirModalExclusao(pedido)
                                                             }
                                                             isLast={isLast}
+                                                            editDisabled={
+                                                                pedido.finalizado === true
+                                                            }
+                                                            deleteDisabled={
+                                                                pedido.finalizado === true
+                                                            }
+                                                            disabledReason={
+                                                                producaoSobDemanda
+                                                                    ? "Pedidos finalizados não podem ser alterados ou excluídos."
+                                                                    : "Produções finalizadas não podem ser alteradas ou excluídas."
+                                                            }
                                                         />
                                                     </td>
                                                 </tr>
@@ -305,6 +329,7 @@ const Pedidos = () => {
                 nomeItem={pedidoSelecionado?.id.toString()}
                 tipoItem={producaoSobDemanda ? "o pedido" : "a produção"}
                 loading={excluindo}
+                erro={erroExclusao}
             />
 
             <ModalConfirmacao

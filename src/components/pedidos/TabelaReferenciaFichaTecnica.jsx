@@ -141,6 +141,7 @@ export default function TabelaReferenciaFichaTecnica({
                     <div className="flex flex-col gap-4 lg:gap-0 w-full">
                         {fichas.map((ficha, index) => {
                             const itemKey = ficha.id ?? index;
+                            const fichaConcluida = ficha.concluida === true;
                             const qtd =
                                 Number(ficha.quantidade) || Number(ficha.quantidade_pecas) || 0;
                             const valPrecoRaw =
@@ -154,9 +155,13 @@ export default function TabelaReferenciaFichaTecnica({
                             const refClienteValor =
                                 ficha.referenciaCliente ?? ficha.ref_cliente ?? "";
                             const isEditando =
-                                !somenteLeitura && !bloqueada && idEmEdicao === itemKey;
+                                !somenteLeitura &&
+                                !bloqueada &&
+                                !fichaConcluida &&
+                                idEmEdicao === itemKey;
 
-                            const podeAbrirFicha = Boolean(onAbrirFicha) && !bloqueada;
+                            const podeAbrirFicha =
+                                Boolean(onAbrirFicha) && !bloqueada && !fichaConcluida;
 
                             return (
                                 <div
@@ -325,7 +330,10 @@ export default function TabelaReferenciaFichaTecnica({
                                         </div>
                                     </div>
 
-                                    {!somenteLeitura && (
+                                    {!somenteLeitura && fichaConcluida && (
+                                        <div className="hidden lg:block w-9 shrink-0" />
+                                    )}
+                                    {!somenteLeitura && !fichaConcluida && (
                                         <div
                                             className="w-full lg:w-9 shrink-0 flex flex-row lg:flex-col items-center justify-end lg:justify-center gap-2 p-2 lg:p-0 lg:pl-2 border-t lg:border-t-0 border-[#d9d9d9] transition-opacity duration-200"
                                             onClick={(e) => e.stopPropagation()}
