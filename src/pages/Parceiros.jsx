@@ -176,7 +176,7 @@ const Parceiros = () => {
                     </div>
 
                     {/* Tabela */}
-                    <div className="w-full pb-16">
+                    <div className="w-full">
                         <div className="w-full border border-[#DEDEDE] rounded-xl overflow-hidden bg-[#D3EBF2]">
                             <table className="w-full border-separate border-spacing-0 text-[16px] font-['Outfit'] font-light text-center">
                                 <thead className="bg-[#C9EAF6] text-[#4696AD]">

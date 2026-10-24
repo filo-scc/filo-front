@@ -10,8 +10,9 @@ import ModalAtencao from "../components/geral/ModalAtencao";
 import { DetailPageSkeleton } from "../components/geral/Loading";
 
 const sectionTitleClass = "text-[20px] font-light text-[#404040] mb-4 font-['Outfit']";
-const fieldLabelClass = "text-[20px] font-Outfit font-light text-[#4696AD] block";
-const fieldValueClass = "text-[16px] font-Outfit font-light text-[#898c8f] leading-none";
+const fieldLabelClass = "text-base lg:text-[20px] font-Outfit font-light text-[#4696AD] block";
+const fieldValueClass =
+    "text-[16px] font-Outfit font-light text-[#898c8f] leading-snug lg:leading-none break-words";
 
 const primeiroNumeroValido = (...valores) => {
     for (const valor of valores) {
@@ -289,8 +290,8 @@ export default function PedidosDetalhes() {
 
     if (loading) {
         return (
-            <div className="p-6 pt-0 mt-6 w-full relative z-0 font-['Outfit']">
-                <div className="bg-white p-10 rounded-[24px] shadow-sm w-full mx-auto">
+            <div className="p-3 sm:p-6 pt-0 sm:pt-0 mt-6 w-full min-w-0 relative z-0 font-['Outfit']">
+                <div className="bg-white p-4 md:p-7 lg:p-10 rounded-[24px] shadow-sm w-full mx-auto">
                     <div className="flex items-center gap-3 mb-6">
                         <img
                             src="/pedidos-desativado.png"
@@ -309,9 +310,9 @@ export default function PedidosDetalhes() {
 
     return (
         <>
-            <div className="p-6 pt-0 mt-6 w-full relative z-0 font-['Outfit']">
+            <div className="p-3 sm:p-6 pt-0 sm:pt-0 mt-6 w-full min-w-0 relative z-0 font-['Outfit']">
                 {pedido && (
-                    <div className="bg-white p-10 rounded-[24px] shadow-sm w-full mx-auto">
+                    <div className="bg-white p-4 md:p-7 lg:p-10 rounded-[24px] shadow-sm w-full mx-auto">
                         <div className="mb-6">
                             <div className="flex items-center gap-3">
                                 <img
@@ -319,35 +320,42 @@ export default function PedidosDetalhes() {
                                     alt=""
                                     className="h-8 w-8 shrink-0 object-contain brightness-0 opacity-[0.85]"
                                 />
-                                <h1 className="text-[28px] sm:text-[30px] font-light text-[#404040] tracking-tight leading-none">
+                                <h1 className="min-w-0 break-words text-[28px] sm:text-[30px] font-light text-[#404040] tracking-tight leading-none">
                                     {tituloItem} Nº {numeroPedido}
                                 </h1>
                             </div>
                         </div>
 
                         <section className="mb-8">
-                            <div className="flex flex-wrap gap-8 justify-between items-start">
-                                <div className="flex flex-col">
-                                    <h2 className={sectionTitleClass}>Informações gerais</h2>
-                                    <div className="flex flex-row flex-wrap gap-16">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-6 lg:flex lg:flex-wrap lg:gap-8 justify-between items-start">
+                                <div className="contents lg:flex lg:flex-col min-w-0 max-w-full">
+                                    <h2 className={`${sectionTitleClass} col-span-full`}>
+                                        Informações gerais
+                                    </h2>
+                                    <div className="contents lg:flex lg:flex-row lg:flex-wrap lg:gap-16">
                                         {isSobDemanda && (
-                                            <div className="min-w-[160px]">
+                                            <div className="min-w-0 lg:min-w-[160px] max-w-full">
                                                 <p className={fieldLabelClass}>Cliente</p>
                                                 <p className={fieldValueClass}>
                                                     {pedido.cliente?.nome || "-"}
                                                 </p>
                                             </div>
                                         )}
-                                        <div className="min-w-[160px]">
+                                        <div className="min-w-0 lg:min-w-[160px] max-w-full">
                                             <p className={fieldLabelClass}>Referências</p>
                                             <p className={fieldValueClass}>{referencias || "-"}</p>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col w-fit max-w-full">
-                                    <h2 className={sectionTitleClass}>Previsão de entrega</h2>
-                                    <p className={fieldLabelClass}>Data</p>
+                                <div className="flex flex-col min-w-0 lg:w-fit max-w-full">
+                                    <h2 className={`hidden lg:block ${sectionTitleClass}`}>
+                                        Previsão de entrega
+                                    </h2>
+                                    <p className={fieldLabelClass}>
+                                        <span className="lg:hidden">Previsão de entrega</span>
+                                        <span className="hidden lg:inline">Data</span>
+                                    </p>
                                     <p className={fieldValueClass}>
                                         {formatarDataCompleta(pedido.data_prevista)}
                                     </p>
@@ -363,21 +371,35 @@ export default function PedidosDetalhes() {
                             />
                         </div>
 
-                        <div className="flex flex-wrap justify-between items-center gap-4 pt-2">
+                        <div className="flex flex-col-reverse md:flex-row md:flex-wrap justify-between items-center gap-3 md:gap-4 pt-2">
                             <button
                                 type="button"
                                 onClick={() => navigate("/pedidos")}
-                                className="px-8 h-[39px] rounded-full border border-[#4696AD] text-[#4696AD] bg-[#F3F4FA] hover:bg-[#F3FBFC] transition-colors text-sm min-w-[180px]"
+                                className="w-full md:w-auto px-8 min-h-11 rounded-full border border-[#4696AD] text-[#4696AD] bg-[#F3F4FA] hover:bg-[#F3FBFC] transition-colors text-sm md:min-w-[120px] lg:min-w-[180px]"
                             >
                                 Voltar
                             </button>
-                            <button
-                                type="button"
-                                onClick={() => navigate(`/pedidos/editar/${id}`)}
-                                className="w-[189px] h-[39px] rounded-[18.9px] bg-[#a9e2f2] text-[#4696ad] font-Outfit text-[16px] transition-colors hover:bg-[#A2DCED]"
+                            <span
+                                className="w-full md:w-[189px]"
+                                title={
+                                    pedido.finalizado
+                                        ? isSobDemanda
+                                            ? "Pedidos finalizados não podem ser alterados ou excluídos."
+                                            : "Produções finalizadas não podem ser alteradas ou excluídas."
+                                        : undefined
+                                }
                             >
-                                {isSobDemanda ? "Editar pedido" : "Editar produção"}
-                            </button>
+                                <button
+                                    type="button"
+                                    disabled={pedido.finalizado === true}
+                                    onClick={() => {
+                                        if (!pedido.finalizado) navigate(`/pedidos/editar/${id}`);
+                                    }}
+                                    className="w-full min-h-11 rounded-full bg-[#a9e2f2] text-[#4696ad] font-Outfit text-[16px] transition-colors hover:bg-[#A2DCED] disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isSobDemanda ? "Editar pedido" : "Editar produção"}
+                                </button>
+                            </span>
                         </div>
                     </div>
                 )}

@@ -1,7 +1,13 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-export default function MenuOpcoes({ onEdit, onDelete }) {
+export default function MenuOpcoes({
+    onEdit,
+    onDelete,
+    editDisabled = false,
+    deleteDisabled = false,
+    disabledReason = "",
+}) {
     const [isOpen, setIsOpen] = useState(false);
     const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
     const buttonRef = useRef(null);
@@ -69,12 +75,15 @@ export default function MenuOpcoes({ onEdit, onDelete }) {
             className="fixed w-[140px] bg-white rounded-[10px] shadow-[0px_4px_16px_rgba(0,0,0,0.1)] border border-gray-100 z-[9999] overflow-hidden flex flex-col font-Outfit"
         >
             <button
+                disabled={editDisabled}
+                title={editDisabled ? disabledReason : undefined}
                 onClick={(event) => {
                     event.stopPropagation();
+                    if (editDisabled) return;
                     setIsOpen(false);
                     onEdit();
                 }}
-                className="flex items-center gap-2 px-4 py-3 text-[14px] text-[#7B7D80] font-light bg-white hover:bg-[#F1F1F1] transition-colors w-full text-left"
+                className="flex items-center gap-2 px-4 py-3 text-[14px] text-[#7B7D80] font-light bg-white hover:bg-[#F1F1F1] transition-colors w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 <img
                     src="/editar-cinza.png"
@@ -85,12 +94,15 @@ export default function MenuOpcoes({ onEdit, onDelete }) {
             </button>
 
             <button
+                disabled={deleteDisabled}
+                title={deleteDisabled ? disabledReason : undefined}
                 onClick={(event) => {
                     event.stopPropagation();
+                    if (deleteDisabled) return;
                     setIsOpen(false);
                     onDelete();
                 }}
-                className="flex items-center gap-2 px-4 py-3 text-[14px] text-[#7B7D80] font-light bg-white hover:bg-[#F1F1F1] transition-colors w-full text-left"
+                className="flex items-center gap-2 px-4 py-3 text-[14px] text-[#7B7D80] font-light bg-white hover:bg-[#F1F1F1] transition-colors w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 <img
                     src="/excluir-cinza.png"

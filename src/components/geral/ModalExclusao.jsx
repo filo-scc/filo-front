@@ -8,6 +8,7 @@ export default function ModalExclusao({
     tipoItem = "o cadastro de",
     titulo,
     mensagem,
+    erro,
     loading = false,
 }) {
     if (!isOpen) return null;
@@ -46,6 +47,12 @@ export default function ModalExclusao({
                         Deseja mesmo <strong className="font-normal text-[#525252]">excluir</strong>{" "}
                         {tipoItem}{" "}
                         <strong className="font-normal text-[#525252]">{nomeItem}</strong>?
+                    </p>
+                )}
+
+                {erro && (
+                    <p role="alert" className="text-sm text-[#D75757] mb-4">
+                        {erro}
                     </p>
                 )}
 

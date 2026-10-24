@@ -28,7 +28,7 @@ export default function SecaoDadosProduto({ produto, aviamentos = [] }) {
             {/* Bloco da Imagem */}
             <div className="flex flex-col shrink-0">
                 <h3 className="text-[20px] font-Outfit font-light text-[#404040] mb-4">Imagem</h3>
-                <div className="w-[248px] h-[187px] rounded-[10px] overflow-hidden border border-gray-200">
+                <div className="w-[204px] h-[238px] rounded-[10px] overflow-hidden border border-gray-200">
                     <img
                         src={produto.foto || "/image-delete-02-2.png"}
                         alt={produto.nome || "Imagem não cadastrada"}

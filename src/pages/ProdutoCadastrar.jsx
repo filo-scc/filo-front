@@ -735,7 +735,7 @@ export default function ProdutoCadastar() {
                 <form onSubmit={handleSubmit} className="mt-10 flex flex-col min-h-[520px]">
                     {/* Bloco Superior: Imagem e Detalhes */}
                     <div className="flex flex-col xl:flex-row gap-12 xl:gap-16">
-                        <div className="w-full xl:w-[184px] shrink-0">
+                        <div className="w-[204px] shrink-0">
                             <FieldLabel>Imagem</FieldLabel>
                             <input
                                 ref={inputFileRef}
@@ -747,7 +747,7 @@ export default function ProdutoCadastar() {
                             <button
                                 type="button"
                                 onClick={() => inputFileRef.current?.click()}
-                                className="w-[200px] h-[150px] rounded-[10px] border border-dashed border-[#898C8F] flex items-center justify-center overflow-hidden bg-white hover:bg-[#FAFAFA] transition-colors"
+                                className="w-[204px] h-[238px] rounded-[10px] border border-dashed border-[#898C8F] flex items-center justify-center overflow-hidden bg-white hover:bg-[#FAFAFA] transition-colors"
                             >
                                 {imagemPreview ? (
                                     <img
