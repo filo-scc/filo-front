@@ -5,11 +5,11 @@ export default function ProdutoDetalhesSkeleton() {
         <div className="mt-8 space-y-8">
             {/* Espelho de SecaoDadosProduto */}
             <section className="flex flex-col md:flex-row gap-10 pr-4 md:pr-[15%]">
-                {/* Bloco da Imagem — w-[260px] h-[170px] igual ao original */}
+                {/* Bloco da Imagem — 204×238 igual ao card em Produtos */}
                 <div className="flex flex-col shrink-0">
                     <SkeletonBox className="h-[28px] w-24 mb-4 rounded-[8px]" />{" "}
                     {/* título "Imagem" */}
-                    <SkeletonBox className="w-[248px] h-[187px] rounded-[10px]" />
+                    <SkeletonBox className="w-[204px] h-[238px] rounded-[10px]" />
                 </div>
 
                 {/* Bloco de Dados */}

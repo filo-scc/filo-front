@@ -243,9 +243,9 @@ export function ProductGridSkeleton({ count = 8 }) {
             {[...Array(count)].map((_, index) => (
                 <div
                     key={index}
-                    className="w-full bg-[#F3F4FA] rounded-[16px] p-[6px] flex flex-col"
+                    className="w-[216px] bg-[#F3F4FA] rounded-[16px] p-[6px] flex flex-col"
                 >
-                    <SkeletonBox className="w-full h-[155px] rounded-t-[14px] rounded-b-[4px]" />
+                    <SkeletonBox className="w-[204px] h-[238px] rounded-t-[14px] rounded-b-[4px]" />
                     <div className="flex flex-col px-1 pt-1.5 pb-1">
                         <SkeletonBox className="h-[12px] w-24 rounded-[6px]" />
                         <SkeletonBox className="h-[12px] w-20 rounded-[6px]" />
