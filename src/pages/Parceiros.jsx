@@ -238,7 +238,7 @@ const Parceiros = () => {
                                                     </td>
 
                                                     <td className="px-6 text-[14px]">
-                                                        {parceiro.categoria}
+                                                        {parceiro.etapa?.nome ?? "-"}
                                                     </td>
 
                                                     <td className="px-6 text-[14px] hover:font-normal">

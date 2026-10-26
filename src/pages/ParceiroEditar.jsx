@@ -43,6 +43,7 @@ const EditarParceiro = () => {
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
     const [dropdownEtapaAberto, setDropdownEtapaAberto] = useState(false);
     const [etapas, setEtapas] = useState([]);
+    const [nomeEtapaCarregada, setNomeEtapaCarregada] = useState("");
     const [loadingEtapas, setLoadingEtapas] = useState(true);
     const etapaDropdownRef = useRef(null);
     const etapaTriggerRef = useRef(null);
@@ -65,7 +66,7 @@ const EditarParceiro = () => {
         banco: "",
         agencia: "",
         conta: "",
-        categoria: "",
+        etapa_id: "",
     });
     const cepRequestRef = useRef(null);
 
@@ -195,8 +196,9 @@ const EditarParceiro = () => {
                     banco: data.banco || "",
                     agencia: maskAgencia(data.agencia || ""),
                     conta: maskConta(data.conta || ""),
-                    categoria: data.categoria || "",
+                    etapa_id: data.etapa_id ?? "",
                 });
+                setNomeEtapaCarregada(data.etapa?.nome ?? "");
             } catch (err) {
                 console.error("Erro ao carregar parceiro:", err);
                 setError("Erro ao carregar os dados do parceiro.");
@@ -228,10 +230,18 @@ const EditarParceiro = () => {
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
+    // O parceiro pode estar numa etapa que não aparece na lista (inativa ou a última): o nome
+    // carregado com o parceiro garante que o seletor mostre a etapa atual.
+    const nomeEtapaSelecionada =
+        etapas.find((etapa) => String(etapa.id) === String(formData.etapa_id))?.nome ??
+        (formData.etapa_id ? nomeEtapaCarregada : "");
+
     const abrirSeletorEtapa = (indiceInicial) => {
         if (loadingEtapas || etapas.length === 0) return;
 
-        const indiceSelecionado = etapas.findIndex((etapa) => etapa.nome === formData.categoria);
+        const indiceSelecionado = etapas.findIndex(
+            (etapa) => String(etapa.id) === String(formData.etapa_id),
+        );
         setEtapaAtivaIndex(indiceInicial ?? (indiceSelecionado >= 0 ? indiceSelecionado : 0));
         setDropdownEtapaAberto(true);
     };
@@ -242,7 +252,7 @@ const EditarParceiro = () => {
     };
 
     const selecionarEtapa = (etapa) => {
-        setFormData((prev) => ({ ...prev, categoria: etapa.nome }));
+        setFormData((prev) => ({ ...prev, etapa_id: etapa.id }));
         fecharSeletorEtapa();
     };
 
@@ -283,7 +293,7 @@ const EditarParceiro = () => {
 
             if (formData.telefone) payload.telefone = formData.telefone.replace(/\D/g, "");
             if (formData.responsavel) payload.responsavel = formData.responsavel;
-            if (formData.categoria) payload.categoria = formData.categoria;
+            if (formData.etapa_id) payload.etapa_id = Number(formData.etapa_id);
 
             const endereco = {};
             if (formData.rua) endereco.rua = formData.rua;
@@ -372,7 +382,7 @@ const EditarParceiro = () => {
                                         aria-haspopup="listbox"
                                         aria-expanded={dropdownEtapaAberto}
                                         aria-controls="etapas-producao-listbox"
-                                        aria-label={`Etapa de produção: ${formData.categoria || "nenhuma selecionada"}`}
+                                        aria-label={`Etapa de produção: ${nomeEtapaSelecionada || "nenhuma selecionada"}`}
                                         disabled={loadingEtapas}
                                         className={`${inputClass} bg-white flex justify-between items-center ${
                                             loadingEtapas
@@ -390,12 +400,12 @@ const EditarParceiro = () => {
                                         ) : (
                                             <span
                                                 className={
-                                                    formData.categoria
+                                                    nomeEtapaSelecionada
                                                         ? "text-gray-600"
                                                         : "text-gray-400"
                                                 }
                                             >
-                                                {formData.categoria || "Selecionar"}
+                                                {nomeEtapaSelecionada || "Selecionar"}
                                             </span>
                                         )}
                                         <svg
@@ -433,11 +443,13 @@ const EditarParceiro = () => {
                                                         type="button"
                                                         role="option"
                                                         aria-selected={
-                                                            formData.categoria === etapa.nome
+                                                            String(formData.etapa_id) ===
+                                                            String(etapa.id)
                                                         }
                                                         tabIndex={-1}
                                                         className={`block w-full px-4 py-2 text-left text-sm cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#4696AD] ${
-                                                            formData.categoria === etapa.nome
+                                                            String(formData.etapa_id) ===
+                                                            String(etapa.id)
                                                                 ? "border-l-[3px] border-[#C4F042] text-gray-700 bg-white"
                                                                 : "border-l-[3px] border-transparent text-gray-600 hover:bg-[#F5F5F5]"
                                                         }`}
@@ -457,8 +469,8 @@ const EditarParceiro = () => {
                                         </div>
                                     )}
                                     <span className="sr-only" aria-live="polite">
-                                        {formData.categoria
-                                            ? `Etapa selecionada: ${formData.categoria}`
+                                        {nomeEtapaSelecionada
+                                            ? `Etapa selecionada: ${nomeEtapaSelecionada}`
                                             : "Nenhuma etapa selecionada"}
                                     </span>
                                 </div>

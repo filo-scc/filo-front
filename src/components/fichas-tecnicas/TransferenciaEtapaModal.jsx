@@ -16,6 +16,7 @@ import {
     obterMensagemErroTransferencia,
 } from "../../utils/mensagensTransferencia.js";
 import { encontrarParceiroPorNome, filtrarParceirosDaEtapa } from "../../utils/parceiroForm.js";
+import { parceiroEhDaEtapa } from "../../utils/etapaDoParceiro.js";
 import { calcularPercentualSoma, obterIniciais } from "../../utils/layoutTransferencia.js";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
@@ -362,13 +363,13 @@ export default function TransferenciaEtapaModal({
                     .sort((a, b) => a.ordem - b.ordem);
                 setEtapas(ativasEOrdenadas);
 
-                // 2. Buscar parceiros do fabrico filtrando pela categoria da etapa concluída
+                // 2. Buscar parceiros do fabrico filtrando pela etapa concluída (por id)
                 const listaParceiros = await getParceiros();
-                const filtradosPorCategoria = filtrarParceirosDaEtapa(
+                const filtradosPorEtapa = filtrarParceirosDaEtapa(
                     listaParceiros,
-                    etapaConcluida?.nome,
+                    etapaConcluida?.id,
                 );
-                setParceirosDisponiveis(filtradosPorCategoria);
+                setParceirosDisponiveis(filtradosPorEtapa);
 
                 // 3. Buscar parceiros já associados a esta Ficha Técnica
                 const parceirosExistentesRaw = await getFichaParceiroByFicha(fichaTecnica.id);
@@ -376,10 +377,8 @@ export default function TransferenciaEtapaModal({
                     ? parceirosExistentesRaw
                     : [];
 
-                const vinculadosDestaEtapa = parceirosExistentes.filter(
-                    (fp) =>
-                        fp?.parceiro?.categoria?.toLowerCase() ===
-                        etapaConcluida?.nome?.toLowerCase(),
+                const vinculadosDestaEtapa = parceirosExistentes.filter((fp) =>
+                    parceiroEhDaEtapa(fp?.parceiro, etapaConcluida?.id),
                 );
 
                 const jaVinculadosDestaEtapa = vinculadosDestaEtapa.map((fp) => {
@@ -495,7 +494,7 @@ export default function TransferenciaEtapaModal({
 
         try {
             const listaAtualizada = await getParceiros();
-            setParceirosDisponiveis(filtrarParceirosDaEtapa(listaAtualizada, etapaConcluida?.nome));
+            setParceirosDisponiveis(filtrarParceirosDaEtapa(listaAtualizada, etapaConcluida?.id));
 
             const criado = encontrarParceiroPorNome(listaAtualizada, nome);
             if (criado) {
@@ -934,7 +933,7 @@ export default function TransferenciaEtapaModal({
                                         </li>
                                         {parceirosFiltrados.length === 0 ? (
                                             <li className="px-4 py-3 text-[14px] font-light text-[#898C8F]">
-                                                Nenhum parceiro disponível para esta categoria
+                                                Nenhum parceiro disponível para esta etapa
                                             </li>
                                         ) : (
                                             parceirosFiltrados.map((parceiro) => (
@@ -1490,7 +1489,7 @@ export default function TransferenciaEtapaModal({
             <NovoParceiroModal
                 isOpen={novoParceiroAberto}
                 onClose={() => setNovoParceiroAberto(false)}
-                categoria={etapaConcluida?.nome}
+                etapa={etapaConcluida}
                 onSuccess={aoCadastrarParceiro}
             />
         </div>

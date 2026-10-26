@@ -60,6 +60,8 @@ const EtapaSelect = ({ value, onChange, inputClass }) => {
         fetchEtapas();
     }, []);
 
+    const nomeSelecionado = etapas.find((etapa) => String(etapa.id) === String(value))?.nome ?? "";
+
     return (
         <div className="w-full md:w-[212px]">
             <h2 className="text-[#404040] font-light mb-4">Etapa de produção</h2>
@@ -77,8 +79,8 @@ const EtapaSelect = ({ value, onChange, inputClass }) => {
                     {loadingEtapas ? (
                         <SkeletonBox className="h-[14px] w-24 rounded-[7px]" />
                     ) : (
-                        <span className={value ? "text-gray-600" : "text-gray-400"}>
-                            {value || "Selecionar"}
+                        <span className={nomeSelecionado ? "text-gray-600" : "text-gray-400"}>
+                            {nomeSelecionado || "Selecionar"}
                         </span>
                     )}
                     <svg
@@ -111,12 +113,12 @@ const EtapaSelect = ({ value, onChange, inputClass }) => {
                                     <div
                                         key={etapa.id}
                                         className={`px-4 py-2 text-sm cursor-pointer transition-colors ${
-                                            value === etapa.nome
+                                            String(value) === String(etapa.id)
                                                 ? "border-l-[3px] border-[#C4F042] text-gray-700 bg-white"
                                                 : "border-l-[3px] border-transparent text-gray-600 hover:bg-[#F5F5F5]"
                                         }`}
                                         onClick={() => {
-                                            onChange(etapa.nome);
+                                            onChange(etapa.id);
                                             setDropdownEtapaAberto(false);
                                         }}
                                     >
@@ -150,8 +152,8 @@ const EtapaFixa = ({ valor, inputClass }) => (
 
 // Formulário de cadastro de parceiro, usado na página de cadastro e no modal de transferência.
 export default function ParceiroForm({
-    categoriaInicial = "",
-    categoriaFixa = false,
+    etapaInicial = null,
+    etapaFixa = false,
     onSuccess,
     onCancel,
 }) {
@@ -159,7 +161,7 @@ export default function ParceiroForm({
     const [error, setError] = useState("");
     const [dropdownAberto, setDropdownAberto] = useState(false);
 
-    const [formData, setFormData] = useState(() => criarFormParceiro(categoriaInicial));
+    const [formData, setFormData] = useState(() => criarFormParceiro(etapaInicial?.id ?? ""));
 
     useEffect(() => {
         const cleanCep = (formData.cep || "").replace(/\D/g, "");
@@ -224,13 +226,13 @@ export default function ParceiroForm({
             <form onSubmit={handleSubmit} className="space-y-8 w-full">
                 {/* Linha Superior: Etapa de produção + Dados gerais */}
                 <div className="flex flex-wrap gap-6 items-start">
-                    {categoriaFixa ? (
-                        <EtapaFixa valor={formData.categoria} inputClass={inputClass} />
+                    {etapaFixa ? (
+                        <EtapaFixa valor={etapaInicial?.nome ?? ""} inputClass={inputClass} />
                     ) : (
                         <EtapaSelect
-                            value={formData.categoria}
-                            onChange={(nome) =>
-                                setFormData((prev) => ({ ...prev, categoria: nome }))
+                            value={formData.etapa_id}
+                            onChange={(etapaId) =>
+                                setFormData((prev) => ({ ...prev, etapa_id: etapaId }))
                             }
                             inputClass={inputClass}
                         />

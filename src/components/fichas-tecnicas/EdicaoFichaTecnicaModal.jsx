@@ -22,6 +22,7 @@ import FichaTecnicaPrintView from "../FichaTecnicaPrintView";
 import { getAviamentosDoProduto, getParceiroByProduto } from "../../services/produtoService";
 import { updateFichaTecnica } from "../../services/fichasTecnicasService";
 import { getParceiros } from "../../services/parceiroService";
+import { ehParceiroDeCostura } from "../../utils/etapaDoParceiro.js";
 import CorModal from "./CorModal";
 import EstampaModal from "./EstampaModal";
 import RelatorioDeAcabamento from "./RelatorioDeAcabamento";
@@ -352,23 +353,10 @@ export default function EdicaoFichaTecnicaModal({
         }
     }, [dadosFicha?.produto_id]);
 
-    const parceirosFiltrados = useMemo(() => {
-        return parceirosDisponiveis.filter((parceiro) => {
-            const categoria = parceiro.categoria || parceiro.parceiro?.categoria;
-            if (!categoria) return false;
-
-            const categoriaNormalizada = categoria
-                .normalize("NFD")
-                .replace(/[\u0300-\u036f]/g, "")
-                .toLowerCase();
-
-            return (
-                categoriaNormalizada === "costura" ||
-                categoriaNormalizada === "faccao" ||
-                categoriaNormalizada === "confeccao"
-            );
-        });
-    }, [parceirosDisponiveis]);
+    const parceirosFiltrados = useMemo(
+        () => parceirosDisponiveis.filter((parceiro) => ehParceiroDeCostura(parceiro)),
+        [parceirosDisponiveis],
+    );
 
     const carregarReferencia = useCallback(async () => {
         try {
@@ -428,18 +416,8 @@ export default function EdicaoFichaTecnicaModal({
             setMatrizQuantidades(matrizInicial);
             setReferenceSizeId(null);
 
-            const categoriasAceitas = ["costura", "faccao", "confeccao"];
-
-            const normalizarCategoria = (categoria) =>
-                (categoria || "")
-                    .normalize("NFD")
-                    .replace(/[\u0300-\u036f]/g, "")
-                    .toLowerCase();
-
             const parceirosIniciais = (dadosFicha.ficha_parceiro || [])
-                .filter((p) =>
-                    categoriasAceitas.includes(normalizarCategoria(p.parceiro?.categoria)),
-                )
+                .filter((p) => ehParceiroDeCostura(p.parceiro))
                 .map((p) => {
                     const vinculoProduto = p.parceiro?.parceiro_produto?.find(
                         (pp) => pp.produto_id === dadosFicha.produto_id,
