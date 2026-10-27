@@ -17,7 +17,7 @@ function normalizeParceiro(item) {
             id: item.parceiro.id,
             nome: item.parceiro.nome,
             preco: normalizePreco(item.preco),
-            categoria: item.parceiro.categoria,
+            etapa_id: item.parceiro.etapa_id ?? null,
             possuiPedido: Boolean(item.possuiPedido ?? item.parceiro.possuiPedido ?? false),
         };
     }
@@ -26,7 +26,7 @@ function normalizeParceiro(item) {
         id: item.id,
         nome: item.nome,
         preco: normalizePreco(item.preco),
-        categoria: item.categoria, // corrigido: item, não item.parceiro
+        etapa_id: item.etapa_id ?? null,
         possuiPedido: Boolean(item.possuiPedido ?? false),
     };
 }

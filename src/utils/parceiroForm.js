@@ -1,3 +1,5 @@
+import { parceiroEhDaEtapa } from "./etapaDoParceiro.js";
+
 export const maskTelefone = (value) => {
     return value
         .replace(/\D/g, "")
@@ -25,8 +27,8 @@ export const maskConta = (value) => {
     return `${numeros.slice(0, -1)}-${numeros.slice(-1)}`;
 };
 
-export const criarFormParceiro = (categoria = "") => ({
-    categoria,
+export const criarFormParceiro = (etapaId = "") => ({
+    etapa_id: etapaId,
     nome: "",
     responsavel: "",
     telefone: "",
@@ -60,7 +62,7 @@ export const montarPayloadParceiro = (formData) => {
         nome: formData.nome,
     };
 
-    if (formData.categoria) payload.categoria = formData.categoria;
+    if (formData.etapa_id) payload.etapa_id = Number(formData.etapa_id);
     if (formData.telefone) payload.telefone = formData.telefone.replace(/\D/g, "");
     if (formData.responsavel) payload.responsavel = formData.responsavel;
 
@@ -122,10 +124,8 @@ export const encontrarParceiroPorNome = (parceiros, nome) => {
     return parceiros.find((parceiro) => normalizar(parceiro?.nome) === alvo) ?? null;
 };
 
-export const filtrarParceirosDaEtapa = (parceiros, nomeEtapa) => {
+export const filtrarParceirosDaEtapa = (parceiros, etapaId) => {
     if (!Array.isArray(parceiros)) return [];
 
-    return parceiros.filter(
-        (parceiro) => parceiro.categoria?.toLowerCase() === nomeEtapa?.toLowerCase(),
-    );
+    return parceiros.filter((parceiro) => parceiroEhDaEtapa(parceiro, etapaId));
 };

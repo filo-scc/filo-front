@@ -9,6 +9,7 @@ import { getCores } from "../../services/corService";
 import CorModal from "./CorModal";
 import EstampaModal from "./EstampaModal";
 import { getParceiros } from "../../services/parceiroService";
+import { ehParceiroDeCostura } from "../../utils/etapaDoParceiro.js";
 import { getGradesLiberadas } from "../../services/gradeService";
 import { getParceiroByProduto } from "../../services/produtoService";
 
@@ -1459,16 +1460,7 @@ export default function FichaTecnicaModal({
 
             <ProdutoParceiros
                 isOpen={parceiroModalOpen}
-                parceiros={availableParceiros.filter((parceiro) => {
-                    if (!parceiro.categoria) return false;
-
-                    const etapaNormalizada = parceiro.categoria
-                        .normalize("NFD")
-                        .replace(/[\u0300-\u036f]/g, "")
-                        .toLowerCase();
-
-                    return etapaNormalizada === "costura" || etapaNormalizada === "faccao";
-                })}
+                parceiros={availableParceiros.filter((parceiro) => ehParceiroDeCostura(parceiro))}
                 selectedParceiroIds={selectedParceiroIds}
                 produtoId={produto?.id}
                 onClose={() => setParceiroModalOpen(false)}

@@ -48,18 +48,28 @@ describe("montarPayloadParceiro", () => {
         assert.deepEqual(montarPayloadParceiro(form), { nome: "Maria Souza" });
     });
 
-    it("traz a categoria pré-selecionada", () => {
-        const form = { ...criarFormParceiro("Acabamento"), nome: "Maria Souza" };
+    it("envia a etapa pré-selecionada pelo id, como número", () => {
+        const form = { ...criarFormParceiro(7), nome: "Maria Souza" };
 
         assert.deepEqual(montarPayloadParceiro(form), {
             nome: "Maria Souza",
-            categoria: "Acabamento",
+            etapa_id: 7,
         });
+        assert.deepEqual(montarPayloadParceiro({ ...form, etapa_id: "7" }), {
+            nome: "Maria Souza",
+            etapa_id: 7,
+        });
+    });
+
+    it("nunca envia a categoria antiga", () => {
+        const form = { ...criarFormParceiro(7), nome: "Maria Souza", categoria: "Acabamento" };
+
+        assert.equal("categoria" in montarPayloadParceiro(form), false);
     });
 
     it("limpa a máscara de telefone e CEP e agrupa o endereço", () => {
         const form = {
-            ...criarFormParceiro("Costura"),
+            ...criarFormParceiro(4),
             nome: "Facção Aurora",
             telefone: "(81) 99999-8888",
             responsavel: "Dona Rita",
@@ -70,7 +80,7 @@ describe("montarPayloadParceiro", () => {
 
         assert.deepEqual(montarPayloadParceiro(form), {
             nome: "Facção Aurora",
-            categoria: "Costura",
+            etapa_id: 4,
             telefone: "81999998888",
             responsavel: "Dona Rita",
             endereco: { rua: "Rua A", numero: "10", cep: "50000000" },
@@ -145,8 +155,8 @@ describe("obterMensagemErroCadastroParceiro", () => {
 
 describe("encontrarParceiroPorNome", () => {
     const lista = [
-        { id: 1, nome: "Maria Souza", categoria: "Acabamento" },
-        { id: 2, nome: "João Lima", categoria: "Costura" },
+        { id: 1, nome: "Maria Souza", etapa_id: 1 },
+        { id: 2, nome: "João Lima", etapa_id: 2 },
     ];
 
     it("acha o parceiro recém-criado pelo nome, ignorando espaços nas pontas", () => {
@@ -161,23 +171,28 @@ describe("encontrarParceiroPorNome", () => {
 
 describe("filtrarParceirosDaEtapa", () => {
     const lista = [
-        { id: 1, nome: "Maria Souza", categoria: "Acabamento" },
-        { id: 2, nome: "João Lima", categoria: "costura" },
-        { id: 3, nome: "Sem categoria", categoria: null },
+        { id: 1, nome: "Maria Souza", etapa_id: 1, categoria: "Acabamento" },
+        { id: 2, nome: "João Lima", etapa_id: 2, categoria: "Costura" },
+        { id: 3, nome: "Sem etapa", etapa_id: null, categoria: "Costura" },
     ];
 
-    it("filtra pela categoria da etapa sem diferenciar maiúsculas", () => {
+    it("filtra pelo id da etapa", () => {
         assert.deepEqual(
-            filtrarParceirosDaEtapa(lista, "Costura").map((p) => p.id),
+            filtrarParceirosDaEtapa(lista, 2).map((p) => p.id),
             [2],
         );
         assert.deepEqual(
-            filtrarParceirosDaEtapa(lista, "ACABAMENTO").map((p) => p.id),
+            filtrarParceirosDaEtapa(lista, "1").map((p) => p.id),
             [1],
         );
     });
 
+    it("ignora o texto da categoria e parceiro sem etapa", () => {
+        assert.deepEqual(filtrarParceirosDaEtapa(lista, 3), []);
+        assert.deepEqual(filtrarParceirosDaEtapa(lista, null), []);
+    });
+
     it("devolve lista vazia quando a listagem é inválida", () => {
-        assert.deepEqual(filtrarParceirosDaEtapa(null, "Costura"), []);
+        assert.deepEqual(filtrarParceirosDaEtapa(null, 2), []);
     });
 });

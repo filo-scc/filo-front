@@ -3,7 +3,7 @@ import ParceiroForm from "./ParceiroForm.jsx";
 
 // Cadastro de parceiro dentro de outro fluxo (ex.: modal de transferência de etapa).
 // O z-index fica acima do modal de transferência (z-[9999]).
-export default function NovoParceiroModal({ isOpen, onClose, categoria, onSuccess }) {
+export default function NovoParceiroModal({ isOpen, onClose, etapa, onSuccess }) {
     if (!isOpen) return null;
 
     return (
@@ -29,9 +29,9 @@ export default function NovoParceiroModal({ isOpen, onClose, categoria, onSucces
                                 Novo Parceiro
                             </h2>
                         </div>
-                        {categoria && (
+                        {etapa?.nome && (
                             <p className="ml-7 mt-1 text-[14px] font-light leading-none text-[#7B7D80]">
-                                Etapa de produção: {categoria}
+                                Etapa de produção: {etapa.nome}
                             </p>
                         )}
                     </div>
@@ -47,8 +47,8 @@ export default function NovoParceiroModal({ isOpen, onClose, categoria, onSucces
                 </div>
 
                 <ParceiroForm
-                    categoriaInicial={categoria}
-                    categoriaFixa={Boolean(categoria)}
+                    etapaInicial={etapa}
+                    etapaFixa={Boolean(etapa?.id)}
                     onSuccess={onSuccess}
                     onCancel={onClose}
                 />
