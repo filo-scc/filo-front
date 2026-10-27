@@ -1,7 +1,8 @@
 import api from "./api";
 
 const sanitizeCatalogPayload = (payload = {}) => {
-    const { fabrico_id, ...rest } = payload || {};
+    const rest = { ...(payload || {}) };
+    delete rest.fabrico_id;
     return rest;
 };
 
