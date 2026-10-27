@@ -71,10 +71,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
         try {
             // O parceiro da ficha vem só com etapa_id; a etapa é anexada aqui, uma vez, para os
             // filtros de costura (esta tela, a edição e a impressão) olharem parceiro.etapa.
-            const [fichaCarregada, etapas] = await Promise.all([
-                findOne(fichaId),
-                getAllEtapas().catch(() => []),
-            ]);
+            const [fichaCarregada, etapas] = await Promise.all([findOne(fichaId), getAllEtapas()]);
             const dados = anexarEtapaAosParceiros(fichaCarregada, indexarEtapasPorId(etapas));
             if (dados && dados.fabrico?.fabricacao_sob_demanda == null && dados.fabrico_id) {
                 dados.fabrico = await getFabricoById(dados.fabrico_id);
