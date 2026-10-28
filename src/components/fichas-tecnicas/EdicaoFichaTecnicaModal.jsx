@@ -692,7 +692,12 @@ export default function EdicaoFichaTecnicaModal({
                 })),
         );
 
-        if (itens.length === 0) {
+        const matrizVazia = itens.length === 0;
+        const temMatrizGravada = (dadosFicha?.ficha_tecnica_itens || []).some(
+            (item) => Number(item.quantidade) > 0,
+        );
+
+        if (matrizVazia && temMatrizGravada) {
             setSaveError("Informe a quantidade de pelo menos um tamanho/cor antes de salvar.");
             return;
         }
@@ -747,15 +752,18 @@ export default function EdicaoFichaTecnicaModal({
             }
 
             // 2) Matriz: UMA chamada atômica (itens, quantidade, perdas da ficha e totais do pedido)
-            const perdas = isUltimaEtapa
-                ? {
-                      defeitos_costura: Number(relatorioAcabamento.defeitoCostura) || 0,
-                      defeitos_tecido: Number(relatorioAcabamento.defeitoTecido) || 0,
-                      retiradas: Number(relatorioAcabamento.retiradas) || 0,
-                      sobras: Number(relatorioAcabamento.sobras) || 0,
-                  }
-                : undefined;
-            await replaceMatriz(fichaId, itens, perdas);
+            // Sem itens não há o que gravar (o endpoint exige ao menos 1)
+            if (!matrizVazia) {
+                const perdas = isUltimaEtapa
+                    ? {
+                          defeitos_costura: Number(relatorioAcabamento.defeitoCostura) || 0,
+                          defeitos_tecido: Number(relatorioAcabamento.defeitoTecido) || 0,
+                          retiradas: Number(relatorioAcabamento.retiradas) || 0,
+                          sobras: Number(relatorioAcabamento.sobras) || 0,
+                      }
+                    : undefined;
+                await replaceMatriz(fichaId, itens, perdas);
+            }
 
             await onSuccess?.();
             onClose();
