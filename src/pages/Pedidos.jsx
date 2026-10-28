@@ -251,7 +251,7 @@ const Pedidos = () => {
                                                     onClick={() =>
                                                         navigate(`/pedidos/${pedido.id}`)
                                                     }
-                                                    className="border-b border-[#E8E8E8] last:border-none even:bg-[#E8E8E8] transition-colors text-center cursor-pointer hover:text-[#4696ad]"
+                                                    className={`border-b border-[#E8E8E8] last:border-none transition-colors text-center cursor-pointer hover:text-[#4696ad] ${index % 2 === 0 ? "bg-white hover:bg-[#FBFBFB]" : "bg-[#F4F4F4] hover:bg-[#EDEDED]"}`}
                                                 >
                                                     <td className="py-4 px-6 font-light">
                                                         {pedido.numero ?? pedido.id}
