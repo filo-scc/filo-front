@@ -16,7 +16,6 @@ import ProdutoParceiros from "../produtos/ProdutoParceiros";
 import ImagePreview from "../geral/ImagePreview";
 import { preventNumberInputWheel } from "../../utils/preventNumberInputWheel";
 import { getAviamentosDoProduto, getParceiroByProduto } from "../../services/produtoService";
-import { updateFichaTecnica } from "../../services/fichasTecnicasService";
 import { getParceiros } from "../../services/parceiroService";
 import CorModal from "./CorModal";
 import EstampaModal from "./EstampaModal";
@@ -701,18 +700,7 @@ export default function EdicaoFichaTecnicaModal({
         if (loading) return;
         setLoading(true);
         try {
-            // 1) Perdas + quantidade juntas: o back valida os dois valores em conjunto
-            if (isUltimaEtapa) {
-                await updateFichaTecnica(fichaId, {
-                    defeitos_costura: relatorioAcabamento.defeitoCostura,
-                    defeitos_tecido: relatorioAcabamento.defeitoTecido,
-                    retiradas: relatorioAcabamento.retiradas,
-                    sobras: relatorioAcabamento.sobras,
-                    quantidade: totalGeral,
-                });
-            }
-
-            // 2) Parceiros (separados): o back reconcilia recalcula
+            // 1) Parceiros (separados): o back reconcilia recalcula
             //    quantidade/valor na matriz usando o preço já atualizado
             await Promise.all(
                 parceirosRemovidos.map((removido) =>
@@ -758,8 +746,16 @@ export default function EdicaoFichaTecnicaModal({
                 }
             }
 
-            // 3) Matriz: UMA chamada atômica (itens, quantidade da ficha e totais do pedido)
-            await replaceMatriz(fichaId, itens);
+            // 2) Matriz: UMA chamada atômica (itens, quantidade, perdas da ficha e totais do pedido)
+            const perdas = isUltimaEtapa
+                ? {
+                      defeitos_costura: Number(relatorioAcabamento.defeitoCostura) || 0,
+                      defeitos_tecido: Number(relatorioAcabamento.defeitoTecido) || 0,
+                      retiradas: Number(relatorioAcabamento.retiradas) || 0,
+                      sobras: Number(relatorioAcabamento.sobras) || 0,
+                  }
+                : undefined;
+            await replaceMatriz(fichaId, itens, perdas);
 
             await onSuccess?.();
             onClose();

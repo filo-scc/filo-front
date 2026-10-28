@@ -4,9 +4,10 @@ function unwrap(response) {
     return response?.data?.data ?? response?.data ?? response;
 }
 
-export async function replaceMatriz(fichaTecnicaId, itens) {
+export async function replaceMatriz(fichaTecnicaId, itens, perdas) {
     const response = await api.put(`/fichas-tecnicas/${fichaTecnicaId}/matriz`, {
         itens,
+        ...perdas,
     });
     return unwrap(response);
 }
