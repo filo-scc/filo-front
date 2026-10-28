@@ -7,6 +7,7 @@ export default function MenuOpcoes({
     editDisabled = false,
     deleteDisabled = false,
     disabledReason = "",
+    touchTarget = false,
 }) {
     const [isOpen, setIsOpen] = useState(false);
     const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
@@ -120,7 +121,9 @@ export default function MenuOpcoes({
                 ref={buttonRef}
                 type="button"
                 onClick={toggleMenu}
-                className="w-10 h-8 flex items-center justify-center"
+                aria-label="Opções"
+                aria-expanded={isOpen}
+                className={`${touchTarget ? "w-11 h-11" : "w-10 h-8"} flex items-center justify-center`}
             >
                 <img
                     src="/tres-pontos.png"

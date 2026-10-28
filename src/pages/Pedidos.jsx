@@ -4,6 +4,7 @@ import { getFabricoById } from "../services/fabricoService";
 import { useNavigate } from "react-router-dom";
 import ModalExclusao from "../components/geral/ModalExclusao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
+import PedidoCard from "../components/pedidos/PedidoCard";
 import MenuOpcoes from "../components/geral/MenuOpcoes";
 import { PedidosTableSkeleton } from "../components/geral/Loading";
 import { parsePreco } from "../utils/preco";
@@ -69,6 +70,33 @@ const Pedidos = () => {
         });
     };
 
+    const dataFinalizado = (pedido) => {
+        let textoDataFinalizado = "-";
+
+        if (pedido.finalizado) {
+            let ultimaDataFim = null;
+
+            pedido.fichas_tecnicas?.forEach((ficha) => {
+                ficha.fichas_etapas?.forEach((etapa) => {
+                    if (etapa.data_fim) {
+                        const dataAtual = new Date(etapa.data_fim);
+                        if (!ultimaDataFim || dataAtual > ultimaDataFim) {
+                            ultimaDataFim = dataAtual;
+                        }
+                    }
+                });
+            });
+
+            if (ultimaDataFim) {
+                textoDataFinalizado = formatarData(ultimaDataFim);
+            } else {
+                textoDataFinalizado = formatarData(pedido.updated_at);
+            }
+        }
+
+        return textoDataFinalizado;
+    };
+
     const handleEdit = (pedido) => {
         if (pedido.finalizado) return;
         navigate(`/pedidos/editar/${pedido.id}`);
@@ -118,11 +146,11 @@ const Pedidos = () => {
         : "Nenhuma produção encontrada.";
 
     return (
-        <div className="p-6 pt-0 mt-6 relative flex justify-start w-full font-['Outfit']">
-            <div className="bg-white px-10 py-8 rounded-[24px] shadow-sm w-full flex flex-col relative h-fit">
+        <div className="p-3 md:p-6 pt-0 mt-6 relative flex justify-start w-full min-w-0 font-['Outfit']">
+            <div className="bg-white px-4 py-6 xl:px-10 xl:py-8 rounded-[24px] shadow-sm w-full flex flex-col relative h-fit">
                 {/* Cabeçalho da Página */}
-                <div className="flex justify-between items-center mb-8">
-                    <h1 className="ml-6 font-light text-[30px] text-[#404040] flex items-center gap-4">
+                <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:justify-between md:items-center mb-8">
+                    <h1 className="xl:ml-6 font-light text-[30px] text-[#404040] flex items-center gap-4">
                         <img
                             src="/pedidos-ativado.png"
                             alt=""
@@ -131,14 +159,15 @@ const Pedidos = () => {
                         {tituloLista}
                     </h1>
 
-                    <div className="flex items-center gap-4">
-                        <div className="relative">
+                    <div className="flex w-full flex-col gap-3 md:w-auto md:flex-row md:items-center md:gap-4">
+                        <div className="relative w-full md:w-auto">
                             <input
                                 type="text"
                                 placeholder="Buscar"
+                                aria-label="Buscar pedidos ou produções"
                                 value={busca}
                                 onChange={(e) => setBusca(e.target.value)}
-                                className="pl-4 pr-10 border border-[#D3D3D3] rounded-[16px] text-sm focus:outline-none w-[196px] h-[39px] shrink-0 font-light"
+                                className="pl-4 pr-10 border border-[#D3D3D3] rounded-[16px] text-sm focus:outline-none w-full md:w-[196px] h-11 md:h-[39px] shrink-0 font-light"
                             />
                             <svg
                                 className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"
@@ -157,7 +186,7 @@ const Pedidos = () => {
 
                         <button
                             onClick={() => navigate("/pedidos/cadastrar")}
-                            className="w-[169px] h-[39px] bg-[#A9E2F2] text-[#4696AD] font-light text-[16px] rounded-full flex items-center justify-center gap-2 hover:bg-[#A2DCED] transition-colors shrink-0 cursor-pointer"
+                            className="w-full md:w-[169px] h-11 md:h-[39px] bg-[#A9E2F2] text-[#4696AD] font-light text-[16px] rounded-full flex items-center justify-center gap-2 hover:bg-[#A2DCED] transition-colors shrink-0 cursor-pointer"
                         >
                             <img
                                 src="/pedidos-azul.png"
@@ -169,8 +198,61 @@ const Pedidos = () => {
                     </div>
                 </div>
 
+                <div className="xl:hidden">
+                    {loading ? (
+                        <div
+                            role="status"
+                            aria-label="Carregando"
+                            className="grid grid-cols-1 gap-4 md:grid-cols-2"
+                        >
+                            {Array.from({ length: 4 }, (_, index) => (
+                                <div
+                                    key={index}
+                                    aria-hidden="true"
+                                    className="h-28 md:h-72 animate-pulse rounded-[18px] border border-[#DEDEDE] bg-[#F4F4F4] motion-reduce:animate-none"
+                                />
+                            ))}
+                        </div>
+                    ) : pedidos.length === 0 ? (
+                        <p className="py-10 text-center text-[#7B7D80]">{labelVazio}</p>
+                    ) : (
+                        <>
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                {pedidos.map((pedido) => (
+                                    <PedidoCard
+                                        key={pedido.id}
+                                        pedido={pedido}
+                                        label={labelItemColuna}
+                                        sobDemanda={producaoSobDemanda}
+                                        valor={
+                                            producaoSobDemanda && !pedido.cliente
+                                                ? "-"
+                                                : formatarMoeda(
+                                                      producaoSobDemanda
+                                                          ? pedido.valor_total
+                                                          : pedido.custo_total,
+                                                  )
+                                        }
+                                        criado={formatarData(pedido.created_at)}
+                                        finalizado={dataFinalizado(pedido)}
+                                        onDetails={() => navigate(`/pedidos/${pedido.id}`)}
+                                        onEdit={() => handleEdit(pedido)}
+                                        onDelete={() => abrirModalExclusao(pedido)}
+                                    />
+                                ))}
+                            </div>
+                            <p className="mt-5 text-sm font-light text-[#7B7D80]">
+                                {pedidos.length}{" "}
+                                {pedidos.length === 1
+                                    ? labelItemColuna.toLowerCase()
+                                    : tituloLista.toLowerCase()}
+                            </p>
+                        </>
+                    )}
+                </div>
+
                 {/* Tabela de Pedidos */}
-                <div className="w-full overflow-visible">
+                <div className="hidden xl:block w-full overflow-x-auto">
                     <div className="min-w-max border border-[#DEDEDE] rounded-xl font-light text-[16px] overflow-hidden">
                         <table className="w-full text-left border-collapse relative z-10">
                             <thead className="font-['Outfit']">
@@ -209,37 +291,8 @@ const Pedidos = () => {
                                                     0,
                                                 ) || 0;
 
-                                            let textoDataFinalizado = "-";
+                                            const textoDataFinalizado = dataFinalizado(pedido);
                                             const isLast = index === pedidos.length - 1;
-
-                                            if (pedido.finalizado) {
-                                                let ultimaDataFim = null;
-
-                                                pedido.fichas_tecnicas?.forEach((ficha) => {
-                                                    ficha.fichas_etapas?.forEach((etapa) => {
-                                                        if (etapa.data_fim) {
-                                                            const dataAtual = new Date(
-                                                                etapa.data_fim,
-                                                            );
-                                                            if (
-                                                                !ultimaDataFim ||
-                                                                dataAtual > ultimaDataFim
-                                                            ) {
-                                                                ultimaDataFim = dataAtual;
-                                                            }
-                                                        }
-                                                    });
-                                                });
-
-                                                if (ultimaDataFim) {
-                                                    textoDataFinalizado =
-                                                        formatarData(ultimaDataFim);
-                                                } else {
-                                                    textoDataFinalizado = formatarData(
-                                                        pedido.updated_at,
-                                                    );
-                                                }
-                                            }
 
                                             const valorMonetario = producaoSobDemanda
                                                 ? pedido.valor_total
