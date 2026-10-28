@@ -326,7 +326,7 @@ const Pedidos = () => {
                 onClose={() => setModalExclusaoAberto(false)}
                 onConfirm={handleConfirmarExclusao}
                 titulo={producaoSobDemanda ? "Excluir pedido" : "Excluir produção"}
-                nomeItem={pedidoSelecionado?.id.toString()}
+                nomeItem={pedidoSelecionado?.numero}
                 tipoItem={producaoSobDemanda ? "o pedido" : "a produção"}
                 loading={excluindo}
                 erro={erroExclusao}
