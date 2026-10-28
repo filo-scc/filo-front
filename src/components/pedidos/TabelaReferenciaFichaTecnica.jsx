@@ -10,6 +10,9 @@ export default function TabelaReferenciaFichaTecnica({
     onAbrirFicha,
     somenteLeitura = false,
     bloqueada = false,
+    usarTotalPersistido = false,
+    valorTotalPersistido,
+    possuiPerdasTecido = false,
 }) {
     const [idEmEdicao, setIdEmEdicao] = useState(null);
 
@@ -72,15 +75,23 @@ export default function TabelaReferenciaFichaTecnica({
         return parsePreco(valorRaw);
     };
 
-    const totalPedido = fichas.reduce((acc, ficha) => {
-        const qtd = Number(ficha.quantidade) || Number(ficha.quantidade_pecas) || 0;
-        const valorUnitario = obterValorUnitario(ficha);
-        const subtotal =
-            isSobDemanda && ficha.subtotal !== undefined
-                ? parsePreco(ficha.subtotal)
-                : qtd * valorUnitario;
-        return acc + subtotal;
-    }, 0);
+    const exibirTotalPersistido = isSobDemanda && usarTotalPersistido;
+    const rotuloSubtotal = isSobDemanda
+        ? exibirTotalPersistido
+            ? "Subtotal antes das perdas"
+            : "Subtotal"
+        : "Subcusto";
+    const totalPedido = exibirTotalPersistido
+        ? valorTotalPersistido
+        : fichas.reduce((acc, ficha) => {
+              const qtd = Number(ficha.quantidade) || Number(ficha.quantidade_pecas) || 0;
+              const valorUnitario = obterValorUnitario(ficha);
+              const subtotal =
+                  isSobDemanda && ficha.subtotal !== undefined
+                      ? parsePreco(ficha.subtotal)
+                      : qtd * valorUnitario;
+              return acc + subtotal;
+          }, 0);
 
     const campoBloqueadoClass =
         "flex flex-col items-start lg:items-center justify-center gap-2 lg:gap-0 lg:text-center min-w-0 px-4 py-4 lg:px-2 lg:py-0 break-words [overflow-wrap:anywhere] text-base text-[#404040] cursor-not-allowed";
@@ -129,7 +140,7 @@ export default function TabelaReferenciaFichaTecnica({
                                 {isSobDemanda ? "Preço unit." : "Custo unit."}
                             </div>
                             <div className="flex items-center justify-center text-center px-2">
-                                {isSobDemanda ? "Subtotal" : "Subcusto"}
+                                {rotuloSubtotal}
                             </div>
                         </div>
                     </div>
@@ -323,7 +334,7 @@ export default function TabelaReferenciaFichaTecnica({
                                             {/* 7. Subtotal */}
                                             <div className="col-span-6 md:col-span-2 lg:col-span-1 flex flex-row md:flex-col lg:flex-row items-center md:items-start lg:items-center justify-between md:justify-center lg:justify-center gap-3 lg:gap-0 min-w-0 px-4 py-4 lg:px-2 lg:py-0 border-t lg:border-t-0 border-[#d9d9d9] text-base text-[#404040] font-light break-words [overflow-wrap:anywhere]">
                                                 <span className="lg:hidden text-base md:text-[#4696AD]">
-                                                    {isSobDemanda ? "Subtotal" : "Subcusto"}
+                                                    {rotuloSubtotal}
                                                 </span>
                                                 {formatarMoeda(subtotal)}
                                             </div>
@@ -404,7 +415,7 @@ export default function TabelaReferenciaFichaTecnica({
                 )}
 
                 {/* 3. RODAPÉ DA TABELA */}
-                {fichas.length > 0 && (
+                {(fichas.length > 0 || exibirTotalPersistido) && (
                     <div className="flex flex-row items-center w-full mt-5 lg:mt-0">
                         <div className="min-w-0 flex-1 md:rounded-[16px] lg:rounded-t-none md:border lg:border-t-0 border-[#d9d9d9] bg-transparent md:bg-[#d9d9d9] px-0 md:px-6 py-3.5 flex flex-col md:flex-row md:flex-wrap items-start md:items-center justify-between gap-3 lg:gap-0 text-[#898C8F] font-['Outfit'] text-sm md:text-base">
                             <span className="hidden md:block font-['Outfit'] text-[#898C8F]">
@@ -419,14 +430,36 @@ export default function TabelaReferenciaFichaTecnica({
                                 </div>
                                 <div className="hidden lg:block h-4 w-[1px] bg-[#a0a3a6] font-['Outfit']" />
                                 <div>
-                                    {isSobDemanda ? "Total do pedido: " : "Custo total: "}
+                                    {isSobDemanda
+                                        ? exibirTotalPersistido && !somenteLeitura
+                                            ? "Total salvo do pedido: "
+                                            : "Total do pedido: "
+                                        : "Custo total: "}
                                     <span className="font-light font-['Outfit']">
-                                        {formatarMoeda(totalPedido)}
+                                        {exibirTotalPersistido && totalPedido == null
+                                            ? "Indisponível"
+                                            : formatarMoeda(totalPedido)}
                                     </span>
                                 </div>
                             </div>
                         </div>
                         {!somenteLeitura && <div className="hidden lg:block w-9 shrink-0" />}
+                    </div>
+                )}
+                {exibirTotalPersistido && (
+                    <div className="mt-3 text-sm font-light text-[#606060]" role="note">
+                        {possuiPerdasTecido && (
+                            <p>
+                                O total salvo considera as perdas de tecido informadas. Essas perdas
+                                reduzem o faturamento, sem alterar o custo de produção.
+                            </p>
+                        )}
+                        {!somenteLeitura && (
+                            <p>
+                                O total será atualizado após salvar as alterações. Os subtotais das
+                                fichas mostram os valores antes das perdas.
+                            </p>
+                        )}
                     </div>
                 )}
             </div>
