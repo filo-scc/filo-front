@@ -12,7 +12,6 @@ export default function TabelaReferenciaFichaTecnica({
     bloqueada = false,
     usarTotalPersistido = false,
     valorTotalPersistido,
-    possuiPerdasTecido = false,
 }) {
     const [idEmEdicao, setIdEmEdicao] = useState(null);
 
@@ -444,22 +443,6 @@ export default function TabelaReferenciaFichaTecnica({
                             </div>
                         </div>
                         {!somenteLeitura && <div className="hidden lg:block w-9 shrink-0" />}
-                    </div>
-                )}
-                {exibirTotalPersistido && (
-                    <div className="mt-3 text-sm font-light text-[#606060]" role="note">
-                        {possuiPerdasTecido && (
-                            <p>
-                                O total salvo considera as perdas de tecido informadas. Essas perdas
-                                reduzem o faturamento, sem alterar o custo de produção.
-                            </p>
-                        )}
-                        {!somenteLeitura && (
-                            <p>
-                                O total será atualizado após salvar as alterações. Os subtotais das
-                                fichas mostram os valores antes das perdas.
-                            </p>
-                        )}
                     </div>
                 )}
             </div>

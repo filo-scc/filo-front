@@ -1188,11 +1188,6 @@ export default function PedidosEditar() {
                             <TabelaFichaTecnica
                                 usarTotalPersistido
                                 valorTotalPersistido={pedido?.valor_total}
-                                possuiPerdasTecido={(
-                                    pedido?.fichas_tecnicas ??
-                                    pedido?.fichas ??
-                                    []
-                                ).some((ficha) => Number(ficha.defeitos_tecido) > 0)}
                                 fichas={fichas}
                                 isSobDemanda={isSobDemanda}
                                 onRemoverFicha={handleRemoverFicha}
