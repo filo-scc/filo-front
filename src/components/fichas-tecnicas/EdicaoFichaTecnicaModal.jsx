@@ -1,11 +1,8 @@
 import ConfirmacaoFichaModal from "./ConfirmacaoFichaModal";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import {
-    syncFichaTecnicaCores,
-    updateFichaTecnicaItem,
-    deleteFichaTecnicaItem,
+    replaceMatriz,
     updateParceiroProdutoPrice,
-    createFichaTecnicaItem,
     createParceiroProduto,
 } from "../../services/fichaTecnicaItemService";
 import { getCores } from "../../services/corService";
@@ -18,9 +15,7 @@ import { getProdutosDoCliente } from "../../services/clientesService";
 import ProdutoParceiros from "../produtos/ProdutoParceiros";
 import ImagePreview from "../geral/ImagePreview";
 import { preventNumberInputWheel } from "../../utils/preventNumberInputWheel";
-import FichaTecnicaPrintView from "../FichaTecnicaPrintView";
 import { getAviamentosDoProduto, getParceiroByProduto } from "../../services/produtoService";
-import { updateFichaTecnica } from "../../services/fichasTecnicasService";
 import { getParceiros } from "../../services/parceiroService";
 import { ehParceiroDeCostura } from "../../utils/etapaDoParceiro.js";
 import CorModal from "./CorModal";
@@ -409,7 +404,6 @@ export default function EdicaoFichaTecnicaModal({
             dadosFicha.ficha_tecnica_itens?.forEach((item) => {
                 if (!matrizInicial[item.cor_id]) matrizInicial[item.cor_id] = {};
                 matrizInicial[item.cor_id][item.grade_versao_item_id] = {
-                    id: item.id,
                     quantidade: item.quantidade,
                 };
             });
@@ -644,6 +638,19 @@ export default function EdicaoFichaTecnicaModal({
         setParceiros((prev) => prev.filter((_, i) => i !== index));
     };
 
+    const mensagemDeErro = (error, padrao) => {
+        const message = error?.response?.data?.message;
+        if (Array.isArray(message)) return message.join(" ");
+        return message || padrao;
+    };
+
+    const ignorarStatus =
+        (...statusIgnorados) =>
+        (error) => {
+            if (statusIgnorados.includes(error?.response?.status)) return null;
+            throw error;
+        };
+
     const handleConcluir = async () => {
         setValidacaoPrecoExibida(true);
         setSaveError("");
@@ -652,121 +659,96 @@ export default function EdicaoFichaTecnicaModal({
             return;
         }
 
+        // Células com quantidade > 0 das cores selecionadas
+        const itens = coresSelecionadas.flatMap((cor) =>
+            Object.entries(matrizQuantidades[cor.id] || {})
+                .filter(([, celula]) => Number(celula.quantidade) > 0)
+                .map(([gradeItemId, celula]) => ({
+                    cor_id: Number(cor.id),
+                    grade_versao_item_id: Number(gradeItemId),
+                    quantidade: Number(celula.quantidade),
+                })),
+        );
+
+        const matrizVazia = itens.length === 0;
+        const temMatrizGravada = (dadosFicha?.ficha_tecnica_itens || []).some(
+            (item) => Number(item.quantidade) > 0,
+        );
+
+        if (matrizVazia && temMatrizGravada) {
+            setSaveError("Informe a quantidade de pelo menos um tamanho/cor antes de salvar.");
+            return;
+        }
+
         if (loading) return;
         setLoading(true);
         try {
-            const coresIds = coresSelecionadas.map((c) => c.id);
+            // 1) Parceiros (separados): o back reconcilia recalcula
+            //    quantidade/valor na matriz usando o preço já atualizado
+            await Promise.all(
+                parceirosRemovidos.map((removido) =>
+                    deleteFichaTecnicaParceiro(fichaId, removido.parceiro_id).catch(
+                        ignorarStatus(404),
+                    ),
+                ),
+            );
 
-            const promessasItens = [];
-            Object.keys(matrizQuantidades).forEach((corId) => {
-                if (!coresSelecionadas.some((c) => c.id === Number(corId))) return;
+            for (const p of parceiros) {
+                const preco = Number(p.preco_editavel);
 
-                Object.keys(matrizQuantidades[corId]).forEach((gradeItemId) => {
-                    const celula = matrizQuantidades[corId][gradeItemId];
-
-                    if (celula.id) {
-                        if (celula.quantidade > 0) {
-                            promessasItens.push(
-                                updateFichaTecnicaItem(celula.id, {
-                                    quantidade: Number(celula.quantidade),
-                                }),
-                            );
-                        } else {
-                            promessasItens.push(deleteFichaTecnicaItem(celula.id));
-                        }
-                    } else if (celula.quantidade > 0) {
-                        promessasItens.push(
-                            createFichaTecnicaItem(fichaId, {
-                                cor_id: Number(corId),
-                                grade_versao_item_id: Number(gradeItemId),
-                                quantidade: Number(celula.quantidade),
-                            }),
-                        );
-                    }
-                });
-            });
-
-            const salvarParceiros = async () => {
-                for (const p of parceiros) {
-                    if (p.parceiroProdutoExiste) {
-                        await updateParceiroProdutoPrice(
-                            p.parceiro_id,
-                            dadosFicha.produto_id,
-                            Number(p.preco_editavel),
-                        );
-                    } else {
-                        await createParceiroProduto(
-                            p.parceiro_id,
-                            dadosFicha.produto_id,
-                            Number(p.preco_editavel),
-                        );
-                    }
-
-                    const temMultiplosParceiros = parceiros.length > 1;
-
-                    const payloadFichaParceiro = {
-                        operacao: p.operacao,
-                        quantidade: temMultiplosParceiros ? 0 : totalGeral,
-                        valor: temMultiplosParceiros
-                            ? undefined
-                            : Number((totalGeral * Number(p.preco_editavel)).toFixed(2)),
-                    };
-                    if (p.isNovo) {
-                        await createFichaParceiro(
-                            fichaId,
-                            p.parceiro_id,
-                            p.operacao,
-                            payloadFichaParceiro.valor,
-                            payloadFichaParceiro.quantidade,
-                        ).catch((error) => {
+                if (p.parceiroProdutoExiste) {
+                    await updateParceiroProdutoPrice(p.parceiro_id, dadosFicha.produto_id, preco);
+                } else {
+                    await createParceiroProduto(p.parceiro_id, dadosFicha.produto_id, preco).catch(
+                        (error) => {
                             if (error?.response?.status === 409) {
-                                return updateFichaTecnicaParceiro(
-                                    fichaId,
+                                return updateParceiroProdutoPrice(
                                     p.parceiro_id,
-                                    payloadFichaParceiro,
+                                    dadosFicha.produto_id,
+                                    preco,
                                 );
                             }
                             throw error;
-                        });
-                    } else {
-                        await updateFichaTecnicaParceiro(
-                            fichaId,
-                            p.parceiro_id,
-                            payloadFichaParceiro,
-                        );
-                    }
+                        },
+                    );
                 }
-            };
 
-            const promessasDelecaoParceiros = parceirosRemovidos.map((parceiroRemovido) =>
-                deleteFichaTecnicaParceiro(fichaId, parceiroRemovido.parceiro_id),
-            );
+                if (p.isNovo) {
+                    await createFichaParceiro(fichaId, p.parceiro_id, p.operacao).catch((error) => {
+                        if (error?.response?.status === 409) {
+                            return updateFichaTecnicaParceiro(fichaId, p.parceiro_id, {
+                                operacao: p.operacao,
+                            });
+                        }
+                        throw error;
+                    });
+                } else {
+                    await updateFichaTecnicaParceiro(fichaId, p.parceiro_id, {
+                        operacao: p.operacao,
+                    });
+                }
+            }
 
-            const promessaAtualizarQuantidade = updateFichaTecnica(fichaId, {
-                defeitos_costura: relatorioAcabamento.defeitoCostura,
-                defeitos_tecido: relatorioAcabamento.defeitoTecido,
-                retiradas: relatorioAcabamento.retiradas,
-                sobras: relatorioAcabamento.sobras,
-                quantidade: totalGeral,
-            });
-
-            await Promise.all([
-                ...promessasItens,
-                ...promessasDelecaoParceiros,
-                promessaAtualizarQuantidade,
-                salvarParceiros(),
-            ]);
-            await syncFichaTecnicaCores(fichaId, coresIds);
+            // 2) Matriz: UMA chamada atômica (itens, quantidade, perdas da ficha e totais do pedido)
+            // Sem itens não há o que gravar (o endpoint exige ao menos 1)
+            if (!matrizVazia) {
+                const perdas = isUltimaEtapa
+                    ? {
+                          defeitos_costura: Number(relatorioAcabamento.defeitoCostura) || 0,
+                          defeitos_tecido: Number(relatorioAcabamento.defeitoTecido) || 0,
+                          retiradas: Number(relatorioAcabamento.retiradas) || 0,
+                          sobras: Number(relatorioAcabamento.sobras) || 0,
+                      }
+                    : undefined;
+                await replaceMatriz(fichaId, itens, perdas);
+            }
 
             await onSuccess?.();
             onClose();
         } catch (error) {
             console.error("Erro ao salvar edição", error);
-            const message = error?.response?.data?.message;
             setSaveError(
-                Array.isArray(message)
-                    ? message.join(" ")
-                    : message || "Não foi possível salvar a ficha. Tente novamente.",
+                mensagemDeErro(error, "Não foi possível salvar a ficha. Tente novamente."),
             );
         } finally {
             setLoading(false);
