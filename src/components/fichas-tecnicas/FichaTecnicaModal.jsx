@@ -12,6 +12,7 @@ import { getParceiros } from "../../services/parceiroService";
 import { ehParceiroDeCostura } from "../../utils/etapaDoParceiro.js";
 import { getGradesLiberadas } from "../../services/gradeService";
 import { getParceiroByProduto } from "../../services/produtoService";
+import { findOne as getFichaTecnica } from "../../services/fichasTecnicasService";
 
 import ProdutoParceiros from "../produtos/ProdutoParceiros";
 import ImagePreview from "../geral/ImagePreview";
@@ -120,6 +121,24 @@ function QuantityCell({ value, onCommit, onDraftChange }) {
     );
 }
 
+function buildSizeItems(versionItems = []) {
+    return versionItems
+        .map((item) => ({
+            gradeVersaoItemId: item.id,
+            tamanhoId: item.tamanho_id ?? item.tamanho?.id,
+            posicao: item.posicao,
+            codigo: item.tamanho?.codigo ?? String(item.tamanho_id ?? ""),
+        }))
+        .filter((item) => item.gradeVersaoItemId && item.tamanhoId);
+}
+
+function buildGradeLabel(nome, sizeItems, sufixo = "") {
+    const tamanhos = sizeItems.length
+        ? ` (${sizeItems.map((item) => item.codigo).join(" - ")})`
+        : "";
+    return `${nome}${tamanhos}${sufixo}`;
+}
+
 function normalizeGradeOptions(fabricoGrades = []) {
     return fabricoGrades
         .map((link) => {
@@ -130,23 +149,29 @@ function normalizeGradeOptions(fabricoGrades = []) {
             const versionItems = activeVersion?.itens?.length
                 ? activeVersion.itens
                 : grade?.items || [];
-            const sizeItems = versionItems
-                .map((item) => ({
-                    gradeVersaoItemId: item.id,
-                    tamanhoId: item.tamanho_id ?? item.tamanho?.id,
-                    posicao: item.posicao,
-                    codigo: item.tamanho?.codigo ?? String(item.tamanho_id ?? ""),
-                }))
-                .filter((item) => item.gradeVersaoItemId && item.tamanhoId);
+            const sizeItems = buildSizeItems(versionItems);
 
             return {
                 gradeId: grade.id,
                 gradeVersaoId: activeVersion?.id ?? null,
                 sizeItems,
-                label: `${grade.nome}${sizeItems.length ? ` (${sizeItems.map((item) => item.codigo).join(" - ")})` : ""}`,
+                label: buildGradeLabel(grade.nome, sizeItems),
             };
         })
         .filter(Boolean);
+}
+
+function gradeOptionFromVersao(versao) {
+    if (!versao?.id) return null;
+    const sizeItems = buildSizeItems(versao.itens || []);
+    if (!sizeItems.length) return null;
+
+    return {
+        gradeId: versao.grade_id ?? versao.grade?.id ?? null,
+        gradeVersaoId: versao.id,
+        sizeItems,
+        label: buildGradeLabel(versao.grade?.nome ?? "Grade", sizeItems, " – versão da ficha"),
+    };
 }
 
 function syncMatrix(prevMatrix, selectedColorIds, sizeItems) {
@@ -215,10 +240,7 @@ export default function FichaTecnicaModal({
     );
 
     const currentGradeOption = useMemo(
-        () =>
-            gradeOptions.find((g) => g.gradeVersaoId === selectedGradeVersionId) ||
-            gradeOptions[0] ||
-            null,
+        () => gradeOptions.find((g) => g.gradeVersaoId === selectedGradeVersionId) || null,
         [gradeOptions, selectedGradeVersionId],
     );
 
@@ -431,17 +453,48 @@ export default function FichaTecnicaModal({
                     Array.isArray(gradesResponse) ? gradesResponse : [],
                 );
 
-                setGradeOptions(normalizedGrades);
+                const fichaPersistidaId =
+                    fichaInicial &&
+                    !fichaInicial.isDraft &&
+                    Number.isFinite(Number(fichaInicial.id))
+                        ? fichaInicial.id
+                        : null;
 
-                const fallbackGrade =
-                    fichaInicial?.gradeVersaoIdNova ||
-                    fichaInicial?.gradeVersaoIdOriginal ||
-                    produto?.gradeVersaoId ||
-                    produto?.grade_versao_id ||
-                    normalizedGrades[0]?.gradeVersaoId ||
-                    null;
+                // Edição usa a grade da própria ficha; ficha nova usa a do produto.
+                let gradeDesejadaId = fichaInicial
+                    ? fichaInicial.gradeVersaoIdNova || fichaInicial.gradeVersaoIdOriginal || null
+                    : produto?.gradeVersaoId || produto?.grade_versao_id || null;
+                let opcoesDeGrade = normalizedGrades;
 
-                setSelectedGradeVersionId(fallbackGrade);
+                // Versão gravada fora das liberadas (foi desativada): usa a versão da própria ficha.
+                if (
+                    fichaPersistidaId &&
+                    !normalizedGrades.some((g) => g.gradeVersaoId === gradeDesejadaId)
+                ) {
+                    const fichaApi = await getFichaTecnica(fichaPersistidaId);
+                    if (!alive) return;
+
+                    const gravada = gradeOptionFromVersao(fichaApi?.grade_versao);
+                    if (
+                        gravada &&
+                        (!gradeDesejadaId || gravada.gradeVersaoId === gradeDesejadaId)
+                    ) {
+                        opcoesDeGrade = [gravada, ...normalizedGrades];
+                        gradeDesejadaId = gravada.gradeVersaoId;
+                    }
+                }
+
+                const gradeInicialId = opcoesDeGrade.some(
+                    (g) => g.gradeVersaoId === gradeDesejadaId,
+                )
+                    ? gradeDesejadaId
+                    : fichaInicial
+                      ? null
+                      : (opcoesDeGrade[0]?.gradeVersaoId ?? null);
+
+                setGradeOptions(opcoesDeGrade);
+                setSelectedGradeVersionId(gradeInicialId);
+
                 // Só ficha nova oferece repetir a grade da anterior; na edição a matriz já vem preenchida.
                 setOferecerGrade(
                     Boolean(!fichaInicial && fichaAnterior && normalizedGrades.length),
@@ -499,9 +552,9 @@ export default function FichaTecnicaModal({
                         );
                     }
 
-                    const gradeEscolhida =
-                        normalizedGrades.find((g) => g.gradeVersaoId === fallbackGrade) ||
-                        normalizedGrades[0];
+                    const gradeEscolhida = opcoesDeGrade.find(
+                        (g) => g.gradeVersaoId === gradeInicialId,
+                    );
 
                     if (gradeEscolhida && Array.isArray(fichaInicial.itensPayload)) {
                         const matrizInicial = {};
