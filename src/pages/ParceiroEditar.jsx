@@ -43,8 +43,12 @@ const EditarParceiro = () => {
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
     const [dropdownEtapaAberto, setDropdownEtapaAberto] = useState(false);
     const [etapas, setEtapas] = useState([]);
+    const [nomeEtapaCarregada, setNomeEtapaCarregada] = useState("");
     const [loadingEtapas, setLoadingEtapas] = useState(true);
     const etapaDropdownRef = useRef(null);
+    const etapaTriggerRef = useRef(null);
+    const etapaOptionRefs = useRef([]);
+    const [etapaAtivaIndex, setEtapaAtivaIndex] = useState(-1);
 
     const [formData, setFormData] = useState({
         nome: "",
@@ -62,7 +66,7 @@ const EditarParceiro = () => {
         banco: "",
         agencia: "",
         conta: "",
-        categoria: "",
+        etapa_id: "",
     });
     const cepRequestRef = useRef(null);
 
@@ -155,20 +159,18 @@ const EditarParceiro = () => {
             }
         };
 
-        const handleKeyDown = (event) => {
-            if (event.key === "Escape") {
-                setDropdownEtapaAberto(false);
-            }
-        };
-
         document.addEventListener("mousedown", handleClickOutside);
-        document.addEventListener("keydown", handleKeyDown);
 
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
-            document.removeEventListener("keydown", handleKeyDown);
         };
     }, [dropdownEtapaAberto]);
+
+    useEffect(() => {
+        if (dropdownEtapaAberto && etapaAtivaIndex >= 0) {
+            etapaOptionRefs.current[etapaAtivaIndex]?.focus();
+        }
+    }, [dropdownEtapaAberto, etapaAtivaIndex]);
 
     useEffect(() => {
         const fetchParceiro = async () => {
@@ -194,8 +196,9 @@ const EditarParceiro = () => {
                     banco: data.banco || "",
                     agencia: maskAgencia(data.agencia || ""),
                     conta: maskConta(data.conta || ""),
-                    categoria: data.categoria || "",
+                    etapa_id: data.etapa_id ?? "",
                 });
+                setNomeEtapaCarregada(data.etapa?.nome ?? "");
             } catch (err) {
                 console.error("Erro ao carregar parceiro:", err);
                 setError("Erro ao carregar os dados do parceiro.");
@@ -227,6 +230,59 @@ const EditarParceiro = () => {
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
+    // O parceiro pode estar numa etapa que não aparece na lista (inativa ou a última): o nome
+    // carregado com o parceiro garante que o seletor mostre a etapa atual.
+    const nomeEtapaSelecionada =
+        etapas.find((etapa) => String(etapa.id) === String(formData.etapa_id))?.nome ??
+        (formData.etapa_id ? nomeEtapaCarregada : "");
+
+    const abrirSeletorEtapa = (indiceInicial) => {
+        if (loadingEtapas || etapas.length === 0) return;
+
+        const indiceSelecionado = etapas.findIndex(
+            (etapa) => String(etapa.id) === String(formData.etapa_id),
+        );
+        setEtapaAtivaIndex(indiceInicial ?? (indiceSelecionado >= 0 ? indiceSelecionado : 0));
+        setDropdownEtapaAberto(true);
+    };
+
+    const fecharSeletorEtapa = () => {
+        setDropdownEtapaAberto(false);
+        etapaTriggerRef.current?.focus();
+    };
+
+    const selecionarEtapa = (etapa) => {
+        setFormData((prev) => ({ ...prev, etapa_id: etapa.id }));
+        fecharSeletorEtapa();
+    };
+
+    const handleEtapaTriggerKeyDown = (event) => {
+        if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+            abrirSeletorEtapa(event.key === "ArrowUp" ? etapas.length - 1 : undefined);
+        }
+
+        if (event.key === "Escape" && dropdownEtapaAberto) {
+            event.preventDefault();
+            fecharSeletorEtapa();
+        }
+    };
+
+    const handleEtapaOptionKeyDown = (event, index) => {
+        if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+            const direcao = event.key === "ArrowDown" ? 1 : -1;
+            const proximoIndex = (index + direcao + etapas.length) % etapas.length;
+            setEtapaAtivaIndex(proximoIndex);
+        } else if (event.key === "Escape") {
+            event.preventDefault();
+            fecharSeletorEtapa();
+        } else if (event.key === "Home" || event.key === "End") {
+            event.preventDefault();
+            setEtapaAtivaIndex(event.key === "Home" ? 0 : etapas.length - 1);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSaving(true);
@@ -237,7 +293,7 @@ const EditarParceiro = () => {
 
             if (formData.telefone) payload.telefone = formData.telefone.replace(/\D/g, "");
             if (formData.responsavel) payload.responsavel = formData.responsavel;
-            if (formData.categoria) payload.categoria = formData.categoria;
+            if (formData.etapa_id) payload.etapa_id = Number(formData.etapa_id);
 
             const endereco = {};
             if (formData.rua) endereco.rua = formData.rua;
@@ -320,29 +376,36 @@ const EditarParceiro = () => {
                                     Etapa de produção
                                 </h2>
                                 <div className="relative w-full">
-                                    <div
+                                    <button
+                                        ref={etapaTriggerRef}
+                                        type="button"
+                                        aria-haspopup="listbox"
+                                        aria-expanded={dropdownEtapaAberto}
+                                        aria-controls="etapas-producao-listbox"
+                                        aria-label={`Etapa de produção: ${nomeEtapaSelecionada || "nenhuma selecionada"}`}
+                                        disabled={loadingEtapas}
                                         className={`${inputClass} bg-white flex justify-between items-center ${
                                             loadingEtapas
                                                 ? "cursor-not-allowed opacity-60"
                                                 : "cursor-pointer"
-                                        }`}
+                                        } w-full focus-visible:ring-2 focus-visible:ring-[#4696AD] focus-visible:ring-offset-2`}
                                         onClick={() => {
-                                            if (!loadingEtapas) {
-                                                setDropdownEtapaAberto((aberto) => !aberto);
-                                            }
+                                            if (dropdownEtapaAberto) fecharSeletorEtapa();
+                                            else abrirSeletorEtapa();
                                         }}
+                                        onKeyDown={handleEtapaTriggerKeyDown}
                                     >
                                         {loadingEtapas ? (
                                             <SkeletonBox className="h-[14px] w-24 rounded-[7px]" />
                                         ) : (
                                             <span
                                                 className={
-                                                    formData.categoria
+                                                    nomeEtapaSelecionada
                                                         ? "text-gray-600"
                                                         : "text-gray-400"
                                                 }
                                             >
-                                                {formData.categoria || "Selecionar"}
+                                                {nomeEtapaSelecionada || "Selecionar"}
                                             </span>
                                         )}
                                         <svg
@@ -360,29 +423,43 @@ const EditarParceiro = () => {
                                                 d="M19 9l-7 7-7-7"
                                             />
                                         </svg>
-                                    </div>
+                                    </button>
 
                                     {dropdownEtapaAberto && (
-                                        <div className="absolute z-20 mt-1 w-full bg-white border border-[#D3D3D3] rounded-[10px] shadow-lg overflow-hidden max-h-60 overflow-y-auto scrollbar-sutil">
+                                        <div
+                                            id="etapas-producao-listbox"
+                                            role="listbox"
+                                            aria-label="Etapas de produção"
+                                            className="absolute z-20 mt-1 w-full bg-white border border-[#D3D3D3] rounded-[10px] shadow-lg overflow-hidden max-h-60 overflow-y-auto scrollbar-sutil"
+                                        >
                                             {etapas.length > 0 ? (
-                                                etapas.map((etapa) => (
-                                                    <div
+                                                etapas.map((etapa, index) => (
+                                                    <button
                                                         key={etapa.id}
-                                                        className={`px-4 py-2 text-sm cursor-pointer transition-colors ${
-                                                            formData.categoria === etapa.nome
+                                                        ref={(element) => {
+                                                            etapaOptionRefs.current[index] =
+                                                                element;
+                                                        }}
+                                                        type="button"
+                                                        role="option"
+                                                        aria-selected={
+                                                            String(formData.etapa_id) ===
+                                                            String(etapa.id)
+                                                        }
+                                                        tabIndex={-1}
+                                                        className={`block w-full px-4 py-2 text-left text-sm cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#4696AD] ${
+                                                            String(formData.etapa_id) ===
+                                                            String(etapa.id)
                                                                 ? "border-l-[3px] border-[#C4F042] text-gray-700 bg-white"
                                                                 : "border-l-[3px] border-transparent text-gray-600 hover:bg-[#F5F5F5]"
                                                         }`}
-                                                        onClick={() => {
-                                                            setFormData((prev) => ({
-                                                                ...prev,
-                                                                categoria: etapa.nome,
-                                                            }));
-                                                            setDropdownEtapaAberto(false);
-                                                        }}
+                                                        onClick={() => selecionarEtapa(etapa)}
+                                                        onKeyDown={(event) =>
+                                                            handleEtapaOptionKeyDown(event, index)
+                                                        }
                                                     >
                                                         {etapa.nome}
-                                                    </div>
+                                                    </button>
                                                 ))
                                             ) : (
                                                 <div className="border-l-[3px] border-transparent px-4 py-2 text-sm text-gray-400">
@@ -391,6 +468,11 @@ const EditarParceiro = () => {
                                             )}
                                         </div>
                                     )}
+                                    <span className="sr-only" aria-live="polite">
+                                        {nomeEtapaSelecionada
+                                            ? `Etapa selecionada: ${nomeEtapaSelecionada}`
+                                            : "Nenhuma etapa selecionada"}
+                                    </span>
                                 </div>
                             </div>
 

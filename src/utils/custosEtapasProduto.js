@@ -1,10 +1,4 @@
-const normalizarNome = (valor) =>
-    String(valor ?? "")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim()
-        .toLocaleLowerCase("pt-BR")
-        .replace(/\s+/g, " ");
+import { parceiroEhDaEtapa } from "./etapaDoParceiro.js";
 
 const obterPrecoValido = (vinculo) => {
     if (vinculo?.preco === null || vinculo?.preco === undefined || vinculo?.preco === "") {
@@ -22,9 +16,8 @@ export const calcularCustosMediosDasEtapas = (etapas = [], vinculosParceiroProdu
         .slice(0, -1);
 
     return etapasAtivasParaCusto.map((etapa) => {
-        const nomeEtapa = normalizarNome(etapa.nome);
         const precosDaEtapa = vinculosParceiroProduto
-            .filter((vinculo) => normalizarNome(vinculo?.parceiro?.categoria) === nomeEtapa)
+            .filter((vinculo) => parceiroEhDaEtapa(vinculo?.parceiro, etapa.id))
             .map(obterPrecoValido)
             .filter((preco) => preco !== null);
 

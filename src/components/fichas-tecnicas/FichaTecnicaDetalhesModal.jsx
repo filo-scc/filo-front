@@ -11,6 +11,11 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import RelatorioDeAcabamento from "./RelatorioDeAcabamento";
 import { getAllEtapas } from "../../services/etapaService";
+import {
+    anexarEtapaAosParceiros,
+    ehParceiroDeCostura,
+    indexarEtapasPorId,
+} from "../../utils/etapaDoParceiro.js";
 import { getFabricoById } from "../../services/fabricoService";
 
 const CampoDetalhe = ({ label, valor }) => (
@@ -64,7 +69,10 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
 
     const carregarDados = useCallback(async () => {
         try {
-            const dados = await findOne(fichaId);
+            // O parceiro da ficha vem só com etapa_id; a etapa é anexada aqui, uma vez, para os
+            // filtros de costura (esta tela, a edição e a impressão) olharem parceiro.etapa.
+            const [fichaCarregada, etapas] = await Promise.all([findOne(fichaId), getAllEtapas()]);
+            const dados = anexarEtapaAosParceiros(fichaCarregada, indexarEtapasPorId(etapas));
             if (dados && dados.fabrico?.fabricacao_sob_demanda == null && dados.fabrico_id) {
                 dados.fabrico = await getFabricoById(dados.fabrico_id);
             }
@@ -317,16 +325,8 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
 
     const proporcoes = calcularProporcao(totalsBySize);
 
-    const categoriasAceitas = ["costura", "faccao", "confeccao"];
-
-    const normalizarCategoria = (categoria) =>
-        (categoria || "")
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .toLowerCase();
-
     const parceirosFiltrados = (ficha?.ficha_parceiro || []).filter((vinculo) =>
-        categoriasAceitas.includes(normalizarCategoria(vinculo.parceiro?.categoria)),
+        ehParceiroDeCostura(vinculo.parceiro),
     );
 
     return (

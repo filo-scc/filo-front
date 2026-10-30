@@ -10,10 +10,10 @@ const ProdutoCard = ({ id, nome, tipo, data, foto }) => {
     return (
         <div
             onClick={() => navigate(`/produtos/${id}`)}
-            className="group w-full bg-[#F3F4FA] rounded-[16px] p-[6px] flex flex-col transition-all hover:shadow-sm font-['Outfit',_sans-serif] cursor-pointer"
+            className="group w-[216px] bg-[#F3F4FA] rounded-[16px] p-[6px] flex flex-col transition-all hover:shadow-sm font-['Outfit',_sans-serif] cursor-pointer"
         >
-            {/* Contêiner da Imagem */}
-            <div className="relative w-full h-[238px] bg-white rounded-t-[14px] rounded-b-[4px] overflow-hidden">
+            {/* Contêiner da Imagem — 204×238 */}
+            <div className="relative w-[204px] h-[238px] bg-white rounded-t-[14px] rounded-b-[4px] overflow-hidden">
                 {/* VALIDAÇÃO DA IMAGEM */}
                 {foto ? (
                     <img src={foto} alt={nome} className="w-full h-full object-cover" />
@@ -146,10 +146,7 @@ export default function Produtos() {
                 </div>
 
                 {/* Grid de Produtos */}
-                <div
-                    className="grid gap-[11px] pl-[16px] pr-[32px] 
-                     grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 2xl:grid-cols-7"
-                >
+                <div className="flex flex-wrap gap-[11px] pl-[16px] pr-[32px]">
                     {loadError && produtos.length > 0 && (
                         <div className="col-span-full flex justify-center py-3 text-red-500 font-light">
                             Não foi possível atualizar os produtos. Tente novamente.

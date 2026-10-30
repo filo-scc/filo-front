@@ -10,6 +10,8 @@ import {
 } from "../services/clientesService";
 import { getEnderecoByCep } from "../services/apiCep";
 import { apenasNumeros, formatarCep, formatarCnpj, formatarTelefone } from "../utils/formatters";
+import { telefoneClienteValido, telefoneParaCadastro } from "../utils/clienteTelefone";
+import { cnpjValido } from "../utils/cnpj";
 import { LoadingButton, ReferenceCardsSkeleton } from "../components/geral/Loading";
 
 const sectionTitleClass = "text-[20px] font-light text-[#404040] mb-4 font-['Outfit',_sans-serif]";
@@ -39,6 +41,7 @@ export default function ClientesCadastrar() {
     const [loadingReferencias, setLoadingReferencias] = useState(false);
     const [salvando, setSalvando] = useState(false);
     const [erroCadastro, setErroCadastro] = useState("");
+    const [erroCnpj, setErroCnpj] = useState("");
     const cepRequestRef = useRef(null);
 
     const handleChange = (campo) => (e) => {
@@ -46,7 +49,16 @@ export default function ClientesCadastrar() {
     };
 
     const handleChangeCnpj = (e) => {
-        setForm((prev) => ({ ...prev, cnpj: formatarCnpj(e.target.value) }));
+        const cnpj = formatarCnpj(e.target.value);
+        const digitos = apenasNumeros(cnpj);
+
+        setForm((prev) => ({ ...prev, cnpj }));
+        setErroCnpj(digitos.length === 14 && !cnpjValido(digitos) ? "CNPJ inválido." : "");
+    };
+
+    const handleBlurCnpj = () => {
+        const digitos = apenasNumeros(form.cnpj);
+        setErroCnpj(digitos && !cnpjValido(digitos) ? "CNPJ inválido." : "");
     };
 
     const handleChangeTelefone = (e) => {
@@ -241,13 +253,13 @@ export default function ClientesCadastrar() {
         }
 
         const cnpjNumerico = valorOuUndefined(apenasNumeros(form.cnpj));
-        const telefoneNumerico = valorOuUndefined(apenasNumeros(form.telefone));
+        const telefoneNumerico = telefoneParaCadastro(form.telefone);
 
-        if (cnpjNumerico && cnpjNumerico.length !== 14) {
-            setErroCadastro("CNPJ inválido. Informe 14 dígitos.");
+        if (cnpjNumerico && !cnpjValido(cnpjNumerico)) {
+            setErroCnpj("CNPJ inválido.");
             return;
         }
-        if (telefoneNumerico && (telefoneNumerico.length < 9 || telefoneNumerico.length > 11)) {
+        if (!telefoneClienteValido(form.telefone)) {
             setErroCadastro("Telefone inválido. Informe entre 9 e 11 dígitos.");
             return;
         }
@@ -281,9 +293,12 @@ export default function ClientesCadastrar() {
                 : undefined,
         };
 
+        let clienteFoiCriado = false;
+
         try {
             setSalvando(true);
             const clienteCriado = await cadastrarCliente(payload);
+            clienteFoiCriado = true;
             let clienteId = primeiroNumeroValido(
                 clienteCriado?.id,
                 clienteCriado?.cliente_id,
@@ -345,7 +360,9 @@ export default function ClientesCadastrar() {
         } catch (error) {
             console.error("Erro ao cadastrar cliente com referências:", error);
             setErroCadastro(
-                "O cliente foi criado, mas não foi possível confirmar a associação dos produtos.",
+                clienteFoiCriado
+                    ? "O cliente foi criado, mas não foi possível confirmar a associação dos produtos."
+                    : "Não foi possível cadastrar o cliente.",
             );
         } finally {
             setSalvando(false);
@@ -374,11 +391,23 @@ export default function ClientesCadastrar() {
                             value={form.nomeEmpresa}
                             onChange={handleChange("nomeEmpresa")}
                         />
-                        <FloatingLabelInput
-                            label="CNPJ"
-                            value={form.cnpj}
-                            onChange={handleChangeCnpj}
-                        />
+                        <div>
+                            <FloatingLabelInput
+                                id="cliente-cnpj"
+                                label="CNPJ"
+                                value={form.cnpj}
+                                onChange={handleChangeCnpj}
+                                onBlur={handleBlurCnpj}
+                                aria-invalid={Boolean(erroCnpj)}
+                                aria-describedby={erroCnpj ? "cliente-cnpj-erro" : undefined}
+                                inputClassName={erroCnpj ? "border-[#D75757]" : ""}
+                            />
+                            {erroCnpj && (
+                                <p id="cliente-cnpj-erro" className="mt-1 text-xs text-[#D75757]">
+                                    {erroCnpj}
+                                </p>
+                            )}
+                        </div>
                         <FloatingLabelInput
                             label="Proprietário"
                             value={form.proprietario}

@@ -45,12 +45,12 @@ export const excluirParceiro = async (id) => {
     await api.delete(`/parceiros/${id}`);
 };
 
-export const getParceirosByCategoria = async (categoria) => {
+export const getParceirosByEtapa = async (etapaId) => {
     try {
-        const response = await api.get(`/parceiros/categoria/${encodeURIComponent(categoria)}`);
+        const response = await api.get(`/parceiros/etapa/${etapaId}`);
         return response.data;
     } catch (error) {
-        console.error("Erro ao buscar parceiros por categoria:", error);
+        console.error("Erro ao buscar parceiros por etapa:", error);
         throw error;
     }
 };

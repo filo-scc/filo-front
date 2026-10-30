@@ -1,6 +1,7 @@
 import React, { useEffect, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import RelatorioDeAcabamento from "./fichas-tecnicas/RelatorioDeAcabamento";
+import { ehParceiroDeCostura } from "../utils/etapaDoParceiro.js";
 
 // Hook para verificar montagem no cliente sem causar renderizações em cascata
 const emptySubscribe = () => () => {};
@@ -88,29 +89,8 @@ export default function FichaTecnicaPrintView({
         proporcoes[s.id] = arrayDeProporcoes[index];
     });
 
-    const categoriaAceitas = [
-        "Costura",
-        "costura",
-        "Facção",
-        "facção",
-        "Facçao",
-        "facçao",
-        "Faccão",
-        "faccão",
-        "Faccao",
-        "faccao",
-        "Confecção",
-        "confecção",
-        "Confecçao",
-        "confecçao",
-        "Confeccão",
-        "confeccão",
-        "Confeccao",
-        "confeccao",
-    ];
-
     const parceirosCostura = (dadosFicha?.ficha_parceiro || []).filter((vinculo) =>
-        categoriaAceitas.includes(vinculo.parceiro?.categoria),
+        ehParceiroDeCostura(vinculo.parceiro),
     );
 
     const printContent = (

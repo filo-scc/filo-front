@@ -2,6 +2,11 @@ import { useLocation, useNavigate } from "react-router-dom";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { getAllEtapas } from "../services/etapaService";
 import { getFichaTecnicaByFabrico } from "../services/fichasTecnicasService";
+import {
+    anexarEtapaAosParceiros,
+    ehParceiroDeCostura,
+    indexarEtapasPorId,
+} from "../utils/etapaDoParceiro.js";
 import { getMe } from "../services/authService";
 import TransferenciaEtapaModal from "../components/fichas-tecnicas/TransferenciaEtapaModal";
 import FichaTecnicaDetalhesModal from "../components/fichas-tecnicas/FichaTecnicaDetalhesModal";
@@ -10,27 +15,10 @@ import OperationalSummaryCards from "../components/home/OperationalSummaryCards"
 import ProductionChart from "../components/home/ProductionChart";
 import NotificationsPanel from "../components/home/NotificationsPanel";
 
-const CATEGORIAS_DE_COSTURA = ["costur", "faccao", "confeccao", "costura"];
-
-const normalizarCategoria = (categoria) =>
-    String(categoria || "")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim()
-        .toLowerCase();
-
-const ehCategoriaDeCostura = (categoria) => {
-    const categoriaNormalizada = normalizarCategoria(categoria);
-
-    return CATEGORIAS_DE_COSTURA.some((categoriaAceita) =>
-        categoriaNormalizada.includes(categoriaAceita),
-    );
-};
-
 const formatarParceirosDeCostura = (ficha) => {
     const parceirosDeCostura = (ficha?.ficha_parceiro || [])
         .map((vinculo) => vinculo?.parceiro)
-        .filter((parceiro) => parceiro?.nome && ehCategoriaDeCostura(parceiro?.categoria))
+        .filter((parceiro) => parceiro?.nome && ehParceiroDeCostura(parceiro))
         .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
     if (parceirosDeCostura.length === 0) return "Não designado";
@@ -90,11 +78,18 @@ export default function Home() {
                 getFichaTecnicaByFabrico(fId),
             ]);
 
+            const etapasPorId = indexarEtapasPorId(etapas);
+            const fichasComEtapaDoParceiro = fichasTecnicas.map((ficha) =>
+                anexarEtapaAosParceiros(ficha, etapasPorId),
+            );
+
             const etapas_ativas = etapas.filter((etapa) => etapa.ativa);
             const etapasOrdenada = etapas_ativas.sort((a, b) => a.ordem - b.ordem);
             const colunasAgrupadas = etapasOrdenada.map((etapa) => ({
                 ...etapa,
-                fichas: fichasTecnicas.filter((ficha) => ficha.etapa_atual_id == etapa.id),
+                fichas: fichasComEtapaDoParceiro.filter(
+                    (ficha) => ficha.etapa_atual_id == etapa.id,
+                ),
             }));
 
             setQuadro(colunasAgrupadas);

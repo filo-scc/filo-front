@@ -20,7 +20,8 @@ import {
 import { upload } from "../services/utilsService";
 import { DropdownOptionsSkeleton, LoadingButton, SkeletonBox } from "../components/geral/Loading";
 import { getAllEtapas } from "../services/etapaService.js";
-import { getParceiros, getParceirosByCategoria } from "../services/parceiroService.js";
+import { getParceiros, getParceirosByEtapa } from "../services/parceiroService.js";
+import { parceiroEhDaEtapa } from "../utils/etapaDoParceiro.js";
 
 // Função adicionada para formatar as unidades de medida
 function formatarUnidadeDeMedida(unidade) {
@@ -352,13 +353,10 @@ export default function ProdutoCadastar() {
 
                 if (resEtapasReal.status === "fulfilled") {
                     const etapasComCusto = (resEtapasReal.value || []).map((etapa) => {
-                        // Encontra o parceiro correspondente comparando o nome da etapa com a categoria (em minúsculo!)
-                        const parceiroMapeado = parceirosDisponiveis.find((p) => {
-                            const categoriaParceiro = (p?.categoria || "").trim().toLowerCase();
-                            const nomeEtapa = (etapa?.nome || "").trim().toLowerCase();
-
-                            return categoriaParceiro === nomeEtapa;
-                        });
+                        // Encontra o parceiro da etapa pelo id da etapa (renomear a etapa não quebra o vínculo)
+                        const parceiroMapeado = parceirosDisponiveis.find((p) =>
+                            parceiroEhDaEtapa(p, etapa?.id),
+                        );
 
                         return {
                             ...etapa,
@@ -691,12 +689,10 @@ export default function ProdutoCadastar() {
 
             for (const etapa of etapasParaSalvar) {
                 const precoInformado = etapa.custo;
-                const categoriaNome = etapa.nome;
-
-                const parceirosDaEtapa = await getParceirosByCategoria(categoriaNome);
+                const parceirosDaEtapa = await getParceirosByEtapa(etapa.id);
 
                 if (!parceirosDaEtapa || parceirosDaEtapa.length === 0) {
-                    console.warn(`Nenhum parceiro encontrado para a categoria '${categoriaNome}'`);
+                    console.warn(`Nenhum parceiro encontrado para a etapa '${etapa.nome}'`);
                     continue;
                 }
 
@@ -735,7 +731,7 @@ export default function ProdutoCadastar() {
                 <form onSubmit={handleSubmit} className="mt-10 flex flex-col min-h-[520px]">
                     {/* Bloco Superior: Imagem e Detalhes */}
                     <div className="flex flex-col xl:flex-row gap-12 xl:gap-16">
-                        <div className="w-full xl:w-[184px] shrink-0">
+                        <div className="w-[204px] shrink-0">
                             <FieldLabel>Imagem</FieldLabel>
                             <input
                                 ref={inputFileRef}
@@ -747,7 +743,7 @@ export default function ProdutoCadastar() {
                             <button
                                 type="button"
                                 onClick={() => inputFileRef.current?.click()}
-                                className="w-[200px] h-[150px] rounded-[10px] border border-dashed border-[#898C8F] flex items-center justify-center overflow-hidden bg-white hover:bg-[#FAFAFA] transition-colors"
+                                className="w-[204px] h-[238px] rounded-[10px] border border-dashed border-[#898C8F] flex items-center justify-center overflow-hidden bg-white hover:bg-[#FAFAFA] transition-colors"
                             >
                                 {imagemPreview ? (
                                     <img
