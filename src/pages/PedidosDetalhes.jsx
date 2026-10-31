@@ -83,6 +83,7 @@ const mapearFichaParaTabela = (ficha, relacaoClienteProduto) => {
             "",
         cores: extrairCores(ficha),
         quantidade,
+        defeitos_tecido: ficha?.defeitos_tecido ?? 0,
         preco_padrao:
             relacaoClienteProduto?.preco_padrao ??
             ficha?.preco_padrao ??

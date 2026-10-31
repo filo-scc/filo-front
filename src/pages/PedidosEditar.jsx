@@ -309,6 +309,7 @@ const converterDetalheParaRascunhoModal = (detalhe, fichaLinha = {}) => {
     return {
         id: detalhe?.id ?? fichaLinha.id,
         isDraft: false,
+        defeitos_tecido: detalhe?.defeitos_tecido ?? fichaLinha.defeitos_tecido ?? 0,
         concluida: (detalhe?.concluida ?? fichaLinha.concluida) === true,
         produtoId,
         produto_id: produtoId,
@@ -350,6 +351,7 @@ const mapearFichaParaTabela = (ficha, relacaoClienteProduto) => {
             "",
         cores: extrairCores(ficha),
         quantidade,
+        defeitos_tecido: ficha?.defeitos_tecido ?? 0,
         preco_padrao:
             relacaoClienteProduto?.preco_padrao ??
             ficha?.preco_padrao ??
@@ -884,6 +886,8 @@ export default function PedidosEditar() {
     const handleFichaSalvaNoModal = (rascunhoFicha) => {
         const fichaAtualizada = {
             ...rascunhoFicha,
+            defeitos_tecido:
+                rascunhoFicha.defeitos_tecido ?? fichaInicialModal?.defeitos_tecido ?? 0,
             foto: rascunhoFicha.foto || referenciaParaModal?.foto || fichaInicialModal?.foto,
             preco_padrao:
                 rascunhoFicha.preco_padrao ??
@@ -1186,8 +1190,6 @@ export default function PedidosEditar() {
 
                         <div className="mb-10">
                             <TabelaFichaTecnica
-                                usarTotalPersistido
-                                valorTotalPersistido={pedido?.valor_total}
                                 fichas={fichas}
                                 isSobDemanda={isSobDemanda}
                                 onRemoverFicha={handleRemoverFicha}
