@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { calcularSubtotalFicha } from "../../utils/calcularSubtotalFicha.js";
 import { parsePreco } from "../../utils/preco";
 
 export default function TabelaReferenciaFichaTecnica({
@@ -65,22 +66,11 @@ export default function TabelaReferenciaFichaTecnica({
         0,
     );
 
-    const obterValorUnitario = (ficha) => {
-        const valorRaw = isSobDemanda
-            ? (ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? 0)
-            : (ficha.custo_total ?? ficha.custo_unitario ?? ficha.custo ?? 0);
-        return parsePreco(valorRaw);
-    };
-
-    const totalPedido = fichas.reduce((acc, ficha) => {
-        const qtd = Number(ficha.quantidade) || Number(ficha.quantidade_pecas) || 0;
-        const valorUnitario = obterValorUnitario(ficha);
-        const subtotal =
-            isSobDemanda && ficha.subtotal !== undefined
-                ? parsePreco(ficha.subtotal)
-                : qtd * valorUnitario;
-        return acc + subtotal;
-    }, 0);
+    // O total é a soma dos subtotais exibidos, para a tabela nunca mostrar valores que não batem entre si.
+    const totalPedido = fichas.reduce(
+        (acc, ficha) => acc + calcularSubtotalFicha(ficha, isSobDemanda),
+        0,
+    );
 
     const campoBloqueadoClass =
         "flex flex-col items-start lg:items-center justify-center gap-2 lg:gap-0 lg:text-center min-w-0 px-4 py-4 lg:px-2 lg:py-0 break-words [overflow-wrap:anywhere] text-base text-[#404040] cursor-not-allowed";
@@ -146,12 +136,16 @@ export default function TabelaReferenciaFichaTecnica({
                                 Number(ficha.quantidade) || Number(ficha.quantidade_pecas) || 0;
                             const valPrecoRaw =
                                 ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? "";
-                            const valorUnitario = obterValorUnitario(ficha);
+                            const valorUnitario = parsePreco(
+                                isSobDemanda
+                                    ? valPrecoRaw
+                                    : (ficha.custo_total ??
+                                          ficha.custo_unitario ??
+                                          ficha.custo ??
+                                          0),
+                            );
 
-                            const subtotal =
-                                isSobDemanda && ficha.subtotal !== undefined
-                                    ? parsePreco(ficha.subtotal)
-                                    : qtd * valorUnitario;
+                            const subtotal = calcularSubtotalFicha(ficha, isSobDemanda);
                             const refClienteValor =
                                 ficha.referenciaCliente ?? ficha.ref_cliente ?? "";
                             const isEditando =
