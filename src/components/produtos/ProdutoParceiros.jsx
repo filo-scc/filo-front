@@ -35,7 +35,7 @@ const ProdutoParceiros = ({
     isOpen,
     onClose,
     produtoId,
-    parceiros: parceirosProp = [],
+    parceiros: parceirosProp,
     selectedParceiroIds = [],
     onSelectParceiro,
 }) => {
@@ -62,10 +62,10 @@ const ProdutoParceiros = ({
         if (!isOpen) return;
         let ignorar = false;
 
-        const fromProp = Array.isArray(parceirosProp) ? filterSelected(parceirosProp) : [];
-
-        if (Array.isArray(parceirosProp) && parceirosProp.length > 0) {
-            setParceiros(fromProp);
+        // Lista recebida da tela (mesmo vazia) é a verdade: só busca por conta própria quando
+        // a tela não passa lista. Senão o seletor oferece facções que a tela esconde depois.
+        if (Array.isArray(parceirosProp)) {
+            setParceiros(filterSelected(parceirosProp));
             setLoading(false);
             return;
         }
