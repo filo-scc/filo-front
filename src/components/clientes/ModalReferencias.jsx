@@ -37,10 +37,7 @@ export default function ModalReferencias({
         const carregarProdutos = async () => {
             setLoadingFetch(true);
             try {
-                const produtosFiltrados = await getUnassociatedProductsForClient(
-                    clienteId,
-                    busca,
-                );
+                const produtosFiltrados = await getUnassociatedProductsForClient(clienteId, busca);
 
                 setProdutos(produtosFiltrados);
             } catch (error) {
