@@ -53,12 +53,12 @@ const FloatingInput = ({
     muted = false,
 }) => (
     <div
-        className={`relative border rounded-[10px] h-[39px] px-3 flex items-center mt-2 w-full bg-white ${
+        className={`relative border rounded-[12px] h-[48px] px-3 flex items-center mt-2 w-full min-w-0 bg-white max-md:mt-0 max-md:h-auto max-md:flex-col max-md:items-stretch max-md:rounded-none max-md:border-0 max-md:px-0 md:h-[44px] md:rounded-[10px] lg:h-[39px] ${
             muted ? "border-[#D7D7D7]" : "border-[#7B7D80]"
         }`}
     >
         <span
-            className={`absolute -top-[9px] left-2 bg-white px-1 text-[11px] ${
+            className={`absolute -top-[9px] left-2 bg-white px-1 text-[12px] max-md:static max-md:p-0 max-md:text-[11px] max-md:leading-4 max-md:text-[#898C8F] lg:text-[11px] ${
                 muted ? "text-[#D7D7D7]" : "text-[#7B7D80]"
             }`}
         >
@@ -68,10 +68,11 @@ const FloatingInput = ({
             type={type}
             value={valor || ""}
             readOnly={readOnly}
+            title={valor || undefined}
             onChange={onChange}
-            className={`w-full text-[14px] outline-none bg-transparent ${
+            className={`w-full text-ellipsis text-[16px] outline-none bg-transparent max-md:text-[14px] max-md:leading-[18px] max-md:text-[#404040] md:text-[15px] lg:text-[14px] ${
                 muted ? "text-[#D7D7D7]" : "text-[#7B7D80]"
-            } ${readOnly ? "cursor-not-allowed opacity-70" : ""}`}
+            } ${readOnly ? "cursor-not-allowed opacity-70 max-md:opacity-100" : ""}`}
         />
     </div>
 );
@@ -114,32 +115,47 @@ const ColorDropdown = ({
     return (
         <div className="relative mt-2 w-full" ref={dropdownRef}>
             <div
-                className="border border-[#898C8F] rounded-[10px] h-[39px] px-3 flex justify-between items-center bg-white cursor-pointer"
+                className="border border-[#898C8F] rounded-[12px] h-[48px] px-3 flex justify-between items-center bg-white cursor-pointer md:h-[44px] md:rounded-[10px] lg:h-[39px]"
                 onClick={() => setAberto(!aberto)}
             >
-                <span className="absolute -top-[9px] left-2 bg-white px-1 text-[11px] text-[#898C8F]">
+                <span className="absolute -top-[9px] left-2 bg-white px-1 text-[12px] text-[#898C8F] lg:text-[11px]">
                     Selecionar cores
                 </span>
-                <span className="text-[14px] text-[#707070]">
+                <span className="text-[16px] text-[#707070] md:text-[15px] lg:text-[14px]">
                     {coresSelecionadas.length === 0 ? "Selecione..." : "Selecionar cores"}
                 </span>
                 <span
                     className={`text-[#898C8F] text-[10px] transition-transform ${aberto ? "rotate-180" : ""}`}
                 >
-                    ▼
+                    {/* Celular e tablet: chevron vazado de pontas arredondadas; desktop mantém o ▼ */}
+                    <svg
+                        className="lg:hidden"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                    >
+                        <path d="M6 9l6 6 6-6" />
+                    </svg>
+                    <span className="hidden lg:inline">▼</span>
                 </span>
             </div>
 
             {aberto && (
                 <div className="absolute top-full left-0 mt-1 w-full bg-white border border-[#D9D9D9] rounded-[10px] shadow-lg z-20 overflow-hidden">
-                    <div className="max-h-[180px] overflow-y-auto scrollbar-sutil">
+                    <div className="max-h-[240px] overflow-y-auto scrollbar-sutil lg:max-h-[180px]">
                         <button
                             type="button"
                             onClick={() => {
                                 setAberto(false);
                                 onCreateCor();
                             }}
-                            className="flex w-full items-center px-4 py-2.5 text-left text-[14px] font-medium text-[#4696AD] bg-white hover:bg-[#F4F4F4] transition-colors"
+                            className="flex min-h-[44px] w-full items-center px-4 py-2.5 text-left text-[14px] font-medium text-[#4696AD] bg-white hover:bg-[#F4F4F4] transition-colors lg:min-h-0"
                         >
                             + Nova cor
                         </button>
@@ -149,7 +165,7 @@ const ColorDropdown = ({
                                 setAberto(false);
                                 onCreateEstampa();
                             }}
-                            className="flex w-full items-center px-4 py-2.5 text-left text-[14px] font-medium text-[#4696AD] bg-white hover:bg-[#F4F4F4] transition-colors"
+                            className="flex min-h-[44px] w-full items-center px-4 py-2.5 text-left text-[14px] font-medium text-[#4696AD] bg-white hover:bg-[#F4F4F4] transition-colors lg:min-h-0"
                         >
                             + Nova estampa
                         </button>
@@ -166,7 +182,7 @@ const ColorDropdown = ({
                                     <div
                                         key={cor.id}
                                         title={cor.nome}
-                                        className={`flex w-full items-center border-l-[4px] px-4 py-2.5 transition-colors bg-white text-[#707070] hover:bg-[#F4F4F4] ${
+                                        className={`flex min-h-[44px] w-full items-center border-l-[4px] px-4 py-2.5 transition-colors lg:min-h-0 bg-white text-[#707070] hover:bg-[#F4F4F4] ${
                                             isSelected
                                                 ? "border-l-[3px] border-l-[#C4F042]"
                                                 : "border-l-transparent"
@@ -219,14 +235,18 @@ const ColorDropdown = ({
 };
 
 const ColorPill = ({ nome, onRemove }) => (
-    <div className="bg-[#A9E2F2] text-[#4696AD] px-3 py-1 rounded-full text-[13px] flex items-center gap-2">
+    <div className="bg-[#A9E2F2] text-[#4696AD] h-[40px] pl-3 pr-2 rounded-full text-[14px] flex items-center gap-2 md:h-[36px] lg:h-auto lg:px-3 lg:py-1 lg:text-[13px]">
         {nome}
-        <button onClick={onRemove} className="flex items-center justify-center">
-            <div className="w-[14px] h-[14px] bg-[#4696AD] rounded-full flex items-center justify-center">
+        <button
+            type="button"
+            onClick={onRemove}
+            className="relative flex items-center justify-center before:absolute before:-inset-3 before:content-[''] lg:before:hidden"
+        >
+            <div className="w-[20px] h-[20px] bg-[#4696AD] rounded-full flex items-center justify-center lg:w-[14px] lg:h-[14px]">
                 <img
                     src="/fechar-branco.png"
                     alt="Remover cor"
-                    className="w-[9px] h-[9px] object-contain"
+                    className="w-[10px] h-[10px] object-contain lg:w-[9px] lg:h-[9px]"
                 />
             </div>
         </button>
@@ -234,6 +254,13 @@ const ColorPill = ({ nome, onRemove }) => (
 );
 
 const BORDER_DARK_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#7B7D80" };
+
+// Celular: a coluna da cor fica fixa enquanto a grade rola na horizontal
+const COLUNA_FIXA =
+    "sticky left-0 z-10 shadow-[1px_0_0_#CBD3D6,6px_0_8px_-6px_rgba(0,0,0,0.22)] md:static md:shadow-none";
+
+const CLASSE_CAMPO_CARTAO =
+    "flex h-[44px] w-full min-w-0 items-center rounded-[10px] border border-[#898C8F] bg-white px-3 text-[16px] text-[#404040] focus-within:border-[#4696AD]";
 
 export default function EdicaoFichaTecnicaModal({
     isOpen,
@@ -267,6 +294,8 @@ export default function EdicaoFichaTecnicaModal({
         retiradas: 0,
         sobras: 0,
     });
+    const corpoRef = useRef(null);
+    const [tentativasSalvar, setTentativasSalvar] = useState(0);
 
     const sizeItems = useMemo(
         () => dadosFicha?.grade_versao?.itens || [],
@@ -552,6 +581,14 @@ export default function EdicaoFichaTecnicaModal({
     );
     const perdasValidas = !isUltimaEtapa || totalPerdas <= totalGeral;
 
+    // O rodapé fica fixo no celular e no tablet: leva o aviso de erro para a área visível
+    useEffect(() => {
+        if (tentativasSalvar === 0) return;
+        corpoRef.current
+            ?.querySelector('[role="alert"]')
+            ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }, [tentativasSalvar, saveError]);
+
     useEffect(() => {
         setReferenceSizeId(
             obterReferenciaProporcao({
@@ -623,6 +660,14 @@ export default function EdicaoFichaTecnicaModal({
         setParceiros((prev) => prev.map((p, i) => (i === index ? { ...p, [campo]: valor } : p)));
     };
 
+    const formatarPrecoEditavel = (vinculo) =>
+        vinculo.preco_editavel ? Number(vinculo.preco_editavel).toFixed(2).replace(".", ",") : "";
+
+    const handlePrecoChange = (index, texto) => {
+        const numeros = texto.replace(/\D/g, "");
+        handleParceiroChange(index, "preco_editavel", numeros ? Number(numeros) / 100 : 0);
+    };
+
     const handleRemoverParceiro = (index) => {
         const parceiroParaRemover = parceiros[index];
         if (parceiroParaRemover.parceiro_id && !parceiroParaRemover.isNovo) {
@@ -652,6 +697,7 @@ export default function EdicaoFichaTecnicaModal({
         };
 
     const handleConcluir = async () => {
+        setTentativasSalvar((n) => n + 1);
         setValidacaoPrecoExibida(true);
         setSaveError("");
 
@@ -770,6 +816,16 @@ export default function EdicaoFichaTecnicaModal({
 
     if (!isOpen) return null;
 
+    const seletorCores = (
+        <ColorDropdown
+            coresDisponiveis={todasCoresDisponiveis}
+            coresSelecionadas={coresSelecionadas}
+            onToggleCor={handleToggleCor}
+            onCreateCor={() => setCorModalOpen(true)}
+            onCreateEstampa={() => setEstampaModalOpen(true)}
+        />
+    );
+
     return (
         <>
             <ConfirmacaoFichaModal
@@ -784,7 +840,7 @@ export default function EdicaoFichaTecnicaModal({
                 }}
             />
             <div
-                className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-2 backdrop-blur-sm print:hidden sm:p-4"
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-0 backdrop-blur-sm print:hidden md:p-4"
                 onClick={() => {
                     if (!isProdutoParceirosOpen) {
                         solicitarSaida();
@@ -792,82 +848,91 @@ export default function EdicaoFichaTecnicaModal({
                 }}
             >
                 <div
-                    className="relative flex max-h-[96dvh] w-full max-w-[850px] flex-col overflow-hidden rounded-[24px] bg-white shadow-2xl font-['Outfit',_sans-serif] sm:max-h-[95vh] sm:rounded-[24px]"
+                    className="relative flex h-[100dvh] max-h-[100dvh] w-full max-w-[850px] flex-col overflow-hidden rounded-none bg-white shadow-2xl font-['Outfit',_sans-serif] md:h-auto md:max-h-[95vh] md:rounded-[24px]"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <div className="flex shrink-0 items-center justify-between px-4 py-4 sm:px-8 sm:py-6">
-                        <div className="flex items-center gap-3">
+                    <div className="flex h-[61px] shrink-0 items-center justify-between gap-2 pl-4 pr-1 md:h-auto md:px-8 md:py-6">
+                        <div className="flex min-w-0 items-center gap-3">
                             <img
                                 src="/etiqueta-preta.png"
                                 alt="Tag"
-                                className="w-[28px] h-[28px] object-contain opacity-70"
+                                className="hidden w-[28px] h-[28px] object-contain opacity-70 md:block"
                             />
-                            <h2 className="text-xl font-light text-[#404040] sm:text-[26px]">
+                            <h2 className="truncate text-[18px] font-light leading-7 text-[#404040] md:text-[22px] lg:text-[26px]">
                                 Editar Ficha Técnica {dadosFicha?.numero}
                             </h2>
                         </div>
-                        <button onClick={solicitarSaida}>
+                        <button
+                            type="button"
+                            onClick={solicitarSaida}
+                            aria-label="Fechar"
+                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full md:-my-2 md:-mr-2 lg:m-0 lg:h-auto lg:w-auto"
+                        >
                             <img
                                 src="/fechar-cinza.png"
-                                alt="icone de fechar"
+                                alt=""
                                 className="w-[10.5px] h-[10.5px] object-contain"
                             />
                         </button>
                     </div>
 
-                    <div className="flex-1 space-y-6 overflow-y-auto px-4 pb-8 pt-1 scrollbar-sutil sm:px-8">
-                        <div className="flex flex-col md:flex-row gap-6">
-                            <div className="w-[209px] h-[165px] shrink-0 rounded-[10px] overflow-hidden border border-dashed border-[#898C8F]">
-                                <img
-                                    src={dadosFicha?.produto?.foto || "/image-placeholder.png"}
-                                    alt="Foto do Produto"
-                                    className="w-full h-full object-cover"
-                                />
+                    <div
+                        ref={corpoRef}
+                        className="flex-1 space-y-5 overflow-y-auto px-4 pb-6 pt-2 scrollbar-sutil md:space-y-6 md:px-8 md:pb-8 md:pt-1"
+                    >
+                        <div>
+                            <div className="flex flex-row items-start gap-5 md:gap-6">
+                                {/* Celular: a foto acompanha a altura dos campos ao lado (cerca de 3:4). Tablet: em pé (3:4). Desktop segue a medida original */}
+                                <div className="w-[112px] min-[360px]:w-[157px] shrink-0 self-stretch rounded-[12px] overflow-hidden md:self-start md:border md:border-dashed md:border-[#898C8F] md:h-[176px] md:w-[132px] md:rounded-[10px] lg:h-[165px] lg:w-[209px]">
+                                    <img
+                                        src={dadosFicha?.produto?.foto || "/image-placeholder.png"}
+                                        alt="Foto do Produto"
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+
+                                <div className="grid min-w-0 flex-1 grid-cols-1 content-start gap-x-6 gap-y-2.5 md:grid-cols-2 md:gap-y-4 lg:gap-y-3">
+                                    <FloatingInput
+                                        label="Referência Interna"
+                                        valor={dadosFicha?.produto?.nome}
+                                        readOnly
+                                        muted
+                                    />
+                                    <FloatingInput
+                                        label="Cliente"
+                                        valor={dadosFicha?.pedido?.cliente?.nome}
+                                        readOnly
+                                        muted
+                                    />
+                                    <FloatingInput
+                                        label="Referência do Cliente"
+                                        valor={referenciaCliente}
+                                        readOnly
+                                        muted
+                                    />
+                                    <FloatingInput
+                                        label="Tecido"
+                                        valor={dadosFicha?.produto?.tecido?.nome || "-"}
+                                        readOnly
+                                        muted
+                                    />
+
+                                    {/* Tablet e desktop: o seletor segue dentro da grade de campos */}
+                                    <div className="hidden md:block">{seletorCores}</div>
+
+                                    <FloatingInput
+                                        label="Grade Atual"
+                                        valor={dadosFicha?.grade_versao?.grade?.nome || "Adulto"}
+                                        readOnly
+                                        muted
+                                    />
+                                </div>
                             </div>
 
-                            <div className="grid flex-1 grid-cols-1 content-start gap-x-6 gap-y-3 sm:grid-cols-2">
-                                <FloatingInput
-                                    label="Referência Interna"
-                                    valor={dadosFicha?.produto?.nome}
-                                    readOnly
-                                    muted
-                                />
-                                <FloatingInput
-                                    label="Cliente"
-                                    valor={dadosFicha?.pedido?.cliente?.nome}
-                                    readOnly
-                                    muted
-                                />
-                                <FloatingInput
-                                    label="Referência do Cliente"
-                                    valor={referenciaCliente}
-                                    readOnly
-                                    muted
-                                />
-                                <FloatingInput
-                                    label="Tecido"
-                                    valor={dadosFicha?.produto?.tecido?.nome || "-"}
-                                    readOnly
-                                    muted
-                                />
-
-                                <ColorDropdown
-                                    coresDisponiveis={todasCoresDisponiveis}
-                                    coresSelecionadas={coresSelecionadas}
-                                    onToggleCor={handleToggleCor}
-                                    onCreateCor={() => setCorModalOpen(true)}
-                                    onCreateEstampa={() => setEstampaModalOpen(true)}
-                                />
-
-                                <FloatingInput
-                                    label="Grade Atual"
-                                    valor={dadosFicha?.grade_versao?.grade?.nome || "Adulto"}
-                                    readOnly
-                                    muted
-                                />
-                            </div>
+                            {/* Celular: o seletor de cores fica abaixo, na largura toda */}
+                            <div className="mt-5 md:hidden">{seletorCores}</div>
                         </div>
-                        <div className="flex flex-wrap gap-2 pt-2">
+                        <div className="flex flex-wrap gap-2 !mt-3 max-md:empty:hidden md:!mt-6 md:pt-2">
                             {coresSelecionadas.map((cor) => (
                                 <ColorPill
                                     key={cor.id}
@@ -880,245 +945,293 @@ export default function EdicaoFichaTecnicaModal({
                             <div className="mb-2 text-center text-[16px] font-light text-[#737373]">
                                 Grade
                             </div>
-                            <div className="w-full">
-                                <div className="flex w-full items-stretch min-h-[30px]">
-                                    <div className="w-[160px] shrink-0" />
-                                    <div className="flex flex-1 min-w-0">
-                                        {sizeItems.map((s, i) => (
-                                            <div
-                                                key={`total-${s.id}`}
-                                                className="bg-[#F4F4F4] flex-1 min-w-0 text-center text-[14px] font-light flex items-center justify-center text-[#D7D7D7]"
-                                                style={{
-                                                    borderColor: "#7B7D80",
-                                                    borderLeftWidth: "0.5px",
-                                                    borderRightWidth:
-                                                        i === sizeItems.length - 1
-                                                            ? "0.5px"
-                                                            : "0px",
-                                                    borderTopWidth: "0.5px",
-                                                    borderBottomWidth: "0.5px",
-                                                    borderTopLeftRadius: i === 0 ? "10px" : "0px",
-                                                    borderTopRightRadius:
-                                                        i === sizeItems.length - 1 ? "10px" : "0px",
-                                                    color:
-                                                        totaisPorTamanho[s.id] > 0
-                                                            ? "#898C8F"
-                                                            : "#D7D7D7",
-                                                }}
-                                            >
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    step="1"
-                                                    inputMode="numeric"
-                                                    value={proporcoes[s.id] || ""}
-                                                    placeholder="0"
-                                                    readOnly={isReferenciaProporcao(
-                                                        s.id,
-                                                        referenceSizeId,
-                                                    )}
-                                                    disabled={referenceSizeId === null}
-                                                    onFocus={(event) => {
-                                                        preventNumberInputWheel(event);
-                                                        event.target.select();
-                                                    }}
-                                                    onChange={(event) =>
-                                                        handleAplicarProporcao(
-                                                            s.id,
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    title={
-                                                        isReferenciaProporcao(s.id, referenceSizeId)
-                                                            ? "Coluna de referência"
-                                                            : referenceSizeId === null
-                                                              ? "Preencha primeiro uma coluna da grade"
-                                                              : "Digite a proporção para recalcular esta coluna"
-                                                    }
-                                                    className="h-full w-full bg-transparent text-center outline-none disabled:cursor-not-allowed [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div className="w-[90px] shrink-0" />
-                                </div>
-
-                                <div className="flex h-[40px] items-stretch">
-                                    <div className="w-[160px] shrink-0 rounded-tl-[10px] font-normal bg-[#C9EAF6] px-4 text-[#4696AD] flex items-center justify-center overflow-hidden">
-                                        Cores
-                                    </div>
-                                    <div className="flex flex-1 min-w-0">
-                                        {sizeItems.map((s, sizeIndex) => (
-                                            <div
-                                                key={`header-${s.id}`}
-                                                className="flex-1 min-w-0 text-center text-[14px] font-normal text-[#4696AD] flex items-center justify-center bg-[#C9EAF6]"
-                                                style={{
-                                                    borderLeftWidth: "0.5px",
-                                                    borderRightWidth:
-                                                        sizeIndex === sizeItems.length - 1
-                                                            ? "0.5px"
-                                                            : "0px",
-                                                    borderColor: "#7B7D80",
-                                                }}
-                                            >
-                                                {s.tamanho?.codigo || "-"}
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div className="w-[90px] shrink-0 rounded-tr-[10px] bg-[#C9EAF6] px-2 text-center text-[14px] font-normal text-[#4696AD] flex items-center justify-center">
-                                        Total (cor)
-                                    </div>
-                                </div>
-
-                                <div className="rounded-b-[10px] bg-white overflow-hidden">
-                                    <div className="flex flex-col w-full">
-                                        {coresSelecionadas.length > 0 ? (
-                                            coresSelecionadas.map((cor, index) => (
+                            {/* Celular: o bloco rola na horizontal e a coluna da cor fica fixa */}
+                            <div className="w-full overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:overflow-visible">
+                                <div
+                                    className="w-full min-w-[var(--grade-min)] md:min-w-0"
+                                    style={{
+                                        "--grade-min": `${112 + 56 + 64 * sizeItems.length}px`,
+                                    }}
+                                >
+                                    <div className="flex w-full items-stretch min-h-[44px] md:min-h-[30px]">
+                                        {/* Célula 0,0: sem fundo, texto nem borda (o branco só cobre os números ao rolar) */}
+                                        <div className="w-[112px] shrink-0 bg-white max-md:sticky max-md:left-0 max-md:z-10 md:w-[160px] md:bg-transparent" />
+                                        <div className="flex flex-1 min-w-0">
+                                            {sizeItems.map((s, i) => (
                                                 <div
-                                                    key={cor.id}
-                                                    className={`flex w-full min-h-[40px] items-stretch ${
-                                                        index % 2 === 1
-                                                            ? "bg-[#F4F4F4]"
-                                                            : "bg-[#FFFFFF]"
-                                                    }`}
+                                                    key={`total-${s.id}`}
+                                                    className="bg-[#F4F4F4] flex-1 min-w-0 text-center text-[14px] font-light flex items-center justify-center text-[#D7D7D7]"
+                                                    style={{
+                                                        borderColor: "#7B7D80",
+                                                        borderLeftWidth: "0.5px",
+                                                        borderRightWidth:
+                                                            i === sizeItems.length - 1
+                                                                ? "0.5px"
+                                                                : "0px",
+                                                        borderTopWidth: "0.5px",
+                                                        borderBottomWidth: "0.5px",
+                                                        borderTopLeftRadius:
+                                                            i === 0 ? "10px" : "0px",
+                                                        borderTopRightRadius:
+                                                            i === sizeItems.length - 1
+                                                                ? "10px"
+                                                                : "0px",
+                                                        color:
+                                                            totaisPorTamanho[s.id] > 0
+                                                                ? "#898C8F"
+                                                                : "#D7D7D7",
+                                                    }}
                                                 >
-                                                    <div
-                                                        title={cor.nome}
-                                                        className="w-[160px] shrink-0 pl-2 pr-4 flex items-center gap-3"
-                                                        style={{
-                                                            borderLeftWidth: "0.5px",
-                                                            borderLeftColor: "#D9D9D9",
-                                                        }}
-                                                    >
-                                                        {String(cor.tipo).toUpperCase() ===
-                                                        "ESTAMPA" ? (
-                                                            <img
-                                                                src={cor.foto}
-                                                                alt={cor.nome}
-                                                                className="w-[20px] h-[20px] rounded-[6px] shrink-0 border border-[#D9D9D9] object-cover"
-                                                            />
-                                                        ) : (
-                                                            <span
-                                                                className="w-[20px] h-[20px] rounded-[6px] shrink-0 border border-[#D9D9D9]"
-                                                                style={{
-                                                                    backgroundColor:
-                                                                        cor.codigo_hex || "#E5E5E5",
-                                                                }}
-                                                            />
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        step="1"
+                                                        inputMode="numeric"
+                                                        value={proporcoes[s.id] || ""}
+                                                        placeholder="0"
+                                                        aria-label={`Proporção ${s.tamanho?.codigo || ""}`}
+                                                        readOnly={isReferenciaProporcao(
+                                                            s.id,
+                                                            referenceSizeId,
                                                         )}
-                                                        <span className="flex-1 text-center text-[14px] font-light text-[#898C8F] truncate leading-none">
-                                                            {cor.nome}
-                                                        </span>
-                                                    </div>
+                                                        disabled={referenceSizeId === null}
+                                                        onFocus={(event) => {
+                                                            preventNumberInputWheel(event);
+                                                            event.target.select();
+                                                        }}
+                                                        onChange={(event) =>
+                                                            handleAplicarProporcao(
+                                                                s.id,
+                                                                event.target.value,
+                                                            )
+                                                        }
+                                                        title={
+                                                            isReferenciaProporcao(
+                                                                s.id,
+                                                                referenceSizeId,
+                                                            )
+                                                                ? "Coluna de referência"
+                                                                : referenceSizeId === null
+                                                                  ? "Preencha primeiro uma coluna da grade"
+                                                                  : "Digite a proporção para recalcular esta coluna"
+                                                        }
+                                                        className="h-full w-full bg-transparent text-center outline-none disabled:cursor-not-allowed [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none max-md:text-[16px]"
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="w-[56px] shrink-0 md:w-[90px]" />
+                                    </div>
 
-                                                    {sizeItems.map((s, sizeIndex) => {
-                                                        const val =
-                                                            matrizQuantidades[cor.id]?.[s.id]
-                                                                ?.quantidade;
-                                                        return (
+                                    <div className="flex h-[44px] items-stretch md:h-[40px]">
+                                        <div
+                                            className={`${COLUNA_FIXA} w-[112px] shrink-0 rounded-tl-[10px] font-normal bg-[#C9EAF6] px-2.5 text-[#4696AD] flex items-center justify-center overflow-hidden md:w-[160px] md:px-4`}
+                                        >
+                                            Cores
+                                        </div>
+                                        <div className="flex flex-1 min-w-0">
+                                            {sizeItems.map((s, sizeIndex) => (
+                                                <div
+                                                    key={`header-${s.id}`}
+                                                    className="flex-1 min-w-0 text-center text-[14px] font-normal text-[#4696AD] flex items-center justify-center bg-[#C9EAF6]"
+                                                    style={{
+                                                        borderLeftWidth: "0.5px",
+                                                        borderRightWidth:
+                                                            sizeIndex === sizeItems.length - 1
+                                                                ? "0.5px"
+                                                                : "0px",
+                                                        borderColor: "#7B7D80",
+                                                    }}
+                                                >
+                                                    {s.tamanho?.codigo || "-"}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="w-[56px] shrink-0 rounded-tr-[10px] bg-[#C9EAF6] px-2 text-center text-[14px] font-normal text-[#4696AD] flex items-center justify-center md:w-[90px]">
+                                            <span className="md:hidden">Total</span>
+                                            <span className="hidden md:inline">Total (cor)</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="rounded-b-[10px] bg-white overflow-clip">
+                                        <div className="flex flex-col w-full">
+                                            {coresSelecionadas.length > 0 ? (
+                                                coresSelecionadas.map((cor, index) => (
+                                                    <div
+                                                        key={cor.id}
+                                                        className={`flex w-full min-h-[48px] items-stretch md:min-h-[40px] ${
+                                                            index % 2 === 1
+                                                                ? "bg-[#F4F4F4]"
+                                                                : "bg-[#FFFFFF]"
+                                                        }`}
+                                                    >
+                                                        <div
+                                                            title={cor.nome}
+                                                            className={`${COLUNA_FIXA} w-[112px] shrink-0 pl-2 pr-2 flex items-center gap-1.5 md:w-[160px] md:gap-3 md:pr-4 ${
+                                                                index % 2 === 1
+                                                                    ? "bg-[#F4F4F4]"
+                                                                    : "bg-[#FFFFFF]"
+                                                            }`}
+                                                            style={{
+                                                                borderLeftWidth: "0.5px",
+                                                                borderLeftColor: "#D9D9D9",
+                                                            }}
+                                                        >
+                                                            {String(cor.tipo).toUpperCase() ===
+                                                            "ESTAMPA" ? (
+                                                                <img
+                                                                    src={cor.foto}
+                                                                    alt={cor.nome}
+                                                                    className="w-[20px] h-[20px] rounded-[6px] shrink-0 border border-[#D9D9D9] object-cover"
+                                                                />
+                                                            ) : (
+                                                                <span
+                                                                    className="w-[20px] h-[20px] rounded-[6px] shrink-0 border border-[#D9D9D9]"
+                                                                    style={{
+                                                                        backgroundColor:
+                                                                            cor.codigo_hex ||
+                                                                            "#E5E5E5",
+                                                                    }}
+                                                                />
+                                                            )}
+                                                            <span className="min-w-0 flex-1 line-clamp-2 text-left text-[13px] font-light leading-4 text-[#898C8F] md:block md:truncate md:text-center md:text-[14px] md:leading-none">
+                                                                {cor.nome}
+                                                            </span>
+                                                        </div>
+
+                                                        {sizeItems.map((s, sizeIndex) => {
+                                                            const val =
+                                                                matrizQuantidades[cor.id]?.[s.id]
+                                                                    ?.quantidade;
+                                                            return (
+                                                                <div
+                                                                    key={`input-${cor.id}-${s.id}`}
+                                                                    className="flex-1 min-w-0 flex items-center justify-center"
+                                                                    style={{
+                                                                        ...BORDER_DARK_05,
+                                                                        borderTopWidth: "0px",
+                                                                        borderBottomWidth: "0px",
+                                                                        borderLeftWidth: "0.5px",
+                                                                        borderRightWidth:
+                                                                            sizeIndex ===
+                                                                            sizeItems.length - 1
+                                                                                ? "0.5px"
+                                                                                : "0px",
+                                                                    }}
+                                                                >
+                                                                    <input
+                                                                        type="number"
+                                                                        onFocus={
+                                                                            preventNumberInputWheel
+                                                                        }
+                                                                        min="0"
+                                                                        inputMode="numeric"
+                                                                        aria-label={`${cor.nome}, tamanho ${s.tamanho?.codigo || ""}`}
+                                                                        value={
+                                                                            val === undefined ||
+                                                                            val === 0
+                                                                                ? ""
+                                                                                : val
+                                                                        }
+                                                                        placeholder="-"
+                                                                        onChange={(e) =>
+                                                                            handleQuantidadeChange(
+                                                                                cor.id,
+                                                                                s.id,
+                                                                                e.target.value,
+                                                                            )
+                                                                        }
+                                                                        className="w-full h-full text-center text-[14px] font-light text-[#898C8F] bg-transparent outline-none placeholder:text-[#D7D7D7] [&::-webkit-inner-spin-button]:appearance-none max-md:min-h-[48px] max-md:text-[16px] max-md:focus:bg-[#E6F4F9]"
+                                                                    />
+                                                                </div>
+                                                            );
+                                                        })}
+                                                        <div
+                                                            className="w-[56px] shrink-0 px-2 flex items-center justify-center text-[14px] font-normal text-[#898C8F] md:w-[90px]"
+                                                            style={{
+                                                                borderRight: "0.5px solid #D9D9D9",
+                                                            }}
+                                                        >
+                                                            {totaisPorCor[cor.id] || "-"}
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="px-4 py-4 text-[13px] text-center text-[#888] bg-white w-full rounded-b-[10px] max-md:sticky max-md:left-0 max-md:w-[calc(100vw-2rem)]">
+                                                    Nenhuma cor selecionada.
+                                                </div>
+                                            )}
+                                            {coresSelecionadas.length > 0 && (
+                                                <div className="flex w-full min-h-[44px] items-stretch md:min-h-[40px]">
+                                                    <div
+                                                        className={`${COLUNA_FIXA} w-[112px] shrink-0 bg-[#C9EAF6] px-2.5 text-center text-[12px] leading-[14px] font-normal text-[#4696AD] flex items-center justify-center md:w-[160px] md:px-3 md:text-[14px] md:leading-[1.5]`}
+                                                    >
+                                                        Total (tamanho)
+                                                    </div>
+                                                    <div className="flex flex-1 min-w-0">
+                                                        {sizeItems.map((size, sizeIndex) => (
                                                             <div
-                                                                key={`input-${cor.id}-${s.id}`}
-                                                                className="flex-1 min-w-0 flex items-center justify-center"
+                                                                key={`total-tamanho-${size.id}`}
+                                                                className={`flex-1 min-w-0 px-2 flex items-center justify-center text-[14px] font-normal text-[#898C8F] border-l-[0.5px] border-[#7B7D80] ${
+                                                                    coresSelecionadas.length % 2 ===
+                                                                    1
+                                                                        ? "bg-[#F4F4F4]"
+                                                                        : "bg-[#FFFFFF]"
+                                                                }`}
                                                                 style={{
-                                                                    ...BORDER_DARK_05,
-                                                                    borderTopWidth: "0px",
-                                                                    borderBottomWidth: "0px",
                                                                     borderLeftWidth: "0.5px",
                                                                     borderRightWidth:
                                                                         sizeIndex ===
                                                                         sizeItems.length - 1
                                                                             ? "0.5px"
                                                                             : "0px",
+                                                                    borderColor: "#7B7D80",
+                                                                    borderBottomWidth: "0.5px",
+                                                                    borderBottomColor: "#D9D9D9",
                                                                 }}
                                                             >
-                                                                <input
-                                                                    type="number"
-                                                                    onFocus={
-                                                                        preventNumberInputWheel
-                                                                    }
-                                                                    min="0"
-                                                                    value={
-                                                                        val === undefined ||
-                                                                        val === 0
-                                                                            ? ""
-                                                                            : val
-                                                                    }
-                                                                    placeholder="-"
-                                                                    onChange={(e) =>
-                                                                        handleQuantidadeChange(
-                                                                            cor.id,
-                                                                            s.id,
-                                                                            e.target.value,
-                                                                        )
-                                                                    }
-                                                                    className="w-full h-full text-center text-[14px] font-light text-[#898C8F] bg-transparent outline-none placeholder:text-[#D7D7D7] [&::-webkit-inner-spin-button]:appearance-none"
-                                                                />
+                                                                {totaisPorTamanho[size.id] || "-"}
                                                             </div>
-                                                        );
-                                                    })}
-                                                    <div
-                                                        className="w-[90px] shrink-0 px-2 flex items-center justify-center text-[14px] font-normal text-[#898C8F]"
-                                                        style={{
-                                                            borderRight: "0.5px solid #D9D9D9",
-                                                        }}
-                                                    >
-                                                        {totaisPorCor[cor.id] || "-"}
+                                                        ))}
+                                                    </div>
+                                                    <div className="w-[56px] shrink-0 bg-[#C9EAF6] px-2 flex items-center justify-center text-[14px] font-normal text-[#4696AD] md:w-[90px]">
+                                                        {totalGeral || "-"}
                                                     </div>
                                                 </div>
-                                            ))
-                                        ) : (
-                                            <div className="px-4 py-4 text-[13px] text-center text-[#888] bg-white w-full rounded-b-[10px]">
-                                                Nenhuma cor selecionada.
-                                            </div>
-                                        )}
-                                        {coresSelecionadas.length > 0 && (
-                                            <div className="flex w-full min-h-[40px] items-stretch">
-                                                <div className="w-[160px] shrink-0 bg-[#C9EAF6] px-3 text-center text-[14px] font-normal text-[#4696AD] flex items-center justify-center">
-                                                    Total (tamanho)
-                                                </div>
-                                                <div className="flex flex-1 min-w-0">
-                                                    {sizeItems.map((size, sizeIndex) => (
-                                                        <div
-                                                            key={`total-tamanho-${size.id}`}
-                                                            className={`flex-1 min-w-0 px-2 flex items-center justify-center text-[14px] font-normal text-[#898C8F] border-l-[0.5px] border-[#7B7D80] ${
-                                                                coresSelecionadas.length % 2 === 1
-                                                                    ? "bg-[#F4F4F4]"
-                                                                    : "bg-[#FFFFFF]"
-                                                            }`}
-                                                            style={{
-                                                                borderLeftWidth: "0.5px",
-                                                                borderRightWidth:
-                                                                    sizeIndex ===
-                                                                    sizeItems.length - 1
-                                                                        ? "0.5px"
-                                                                        : "0px",
-                                                                borderColor: "#7B7D80",
-                                                                borderBottomWidth: "0.5px",
-                                                                borderBottomColor: "#D9D9D9",
-                                                            }}
-                                                        >
-                                                            {totaisPorTamanho[size.id] || "-"}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                                <div className="w-[90px] shrink-0 bg-[#C9EAF6] px-2 flex items-center justify-center text-[14px] font-normal text-[#4696AD]">
-                                                    {totalGeral || "-"}
-                                                </div>
-                                            </div>
-                                        )}
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+                            <p className="mt-2 flex items-center gap-1.5 text-[12px] text-[#6B6E72] md:hidden">
+                                <svg
+                                    width="12"
+                                    height="12"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    aria-hidden="true"
+                                >
+                                    <path d="M5 12h14M13 6l6 6-6 6" />
+                                </svg>
+                                Deslize para ver todos os tamanhos
+                            </p>
                         </div>
 
                         {validacaoPrecoExibida && parceirosSemPreco.length > 0 && (
-                            <div className="rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-[14px] font-light text-red-700">
+                            <div
+                                className="rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-[14px] font-light text-red-700"
+                                role="alert"
+                            >
                                 <span className="font-medium">Atenção:</span> cadastre o preço
                                 unitário de todas as facções antes de concluir a edição.
                             </div>
                         )}
 
-                        <div className="overflow-visible">
+                        <div className="hidden overflow-visible md:block">
                             <table className="w-full table-fixed border-separate border-spacing-0 text-center text-sm">
                                 <thead className="bg-[#C9EAF6] text-[#4696AD]">
                                     <tr>
@@ -1187,41 +1300,26 @@ export default function EdicaoFichaTecnicaModal({
                                                             <input
                                                                 type="text"
                                                                 inputMode="numeric"
-                                                                value={
-                                                                    vinculo.preco_editavel
-                                                                        ? Number(
-                                                                              vinculo.preco_editavel,
-                                                                          )
-                                                                              .toFixed(2)
-                                                                              .replace(".", ",")
-                                                                        : ""
-                                                                }
-                                                                onChange={(e) => {
-                                                                    const numeros =
-                                                                        e.target.value.replace(
-                                                                            /\D/g,
-                                                                            "",
-                                                                        );
-                                                                    const valorNumerico = numeros
-                                                                        ? Number(numeros) / 100
-                                                                        : 0;
-                                                                    handleParceiroChange(
+                                                                value={formatarPrecoEditavel(
+                                                                    vinculo,
+                                                                )}
+                                                                onChange={(e) =>
+                                                                    handlePrecoChange(
                                                                         index,
-                                                                        "preco_editavel",
-                                                                        valorNumerico,
-                                                                    );
-                                                                }}
+                                                                        e.target.value,
+                                                                    )
+                                                                }
                                                                 className="w-[50px] py-3 pl-1 text-left bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                             />
                                                         </div>
 
-                                                        <div className="absolute top-0 -right-[30px] w-[30px] h-full flex items-center justify-center opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity z-20">
+                                                        <div className="absolute top-0 -right-[30px] w-[30px] h-full flex items-center justify-center transition-opacity z-20 lg:opacity-0 lg:pointer-events-none lg:group-hover:opacity-100 lg:group-hover:pointer-events-auto">
                                                             <button
                                                                 type="button"
                                                                 onClick={() =>
                                                                     handleRemoverParceiro(index)
                                                                 }
-                                                                className="w-[18px] h-[18px] flex items-center justify-center hover:opacity-70 transition-opacity"
+                                                                className="h-full w-full flex items-center justify-center hover:opacity-70 transition-opacity lg:w-[18px] lg:h-[18px]"
                                                                 title="Remover parceiro"
                                                             >
                                                                 <img
@@ -1248,11 +1346,92 @@ export default function EdicaoFichaTecnicaModal({
                                 </tbody>
                             </table>
                         </div>
+
+                        {/* Celular: cada facção vira um cartão (a tabela volta a partir do tablet) */}
+                        <div className="flex flex-col gap-2.5 md:hidden">
+                            {parceiros.length > 0 ? (
+                                parceiros.map((vinculo, index) => {
+                                    const nome = vinculo.parceiro?.nome || "-";
+
+                                    return (
+                                        <div
+                                            key={vinculo.id || index}
+                                            className="flex flex-col gap-1.5 rounded-[14px] border border-[#D5E4EA] bg-white p-3"
+                                        >
+                                            <div className="flex h-8 items-center gap-2.5">
+                                                <span
+                                                    title={nome}
+                                                    className="min-w-0 flex-1 truncate text-[16px] font-medium text-[#404040]"
+                                                >
+                                                    {nome}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoverParceiro(index)}
+                                                    aria-label={`Remover ${nome}`}
+                                                    className="-my-1.5 -mr-3 flex h-11 w-11 shrink-0 items-center justify-center"
+                                                >
+                                                    <img
+                                                        src="/excluir-cinza.png"
+                                                        alt=""
+                                                        className="h-[18px] w-[18px] object-contain"
+                                                    />
+                                                </button>
+                                            </div>
+                                            <div className="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] gap-2.5">
+                                                <label className="flex min-w-0 flex-col gap-1 text-[12px] leading-4 text-[#6B6E72]">
+                                                    Operação
+                                                    <input
+                                                        type="text"
+                                                        value={vinculo.operacao || ""}
+                                                        placeholder="Ex: Completa"
+                                                        onChange={(e) =>
+                                                            handleParceiroChange(
+                                                                index,
+                                                                "operacao",
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        className={`${CLASSE_CAMPO_CARTAO} outline-none placeholder:text-[#D3D3D3]`}
+                                                    />
+                                                </label>
+                                                <label className="flex min-w-0 flex-col gap-1 text-[12px] leading-4 text-[#6B6E72]">
+                                                    Preço unitário
+                                                    <span className={CLASSE_CAMPO_CARTAO}>
+                                                        <span className="mr-1.5 text-[#707070]">
+                                                            R$
+                                                        </span>
+                                                        <input
+                                                            type="text"
+                                                            inputMode="numeric"
+                                                            value={formatarPrecoEditavel(vinculo)}
+                                                            placeholder="0,00"
+                                                            onChange={(e) =>
+                                                                handlePrecoChange(
+                                                                    index,
+                                                                    e.target.value,
+                                                                )
+                                                            }
+                                                            className="w-full min-w-0 bg-transparent outline-none placeholder:text-[#D3D3D3]"
+                                                        />
+                                                    </span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            ) : (
+                                <p className="rounded-[10px] border border-[#D9D9D9] py-4 text-center text-[13px] text-[#888]">
+                                    Nenhuma facção vinculada a esta ficha.
+                                </p>
+                            )}
+                        </div>
+
                         {/* Botão Atribuir Facção */}
                         <button
                             type="button"
                             onClick={() => setIsProdutoParceirosOpen(true)}
-                            className="w-full py-3 bg-[#F8F8F8] text-[#898C8F] text-[14px] font-light rounded-[10px] flex items-center justify-center gap-2 hover:bg-[#ebebeb] transition-colors"
+                            className="w-full h-[48px] bg-[#F8F8F8] text-[#898C8F] text-[14px] font-light rounded-[12px] flex items-center justify-center gap-2 hover:bg-[#ebebeb] transition-colors md:h-auto md:py-3 md:rounded-[10px]"
                         >
                             <img
                                 src="/maquina-costura-add.png"
@@ -1275,6 +1454,7 @@ export default function EdicaoFichaTecnicaModal({
                                 retiradas={relatorioAcabamento.retiradas}
                                 sobras={relatorioAcabamento.sobras}
                                 onChange={handleRelatorioAcabamentoChange}
+                                responsivo
                             />
                         )}
 
@@ -1331,12 +1511,58 @@ export default function EdicaoFichaTecnicaModal({
                             </fieldset>
                         </div>
 
-                        {/* FOOTER */}
-                        <div className="py-5  flex justify-end items-center shrink-0">
+                        {/* FOOTER (desktop: rola junto com o conteúdo) */}
+                        <div className="py-5 hidden justify-end items-center shrink-0 lg:flex">
                             <button
                                 onClick={handleConcluir}
                                 disabled={loading || !perdasValidas}
                                 className="px-10 h-[39px] rounded-full bg-[#A9E2F2] text-[#4696AD] font-normal text-[16px] hover:bg-[#97D8EA] transition-colors shadow-sm disabled:opacity-50"
+                            >
+                                {loading ? "Salvando..." : "Salvar Alterações"}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Celular e tablet: rodapé fixo com total, perdas e ações */}
+                    <div className="flex shrink-0 flex-col gap-3 border-t border-[#EEEEEE] bg-white px-4 pb-4 pt-3 shadow-[0_-6px_16px_rgba(0,0,0,0.06)] md:flex-row md:items-center md:justify-between md:gap-4 md:px-8 md:pb-5 md:pt-4 md:shadow-none lg:hidden">
+                        <div className="flex items-center justify-between md:justify-start md:gap-8">
+                            <div className="flex flex-col">
+                                <span className="text-[12px] leading-4 text-[#6B6E72] md:text-[13px]">
+                                    Total da ficha
+                                </span>
+                                <span className="text-[18px] font-medium leading-[22px] text-[#404040]">
+                                    {totalGeral} peças
+                                </span>
+                            </div>
+                            {isUltimaEtapa && (
+                                <div className="flex flex-col items-end md:items-start">
+                                    <span className="text-[12px] leading-4 text-[#6B6E72] md:text-[13px]">
+                                        Perdas
+                                    </span>
+                                    <span
+                                        className={`text-[15px] font-medium leading-[22px] md:text-[18px] ${
+                                            perdasValidas ? "text-[#3F7A12]" : "text-red-700"
+                                        }`}
+                                    >
+                                        {totalPerdas} de {totalGeral}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex gap-2.5 md:gap-3">
+                            <button
+                                type="button"
+                                onClick={solicitarSaida}
+                                disabled={loading}
+                                className="h-[52px] flex-1 rounded-full border border-[#4696AD] bg-[#F3F4FA] text-[16px] text-[#4696AD] transition-colors hover:bg-[#F3FBFC] disabled:opacity-50 md:h-12 md:w-[140px] md:flex-none"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleConcluir}
+                                disabled={loading || !perdasValidas}
+                                className="h-[52px] flex-[1.5] rounded-full bg-[#A9E2F2] text-[16px] font-normal text-[#4696AD] shadow-sm transition-colors hover:bg-[#97D8EA] disabled:opacity-50 md:h-12 md:w-[220px] md:flex-none"
                             >
                                 {loading ? "Salvando..." : "Salvar Alterações"}
                             </button>
