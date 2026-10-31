@@ -366,8 +366,6 @@ export default function PedidosDetalhes() {
 
                         <div className="mb-10">
                             <TabelaFichaTecnica
-                                usarTotalPersistido
-                                valorTotalPersistido={pedido?.valor_total}
                                 fichas={fichas}
                                 isSobDemanda={isSobDemanda}
                                 somenteLeitura
