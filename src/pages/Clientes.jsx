@@ -14,6 +14,7 @@ export default function Clientes() {
     const navigate = useNavigate();
 
     // Estados para o Modal de Exclusão
+    // Testando source control
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
     const [clienteSelecionado, setClienteSelecionado] = useState(null);
 
