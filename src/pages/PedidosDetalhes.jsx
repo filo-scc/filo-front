@@ -83,6 +83,7 @@ const mapearFichaParaTabela = (ficha, relacaoClienteProduto) => {
             "",
         cores: extrairCores(ficha),
         quantidade,
+        defeitos_tecido: ficha?.defeitos_tecido ?? 0,
         preco_padrao:
             relacaoClienteProduto?.preco_padrao ??
             ficha?.preco_padrao ??
@@ -365,6 +366,8 @@ export default function PedidosDetalhes() {
 
                         <div className="mb-10">
                             <TabelaFichaTecnica
+                                usarTotalPersistido
+                                valorTotalPersistido={pedido?.valor_total}
                                 fichas={fichas}
                                 isSobDemanda={isSobDemanda}
                                 somenteLeitura

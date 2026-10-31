@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { calcularSubtotalFicha } from "../../utils/calcularSubtotalFicha.js";
 import { parsePreco } from "../../utils/preco";
 
 export default function TabelaReferenciaFichaTecnica({
@@ -10,6 +11,8 @@ export default function TabelaReferenciaFichaTecnica({
     onAbrirFicha,
     somenteLeitura = false,
     bloqueada = false,
+    usarTotalPersistido = false,
+    valorTotalPersistido,
 }) {
     const [idEmEdicao, setIdEmEdicao] = useState(null);
 
@@ -65,22 +68,10 @@ export default function TabelaReferenciaFichaTecnica({
         0,
     );
 
-    const obterValorUnitario = (ficha) => {
-        const valorRaw = isSobDemanda
-            ? (ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? 0)
-            : (ficha.custo_total ?? ficha.custo_unitario ?? ficha.custo ?? 0);
-        return parsePreco(valorRaw);
-    };
-
-    const totalPedido = fichas.reduce((acc, ficha) => {
-        const qtd = Number(ficha.quantidade) || Number(ficha.quantidade_pecas) || 0;
-        const valorUnitario = obterValorUnitario(ficha);
-        const subtotal =
-            isSobDemanda && ficha.subtotal !== undefined
-                ? parsePreco(ficha.subtotal)
-                : qtd * valorUnitario;
-        return acc + subtotal;
-    }, 0);
+    const exibirTotalPersistido = isSobDemanda && usarTotalPersistido;
+    const totalPedido = exibirTotalPersistido
+        ? valorTotalPersistido
+        : fichas.reduce((acc, ficha) => acc + calcularSubtotalFicha(ficha, isSobDemanda), 0);
 
     const campoBloqueadoClass =
         "flex flex-col items-start lg:items-center justify-center gap-2 lg:gap-0 lg:text-center min-w-0 px-4 py-4 lg:px-2 lg:py-0 break-words [overflow-wrap:anywhere] text-base text-[#404040] cursor-not-allowed";
@@ -146,12 +137,16 @@ export default function TabelaReferenciaFichaTecnica({
                                 Number(ficha.quantidade) || Number(ficha.quantidade_pecas) || 0;
                             const valPrecoRaw =
                                 ficha.preco_padrao ?? ficha.preco_unitario ?? ficha.preco ?? "";
-                            const valorUnitario = obterValorUnitario(ficha);
+                            const valorUnitario = parsePreco(
+                                isSobDemanda
+                                    ? valPrecoRaw
+                                    : (ficha.custo_total ??
+                                          ficha.custo_unitario ??
+                                          ficha.custo ??
+                                          0),
+                            );
 
-                            const subtotal =
-                                isSobDemanda && ficha.subtotal !== undefined
-                                    ? parsePreco(ficha.subtotal)
-                                    : qtd * valorUnitario;
+                            const subtotal = calcularSubtotalFicha(ficha, isSobDemanda);
                             const refClienteValor =
                                 ficha.referenciaCliente ?? ficha.ref_cliente ?? "";
                             const isEditando =
@@ -404,7 +399,7 @@ export default function TabelaReferenciaFichaTecnica({
                 )}
 
                 {/* 3. RODAPÉ DA TABELA */}
-                {fichas.length > 0 && (
+                {(fichas.length > 0 || exibirTotalPersistido) && (
                     <div className="flex flex-row items-center w-full mt-5 lg:mt-0">
                         <div className="min-w-0 flex-1 md:rounded-[16px] lg:rounded-t-none md:border lg:border-t-0 border-[#d9d9d9] bg-transparent md:bg-[#d9d9d9] px-0 md:px-6 py-3.5 flex flex-col md:flex-row md:flex-wrap items-start md:items-center justify-between gap-3 lg:gap-0 text-[#898C8F] font-['Outfit'] text-sm md:text-base">
                             <span className="hidden md:block font-['Outfit'] text-[#898C8F]">
@@ -421,7 +416,9 @@ export default function TabelaReferenciaFichaTecnica({
                                 <div>
                                     {isSobDemanda ? "Total do pedido: " : "Custo total: "}
                                     <span className="font-light font-['Outfit']">
-                                        {formatarMoeda(totalPedido)}
+                                        {exibirTotalPersistido && totalPedido == null
+                                            ? "Indisponível"
+                                            : formatarMoeda(totalPedido)}
                                     </span>
                                 </div>
                             </div>
