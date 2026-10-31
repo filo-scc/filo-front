@@ -29,6 +29,7 @@ import { parsePreco } from "../utils/preco";
 import { dataPrevistaParaBackend } from "../utils/dataPrevista";
 import { obterPrecoUnitarioParceiro } from "../utils/precoParceiro";
 import { extrairMensagemDeErro } from "../utils/mensagemApi";
+import { textoContemBusca } from "../utils/textoBusca";
 
 const sectionTitleClass = "text-[20px] font-light text-[#404040] mb-4 font-['Outfit']";
 
@@ -72,9 +73,7 @@ function DropdownField({
         }
     }, [isOpen]);
 
-    const opcoesFiltradas = options.filter((option) =>
-        option.label.toLowerCase().includes(termoBusca.toLowerCase()),
-    );
+    const opcoesFiltradas = options.filter((option) => textoContemBusca(option.label, termoBusca));
 
     return (
         <div className={`relative ${isOpen ? "z-50" : "z-10"} ${className}`}>
@@ -644,7 +643,7 @@ export default function PedidosEditar() {
             setCarregandoReferencias(true);
             try {
                 let listaProdutosCliente = [];
-                const promessas = [getProdutosPorFabrico(fabricoId)];
+                const promessas = [getProdutosPorFabrico()];
                 if (isSobDemanda && clienteSelecionado?.id) {
                     promessas.push(getProdutosDoCliente(clienteSelecionado.id));
                 }

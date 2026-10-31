@@ -9,7 +9,6 @@ export default function ModalReferencias({
     isOpen,
     onClose,
     clienteId,
-    fabricoId,
     produtosExistentes,
     onSuccess,
     onAdicionarSelecionados,
@@ -40,7 +39,6 @@ export default function ModalReferencias({
             try {
                 const produtosFiltrados = await getUnassociatedProductsForClient(
                     clienteId,
-                    fabricoId,
                     busca,
                 );
 
@@ -54,7 +52,7 @@ export default function ModalReferencias({
 
         const delayDebounceFn = setTimeout(() => carregarProdutos(), 500);
         return () => clearTimeout(delayDebounceFn);
-    }, [isOpen, clienteId, fabricoId, busca, produtosExistentes]);
+    }, [isOpen, clienteId, busca, produtosExistentes]);
 
     const toggleSelecao = (id) => {
         setSelecionados((prev) =>

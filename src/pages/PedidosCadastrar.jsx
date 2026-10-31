@@ -17,6 +17,7 @@ import ModalConfirmacaoEscolha from "../components/geral/ModalConfirmacaoEscolha
 
 import { parsePreco } from "../utils/preco";
 import { dataPrevistaParaBackend } from "../utils/dataPrevista";
+import { textoContemBusca } from "../utils/textoBusca";
 
 const sectionTitleClass = "text-[20px] font-light text-[#404040] mb-4 font-['Outfit']";
 
@@ -60,9 +61,7 @@ function DropdownField({
         }
     }, [isOpen]);
 
-    const opcoesFiltradas = options.filter((option) =>
-        option.label.toLowerCase().includes(termoBusca.toLowerCase()),
-    );
+    const opcoesFiltradas = options.filter((option) => textoContemBusca(option.label, termoBusca));
 
     return (
         <div className={`relative ${isOpen ? "z-50" : "z-10"} ${className}`}>
