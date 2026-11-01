@@ -1,35 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getParceiroByProduto } from "../../services/produtoService";
+import {
+    deveBuscarParceiros,
+    filtrarParceirosDisponiveis,
+} from "../../utils/parceirosDoSeletor.js";
 import { ModalTableRowsSkeleton } from "../geral/Loading";
-
-function normalizePreco(preco) {
-    if (preco === null || preco === undefined || preco === "") return null;
-    const parsed = Number(preco);
-    return Number.isFinite(parsed) ? parsed : null;
-}
-
-function normalizeParceiro(item) {
-    if (!item) return null;
-
-    if (item.parceiro) {
-        return {
-            id: item.parceiro.id,
-            nome: item.parceiro.nome,
-            preco: normalizePreco(item.preco),
-            etapa_id: item.parceiro.etapa_id ?? null,
-            possuiPedido: Boolean(item.possuiPedido ?? item.parceiro.possuiPedido ?? false),
-        };
-    }
-
-    return {
-        id: item.id,
-        nome: item.nome,
-        preco: normalizePreco(item.preco),
-        etapa_id: item.etapa_id ?? null,
-        possuiPedido: Boolean(item.possuiPedido ?? false),
-    };
-}
 
 const ProdutoParceiros = ({
     isOpen,
@@ -50,11 +26,7 @@ const ProdutoParceiros = ({
     );
 
     const filterSelected = useCallback(
-        (list = []) =>
-            list
-                .map(normalizeParceiro)
-                .filter(Boolean)
-                .filter((item) => !selectedIdsSet.has(String(item.id))),
+        (list = []) => filtrarParceirosDisponiveis(list, selectedIdsSet),
         [selectedIdsSet],
     );
 
@@ -62,9 +34,7 @@ const ProdutoParceiros = ({
         if (!isOpen) return;
         let ignorar = false;
 
-        // Lista recebida da tela (mesmo vazia) é a verdade: só busca por conta própria quando
-        // a tela não passa lista. Senão o seletor oferece facções que a tela esconde depois.
-        if (Array.isArray(parceirosProp)) {
+        if (!deveBuscarParceiros(parceirosProp)) {
             setParceiros(filterSelected(parceirosProp));
             setLoading(false);
             return;
