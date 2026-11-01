@@ -220,20 +220,20 @@ export default function ClientesCadastrar() {
         setSelecionados([]);
     };
 
-    const toggleSelecaoProduto = (produtoId) => {
-        setSelecionados((prev) =>
-            prev.includes(produtoId)
-                ? prev.filter((item) => item !== produtoId)
-                : [...prev, produtoId],
-        );
+    const toggleSelecaoProduto = (produto) => {
+        setSelecionados((prev) => {
+            const produtoJaSelecionado = prev.some(
+                (item) => String(item.id) === String(produto.id),
+            );
+
+            return produtoJaSelecionado
+                ? prev.filter((item) => String(item.id) !== String(produto.id))
+                : [...prev, produto];
+        });
     };
 
     const adicionarReferenciasSelecionadas = () => {
-        const produtosSelecionados = produtosDisponiveis.filter((produto) =>
-            selecionados.includes(produto.id),
-        );
-
-        handleAdicionarProdutos(produtosSelecionados);
+        handleAdicionarProdutos(selecionados);
         fecharModalReferencias();
     };
 
@@ -565,12 +565,14 @@ export default function ClientesCadastrar() {
                             ) : (
                                 <div className="grid grid-cols-4 gap-4">
                                     {produtosDisponiveis.map((produto) => {
-                                        const isSelected = selecionados.includes(produto.id);
+                                        const isSelected = selecionados.some(
+                                            (item) => String(item.id) === String(produto.id),
+                                        );
 
                                         return (
                                             <div
                                                 key={produto.id}
-                                                onClick={() => toggleSelecaoProduto(produto.id)}
+                                                onClick={() => toggleSelecaoProduto(produto)}
                                                 className={`rounded-[16px] p-1 flex flex-col gap-1 cursor-pointer transition-all duration-200 ${
                                                     isSelected
                                                         ? "bg-[#cbe8f0] text-[#4696ad]"

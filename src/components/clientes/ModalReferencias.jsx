@@ -34,21 +34,31 @@ export default function ModalReferencias({
             return;
         }
 
+        let ignorar = false;
+
         const carregarProdutos = async () => {
             setLoadingFetch(true);
             try {
                 const produtosFiltrados = await getUnassociatedProductsForClient(clienteId, busca);
+                if (ignorar) return;
 
                 setProdutos(produtosFiltrados);
             } catch (error) {
-                console.error("Erro ao buscar produtos:", error);
+                if (!ignorar) {
+                    console.error("Erro ao buscar produtos:", error);
+                }
             } finally {
-                setLoadingFetch(false);
+                if (!ignorar) {
+                    setLoadingFetch(false);
+                }
             }
         };
 
         const delayDebounceFn = setTimeout(() => carregarProdutos(), 500);
-        return () => clearTimeout(delayDebounceFn);
+        return () => {
+            ignorar = true;
+            clearTimeout(delayDebounceFn);
+        };
     }, [isOpen, clienteId, busca, produtosExistentes]);
 
     const toggleSelecao = (id) => {
