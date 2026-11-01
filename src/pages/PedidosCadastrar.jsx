@@ -686,8 +686,8 @@ export default function PedidosCadastrar() {
 
     return (
         <>
-            <div className="p-6 pt-0 mt-6 w-full relative z-0 font-['Outfit']">
-                <div className="bg-white p-10 rounded-[24px] shadow-sm w-full mx-auto">
+            <div className="px-3 sm:px-6 pt-0 mt-4 sm:mt-6 w-full min-w-0 relative z-0 font-['Outfit']">
+                <div className="bg-white p-4 sm:p-6 lg:p-10 rounded-[24px] shadow-sm w-full mx-auto">
                     <div className="mb-6">
                         <div className="flex items-start gap-3">
                             <img
@@ -708,12 +708,12 @@ export default function PedidosCadastrar() {
                     </div>
 
                     <section className="mb-4">
-                        <div className="flex flex-wrap gap-4 justify-between items-start">
-                            <div className="flex flex-col">
+                        <div className="flex flex-col lg:flex-row lg:flex-wrap gap-4 justify-between items-stretch lg:items-start">
+                            <div className="flex flex-col min-w-0">
                                 <h2 className={sectionTitleClass}>Adicionar ficha técnica</h2>
-                                <div className="flex flex-row flex-wrap gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:flex lg:flex-row lg:flex-wrap gap-4">
                                     {isSobDemanda && (
-                                        <div className="w-[320px] shrink-0">
+                                        <div className="w-full min-w-0 lg:w-[320px] lg:shrink-0">
                                             <DropdownField
                                                 value={clienteSelecionado?.nome || ""}
                                                 placeholder="Selecionar cliente"
@@ -730,7 +730,7 @@ export default function PedidosCadastrar() {
                                         </div>
                                     )}
 
-                                    <div className="w-[320px] shrink-0">
+                                    <div className="w-full min-w-0 lg:w-[320px] lg:shrink-0">
                                         <DropdownField
                                             value={referenciaSelecionada?.label || ""}
                                             placeholder="Adicionar referência*"
@@ -752,7 +752,7 @@ export default function PedidosCadastrar() {
                                 </div>
                             </div>
 
-                            <div className="flex flex-col w-fit max-w-full">
+                            <div className="flex flex-col w-full md:w-[240px] lg:w-fit max-w-full">
                                 <h2 className={sectionTitleClass}>Previsão de entrega</h2>
                                 <input
                                     type="text"
@@ -770,6 +770,7 @@ export default function PedidosCadastrar() {
 
                     <div className="mb-10">
                         <TabelaFichaTecnica
+                            layoutPedidoResponsivo
                             fichas={fichas}
                             isSobDemanda={isSobDemanda}
                             onRemoverFicha={handleRemoverFicha}
@@ -777,7 +778,7 @@ export default function PedidosCadastrar() {
                         />
                     </div>
 
-                    <div className="flex flex-wrap justify-end gap-4 pt-2">
+                    <div className="flex flex-col-reverse sm:flex-row sm:flex-wrap justify-end gap-3 sm:gap-4 pt-2">
                         <button
                             type="button"
                             disabled={salvandoPedido}
