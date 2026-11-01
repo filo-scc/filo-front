@@ -428,7 +428,6 @@ export default function ClientesEditar() {
                         setItemParaEditar(null);
                     }}
                     clienteId={id}
-                    fabricoId={fabricoId}
                     itemParaEditar={itemParaEditar}
                     produtosExistentes={produtosAssociados}
                     onSuccess={recarregarProdutos}

@@ -48,8 +48,10 @@ export const desvincularProdutoDoCliente = async (clienteId, produtoId) => {
     return response.data;
 };
 
-export const getUnassociatedProductsForClient = async (clienteId, fabricoId, body) => {
-    const response = await api.get(`/produtos/cliente/${clienteId}/produtos-nao-associados/`, body);
+export const getUnassociatedProductsForClient = async (clienteId, busca = "") => {
+    const response = await api.get(`/produtos/cliente/${clienteId}/produtos-nao-associados/`, {
+        params: { busca },
+    });
     return response.data;
 };
 
