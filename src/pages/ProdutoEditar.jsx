@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import ProdutoDetalhesHeader from "../components/produtos/ProdutoDetalhesHeader";
 import TabelaClientesDoProduto from "../components/produtos/TabelaClientesDoProduto";
+import ModeloModal from "../components/produtos/ModeloModal";
 import AviamentoModal from "../components/aviamentos/AviamentoModal";
 import ModalAtencao from "../components/geral/ModalAtencao";
 import ModalConfirmacao from "../components/geral/ModalConfirmacao";
@@ -517,6 +518,7 @@ export default function ProdutoEditar() {
     const [aviamentosDisponiveis, setAviamentosDisponiveis] = useState([]);
     const [modelosDisponiveis, setModelosDisponiveis] = useState([]);
     const [modalClientesAberto, setModalClientesAberto] = useState(false);
+    const [modalModeloAberto, setModalModeloAberto] = useState(false);
     const [modalAviamentoAberto, setModalAviamentoAberto] = useState(false);
     const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
     const [modalAtencaoAberto, setModalAtencaoAberto] = useState(false);
@@ -790,6 +792,25 @@ export default function ProdutoEditar() {
             tipo_produto_id: modeloSelecionado?.id,
         }));
         setOpenDropdown(null);
+    };
+
+    const handleModeloCriado = (nomeModelo, tipoCriado) => {
+        const novoModelo = {
+            id: tipoCriado?.id,
+            nome: tipoCriado?.nome || nomeModelo,
+        };
+
+        if (!novoModelo.id) return;
+
+        setModelosDisponiveis((prev) => {
+            if (prev.some((m) => m.id === novoModelo.id)) return prev;
+            return [...prev, novoModelo];
+        });
+        setFormData((prev) => ({
+            ...prev,
+            modelo: novoModelo.nome,
+            tipo_produto_id: novoModelo.id,
+        }));
     };
 
     const handleAviamentoCriado = (aviamentoCriado) => {
@@ -1092,7 +1113,7 @@ export default function ProdutoEditar() {
 
                 <form onSubmit={handleSalvar} className="mt-8 flex flex-col min-h-[520px]">
                     <div className="flex flex-col xl:flex-row gap-9 xl:gap-10">
-                        <div className="w-[260px] shrink-0">
+                        <div className="w-[204px] shrink-0">
                             <FieldLabel>Imagem</FieldLabel>
                             <input
                                 ref={inputFileRef}
@@ -1104,7 +1125,7 @@ export default function ProdutoEditar() {
                             <button
                                 type="button"
                                 onClick={() => inputFileRef.current?.click()}
-                                className="w-[260px] h-[170px] rounded-[10px] overflow-hidden bg-[#D9D9D9] hover:opacity-90 transition-opacity flex items-center justify-center border border-dashed border-[#898C8F]"
+                                className="w-[204px] h-[238px] rounded-[10px] overflow-hidden bg-[#D9D9D9] hover:opacity-90 transition-opacity flex items-center justify-center border border-dashed border-[#898C8F]"
                             >
                                 {imagemPreview ? (
                                     <img
@@ -1142,6 +1163,15 @@ export default function ProdutoEditar() {
                                         onToggle={() => toggleDropdown("modelo")}
                                         onSelect={handleModeloSelect}
                                         isSelectedOption={(option) => formData.modelo === option}
+                                        maxVisibleOptions={6}
+                                        actionButton={{
+                                            label: "Novo tipo de produto",
+                                            onClick: () => {
+                                                setOpenDropdown(null);
+                                                setModalModeloAberto(true);
+                                            },
+                                        }}
+                                        actionButtonPosition="start"
                                     />
                                 </div>
                             </div>
@@ -1523,6 +1553,12 @@ export default function ProdutoEditar() {
                 fabricoId={fabricoId}
                 clientesAssociados={clientesAssociados}
                 onSuccess={carregarClientesDoProduto}
+            />
+
+            <ModeloModal
+                isOpen={modalModeloAberto}
+                onClose={() => setModalModeloAberto(false)}
+                onSuccess={handleModeloCriado}
             />
 
             <AviamentoModal

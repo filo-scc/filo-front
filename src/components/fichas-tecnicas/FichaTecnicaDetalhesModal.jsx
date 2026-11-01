@@ -11,14 +11,26 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import RelatorioDeAcabamento from "./RelatorioDeAcabamento";
 import { getAllEtapas } from "../../services/etapaService";
+import {
+    anexarEtapaAosParceiros,
+    ehParceiroDeCostura,
+    indexarEtapasPorId,
+} from "../../utils/etapaDoParceiro.js";
 import { getFabricoById } from "../../services/fabricoService";
 
+// Celular: texto corrido (rótulo pequeno acima do valor, sem caixa), por ser só visualização.
+// Tablet e desktop mantêm o campo com borda.
 const CampoDetalhe = ({ label, valor }) => (
-    <div className="relative border border-[#898C8F] rounded-[10px] h-[39px] px-3 flex items-center mt-0.5 w-full bg-white">
-        <span className="absolute -top-[9px] left-2 bg-white px-1 text-[12px] text-[#898C8F]">
+    <div className="w-full min-w-0 bg-white md:relative md:mt-0.5 md:flex md:h-[44px] md:items-center md:rounded-[10px] md:border md:border-[#898C8F] md:px-3 lg:h-[39px]">
+        <span className="block text-[11px] leading-4 text-[#898C8F] md:absolute md:-top-[9px] md:left-2 md:bg-white md:px-1 md:text-[12px] md:leading-normal">
             {label}
         </span>
-        <span className="text-[#898C8F] text-[16px] truncate">{valor || "-"}</span>
+        <span
+            className="block break-words text-[14px] leading-[18px] text-[#404040] line-clamp-2 md:line-clamp-none md:truncate md:text-[16px] md:leading-normal md:text-[#898C8F]"
+            title={valor || undefined}
+        >
+            {valor || "-"}
+        </span>
     </div>
 );
 
@@ -43,6 +55,11 @@ const simplificarUnidade = (unidade) => {
 
 const BORDER_DARK_05 = { borderWidth: "0.5px", borderStyle: "solid", borderColor: "#7B7D80" };
 
+// Coluna da cor na grade: fixa (com sombra na borda) enquanto a grade rola no celular; a partir do
+// tablet volta ao fluxo normal.
+const COLUNA_FIXA =
+    "sticky left-0 z-10 shadow-[1px_0_0_#CBD3D6,6px_0_8px_-6px_rgba(0,0,0,0.22)] md:static md:shadow-none";
+
 export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, onFichaAtualizada }) {
     const [ficha, setFicha] = useState(null);
     const [aviamentosProduto, setAviamentosProduto] = useState([]);
@@ -64,7 +81,10 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
 
     const carregarDados = useCallback(async () => {
         try {
-            const dados = await findOne(fichaId);
+            // O parceiro da ficha vem só com etapa_id; a etapa é anexada aqui, uma vez, para os
+            // filtros de costura (esta tela, a edição e a impressão) olharem parceiro.etapa.
+            const [fichaCarregada, etapas] = await Promise.all([findOne(fichaId), getAllEtapas()]);
+            const dados = anexarEtapaAosParceiros(fichaCarregada, indexarEtapasPorId(etapas));
             if (dados && dados.fabrico?.fabricacao_sob_demanda == null && dados.fabrico_id) {
                 dados.fabrico = await getFabricoById(dados.fabrico_id);
             }
@@ -317,58 +337,59 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
 
     const proporcoes = calcularProporcao(totalsBySize);
 
-    const categoriasAceitas = ["costura", "faccao", "confeccao"];
-
-    const normalizarCategoria = (categoria) =>
-        (categoria || "")
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .toLowerCase();
-
     const parceirosFiltrados = (ficha?.ficha_parceiro || []).filter((vinculo) =>
-        categoriasAceitas.includes(normalizarCategoria(vinculo.parceiro?.categoria)),
+        ehParceiroDeCostura(vinculo.parceiro),
     );
+
+    // fabricacao_sob_demanda = true: "Pedido" / "Ver pedido"; = false: "Produção" / "Ver produção".
+    // Os dois modos abrem o mesmo detalhe (/pedidos/:id).
+    const isSobDemanda = ficha?.fabrico?.fabricacao_sob_demanda !== false;
+    const rotuloOrigem = isSobDemanda ? "Pedido" : "Produção";
+    const rotuloVerOrigem = isSobDemanda ? "Ver pedido" : "Ver produção";
+    const irParaOrigem = () => navigate(`/pedidos/${ficha?.pedido?.id ?? ficha?.pedido_id}`);
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-2 backdrop-blur-sm sm:p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-0 backdrop-blur-sm md:p-4"
             onClick={onClose}
         >
             <div
-                className="relative flex max-h-[95dvh] w-full max-w-[850px] flex-col overflow-hidden rounded-[20px] bg-white shadow-2xl font-['Outfit',_sans-serif] sm:max-h-[90vh] sm:rounded-[24px]"
+                className="relative flex h-[100dvh] max-h-[100dvh] w-full max-w-[850px] flex-col overflow-hidden rounded-none bg-white shadow-2xl font-['Outfit',_sans-serif] md:h-auto md:max-h-[90vh] md:rounded-[24px]"
                 onClick={handleContentClick}
             >
-                <div className="flex shrink-0 items-center justify-between px-4 py-4 sm:px-8 sm:py-6">
-                    <div className="flex items-center gap-3">
+                <div className="flex shrink-0 items-center justify-between gap-2 py-2 pl-4 pr-1 md:px-8 md:py-6 lg:gap-0">
+                    <div className="flex min-w-0 items-center gap-3">
                         <img
                             src="/etiqueta-preta.png"
                             alt="Tag"
-                            className="w-[30px] h-[30px] object-contain"
+                            className="hidden h-[26px] w-[26px] object-contain md:block lg:h-[30px] lg:w-[30px]"
                         />
-                        <div className="flex flex-col">
-                            <h2 className="text-xl font-light text-[#404040] leading-tight sm:text-[26px]">
+                        <div className="flex min-w-0 flex-col">
+                            <h2 className="truncate text-[18px] font-normal leading-tight text-[#404040] md:text-[22px] md:font-light lg:text-[26px]">
                                 Ficha Técnica {ficha?.numero}
                             </h2>
                             {ficha?.pedido ? (
-                                <p className="text-[14px] font-light text-[#404040] -mt-2">
-                                    Pedido Nº{ficha?.pedido?.numero}{" "}
+                                <p className="hidden text-[14px] font-light text-[#404040] md:-mt-2 md:block">
+                                    {rotuloOrigem} Nº{ficha?.pedido?.numero}{" "}
                                     <span className="mx-1 text-[25px] align-middle">•</span>{" "}
                                     <button
-                                        onClick={() =>
-                                            navigate(
-                                                `/pedidos/${ficha?.pedido?.id ?? ficha?.pedido_id}`,
-                                            )
-                                        }
-                                        className="text-[14px] font-light text-[#4696AD]"
+                                        type="button"
+                                        onClick={irParaOrigem}
+                                        className="-my-3 inline-block px-1 py-3 text-[14px] font-light text-[#4696AD] lg:my-0 lg:px-0 lg:py-0"
                                     >
-                                        Ver pedido
+                                        {rotuloVerOrigem}
                                     </button>
                                 </p>
                             ) : null}
                         </div>
                     </div>
 
-                    <button onClick={onClose}>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        aria-label="Fechar"
+                        className="flex h-11 w-11 shrink-0 items-center justify-center md:-my-2 md:-mr-3 lg:m-0 lg:h-auto lg:w-auto"
+                    >
                         <img
                             src="/fechar-cinza.png"
                             alt="icone de fechar"
@@ -377,15 +398,45 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
                     </button>
                 </div>
 
-                <div className="flex-1 space-y-8 overflow-y-auto px-4 pb-8 pt-1 scrollbar-sutil sm:px-8">
+                <div className="flex-1 space-y-5 overflow-y-auto px-4 pb-6 pt-1 scrollbar-sutil sm:px-8 md:space-y-8 md:pb-8 md:pt-1">
                     {loading ? (
                         <div className="text-center text-[#4696AD]">
                             Carregando dados da ficha...
                         </div>
                     ) : (
                         <>
-                            <div className="flex flex-col md:flex-row gap-8">
-                                <div className="w-[209px] h-[160px] shrink-0 rounded-[10px] overflow-hidden border border-dashed border-[#898C8F]">
+                            {/* Celular: o vínculo com pedido/produção sai do cabeçalho e vira uma barra no corpo */}
+                            {ficha?.pedido ? (
+                                <div className="flex h-[52px] items-center justify-between rounded-[12px] border border-[#DCEBF1] bg-[#F5FAFC] pl-3.5 pr-1 md:hidden">
+                                    <span className="text-[15px] text-[#404040]">
+                                        {rotuloOrigem} Nº{ficha?.pedido?.numero}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={irParaOrigem}
+                                        className="flex h-11 items-center gap-1.5 px-2.5 text-[15px] font-medium text-[#4696AD]"
+                                    >
+                                        {rotuloVerOrigem}
+                                        <svg
+                                            width="14"
+                                            height="14"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            aria-hidden="true"
+                                        >
+                                            <path d="M9 6l6 6-6 6" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            ) : null}
+
+                            <div className="flex flex-row items-start gap-5 md:!mt-0 md:gap-6 lg:gap-8">
+                                {/* Foto em pé (3:4) até o tablet, com os campos ao lado direito; no desktop segue a medida original */}
+                                <div className="aspect-[3/4] w-[112px] min-[360px]:w-[132px] shrink-0 rounded-[12px] overflow-hidden md:border md:border-dashed md:border-[#898C8F] md:h-[176px] md:w-[132px] md:rounded-[10px] lg:h-[160px] lg:w-[209px]">
                                     <img
                                         src={ficha?.produto?.foto || "/image-delete-02-2.png"}
                                         alt="Foto do Produto"
@@ -393,7 +444,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
                                     />
                                 </div>
 
-                                <div className="grid flex-1 grid-cols-1 content-start gap-x-6 gap-y-4 sm:grid-cols-2">
+                                <div className="grid min-w-0 flex-1 grid-cols-1 content-start gap-x-6 gap-y-2.5 md:grid-cols-2 md:gap-y-4">
                                     <CampoDetalhe
                                         label="Referência Interna"
                                         valor={ficha?.produto?.nome}
@@ -419,219 +470,263 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
                                 <div className="mb-2 text-center text-[16px] font-light text-[#737373]">
                                     Grade
                                 </div>
-                                <div className="w-full">
-                                    <div className="flex w-full items-stretch min-h-[30px]">
-                                        <div className="w-[160px] shrink-0" />
-                                        <div className="flex flex-1 min-w-0">
-                                            {sizeItems.map((s, i) => (
-                                                <div
-                                                    key={`prop-${s.id}`}
-                                                    className="bg-[#F4F4F4] flex-1 min-w-0 text-center text-[14px] font-light flex items-center justify-center"
-                                                    style={{
-                                                        borderColor: "#7B7D80",
-                                                        borderLeftWidth: "0.5px",
-                                                        borderRightWidth:
-                                                            i === sizeItems.length - 1
-                                                                ? "0.5px"
-                                                                : "0px",
-                                                        borderTopWidth: "0.5px",
-                                                        borderBottomWidth: "0.5px",
-                                                        borderTopLeftRadius:
-                                                            i === 0 ? "10px" : "0px",
-                                                        borderTopRightRadius:
-                                                            i === sizeItems.length - 1
-                                                                ? "10px"
-                                                                : "0px",
-                                                        color:
-                                                            totalsBySize[i] > 0
-                                                                ? "#898C8F"
-                                                                : "#D7D7D7",
-                                                    }}
-                                                >
-                                                    {proporcoes[i]}
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <div className="w-[90px] shrink-0" />
-                                    </div>
-
-                                    <div className="flex h-[40px] items-stretch">
-                                        <div className="w-[160px] shrink-0 rounded-tl-[10px] font-normal bg-[#C9EAF6] px-4 text-[#4696AD] flex items-center justify-center overflow-hidden">
-                                            Cores
-                                        </div>
-                                        <div className="flex flex-1 min-w-0">
-                                            {sizeItems.map((s, sizeIndex) => (
-                                                <div
-                                                    key={s.id}
-                                                    className="flex-1 min-w-0 text-center font-normal text-[#4696AD] flex items-center justify-center bg-[#C9EAF6]"
-                                                    style={{
-                                                        borderLeftWidth: "0.5px",
-                                                        borderRightWidth:
-                                                            sizeIndex === sizeItems.length - 1
-                                                                ? "0.5px"
-                                                                : "0px",
-                                                        borderColor: "#7B7D80",
-                                                    }}
-                                                >
-                                                    {s.tamanho?.codigo || "-"}
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <div
-                                            className="w-[90px] shrink-0 rounded-tr-[10px] bg-[#C9EAF6] px-2 text-center text-[14px] font-normal text-[#4696AD] flex items-center justify-center"
-                                            style={{
-                                                borderRight: "0.5px solid #D9D9D9",
-                                            }}
-                                        >
-                                            Total (cor)
-                                        </div>
-                                    </div>
-
-                                    <div className="rounded-b-[10px] bg-white overflow-hidden">
-                                        <div className="flex flex-col w-full">
-                                            {coresList.length > 0 ? (
-                                                coresList.map((itemCor, index) => (
+                                {/* Celular: o bloco rola na horizontal e a coluna da cor fica fixa */}
+                                <div className="w-full overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:overflow-visible">
+                                    <div
+                                        className="w-full min-w-[var(--grade-min)] md:min-w-0"
+                                        style={{
+                                            "--grade-min": `${112 + 56 + 64 * sizeItems.length}px`,
+                                        }}
+                                    >
+                                        <div className="flex w-full items-stretch min-h-[44px] md:min-h-[30px]">
+                                            {/* Célula vazia: fica fixa e branca no celular para cobrir a rolagem horizontal, mas sem a borda/sombra da coluna fixa */}
+                                            <div className="sticky left-0 z-10 flex w-[112px] shrink-0 items-center bg-white md:static md:w-[160px] md:bg-transparent" />
+                                            <div className="flex flex-1 min-w-0">
+                                                {sizeItems.map((s, i) => (
                                                     <div
-                                                        key={itemCor.cor.id}
-                                                        className={`flex w-full min-h-[40px] items-stretch ${index % 2 === 1 ? "bg-[#F4F4F4]" : "bg-[#FFFFFF]"}`}
+                                                        key={`prop-${s.id}`}
+                                                        className="bg-[#F4F4F4] flex-1 min-w-0 text-center text-[14px] font-light flex items-center justify-center"
+                                                        style={{
+                                                            borderColor: "#7B7D80",
+                                                            borderLeftWidth: "0.5px",
+                                                            borderRightWidth:
+                                                                i === sizeItems.length - 1
+                                                                    ? "0.5px"
+                                                                    : "0px",
+                                                            borderTopWidth: "0.5px",
+                                                            borderBottomWidth: "0.5px",
+                                                            borderTopLeftRadius:
+                                                                i === 0 ? "10px" : "0px",
+                                                            borderTopRightRadius:
+                                                                i === sizeItems.length - 1
+                                                                    ? "10px"
+                                                                    : "0px",
+                                                            color:
+                                                                totalsBySize[i] > 0
+                                                                    ? "#898C8F"
+                                                                    : "#D7D7D7",
+                                                        }}
                                                     >
-                                                        <div
-                                                            className="w-[160px] shrink-0 pl-2 pr-4 flex items-center gap-3"
-                                                            style={{
-                                                                borderLeftWidth: "0.5px",
-                                                                borderLeftColor: "#D9D9D9",
-                                                            }}
-                                                        >
-                                                            {String(
-                                                                itemCor.cor.tipo,
-                                                            ).toUpperCase() === "ESTAMPA" ? (
-                                                                <img
-                                                                    src={itemCor.cor.foto}
-                                                                    alt={itemCor.cor.nome}
-                                                                    className="w-[20px] h-[20px] rounded-[6px] shrink-0 border border-[#D9D9D9] object-cover"
-                                                                />
-                                                            ) : (
-                                                                <span
-                                                                    className="w-[20px] h-[20px] rounded-[6px] shrink-0 border border-[#D9D9D9]"
-                                                                    style={{
-                                                                        backgroundColor:
-                                                                            itemCor.cor
-                                                                                .codigo_hex ||
-                                                                            "#E5E5E5",
-                                                                    }}
-                                                                />
-                                                            )}
-                                                            <span className="flex-1 text-center text-[14px] font-light text-[#898C8F] truncate leading-none">
-                                                                {itemCor.cor.nome}
-                                                            </span>
-                                                        </div>
-
-                                                        {sizeItems.map((s, sizeIndex) => {
-                                                            const tamanhoId = s.tamanho?.id || s.id;
-                                                            const qtd =
-                                                                itemCor.quantidades[tamanhoId] || 0;
-                                                            return (
-                                                                <div
-                                                                    key={s.id}
-                                                                    className="flex-1 min-w-0 px-2 flex items-center justify-center text-[14px] font-light"
-                                                                    style={{
-                                                                        ...BORDER_DARK_05,
-                                                                        borderTopWidth: "0px",
-                                                                        borderBottomWidth: "0px",
-                                                                        borderLeftWidth: "0.5px",
-                                                                        borderRightWidth:
-                                                                            sizeIndex ===
-                                                                            sizeItems.length - 1
-                                                                                ? "0.5px"
-                                                                                : "0px",
-                                                                    }}
-                                                                >
-                                                                    <span
-                                                                        className={
-                                                                            qtd > 0
-                                                                                ? "text-[#4696AD]"
-                                                                                : "text-[#898C8F]"
-                                                                        }
-                                                                    >
-                                                                        {qtd > 0 ? qtd : "-"}
-                                                                    </span>
-                                                                </div>
-                                                            );
-                                                        })}
-                                                        <div
-                                                            className="w-[90px] shrink-0 px-2 flex items-center justify-center text-[14px] font-normal"
-                                                            style={{
-                                                                borderRight: "0.5px solid #D9D9D9",
-                                                            }}
-                                                        >
-                                                            <span
-                                                                className={
-                                                                    totalsByColor[itemCor.cor.id]
-                                                                        ? "text-[#4696AD]"
-                                                                        : "text-[#898C8F]"
-                                                                }
-                                                            >
-                                                                {totalsByColor[itemCor.cor.id] ||
-                                                                    "-"}
-                                                            </span>
-                                                        </div>
+                                                        {proporcoes[i]}
                                                     </div>
-                                                ))
-                                            ) : (
-                                                <div className="px-4 py-4 text-[13px] text-center text-[#888] bg-white w-full rounded-b-[10px]">
-                                                    Nenhuma cor vinculada a esta ficha.
-                                                </div>
-                                            )}
-                                            <div className="flex w-full min-h-[40px] items-stretch">
-                                                <div className="w-[160px] shrink-0 bg-[#C9EAF6] px-3 text-center text-[14px] font-normal text-[#4696AD] flex items-center justify-center">
-                                                    Total (tamanho)
-                                                </div>
-                                                <div className="flex flex-1 min-w-0">
-                                                    {sizeItems.map((size, sizeIndex) => (
-                                                        <div
-                                                            key={`total-tamanho-${size.id}`}
-                                                            className={`flex-1 min-w-0 px-2 flex items-center justify-center text-[14px] font-normal border-l-[0.5px] border-[#7B7D80] ${
-                                                                coresList.length % 2 === 1
-                                                                    ? "bg-[#F4F4F4]"
-                                                                    : "bg-[#FFFFFF]"
-                                                            }`}
-                                                            style={{
-                                                                borderLeftWidth: "0.5px",
-                                                                borderRightWidth:
-                                                                    sizeIndex ===
-                                                                    sizeItems.length - 1
-                                                                        ? "0.5px"
-                                                                        : "0px",
-                                                                borderColor: "#7B7D80",
-                                                            }}
-                                                        >
-                                                            <span
-                                                                className={
-                                                                    totalsBySize[sizeIndex]
-                                                                        ? "text-[#4696AD]"
-                                                                        : "text-[#898C8F]"
-                                                                }
-                                                            >
-                                                                {totalsBySize[sizeIndex] || "-"}
-                                                            </span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                                <div className="w-[90px] shrink-0 bg-[#C9EAF6] px-2 flex items-center justify-center text-[14px] font-normal">
-                                                    <span
-                                                        className={
-                                                            totalGeral
-                                                                ? "text-[#4696AD]"
-                                                                : "text-[#898C8F]"
-                                                        }
+                                                ))}
+                                            </div>
+                                            <div className="w-[56px] shrink-0 md:w-[90px]" />
+                                        </div>
+
+                                        <div className="flex h-[44px] items-stretch md:h-[40px]">
+                                            <div
+                                                className={`${COLUNA_FIXA} w-[112px] shrink-0 rounded-tl-[10px] font-normal bg-[#C9EAF6] px-2.5 text-[#4696AD] flex items-center justify-center overflow-hidden md:w-[160px] md:px-4`}
+                                            >
+                                                Cores
+                                            </div>
+                                            <div className="flex flex-1 min-w-0">
+                                                {sizeItems.map((s, sizeIndex) => (
+                                                    <div
+                                                        key={s.id}
+                                                        className="flex-1 min-w-0 text-center font-normal text-[#4696AD] flex items-center justify-center bg-[#C9EAF6]"
+                                                        style={{
+                                                            borderLeftWidth: "0.5px",
+                                                            borderRightWidth:
+                                                                sizeIndex === sizeItems.length - 1
+                                                                    ? "0.5px"
+                                                                    : "0px",
+                                                            borderColor: "#7B7D80",
+                                                        }}
                                                     >
-                                                        {totalGeral || "-"}
-                                                    </span>
+                                                        {s.tamanho?.codigo || "-"}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div
+                                                className="w-[56px] shrink-0 rounded-tr-[10px] bg-[#C9EAF6] px-2 text-center text-[14px] font-normal text-[#4696AD] flex items-center justify-center md:w-[90px]"
+                                                style={{
+                                                    borderRight: "0.5px solid #D9D9D9",
+                                                }}
+                                            >
+                                                <span className="md:hidden">Total</span>
+                                                <span className="hidden md:inline">
+                                                    Total (cor)
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="rounded-b-[10px] bg-white overflow-clip">
+                                            <div className="flex flex-col w-full">
+                                                {coresList.length > 0 ? (
+                                                    coresList.map((itemCor, index) => (
+                                                        <div
+                                                            key={itemCor.cor.id}
+                                                            className={`flex w-full min-h-[48px] items-stretch md:min-h-[40px] ${index % 2 === 1 ? "bg-[#F4F4F4]" : "bg-[#FFFFFF]"}`}
+                                                        >
+                                                            <div
+                                                                className={`${COLUNA_FIXA} w-[112px] shrink-0 pl-2 pr-2 flex items-center gap-1.5 md:w-[160px] md:gap-3 md:pr-4 ${index % 2 === 1 ? "bg-[#F4F4F4]" : "bg-[#FFFFFF]"}`}
+                                                                style={{
+                                                                    borderLeftWidth: "0.5px",
+                                                                    borderLeftColor: "#D9D9D9",
+                                                                }}
+                                                            >
+                                                                {String(
+                                                                    itemCor.cor.tipo,
+                                                                ).toUpperCase() === "ESTAMPA" ? (
+                                                                    <img
+                                                                        src={itemCor.cor.foto}
+                                                                        alt={itemCor.cor.nome}
+                                                                        className="w-[20px] h-[20px] rounded-[6px] shrink-0 border border-[#D9D9D9] object-cover"
+                                                                    />
+                                                                ) : (
+                                                                    <span
+                                                                        className="w-[20px] h-[20px] rounded-[6px] shrink-0 border border-[#D9D9D9]"
+                                                                        style={{
+                                                                            backgroundColor:
+                                                                                itemCor.cor
+                                                                                    .codigo_hex ||
+                                                                                "#E5E5E5",
+                                                                        }}
+                                                                    />
+                                                                )}
+                                                                <span
+                                                                    title={itemCor.cor.nome}
+                                                                    className="min-w-0 flex-1 line-clamp-2 text-left text-[13px] font-light leading-4 text-[#898C8F] md:block md:truncate md:text-center md:text-[14px] md:leading-none"
+                                                                >
+                                                                    {itemCor.cor.nome}
+                                                                </span>
+                                                            </div>
+
+                                                            {sizeItems.map((s, sizeIndex) => {
+                                                                const tamanhoId =
+                                                                    s.tamanho?.id || s.id;
+                                                                const qtd =
+                                                                    itemCor.quantidades[
+                                                                        tamanhoId
+                                                                    ] || 0;
+                                                                return (
+                                                                    <div
+                                                                        key={s.id}
+                                                                        className="flex-1 min-w-0 px-2 flex items-center justify-center text-[14px] font-light"
+                                                                        style={{
+                                                                            ...BORDER_DARK_05,
+                                                                            borderTopWidth: "0px",
+                                                                            borderBottomWidth:
+                                                                                "0px",
+                                                                            borderLeftWidth:
+                                                                                "0.5px",
+                                                                            borderRightWidth:
+                                                                                sizeIndex ===
+                                                                                sizeItems.length - 1
+                                                                                    ? "0.5px"
+                                                                                    : "0px",
+                                                                        }}
+                                                                    >
+                                                                        <span
+                                                                            className={
+                                                                                qtd > 0
+                                                                                    ? "text-[#4696AD]"
+                                                                                    : "text-[#898C8F]"
+                                                                            }
+                                                                        >
+                                                                            {qtd > 0 ? qtd : "-"}
+                                                                        </span>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                            <div
+                                                                className="w-[56px] shrink-0 px-2 flex items-center justify-center text-[14px] font-normal md:w-[90px]"
+                                                                style={{
+                                                                    borderRight:
+                                                                        "0.5px solid #D9D9D9",
+                                                                }}
+                                                            >
+                                                                <span
+                                                                    className={
+                                                                        totalsByColor[
+                                                                            itemCor.cor.id
+                                                                        ]
+                                                                            ? "text-[#4696AD]"
+                                                                            : "text-[#898C8F]"
+                                                                    }
+                                                                >
+                                                                    {totalsByColor[
+                                                                        itemCor.cor.id
+                                                                    ] || "-"}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div className="px-4 py-4 text-[13px] text-center text-[#888] bg-white w-full rounded-b-[10px]">
+                                                        Nenhuma cor vinculada a esta ficha.
+                                                    </div>
+                                                )}
+                                                <div className="flex w-full min-h-[44px] items-stretch md:min-h-[40px]">
+                                                    <div
+                                                        className={`${COLUNA_FIXA} w-[112px] shrink-0 bg-[#C9EAF6] px-2.5 text-center text-[12px] leading-[14px] font-normal text-[#4696AD] flex items-center justify-center md:w-[160px] md:px-3 md:text-[14px] md:leading-[1.5]`}
+                                                    >
+                                                        Total (tamanho)
+                                                    </div>
+                                                    <div className="flex flex-1 min-w-0">
+                                                        {sizeItems.map((size, sizeIndex) => (
+                                                            <div
+                                                                key={`total-tamanho-${size.id}`}
+                                                                className={`flex-1 min-w-0 px-2 flex items-center justify-center text-[14px] font-normal border-l-[0.5px] border-[#7B7D80] ${
+                                                                    coresList.length % 2 === 1
+                                                                        ? "bg-[#F4F4F4]"
+                                                                        : "bg-[#FFFFFF]"
+                                                                }`}
+                                                                style={{
+                                                                    borderLeftWidth: "0.5px",
+                                                                    borderRightWidth:
+                                                                        sizeIndex ===
+                                                                        sizeItems.length - 1
+                                                                            ? "0.5px"
+                                                                            : "0px",
+                                                                    borderColor: "#7B7D80",
+                                                                }}
+                                                            >
+                                                                <span
+                                                                    className={
+                                                                        totalsBySize[sizeIndex]
+                                                                            ? "text-[#4696AD]"
+                                                                            : "text-[#898C8F]"
+                                                                    }
+                                                                >
+                                                                    {totalsBySize[sizeIndex] || "-"}
+                                                                </span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <div className="w-[56px] shrink-0 bg-[#C9EAF6] px-2 flex items-center justify-center text-[14px] font-normal md:w-[90px]">
+                                                        <span
+                                                            className={
+                                                                totalGeral
+                                                                    ? "text-[#4696AD]"
+                                                                    : "text-[#898C8F]"
+                                                            }
+                                                        >
+                                                            {totalGeral || "-"}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
+                                <p className="mt-2 flex items-center gap-1.5 text-[12px] text-[#6B6E72] md:hidden">
+                                    <svg
+                                        width="12"
+                                        height="12"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        aria-hidden="true"
+                                    >
+                                        <path d="M5 12h14M13 6l6 6-6 6" />
+                                    </svg>
+                                    Deslize para ver todos os tamanhos
+                                </p>
                             </div>
 
                             <div className="overflow-hidden">
@@ -761,6 +856,7 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
                                     retiradas={relatorioAcabamento.retiradas}
                                     sobras={relatorioAcabamento.sobras}
                                     readonly
+                                    responsivo
                                 />
                             )}
 
@@ -803,12 +899,12 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
                     )}
                 </div>
 
-                <div className="flex shrink-0 flex-col-reverse gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-5">
+                <div className="flex shrink-0 items-center gap-2.5 border-t border-[#EEEEEE] px-4 pb-4 pt-3 shadow-[0_-6px_16px_rgba(0,0,0,0.06)] md:justify-between md:gap-3 md:px-8 md:py-5 md:shadow-none lg:border-0">
                     <button
                         type="button"
                         onClick={() => setModalImpressaoAberto(true)}
                         disabled={loading}
-                        className="w-[71px] h-[39px] bg-[#A9E2F2] rounded-full flex items-center justify-center hover:bg-[#A2DCED] transition-colors shadow-sm focus:outline-none"
+                        className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full bg-[#A9E2F2] shadow-sm transition-colors hover:bg-[#A2DCED] focus:outline-none md:h-12 md:w-[72px] lg:h-[39px] lg:w-[71px]"
                     >
                         <img
                             src="/impressora-azul.png"
@@ -817,10 +913,10 @@ export default function FichaTecnicaDetalhesModal({ isOpen, onClose, fichaId, on
                         />
                     </button>
 
-                    <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:gap-4">
+                    <div className="flex min-w-0 flex-1 md:flex-none">
                         <button
                             onClick={() => setModalEdicaoAberto(true)}
-                            className="h-[39px] rounded-full border border-[#4696AD] bg-[#F3F4FA] px-8 text-sm text-[#4696AD] transition-colors hover:bg-[#F3FBFC]"
+                            className="h-[52px] w-full rounded-full border border-[#4696AD] bg-[#F3F4FA] px-8 text-base text-[#4696AD] transition-colors hover:bg-[#F3FBFC] md:h-12 md:w-[180px] md:text-sm lg:h-[39px] lg:w-auto"
                         >
                             Editar Ficha
                         </button>

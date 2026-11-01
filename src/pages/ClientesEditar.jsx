@@ -13,6 +13,12 @@ import {
     desvincularProdutoDoCliente,
     atualizarClientesProdutos,
 } from "../services/clientesService";
+import {
+    normalizarTelefoneCliente,
+    telefoneClienteValido,
+    telefoneParaEdicao,
+} from "../utils/clienteTelefone";
+import { cnpjValido } from "../utils/cnpj";
 
 const sectionTitleClass = "text-[20px] font-light text-[#404040] mb-4 font-['Outfit',_sans-serif]";
 
@@ -64,6 +70,7 @@ export default function ClientesEditar() {
     const [loading, setLoading] = useState(true);
     const [salvando, setSalvando] = useState(false);
     const [erro, setErro] = useState("");
+    const [erroCnpj, setErroCnpj] = useState("");
     const [statusCliente, setStatusCliente] = useState(true);
     const [form, setForm] = useState({
         nomeEmpresa: "",
@@ -84,6 +91,7 @@ export default function ClientesEditar() {
     const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
     const [itemParaEditar, setItemParaEditar] = useState(null);
     const cepRequestRef = useRef(null);
+    const telefoneOriginalRef = useRef("");
 
     const fabricoId = primeiroNumeroValido(
         usuarioLogado?.fabrico_id,
@@ -93,8 +101,17 @@ export default function ClientesEditar() {
 
     const handleChange = (campo) => (e) =>
         setForm((prev) => ({ ...prev, [campo]: e.target.value }));
-    const handleChangeCnpj = (e) =>
-        setForm((prev) => ({ ...prev, cnpj: formatarCnpj(e.target.value) }));
+    const handleChangeCnpj = (e) => {
+        const cnpj = formatarCnpj(e.target.value);
+        const digitos = apenasNumeros(cnpj);
+
+        setForm((prev) => ({ ...prev, cnpj }));
+        setErroCnpj(digitos.length === 14 && !cnpjValido(digitos) ? "CNPJ inválido." : "");
+    };
+    const handleBlurCnpj = () => {
+        const digitos = apenasNumeros(form.cnpj);
+        setErroCnpj(digitos && !cnpjValido(digitos) ? "CNPJ inválido." : "");
+    };
     const handleChangeTelefone = (e) =>
         setForm((prev) => ({ ...prev, telefone: formatarTelefone(e.target.value) }));
 
@@ -155,6 +172,7 @@ export default function ClientesEditar() {
                 ]);
 
                 const end = dadosCliente.endereco || {};
+                telefoneOriginalRef.current = normalizarTelefoneCliente(dadosCliente.telefone);
                 setStatusCliente(Boolean(dadosCliente.status));
                 setForm({
                     nomeEmpresa: dadosCliente.nome ?? "",
@@ -184,10 +202,21 @@ export default function ClientesEditar() {
         setErro("");
         if (!id) return;
 
+        const cnpjNumerico = apenasNumeros(form.cnpj);
+        if (cnpjNumerico && !cnpjValido(cnpjNumerico)) {
+            setErroCnpj("CNPJ inválido.");
+            return;
+        }
+
+        if (!telefoneClienteValido(form.telefone)) {
+            setErro("Telefone inválido. Informe entre 9 e 11 dígitos.");
+            return;
+        }
+
         const payload = {
             nome: valorOuUndefined(form.nomeEmpresa),
-            cnpj: apenasNumeros(form.cnpj),
-            telefone: apenasNumeros(form.telefone),
+            cnpj: cnpjNumerico,
+            telefone: telefoneParaEdicao(form.telefone, telefoneOriginalRef.current),
             status: statusCliente,
             responsavel: valorOuUndefined(form.proprietario),
             fabrico_id: fabricoId,
@@ -270,11 +299,28 @@ export default function ClientesEditar() {
                                     value={form.nomeEmpresa}
                                     onChange={handleChange("nomeEmpresa")}
                                 />
-                                <FloatingLabelInput
-                                    label="CNPJ"
-                                    value={form.cnpj}
-                                    onChange={handleChangeCnpj}
-                                />
+                                <div>
+                                    <FloatingLabelInput
+                                        id="cliente-cnpj"
+                                        label="CNPJ"
+                                        value={form.cnpj}
+                                        onChange={handleChangeCnpj}
+                                        onBlur={handleBlurCnpj}
+                                        aria-invalid={Boolean(erroCnpj)}
+                                        aria-describedby={
+                                            erroCnpj ? "cliente-cnpj-erro" : undefined
+                                        }
+                                        inputClassName={erroCnpj ? "border-[#D75757]" : ""}
+                                    />
+                                    {erroCnpj && (
+                                        <p
+                                            id="cliente-cnpj-erro"
+                                            className="mt-1 text-xs text-[#D75757]"
+                                        >
+                                            {erroCnpj}
+                                        </p>
+                                    )}
+                                </div>
                                 <FloatingLabelInput
                                     label="Proprietário"
                                     value={form.proprietario}
@@ -382,7 +428,6 @@ export default function ClientesEditar() {
                         setItemParaEditar(null);
                     }}
                     clienteId={id}
-                    fabricoId={fabricoId}
                     itemParaEditar={itemParaEditar}
                     produtosExistentes={produtosAssociados}
                     onSuccess={recarregarProdutos}

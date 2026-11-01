@@ -147,7 +147,6 @@ export default function ClienteDetalhes() {
                 isOpen={modalReferenciasAberto}
                 onClose={() => setModalReferenciasAberto(false)}
                 clienteId={id}
-                fabricoId={cliente?.fabrico_id}
                 produtosExistentes={produtos}
                 onSuccess={recarregarTabela}
             />

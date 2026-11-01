@@ -1,41 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getParceiroByProduto } from "../../services/produtoService";
+import {
+    deveBuscarParceiros,
+    filtrarParceirosDisponiveis,
+} from "../../utils/parceirosDoSeletor.js";
 import { ModalTableRowsSkeleton } from "../geral/Loading";
-
-function normalizePreco(preco) {
-    if (preco === null || preco === undefined || preco === "") return null;
-    const parsed = Number(preco);
-    return Number.isFinite(parsed) ? parsed : null;
-}
-
-function normalizeParceiro(item) {
-    if (!item) return null;
-
-    if (item.parceiro) {
-        return {
-            id: item.parceiro.id,
-            nome: item.parceiro.nome,
-            preco: normalizePreco(item.preco),
-            categoria: item.parceiro.categoria,
-            possuiPedido: Boolean(item.possuiPedido ?? item.parceiro.possuiPedido ?? false),
-        };
-    }
-
-    return {
-        id: item.id,
-        nome: item.nome,
-        preco: normalizePreco(item.preco),
-        categoria: item.categoria, // corrigido: item, não item.parceiro
-        possuiPedido: Boolean(item.possuiPedido ?? false),
-    };
-}
 
 const ProdutoParceiros = ({
     isOpen,
     onClose,
     produtoId,
-    parceiros: parceirosProp = [],
+    parceiros: parceirosProp,
     selectedParceiroIds = [],
     onSelectParceiro,
 }) => {
@@ -50,11 +26,7 @@ const ProdutoParceiros = ({
     );
 
     const filterSelected = useCallback(
-        (list = []) =>
-            list
-                .map(normalizeParceiro)
-                .filter(Boolean)
-                .filter((item) => !selectedIdsSet.has(String(item.id))),
+        (list = []) => filtrarParceirosDisponiveis(list, selectedIdsSet),
         [selectedIdsSet],
     );
 
@@ -62,10 +34,8 @@ const ProdutoParceiros = ({
         if (!isOpen) return;
         let ignorar = false;
 
-        const fromProp = Array.isArray(parceirosProp) ? filterSelected(parceirosProp) : [];
-
-        if (Array.isArray(parceirosProp) && parceirosProp.length > 0) {
-            setParceiros(fromProp);
+        if (!deveBuscarParceiros(parceirosProp)) {
+            setParceiros(filterSelected(parceirosProp));
             setLoading(false);
             return;
         }

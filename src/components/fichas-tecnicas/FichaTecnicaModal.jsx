@@ -9,10 +9,13 @@ import { getCores } from "../../services/corService";
 import CorModal from "./CorModal";
 import EstampaModal from "./EstampaModal";
 import { getParceiros } from "../../services/parceiroService";
+import { ehParceiroDeCostura } from "../../utils/etapaDoParceiro.js";
 import { getGradesLiberadas } from "../../services/gradeService";
 import { getParceiroByProduto } from "../../services/produtoService";
+import { findOne as getFichaTecnica } from "../../services/fichasTecnicasService";
 
 import ProdutoParceiros from "../produtos/ProdutoParceiros";
+import ImagePreview from "../geral/ImagePreview";
 import { preventNumberInputWheel } from "../../utils/preventNumberInputWheel";
 import { InlineLoading, SkeletonBox } from "../geral/Loading";
 import {
@@ -118,6 +121,24 @@ function QuantityCell({ value, onCommit, onDraftChange }) {
     );
 }
 
+function buildSizeItems(versionItems = []) {
+    return versionItems
+        .map((item) => ({
+            gradeVersaoItemId: item.id,
+            tamanhoId: item.tamanho_id ?? item.tamanho?.id,
+            posicao: item.posicao,
+            codigo: item.tamanho?.codigo ?? String(item.tamanho_id ?? ""),
+        }))
+        .filter((item) => item.gradeVersaoItemId && item.tamanhoId);
+}
+
+function buildGradeLabel(nome, sizeItems, sufixo = "") {
+    const tamanhos = sizeItems.length
+        ? ` (${sizeItems.map((item) => item.codigo).join(" - ")})`
+        : "";
+    return `${nome}${tamanhos}${sufixo}`;
+}
+
 function normalizeGradeOptions(fabricoGrades = []) {
     return fabricoGrades
         .map((link) => {
@@ -128,23 +149,29 @@ function normalizeGradeOptions(fabricoGrades = []) {
             const versionItems = activeVersion?.itens?.length
                 ? activeVersion.itens
                 : grade?.items || [];
-            const sizeItems = versionItems
-                .map((item) => ({
-                    gradeVersaoItemId: item.id,
-                    tamanhoId: item.tamanho_id ?? item.tamanho?.id,
-                    posicao: item.posicao,
-                    codigo: item.tamanho?.codigo ?? String(item.tamanho_id ?? ""),
-                }))
-                .filter((item) => item.gradeVersaoItemId && item.tamanhoId);
+            const sizeItems = buildSizeItems(versionItems);
 
             return {
                 gradeId: grade.id,
                 gradeVersaoId: activeVersion?.id ?? null,
                 sizeItems,
-                label: `${grade.nome}${sizeItems.length ? ` (${sizeItems.map((item) => item.codigo).join(" - ")})` : ""}`,
+                label: buildGradeLabel(grade.nome, sizeItems),
             };
         })
         .filter(Boolean);
+}
+
+function gradeOptionFromVersao(versao) {
+    if (!versao?.id) return null;
+    const sizeItems = buildSizeItems(versao.itens || []);
+    if (!sizeItems.length) return null;
+
+    return {
+        gradeId: versao.grade_id ?? versao.grade?.id ?? null,
+        gradeVersaoId: versao.id,
+        sizeItems,
+        label: buildGradeLabel(versao.grade?.nome ?? "Grade", sizeItems, " – versão da ficha"),
+    };
 }
 
 function syncMatrix(prevMatrix, selectedColorIds, sizeItems) {
@@ -213,10 +240,7 @@ export default function FichaTecnicaModal({
     );
 
     const currentGradeOption = useMemo(
-        () =>
-            gradeOptions.find((g) => g.gradeVersaoId === selectedGradeVersionId) ||
-            gradeOptions[0] ||
-            null,
+        () => gradeOptions.find((g) => g.gradeVersaoId === selectedGradeVersionId) || null,
         [gradeOptions, selectedGradeVersionId],
     );
 
@@ -429,17 +453,48 @@ export default function FichaTecnicaModal({
                     Array.isArray(gradesResponse) ? gradesResponse : [],
                 );
 
-                setGradeOptions(normalizedGrades);
+                const fichaPersistidaId =
+                    fichaInicial &&
+                    !fichaInicial.isDraft &&
+                    Number.isFinite(Number(fichaInicial.id))
+                        ? fichaInicial.id
+                        : null;
 
-                const fallbackGrade =
-                    fichaInicial?.gradeVersaoIdNova ||
-                    fichaInicial?.gradeVersaoIdOriginal ||
-                    produto?.gradeVersaoId ||
-                    produto?.grade_versao_id ||
-                    normalizedGrades[0]?.gradeVersaoId ||
-                    null;
+                // Edição usa a grade da própria ficha; ficha nova usa a do produto.
+                let gradeDesejadaId = fichaInicial
+                    ? fichaInicial.gradeVersaoIdNova || fichaInicial.gradeVersaoIdOriginal || null
+                    : produto?.gradeVersaoId || produto?.grade_versao_id || null;
+                let opcoesDeGrade = normalizedGrades;
 
-                setSelectedGradeVersionId(fallbackGrade);
+                // Versão gravada fora das liberadas (foi desativada): usa a versão da própria ficha.
+                if (
+                    fichaPersistidaId &&
+                    !normalizedGrades.some((g) => g.gradeVersaoId === gradeDesejadaId)
+                ) {
+                    const fichaApi = await getFichaTecnica(fichaPersistidaId);
+                    if (!alive) return;
+
+                    const gravada = gradeOptionFromVersao(fichaApi?.grade_versao);
+                    if (
+                        gravada &&
+                        (!gradeDesejadaId || gravada.gradeVersaoId === gradeDesejadaId)
+                    ) {
+                        opcoesDeGrade = [gravada, ...normalizedGrades];
+                        gradeDesejadaId = gravada.gradeVersaoId;
+                    }
+                }
+
+                const gradeInicialId = opcoesDeGrade.some(
+                    (g) => g.gradeVersaoId === gradeDesejadaId,
+                )
+                    ? gradeDesejadaId
+                    : fichaInicial
+                      ? null
+                      : (opcoesDeGrade[0]?.gradeVersaoId ?? null);
+
+                setGradeOptions(opcoesDeGrade);
+                setSelectedGradeVersionId(gradeInicialId);
+
                 // Só ficha nova oferece repetir a grade da anterior; na edição a matriz já vem preenchida.
                 setOferecerGrade(
                     Boolean(!fichaInicial && fichaAnterior && normalizedGrades.length),
@@ -497,9 +552,9 @@ export default function FichaTecnicaModal({
                         );
                     }
 
-                    const gradeEscolhida =
-                        normalizedGrades.find((g) => g.gradeVersaoId === fallbackGrade) ||
-                        normalizedGrades[0];
+                    const gradeEscolhida = opcoesDeGrade.find(
+                        (g) => g.gradeVersaoId === gradeInicialId,
+                    );
 
                     if (gradeEscolhida && Array.isArray(fichaInicial.itensPayload)) {
                         const matrizInicial = {};
@@ -537,6 +592,9 @@ export default function FichaTecnicaModal({
 
     useEffect(() => {
         const handleClickOutside = (event) => {
+            if (event.target instanceof Element && event.target.closest("[data-image-preview]")) {
+                return;
+            }
             if (colorDropdownRef.current && !colorDropdownRef.current.contains(event.target))
                 setColorDropdownOpen(false);
             if (gradeDropdownRef.current && !gradeDropdownRef.current.contains(event.target))
@@ -546,10 +604,14 @@ export default function FichaTecnicaModal({
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    const handleToggleColor = (colorId) =>
+    const handleToggleColor = (colorId) => {
         setSelectedColorIds((prev) =>
             prev.includes(colorId) ? prev.filter((id) => id !== colorId) : [...prev, colorId],
         );
+        setColorSearch("");
+        setColorDropdownOpen(true);
+        requestAnimationFrame(() => document.getElementById("input-busca-cores")?.focus());
+    };
 
     const handleOpenCorModal = () => {
         setColorDropdownOpen(false);
@@ -564,6 +626,7 @@ export default function FichaTecnicaModal({
 
     const handleCorCreated = (created) => {
         if (!created?.id) return;
+        setColorSearch("");
         setAvailableColors((prev) => {
             if (prev.some((c) => c.id === created.id)) return prev;
             return [...prev, created];
@@ -896,53 +959,59 @@ export default function FichaTecnicaModal({
                                                         filteredColors.map((color) => {
                                                             const checked =
                                                                 selectedColorIds.includes(color.id);
+                                                            const isEstampa =
+                                                                String(color.tipo).toUpperCase() ===
+                                                                "ESTAMPA";
                                                             return (
-                                                                <button
+                                                                <div
                                                                     key={color.id}
-                                                                    type="button"
-                                                                    onClick={() =>
-                                                                        handleToggleColor(color.id)
-                                                                    }
-                                                                    className={`flex w-full items-center border-l-[4px] px-4 py-2.5 transition bg-white text-[#7B7D80] ${checked ? "border-l-[3px] border-l-[#C4F042]" : "border-l-transparent"}`}
+                                                                    title={color.nome}
+                                                                    className={`flex w-full items-center border-l-[4px] px-4 py-2.5 transition bg-white text-[#7B7D80] hover:bg-[#FAFAFA] ${checked ? "border-l-[3px] border-l-[#C4F042]" : "border-l-transparent"}`}
                                                                 >
-                                                                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                                        {String(
-                                                                            color.tipo,
-                                                                        ).toUpperCase() ===
-                                                                        "ESTAMPA" ? (
-                                                                            <img
-                                                                                src={color.foto}
-                                                                                alt={color.nome}
-                                                                                className="w-[20px] h-[20px] rounded-[6px] shrink-0 border border-[#D9D9D9] object-cover"
-                                                                            />
-                                                                        ) : (
-                                                                            <span
-                                                                                className="w-[20px] h-[20px] rounded-[6px] shrink-0 border border-[#D9D9D9]"
-                                                                                style={{
-                                                                                    backgroundColor:
-                                                                                        color.codigo_hex ||
-                                                                                        "#E5E5E5",
-                                                                                }}
-                                                                            />
-                                                                        )}
-                                                                        <span className="font-light text-[#7B7D80] text-left truncate">
-                                                                            {color.nome}
-                                                                        </span>
-                                                                    </div>
-                                                                    {checked ? (
-                                                                        <img
-                                                                            src="/check_cinza.png"
-                                                                            className="w-[12px] h-[8px] shrink-0"
-                                                                            alt=""
+                                                                    {isEstampa ? (
+                                                                        <ImagePreview
+                                                                            src={color.foto}
+                                                                            alt={color.nome}
+                                                                            title={color.nome}
                                                                         />
                                                                     ) : (
-                                                                        <img
-                                                                            src="/mais_cinza.png"
-                                                                            className="w-[12px] h-[12px] shrink-0"
-                                                                            alt=""
+                                                                        <span
+                                                                            className="h-[20px] w-[20px] shrink-0 rounded-[6px] border border-[#D9D9D9]"
+                                                                            style={{
+                                                                                backgroundColor:
+                                                                                    color.codigo_hex ||
+                                                                                    "#E5E5E5",
+                                                                            }}
                                                                         />
                                                                     )}
-                                                                </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        title={color.nome}
+                                                                        onClick={() =>
+                                                                            handleToggleColor(
+                                                                                color.id,
+                                                                            )
+                                                                        }
+                                                                        className="ml-3 flex min-w-0 flex-1 items-center justify-between text-left"
+                                                                    >
+                                                                        <span className="truncate font-light text-[#7B7D80]">
+                                                                            {color.nome}
+                                                                        </span>
+                                                                        {checked ? (
+                                                                            <img
+                                                                                src="/check_cinza.png"
+                                                                                className="ml-2 h-[8px] w-[12px] shrink-0"
+                                                                                alt=""
+                                                                            />
+                                                                        ) : (
+                                                                            <img
+                                                                                src="/mais_cinza.png"
+                                                                                className="ml-2 h-[12px] w-[12px] shrink-0"
+                                                                                alt=""
+                                                                            />
+                                                                        )}
+                                                                    </button>
+                                                                </div>
                                                             );
                                                         })
                                                     ) : (
@@ -1093,6 +1162,7 @@ export default function FichaTecnicaModal({
                                                         className={`flex w-full min-h-[40px] items-stretch ${index % 2 === 1 ? "bg-[#F4F4F4]" : "bg-[#FFFFFF]"}`}
                                                     >
                                                         <div
+                                                            title={color.nome}
                                                             className="w-[160px] shrink-0 pl-2 pr-4 flex items-center"
                                                             style={{
                                                                 borderLeftWidth: "0.5px",
@@ -1443,16 +1513,7 @@ export default function FichaTecnicaModal({
 
             <ProdutoParceiros
                 isOpen={parceiroModalOpen}
-                parceiros={availableParceiros.filter((parceiro) => {
-                    if (!parceiro.categoria) return false;
-
-                    const etapaNormalizada = parceiro.categoria
-                        .normalize("NFD")
-                        .replace(/[\u0300-\u036f]/g, "")
-                        .toLowerCase();
-
-                    return etapaNormalizada === "costura" || etapaNormalizada === "faccao";
-                })}
+                parceiros={availableParceiros.filter((parceiro) => ehParceiroDeCostura(parceiro))}
                 selectedParceiroIds={selectedParceiroIds}
                 produtoId={produto?.id}
                 onClose={() => setParceiroModalOpen(false)}

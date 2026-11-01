@@ -1,4 +1,5 @@
 import api from "./api";
+import { telefoneParaCadastro, telefoneParaPayloadAtualizacao } from "../utils/clienteTelefone";
 
 const limparUndefined = (obj) => {
     if (!obj || typeof obj !== "object") return obj;
@@ -47,8 +48,10 @@ export const desvincularProdutoDoCliente = async (clienteId, produtoId) => {
     return response.data;
 };
 
-export const getUnassociatedProductsForClient = async (clienteId, fabricoId, body) => {
-    const response = await api.get(`/produtos/cliente/${clienteId}/produtos-nao-associados/`, body);
+export const getUnassociatedProductsForClient = async (clienteId, busca = "") => {
+    const response = await api.get(`/produtos/cliente/${clienteId}/produtos-nao-associados/`, {
+        params: { busca },
+    });
     return response.data;
 };
 
@@ -68,7 +71,7 @@ export const cadastrarCliente = async (data) => {
         const payloadBase = limparUndefined({
             nome: data?.nome,
             cnpj: data?.cnpj,
-            telefone: data?.telefone,
+            telefone: telefoneParaCadastro(data?.telefone),
             status: data?.status,
             responsavel: data?.responsavel,
             fabrico_id: data?.fabrico_id,
@@ -125,7 +128,7 @@ export const atualizarCliente = async (id, data) => {
         const payloadBase = limparUndefined({
             nome: data?.nome,
             cnpj: data?.cnpj,
-            telefone: data?.telefone,
+            telefone: telefoneParaPayloadAtualizacao(data?.telefone),
             status: data?.status,
             responsavel: data?.responsavel,
             fabrico_id: data?.fabrico_id,

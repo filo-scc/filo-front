@@ -118,7 +118,7 @@ const ParceiroDetalhes = () => {
                                 Etapa
                             </p>
                             <p className="text-[16px] font-Outfit font-light text-[#898c8f] leading-none">
-                                {parceiro.categoria}
+                                {parceiro.etapa?.nome ?? "-"}
                             </p>
                         </div>
 

@@ -5,6 +5,19 @@ import { transferirEtapaFicha } from "../../services/fichasTecnicasService";
 
 import { getFichaParceiroByFicha } from "../../services/fichaParceiroService";
 import RelatorioDeAcabamento from "./RelatorioDeAcabamento.jsx";
+import NovoParceiroModal from "../parceiros/NovoParceiroModal.jsx";
+import {
+    formatarQuantidadeCampo,
+    getEffectiveQuantity,
+    lerQuantidadeDigitada,
+} from "../../utils/quantidadesTransferencia.js";
+import {
+    montarAvisoPrecoInvalido,
+    obterMensagemErroTransferencia,
+} from "../../utils/mensagensTransferencia.js";
+import { encontrarParceiroPorNome, filtrarParceirosDaEtapa } from "../../utils/parceiroForm.js";
+import { parceiroEhDaEtapa } from "../../utils/etapaDoParceiro.js";
+import { calcularPercentualSoma, obterIniciais } from "../../utils/layoutTransferencia.js";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -25,41 +38,46 @@ function formatCurrencyBR(value) {
     return currencyFormatter.format(parseCurrencyToNumber(value));
 }
 
-function getEffectiveQuantity(line, totalLines, fichaQuantidade) {
-    if (totalLines === 1) return Number(fichaQuantidade || 0);
-    return Number(line?.quantidade || 0);
-}
 import { InlineLoading, SkeletonBox } from "../geral/Loading";
 
 function TransferenciaEtapaLoading() {
     return (
-        <div className="px-4 py-2">
-            <div className="flex justify-center pb-7">
+        <div className="flex flex-1 flex-col md:block">
+            <div className="flex justify-center pb-4 md:pb-7">
                 <InlineLoading label="Carregando modal de transferência" />
             </div>
 
-            <div className="mb-9 w-full overflow-hidden pb-3">
-                <div className="flex items-center justify-center px-2">
+            {/* Etapas (mobile): os dois chips */}
+            <div className="mb-4 flex w-full items-center gap-1 md:hidden">
+                <SkeletonBox className="h-8 min-w-0 flex-1 rounded-full" />
+                <SkeletonBox className="h-[14px] w-[14px] shrink-0 rounded-full" />
+                <SkeletonBox className="h-8 min-w-0 flex-1 rounded-full" />
+            </div>
+
+            {/* Etapas (tablet e desktop): barra de progressão */}
+            <div className="hidden w-full overflow-hidden pb-8 md:block">
+                <div className="flex w-full items-center justify-center px-2 py-2 lg:min-w-max">
                     {[0, 1, 2, 3].map((item) => (
                         <React.Fragment key={item}>
-                            <div className="flex flex-col items-center gap-3">
-                                <SkeletonBox className="h-[83px] w-[83px] rounded-[30px]" />
-                                <SkeletonBox className="h-[16px] w-[72px] rounded-[8px]" />
+                            <div className="relative">
+                                <SkeletonBox className="h-[62px] w-[62px] rounded-[22px] lg:h-[83px] lg:w-[83px] lg:rounded-[30px]" />
+                                <SkeletonBox className="absolute -bottom-6 left-1/2 h-[14px] w-[56px] -translate-x-1/2 rounded-[8px] lg:-bottom-7 lg:h-4 lg:w-[72px]" />
                             </div>
                             {item < 3 && (
-                                <SkeletonBox className="mx-1 mb-8 h-[2px] w-[60px] rounded-none" />
+                                <SkeletonBox className="mx-1 h-[2px] min-w-[12px] flex-1 rounded-none lg:w-[60px] lg:flex-none" />
                             )}
                         </React.Fragment>
                     ))}
                 </div>
             </div>
 
-            <div className="mb-6">
-                <SkeletonBox className="mb-2 h-[18px] w-[230px] rounded-[8px]" />
-                <SkeletonBox className="h-[39px] w-[45%] max-w-[320px] rounded-[10px]" />
+            <div className="mb-6 flex flex-col items-start">
+                <SkeletonBox className="mb-2 h-[18px] w-[230px] max-w-full rounded-[8px]" />
+                <SkeletonBox className="h-[48px] w-full rounded-[10px] md:h-[44px] md:max-w-[360px] lg:h-[39px] lg:w-[45%] lg:max-w-[320px]" />
             </div>
 
-            <div className="mb-6 w-full">
+            {/* Tabela (desktop) */}
+            <div className="mb-6 hidden w-full lg:block">
                 <div className="grid h-10 grid-cols-3 overflow-hidden rounded-t-[10px]">
                     {[0, 1, 2].map((item) => (
                         <SkeletonBox
@@ -89,12 +107,95 @@ function TransferenciaEtapaLoading() {
                 </div>
             </div>
 
-            <div className="flex justify-end pt-4">
+            {/* Cartões de parceiros (tablet e mobile) */}
+            <div className="mb-6 flex flex-col gap-3 lg:hidden">
+                {[0, 1].map((cartao) => (
+                    <div
+                        key={cartao}
+                        className="rounded-[16px] border border-[#D5E4EA] p-3.5 md:rounded-[14px] md:p-4"
+                    >
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="flex min-w-0 items-center gap-2.5">
+                                <SkeletonBox className="h-9 w-9 shrink-0 rounded-full md:hidden" />
+                                <SkeletonBox className="h-4 w-[120px] rounded-[8px]" />
+                            </div>
+                            <SkeletonBox className="h-5 w-[90px] rounded-[8px]" />
+                        </div>
+                        <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-3">
+                            {[0, 1, 2].map((campo) => (
+                                <div
+                                    key={campo}
+                                    className={`flex flex-col gap-1 ${
+                                        campo === 0 ? "col-span-2 md:col-span-1" : ""
+                                    }`}
+                                >
+                                    <SkeletonBox className="h-3 w-[60px] rounded-[8px]" />
+                                    <SkeletonBox className="h-9 w-full rounded-[10px]" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Botão (desktop) */}
+            <div className="hidden justify-end pt-4 lg:flex">
                 <SkeletonBox className="h-[39px] w-[200px] rounded-full" />
+            </div>
+
+            {/* Rodapé fixo (tablet e mobile): empurrado para o fim da tela no celular */}
+            <div className="min-h-6 flex-1 md:hidden" aria-hidden="true" />
+            <div className="sticky -bottom-4 z-20 -mx-4 -mb-4 flex flex-col gap-3 border-t border-[#EEEEEE] bg-white px-4 pb-4 pt-3 md:-bottom-8 md:-mx-8 md:-mb-8 md:mt-6 md:flex-row md:items-center md:gap-6 md:px-8 md:py-4 lg:hidden">
+                <div className="flex items-end justify-between gap-6 md:flex-1 md:items-center">
+                    <div className="flex flex-col gap-1.5 md:flex-1">
+                        <SkeletonBox className="h-[14px] w-[100px] rounded-[8px]" />
+                        <SkeletonBox className="hidden h-2 w-full rounded-full md:block" />
+                    </div>
+                    <div className="ml-auto flex flex-col items-end gap-1 md:ml-0 md:items-start">
+                        <SkeletonBox className="h-3 w-[70px] rounded-[8px]" />
+                        <SkeletonBox className="h-[22px] w-[90px] rounded-[8px]" />
+                    </div>
+                </div>
+                <SkeletonBox className="h-[52px] w-full rounded-full md:h-[48px] md:w-[180px] md:shrink-0" />
             </div>
         </div>
     );
 }
+
+// Botão do topo no mobile (só a seta) que expande a lista de etapas antes/depois dos chips.
+function BotaoEtapasVizinhas({ quantidade, anteriores, aberto, onClick }) {
+    const rotulo = `${quantidade} ${quantidade === 1 ? "etapa" : "etapas"}`;
+
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            aria-expanded={aberto}
+            aria-label={`${rotulo} ${anteriores ? "anteriores" : "seguintes"}`}
+            className={`flex h-11 w-8 shrink-0 items-center justify-center rounded-[10px] text-[#6B6E72] ${
+                anteriores ? "-ml-3" : "-mr-3"
+            }`}
+        >
+            <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={aberto ? (anteriores ? "-rotate-90" : "rotate-90") : ""}
+            >
+                <path d={anteriores ? "M15 6l-6 6 6 6" : "M9 6l6 6-6 6"} />
+            </svg>
+        </button>
+    );
+}
+
+// Campos dos cartões de parceiro (tablet e mobile): 48px no celular (evita zoom do iOS) e 44px no tablet.
+const CAMPO_CARTAO =
+    "h-[48px] w-full rounded-[12px] border border-[#898C8F] bg-white px-3 text-[16px] font-normal text-[#404040] outline-none md:h-[44px] md:rounded-[10px] md:text-[15px]";
 
 export default function TransferenciaEtapaModal({
     isOpen,
@@ -115,6 +216,9 @@ export default function TransferenciaEtapaModal({
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState("");
+    const [novoParceiroAberto, setNovoParceiroAberto] = useState(false);
+    const [etapasAnterioresAbertas, setEtapasAnterioresAbertas] = useState(false);
+    const [etapasPosterioresAbertas, setEtapasPosterioresAbertas] = useState(false);
 
     // Estados para o comportamento visual da nova tabela
     const [hoveredParceiroIndex, setHoveredParceiroIndex] = useState(null);
@@ -157,11 +261,37 @@ export default function TransferenciaEtapaModal({
         return somaQuantidades === Number(fichaTecnica?.quantidade || 0);
     }, [linhasTabela.length, somaQuantidades, fichaTecnica?.quantidade]);
 
-    const precoUnitarioValido = useMemo(() => {
-        return linhasTabela.every(
-            (linha) => parseCurrencyToNumber(linha.precoUnitarioFormatado) > 0,
+    const parceirosComPrecoInvalido = useMemo(() => {
+        return linhasTabela.filter(
+            (linha) => parseCurrencyToNumber(linha.precoUnitarioFormatado) <= 0,
         );
     }, [linhasTabela]);
+
+    const precoUnitarioValido = parceirosComPrecoInvalido.length === 0;
+
+    const custoTotalGeral = useMemo(() => {
+        return linhasTabela.reduce(
+            (acc, linha) => acc + parseCurrencyToNumber(linha.custoTotalFormatado),
+            0,
+        );
+    }, [linhasTabela]);
+
+    const etapasAnteriores = useMemo(() => {
+        const indice = etapas.findIndex((e) => e.id === etapaConcluida?.id);
+        return indice > 0 ? etapas.slice(0, indice) : [];
+    }, [etapas, etapaConcluida?.id]);
+
+    const etapasPosteriores = useMemo(
+        () => (indiceProximaEtapa >= 0 ? etapas.slice(indiceProximaEtapa + 1) : []),
+        [etapas, indiceProximaEtapa],
+    );
+
+    // Etapas entre a origem e o destino quando a ficha é arrastada para além da etapa seguinte.
+    const etapasPuladas = useMemo(() => {
+        const indiceConcluida = etapas.findIndex((e) => e.id === etapaConcluida?.id);
+        if (indiceConcluida < 0 || indiceProximaEtapa < 0) return [];
+        return etapas.slice(indiceConcluida + 1, indiceProximaEtapa);
+    }, [etapas, etapaConcluida?.id, indiceProximaEtapa]);
 
     const totalPerdas = useMemo(
         () =>
@@ -233,12 +363,13 @@ export default function TransferenciaEtapaModal({
                     .sort((a, b) => a.ordem - b.ordem);
                 setEtapas(ativasEOrdenadas);
 
-                // 2. Buscar parceiros do fabrico filtrando pela categoria da etapa concluída
+                // 2. Buscar parceiros do fabrico filtrando pela etapa concluída (por id)
                 const listaParceiros = await getParceiros();
-                const filtradosPorCategoria = listaParceiros.filter(
-                    (p) => p.categoria?.toLowerCase() === etapaConcluida?.nome?.toLowerCase(),
+                const filtradosPorEtapa = filtrarParceirosDaEtapa(
+                    listaParceiros,
+                    etapaConcluida?.id,
                 );
-                setParceirosDisponiveis(filtradosPorCategoria);
+                setParceirosDisponiveis(filtradosPorEtapa);
 
                 // 3. Buscar parceiros já associados a esta Ficha Técnica
                 const parceirosExistentesRaw = await getFichaParceiroByFicha(fichaTecnica.id);
@@ -246,30 +377,37 @@ export default function TransferenciaEtapaModal({
                     ? parceirosExistentesRaw
                     : [];
 
-                const jaVinculadosDestaEtapa = parceirosExistentes
-                    .filter(
-                        (fp) =>
-                            fp?.parceiro?.categoria?.toLowerCase() ===
-                            etapaConcluida?.nome?.toLowerCase(),
-                    )
-                    .map((fp) => {
-                        const quantidade = Number(fp?.quantidade || fichaTecnica?.quantidade || 0);
+                const vinculadosDestaEtapa = parceirosExistentes.filter((fp) =>
+                    parceiroEhDaEtapa(fp?.parceiro, etapaConcluida?.id),
+                );
 
-                        // o backend pode devolver "valor" ou "custo";
-                        const valorBruto = Number(fp?.valor ?? fp?.custo ?? 0);
+                const jaVinculadosDestaEtapa = vinculadosDestaEtapa.map((fp) => {
+                    // Zero registrado é zero: só com parceiro único a linha assume o total da ficha.
+                    const quantidade = getEffectiveQuantity(
+                        fp,
+                        vinculadosDestaEtapa.length,
+                        fichaTecnica?.quantidade,
+                    );
 
-                        // se o valor recebido for o total, o unitário é o total dividido pela quantidade
-                        const precoUnitario = quantidade > 0 ? valorBruto / quantidade : 0;
+                    // o backend pode devolver "valor" ou "custo";
+                    const valorBruto = Number(fp?.valor ?? fp?.custo ?? 0);
 
-                        return {
-                            id: fp.parceiro.id,
-                            nome: fp.parceiro.nome,
-                            operacao: fp.operacao || "",
-                            quantidade,
-                            precoUnitarioFormatado: formatCurrencyBR(precoUnitario),
-                            custoTotalFormatado: formatCurrencyBR(valorBruto),
-                        };
-                    });
+                    // se o valor recebido for o total, o unitário é o total dividido pela quantidade
+                    // com que ele foi registrado (a exibida só substitui quando não havia registro)
+                    const quantidadeRegistrada = Number(fp?.quantidade || 0);
+                    const quantidadeBase =
+                        quantidadeRegistrada > 0 ? quantidadeRegistrada : quantidade;
+                    const precoUnitario = quantidadeBase > 0 ? valorBruto / quantidadeBase : 0;
+
+                    return {
+                        id: fp.parceiro.id,
+                        nome: fp.parceiro.nome,
+                        operacao: fp.operacao || "",
+                        quantidade,
+                        precoUnitarioFormatado: formatCurrencyBR(precoUnitario),
+                        custoTotalFormatado: formatCurrencyBR(valorBruto),
+                    };
+                });
 
                 setLinhasTabela(jaVinculadosDestaEtapa);
 
@@ -348,6 +486,29 @@ export default function TransferenciaEtapaModal({
             return !jaAdicionado && bateBusca;
         });
     }, [parceirosDisponiveis, linhasTabela, buscaParceiro]);
+
+    // --- Cadastro de parceiro novo dentro do modal ---
+    // O cadastro responde só com uma mensagem; por isso a lista é recarregada para achar o parceiro criado.
+    const aoCadastrarParceiro = async ({ nome }) => {
+        setNovoParceiroAberto(false);
+
+        try {
+            const listaAtualizada = await getParceiros();
+            setParceirosDisponiveis(filtrarParceirosDaEtapa(listaAtualizada, etapaConcluida?.id));
+
+            const criado = encontrarParceiroPorNome(listaAtualizada, nome);
+            if (criado) {
+                adicionarParceiroNaTabela(criado);
+                return;
+            }
+        } catch (error) {
+            console.error("Erro ao atualizar a lista de parceiros:", error);
+        }
+
+        setSubmitError(
+            "Parceiro cadastrado, mas não foi possível selecioná-lo. Escolha-o na lista.",
+        );
+    };
 
     // --- Ações da Tabela ---
     const adicionarParceiroNaTabela = (parceiro) => {
@@ -429,6 +590,10 @@ export default function TransferenciaEtapaModal({
         );
     };
 
+    const alterarQuantidade = (id, texto) => {
+        atualizarCampoLinha(id, "quantidade", lerQuantidadeDigitada(texto));
+    };
+
     // --- Ação do Relatório de Acabamento (perdas) ---
     const handleChangeRelatorioPerdas = (campo, valor) => {
         setRelatorioPerdas((prev) => ({
@@ -439,7 +604,7 @@ export default function TransferenciaEtapaModal({
 
     // --- Submit / Processamento da Transferência ---
     const handleTransferir = async () => {
-        if (!quantidadeValida || !perdasValidas) {
+        if (!quantidadeValida || !precoUnitarioValido || !perdasValidas) {
             return;
         }
 
@@ -478,12 +643,7 @@ export default function TransferenciaEtapaModal({
             onClose();
         } catch (error) {
             console.error("Falha ao processar a transferência de etapa:", error);
-            const message = error?.response?.data?.message;
-            setSubmitError(
-                Array.isArray(message)
-                    ? message.join(" ")
-                    : message || "Não foi possível transferir a ficha. Tente novamente.",
-            );
+            setSubmitError(obterMensagemErroTransferencia(error));
         } finally {
             setSubmitting(false);
         }
@@ -492,31 +652,36 @@ export default function TransferenciaEtapaModal({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-2 font-['Outfit'] sm:px-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-0 font-['Outfit'] md:p-4">
             {/* CONTAINER PRINCIPAL DO MODAL */}
-            <div className="scrollbar-sutil relative max-h-[96dvh] w-full max-w-6xl overflow-y-auto rounded-[20px] bg-white p-4 shadow-2xl sm:max-h-[90vh] sm:rounded-[24px] sm:p-8">
+            <div className="scrollbar-sutil relative flex h-[100dvh] max-h-[100dvh] flex-col md:block w-full max-w-6xl overflow-y-auto rounded-none bg-white p-4 shadow-2xl md:h-auto md:max-h-[90vh] md:rounded-[24px] md:p-8">
                 {/* CABEÇALHO DO MODAL */}
-                <div className="mb-8 flex items-start justify-between">
+                <div className="sticky -top-4 z-30 -mx-4 -mt-4 mb-4 flex items-start justify-between border-b border-[#EEEEEE] bg-white px-4 pb-3 pt-4 md:static md:z-auto md:mx-0 md:mt-0 md:mb-8 md:border-0 md:p-0">
                     <div className="flex flex-col">
                         <div className="flex items-center gap-2">
                             <img
                                 src="/transferencia.png"
                                 alt="Ícone"
-                                className="h-6 w-6 object-contain"
+                                className="hidden h-6 w-6 object-contain md:block md:max-lg:translate-y-[2px]"
                             />
-                            <h2 className="text-[22px] font-light leading-none text-[#404040]">
+                            <h2 className="text-[18px] font-light leading-tight text-[#404040] md:text-[22px] md:leading-none">
                                 Transferência para {proximaEtapa.nome}
                             </h2>
                         </div>
 
-                        <div className="ml-9 mt-1 text-[14px] font-light leading-none text-[#7B7D80]">
+                        <div className="mt-1 text-[12px] font-light leading-none text-[#7B7D80] md:ml-9 md:text-[14px]">
                             {[
                                 fichaTecnica?.pedido?.numero
                                     ? `Nº${fichaTecnica.pedido.numero}`
                                     : null,
-                                fichaTecnica?.numero
-                                    ? `Ficha Técnica: ${fichaTecnica.numero}`
-                                    : null,
+                                fichaTecnica?.numero ? (
+                                    <>
+                                        <span className="md:hidden">FT {fichaTecnica.numero}</span>
+                                        <span className="hidden md:inline">
+                                            Ficha Técnica: {fichaTecnica.numero}
+                                        </span>
+                                    </>
+                                ) : null,
                                 fichaTecnica?.pedido?.cliente?.nome || null,
                             ]
                                 .filter(Boolean)
@@ -532,7 +697,10 @@ export default function TransferenciaEtapaModal({
                         </div>
                     </div>
 
-                    <button onClick={onClose} className="rounded-full p-2 transition-colors">
+                    <button
+                        onClick={onClose}
+                        className="-mr-2 -mt-1 rounded-full p-4 transition-colors md:m-0 md:p-2"
+                    >
                         <img src="/fechar-cinza.png" alt="Fechar" className="h-3 w-3 opacity-50" />
                     </button>
                 </div>
@@ -541,6 +709,89 @@ export default function TransferenciaEtapaModal({
                     <TransferenciaEtapaLoading />
                 ) : (
                     <>
+                        {/* ETAPAS (MOBILE): chips da etapa concluída e da próxima, com as vizinhas recolhidas */}
+                        <div className="mb-4 flex flex-col gap-1 md:hidden">
+                            <div className="flex w-full items-center gap-1">
+                                {etapasAnteriores.length > 0 && (
+                                    <BotaoEtapasVizinhas
+                                        quantidade={etapasAnteriores.length}
+                                        anteriores
+                                        aberto={etapasAnterioresAbertas}
+                                        onClick={() =>
+                                            setEtapasAnterioresAbertas((aberto) => !aberto)
+                                        }
+                                    />
+                                )}
+                                <div
+                                    title={etapaConcluida?.nome}
+                                    className="flex h-8 min-w-0 flex-1 items-center justify-center gap-1 rounded-full border border-[#B4D64E] bg-[#FBFFF0] px-2.5 text-[12px] text-[#5F7F0C]"
+                                >
+                                    <svg
+                                        width="12"
+                                        height="12"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2.8"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        className="shrink-0"
+                                    >
+                                        <path d="M5 12l5 5 9-10" />
+                                    </svg>
+                                    <span className="truncate">{etapaConcluida?.nome}</span>
+                                </div>
+                                <svg
+                                    width="14"
+                                    height="14"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="#B0B2B5"
+                                    strokeWidth="2.2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="shrink-0"
+                                >
+                                    <path d="M9 6l6 6-6 6" />
+                                </svg>
+                                <div
+                                    title={proximaEtapa?.nome}
+                                    className="flex h-8 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full border-2 border-[#4696AD] bg-white px-2.5 text-[12px] font-medium text-[#1F6C85]"
+                                >
+                                    <span className="h-[7px] w-[7px] shrink-0 rounded-full bg-[#4696AD]" />
+                                    <span className="truncate">{proximaEtapa?.nome}</span>
+                                </div>
+                                {etapasPosteriores.length > 0 && (
+                                    <BotaoEtapasVizinhas
+                                        quantidade={etapasPosteriores.length}
+                                        anteriores={false}
+                                        aberto={etapasPosterioresAbertas}
+                                        onClick={() =>
+                                            setEtapasPosterioresAbertas((aberto) => !aberto)
+                                        }
+                                    />
+                                )}
+                            </div>
+                            {etapasPuladas.length > 0 && (
+                                <p className="text-[12px] text-[#6B6E72]">
+                                    <span className="font-medium">Pulando:</span>{" "}
+                                    {etapasPuladas.map((etapa) => etapa.nome).join(" · ")}
+                                </p>
+                            )}
+                            {etapasAnterioresAbertas && (
+                                <p className="text-[12px] text-[#6B6E72]">
+                                    Anteriores:{" "}
+                                    {etapasAnteriores.map((etapa) => etapa.nome).join(" · ")}
+                                </p>
+                            )}
+                            {etapasPosterioresAbertas && (
+                                <p className="text-[12px] text-[#6B6E72]">
+                                    Seguintes:{" "}
+                                    {etapasPosteriores.map((etapa) => etapa.nome).join(" · ")}
+                                </p>
+                            )}
+                        </div>
+
                         {/* BARRA DE PROGRESSÃO (ETAPAS) */}
                         <div
                             ref={etapasScrollRef}
@@ -549,10 +800,10 @@ export default function TransferenciaEtapaModal({
                             onPointerUp={finalizarArrasteEtapas}
                             onPointerLeave={finalizarArrasteEtapas}
                             onPointerCancel={finalizarArrasteEtapas}
-                            className="w-full overflow-x-auto overflow-y-hidden pb-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden cursor-grab select-none touch-pan-x"
+                            className="hidden w-full overflow-x-auto overflow-y-hidden pb-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden cursor-grab select-none touch-pan-x md:block"
                             style={{ msOverflowStyle: "none" }}
                         >
-                            <div className="min-w-max flex items-center justify-center px-2 py-2">
+                            <div className="flex w-full items-center justify-center px-2 py-2 lg:min-w-max">
                                 {etapas.map((etapa, idx) => {
                                     const isConcluida =
                                         indiceProximaEtapa !== -1 && idx < indiceProximaEtapa;
@@ -568,21 +819,21 @@ export default function TransferenciaEtapaModal({
                                         <React.Fragment key={etapa.id}>
                                             <div
                                                 ref={registrarRefEtapa(etapa.id)}
-                                                className="relative z-10 flex flex-col items-center gap-3 bg-white"
+                                                className="relative z-10 flex shrink-0 flex-col items-center gap-3 bg-white"
                                             >
                                                 <div
-                                                    className={`flex h-[83px] w-[83px] items-center justify-center rounded-[30px] border transition-all ${estiloCaixa}`}
+                                                    className={`flex h-[62px] w-[62px] items-center justify-center rounded-[22px] border transition-all lg:h-[83px] lg:w-[83px] lg:rounded-[30px] ${estiloCaixa}`}
                                                     title={etapa.descricao}
                                                 >
                                                     {linkIcone && (
                                                         <img
                                                             src={linkIcone}
-                                                            className="h-9 w-9 object-contain"
+                                                            className="h-7 w-7 object-contain lg:h-9 lg:w-9"
                                                         />
                                                     )}
                                                 </div>
                                                 <span
-                                                    className={`absolute -bottom-7 whitespace-nowrap text-[16px] font-normal tracking-wide ${
+                                                    className={`absolute -bottom-6 whitespace-nowrap text-[13px] font-normal tracking-wide lg:-bottom-7 lg:text-[16px] ${
                                                         isConcluida
                                                             ? "text-[#B4D64E]"
                                                             : "text-[#D9D9D9]"
@@ -622,7 +873,7 @@ export default function TransferenciaEtapaModal({
 
                                                     return (
                                                         <div
-                                                            className="z-0 mx-1 h-[2px] w-[60px] transition-all"
+                                                            className="z-0 mx-1 h-[2px] min-w-[12px] flex-1 transition-all lg:w-[60px] lg:flex-none"
                                                             style={estiloLinha}
                                                         />
                                                     );
@@ -639,14 +890,17 @@ export default function TransferenciaEtapaModal({
                                 Registrar custo do(a) {etapaConcluida.nome}
                             </label>
 
-                            <div className="relative w-[45%] max-w-[320px]" ref={dropdownRef}>
+                            <div
+                                className="relative w-full md:max-w-[360px] lg:w-[45%] lg:max-w-[320px]"
+                                ref={dropdownRef}
+                            >
                                 <input
                                     type="text"
                                     value={buscaParceiro}
                                     onFocus={() => setDropdownAberto(true)}
                                     onChange={(e) => setBuscaParceiro(e.target.value)}
-                                    placeholder="Colaborador"
-                                    className="h-[39px] w-full rounded-[10px] border border-[#898C8F] bg-white px-4 text-[14px] text-[#404040] outline-none placeholder:text-[#898C8F] transition-all"
+                                    placeholder="Parceiro"
+                                    className="h-[48px] w-full rounded-[10px] border border-[#898C8F] bg-white px-4 text-[16px] text-[#404040] outline-none placeholder:text-[#898C8F] transition-all md:h-[44px] md:text-[15px] lg:h-[39px] lg:text-[14px]"
                                 />
                                 <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#898C8F]">
                                     <svg
@@ -664,10 +918,22 @@ export default function TransferenciaEtapaModal({
                                 </span>
 
                                 {dropdownAberto && (
-                                    <ul className="absolute left-0 right-0 top-[45px] z-50 max-h-[200px] overflow-y-auto rounded-[10px] border border-[#D9D9D9] bg-white shadow-lg scrollbar-sutil">
+                                    <ul className="absolute left-0 right-0 top-full z-50 mt-1.5 max-h-[200px] overflow-y-auto rounded-[10px] border border-[#D9D9D9] bg-white shadow-lg scrollbar-sutil">
+                                        <li className="sticky top-0 z-10 border-b border-[#E8E8E8] bg-white">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setDropdownAberto(false);
+                                                    setNovoParceiroAberto(true);
+                                                }}
+                                                className="w-full px-4 py-2.5 text-left text-[14px] font-normal text-[#4696AD] transition-colors hover:bg-[#F5F5F5]"
+                                            >
+                                                + Novo Parceiro
+                                            </button>
+                                        </li>
                                         {parceirosFiltrados.length === 0 ? (
                                             <li className="px-4 py-3 text-[14px] font-light text-[#898C8F]">
-                                                Nenhum colaborador disponível para esta categoria
+                                                Nenhum parceiro disponível para esta etapa
                                             </li>
                                         ) : (
                                             parceirosFiltrados.map((parceiro) => (
@@ -688,7 +954,7 @@ export default function TransferenciaEtapaModal({
                         </div>
 
                         {/* TABELA DE CUSTOS (VISUAL REFATORADO AO PADRÃO DA FICHA TECNICA) */}
-                        <div className="mb-6 w-full">
+                        <div className="mb-6 hidden w-full lg:block">
                             <div
                                 className="grid h-10 items-center text-center font-normal text-[#4696AD]"
                                 style={{
@@ -696,7 +962,7 @@ export default function TransferenciaEtapaModal({
                                 }}
                             >
                                 <div className="h-10 rounded-tl-[10px] border-r-[0.5px] border-[#7B7D80] bg-[#C9EAF6] px-4 py-2.5">
-                                    Colaborador
+                                    Parceiro
                                 </div>
                                 <div className="h-10 border-r-[0.5px] border-[#7B7D80] bg-[#C9EAF6] px-4 py-2.5">
                                     Operação
@@ -808,23 +1074,19 @@ export default function TransferenciaEtapaModal({
                                                             }}
                                                         >
                                                             <input
-                                                                type="number"
-                                                                min="0"
-                                                                value={row.quantidade}
-                                                                onChange={(e) => {
-                                                                    const val = Math.max(
-                                                                        0,
-                                                                        parseInt(e.target.value) ||
-                                                                            0,
-                                                                    );
-                                                                    atualizarCampoLinha(
+                                                                type="text"
+                                                                inputMode="numeric"
+                                                                value={formatarQuantidadeCampo(
+                                                                    row.quantidade,
+                                                                )}
+                                                                onChange={(e) =>
+                                                                    alterarQuantidade(
                                                                         row.id,
-                                                                        "quantidade",
-                                                                        val,
-                                                                    );
-                                                                }}
-                                                                placeholder="-"
-                                                                className="h-[32px] w-full border-0 bg-transparent text-center text-[14px] font-light text-[#898C8F] outline-none focus:ring-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none"
+                                                                        e.target.value,
+                                                                    )
+                                                                }
+                                                                placeholder="0"
+                                                                className="h-[32px] w-full border-0 bg-transparent text-center text-[14px] font-light text-[#898C8F] outline-none placeholder:text-[#D3D3D3] focus:ring-0"
                                                             />
                                                         </div>
                                                     )}
@@ -947,6 +1209,140 @@ export default function TransferenciaEtapaModal({
                             </div>
                         </div>
 
+                        {/* CARTÕES DE PARCEIROS (TABLET E MOBILE) */}
+                        <div className="mb-6 flex flex-col gap-3 lg:hidden">
+                            {linhasTabela.length > 0 ? (
+                                linhasTabela.map((row) => (
+                                    <div
+                                        key={row.id}
+                                        className="rounded-[16px] border border-[#D5E4EA] p-3.5 md:rounded-[14px] md:p-4"
+                                    >
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="flex min-w-0 items-center gap-2.5">
+                                                <div
+                                                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E4F3F8] text-[13px] font-medium text-[#1F6C85] md:hidden"
+                                                    aria-hidden="true"
+                                                >
+                                                    {obterIniciais(row.nome)}
+                                                </div>
+                                                <div className="flex min-w-0 flex-col">
+                                                    <span className="truncate text-[16px] font-medium text-[#404040]">
+                                                        {row.nome}
+                                                    </span>
+                                                    <span className="text-[12px] text-[#6B6E72] md:text-[13px]">
+                                                        {etapaConcluida.nome}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex shrink-0 flex-col items-end">
+                                                <input
+                                                    type="text"
+                                                    inputMode="numeric"
+                                                    aria-label={`Custo total de ${row.nome}`}
+                                                    value={row.custoTotalFormatado}
+                                                    onChange={(e) =>
+                                                        atualizarCampoLinha(
+                                                            row.id,
+                                                            "custoTotalFormatado",
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    placeholder="R$ 0,00"
+                                                    className="w-[120px] rounded-[8px] border border-transparent bg-transparent px-1 text-right text-[17px] font-medium text-[#1F6C85] outline-none focus:border-[#4696AD] md:w-[140px]"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removerParceiroDaTabela(row.id)}
+                                                    aria-label={`Remover ${row.nome}`}
+                                                    className="-mr-1 mt-0.5 flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-[#F5F5F5]"
+                                                >
+                                                    <img
+                                                        src="/excluir-cinza-claro.png"
+                                                        alt=""
+                                                        className="h-4 w-4 object-contain"
+                                                    />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div
+                                            className={`mt-3 grid gap-2.5 ${
+                                                linhasTabela.length > 1
+                                                    ? "grid-cols-2 md:grid-cols-3"
+                                                    : "grid-cols-2"
+                                            }`}
+                                        >
+                                            <label
+                                                className={`flex flex-col gap-1 text-[12px] text-[#6B6E72] md:text-[13px] ${
+                                                    linhasTabela.length > 1
+                                                        ? "col-span-2 md:col-span-1"
+                                                        : ""
+                                                }`}
+                                            >
+                                                Operação
+                                                <input
+                                                    value={row.operacao}
+                                                    onChange={(e) =>
+                                                        atualizarCampoLinha(
+                                                            row.id,
+                                                            "operacao",
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    placeholder="-"
+                                                    className={CAMPO_CARTAO}
+                                                />
+                                            </label>
+
+                                            {linhasTabela.length > 1 && (
+                                                <label className="flex flex-col gap-1 text-[12px] text-[#6B6E72] md:text-[13px]">
+                                                    Total de peças
+                                                    <input
+                                                        type="text"
+                                                        inputMode="numeric"
+                                                        value={formatarQuantidadeCampo(
+                                                            row.quantidade,
+                                                        )}
+                                                        onChange={(e) =>
+                                                            alterarQuantidade(
+                                                                row.id,
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        placeholder="0"
+                                                        className={`${CAMPO_CARTAO} placeholder:text-[#D3D3D3]`}
+                                                    />
+                                                </label>
+                                            )}
+
+                                            <label className="flex flex-col gap-1 text-[12px] text-[#6B6E72] md:text-[13px]">
+                                                Preço unitário
+                                                <input
+                                                    type="text"
+                                                    inputMode="numeric"
+                                                    value={row.precoUnitarioFormatado}
+                                                    onChange={(e) =>
+                                                        atualizarCampoLinha(
+                                                            row.id,
+                                                            "precoUnitarioFormatado",
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    placeholder="R$ 0,00"
+                                                    className={CAMPO_CARTAO}
+                                                />
+                                            </label>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="rounded-[14px] border border-[#D5E4EA] px-4 py-5 text-center text-[13px] text-[#888]">
+                                    Nenhum custo lançado ainda.
+                                </div>
+                            )}
+                        </div>
+
                         {/* RELATÓRIO DE ACABAMENTO (PERDAS) */}
                         {isUltimaEtapa && (
                             <RelatorioDeAcabamento
@@ -956,23 +1352,27 @@ export default function TransferenciaEtapaModal({
                                 sobras={relatorioPerdas.sobras}
                                 onChange={handleChangeRelatorioPerdas}
                                 variant="modal"
+                                responsivo
                             />
                         )}
 
-                        {/* MENSAGEM DE VALIDAÇÃO (SE QUANTIDADE NÃO BATER E > 1 COLABORADOR) */}
+                        {/* MENSAGEM DE VALIDAÇÃO (SE QUANTIDADE NÃO BATER E > 1 PARCEIRO) */}
                         {!quantidadeValida && linhasTabela.length > 0 && (
                             <div className="mb-6 mt-6 rounded-[10px] border border-amber-200 bg-amber-50 p-4 text-[14px] font-light text-amber-800">
                                 <span className="font-medium">Atenção:</span> A soma das peças (
-                                {somaQuantidades}) não corresponde ao total da Ficha (
-                                {fichaTecnica.quantidade}).
+                                <span className="font-medium text-[#D75757]">
+                                    {somaQuantidades}
+                                </span>
+                                ) não corresponde ao total da Ficha ({fichaTecnica.quantidade}).
                             </div>
                         )}
 
-                        {!precoUnitarioValido && linhasTabela.length > 0 && (
+                        {!precoUnitarioValido && (
                             <div className="mb-6 mt-6 rounded-[10px] border border-red-200 bg-red-50 p-4 text-[14px] font-light text-red-700">
-                                <span className="font-medium">Atenção:</span> Para prosseguir com a
-                                transferência, cadastre o valor do(a){" "}
-                                {etapaConcluida.nome.toUpperCase()};
+                                <span className="font-medium">Atenção:</span>{" "}
+                                {montarAvisoPrecoInvalido(
+                                    parceirosComPrecoInvalido.map((linha) => linha.nome),
+                                )}
                             </div>
                         )}
 
@@ -992,8 +1392,8 @@ export default function TransferenciaEtapaModal({
                             </div>
                         )}
 
-                        {/* FOOTER / AÇÕES FINAIS DO MODAL */}
-                        <div className="flex justify-end pt-4">
+                        {/* FOOTER / AÇÕES FINAIS DO MODAL (DESKTOP) */}
+                        <div className="hidden justify-end pt-4 lg:flex">
                             <button
                                 type="button"
                                 onClick={handleTransferir}
@@ -1012,9 +1412,86 @@ export default function TransferenciaEtapaModal({
                                 {submitting ? "Processando..." : "Transferir"}
                             </button>
                         </div>
+
+                        {/* No celular, empurra o rodapé para o fim da tela */}
+                        <div className="min-h-6 flex-1 md:hidden" aria-hidden="true" />
+
+                        {/* RODAPÉ FIXO (TABLET E MOBILE) */}
+                        <div className="sticky -bottom-4 z-20 -mx-4 -mb-4 flex flex-col gap-3 border-t border-[#EEEEEE] bg-white px-4 pb-4 pt-3 shadow-[0_-6px_16px_rgba(0,0,0,0.06)] md:-bottom-8 md:-mx-8 md:-mb-8 md:mt-6 md:flex-row md:items-center md:gap-6 md:px-8 md:py-4 lg:hidden">
+                            <div className="flex items-end justify-between gap-6 md:flex-1 md:items-center">
+                                {linhasTabela.length > 1 && (
+                                    <div className="flex flex-col gap-1.5 md:flex-1">
+                                        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                                            <span className="text-[12px] text-[#6B6E72] md:text-[14px]">
+                                                Soma das peças
+                                            </span>
+                                            <span
+                                                className={`text-[15px] font-medium ${
+                                                    quantidadeValida
+                                                        ? "text-[#3F7A12]"
+                                                        : "text-[#D75757]"
+                                                }`}
+                                            >
+                                                {quantidadeValida && "✓ "}
+                                                {somaQuantidades} de {fichaTecnica?.quantidade}
+                                            </span>
+                                        </div>
+                                        <div className="hidden h-2 rounded-full bg-[#E3EEF2] md:block">
+                                            <div
+                                                className={`h-2 rounded-full ${
+                                                    quantidadeValida
+                                                        ? "bg-[#7FB82E]"
+                                                        : "bg-[#D75757]"
+                                                }`}
+                                                style={{
+                                                    width: `${calcularPercentualSoma(
+                                                        somaQuantidades,
+                                                        fichaTecnica?.quantidade,
+                                                    )}%`,
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="ml-auto flex flex-col items-end md:ml-0 md:items-start">
+                                    <span className="text-[12px] text-[#6B6E72] md:text-[13px]">
+                                        Custo total
+                                    </span>
+                                    <span className="text-[18px] font-medium text-[#404040] md:text-[20px] md:font-normal">
+                                        {formatCurrencyBR(custoTotalGeral)}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={handleTransferir}
+                                disabled={
+                                    submitting ||
+                                    !quantidadeValida ||
+                                    !precoUnitarioValido ||
+                                    !perdasValidas
+                                }
+                                className={`h-[52px] w-full rounded-full px-10 text-[16px] font-medium transition-all md:h-[48px] md:w-[180px] md:shrink-0 ${
+                                    !quantidadeValida || !precoUnitarioValido || !perdasValidas
+                                        ? "cursor-not-allowed border border-[#D9D9D9] bg-[#F5F5F5] text-[#898C8F]"
+                                        : "bg-[#A9E2F2] text-[#165A72] hover:bg-[#A2DCED] active:scale-95"
+                                }`}
+                            >
+                                {submitting ? "Processando..." : "Transferir"}
+                            </button>
+                        </div>
                     </>
                 )}
             </div>
+
+            <NovoParceiroModal
+                isOpen={novoParceiroAberto}
+                onClose={() => setNovoParceiroAberto(false)}
+                etapa={etapaConcluida}
+                onSuccess={aoCadastrarParceiro}
+            />
         </div>
     );
 }

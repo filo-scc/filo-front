@@ -28,6 +28,8 @@ import {
 import { parsePreco } from "../utils/preco";
 import { dataPrevistaParaBackend } from "../utils/dataPrevista";
 import { obterPrecoUnitarioParceiro } from "../utils/precoParceiro";
+import { extrairMensagemDeErro } from "../utils/mensagemApi";
+import { textoContemBusca } from "../utils/textoBusca";
 
 const sectionTitleClass = "text-[20px] font-light text-[#404040] mb-4 font-['Outfit']";
 
@@ -71,9 +73,7 @@ function DropdownField({
         }
     }, [isOpen]);
 
-    const opcoesFiltradas = options.filter((option) =>
-        option.label.toLowerCase().includes(termoBusca.toLowerCase()),
-    );
+    const opcoesFiltradas = options.filter((option) => textoContemBusca(option.label, termoBusca));
 
     return (
         <div className={`relative ${isOpen ? "z-50" : "z-10"} ${className}`}>
@@ -189,14 +189,6 @@ const getProdutoId = (item) =>
 
 const getReferenciaInterna = (item) =>
     item?.produto?.nome ?? item?.produto?.referencia ?? item?.nome ?? "-";
-
-const extrairMensagemDeErro = (error) => {
-    const mensagem = error?.response?.data?.message;
-
-    if (Array.isArray(mensagem)) return mensagem.join(". ");
-
-    return typeof mensagem === "string" ? mensagem : "";
-};
 
 const isoParaDataBr = (dataString) => {
     if (!dataString) return "";
@@ -316,6 +308,8 @@ const converterDetalheParaRascunhoModal = (detalhe, fichaLinha = {}) => {
     return {
         id: detalhe?.id ?? fichaLinha.id,
         isDraft: false,
+        defeitos_tecido: detalhe?.defeitos_tecido ?? fichaLinha.defeitos_tecido ?? 0,
+        concluida: (detalhe?.concluida ?? fichaLinha.concluida) === true,
         produtoId,
         produto_id: produtoId,
         foto: detalhe?.produto?.foto ?? fichaLinha.foto,
@@ -343,6 +337,7 @@ const mapearFichaParaTabela = (ficha, relacaoClienteProduto) => {
     return {
         id: ficha?.id,
         isDraft: false,
+        concluida: ficha?.concluida === true,
         produtoId,
         produto_id: produtoId,
         foto: ficha?.produto?.foto ?? ficha?.foto,
@@ -355,6 +350,7 @@ const mapearFichaParaTabela = (ficha, relacaoClienteProduto) => {
             "",
         cores: extrairCores(ficha),
         quantidade,
+        defeitos_tecido: ficha?.defeitos_tecido ?? 0,
         preco_padrao:
             relacaoClienteProduto?.preco_padrao ??
             ficha?.preco_padrao ??
@@ -447,6 +443,7 @@ export default function PedidosEditar() {
 
         const carregarPedido = async () => {
             setLoading(true);
+            setPedido(null);
             try {
                 let dadosPedido = null;
 
@@ -490,6 +487,12 @@ export default function PedidosEditar() {
                     } catch (error) {
                         console.error("Erro ao carregar configuração do fabrico:", error);
                     }
+                }
+
+                if (dadosPedido.finalizado === true) {
+                    setPedido(dadosPedido);
+                    setIsSobDemanda(produzSobDemanda);
+                    return;
                 }
 
                 if (!dadosPedido.cliente && dadosPedido.cliente_id) {
@@ -640,7 +643,7 @@ export default function PedidosEditar() {
             setCarregandoReferencias(true);
             try {
                 let listaProdutosCliente = [];
-                const promessas = [getProdutosPorFabrico(fabricoId)];
+                const promessas = [getProdutosPorFabrico()];
                 if (isSobDemanda && clienteSelecionado?.id) {
                     promessas.push(getProdutosDoCliente(clienteSelecionado.id));
                 }
@@ -845,7 +848,7 @@ export default function PedidosEditar() {
     });
 
     const handleAbrirFicha = async (ficha, itemKey) => {
-        if (salvandoPedido || abrindoFicha || trocandoCliente) return;
+        if (ficha.concluida || salvandoPedido || abrindoFicha || trocandoCliente) return;
 
         setErro("");
         setAbrindoFicha(true);
@@ -855,6 +858,15 @@ export default function PedidosEditar() {
 
             if (!fichaTemPayloadDeModal(ficha) && isFichaPersistida(ficha)) {
                 const detalhe = await findOne(ficha.id);
+                if (detalhe.concluida) {
+                    setFichas((prev) =>
+                        prev.map((item) =>
+                            item.id === ficha.id ? { ...item, concluida: true } : item,
+                        ),
+                    );
+                    setErro("Não é permitido alterar uma ficha já concluída.");
+                    return;
+                }
                 fichaParaModal = converterDetalheParaRascunhoModal(detalhe, ficha);
             }
 
@@ -873,6 +885,8 @@ export default function PedidosEditar() {
     const handleFichaSalvaNoModal = (rascunhoFicha) => {
         const fichaAtualizada = {
             ...rascunhoFicha,
+            defeitos_tecido:
+                rascunhoFicha.defeitos_tecido ?? fichaInicialModal?.defeitos_tecido ?? 0,
             foto: rascunhoFicha.foto || referenciaParaModal?.foto || fichaInicialModal?.foto,
             preco_padrao:
                 rascunhoFicha.preco_padrao ??
@@ -937,7 +951,7 @@ export default function PedidosEditar() {
         setFichas((prev) =>
             prev.filter((ficha, index) => {
                 const itemKey = ficha.id ?? index;
-                return itemKey !== identificador;
+                return ficha.concluida || itemKey !== identificador;
             }),
         );
     };
@@ -950,7 +964,7 @@ export default function PedidosEditar() {
                         ? ficha.id === identificador
                         : index === identificador;
 
-                if (ehAFicha) {
+                if (ehAFicha && !ficha.concluida) {
                     return { ...ficha, [campo]: valor, subtotal: undefined };
                 }
                 return ficha;
@@ -959,6 +973,8 @@ export default function PedidosEditar() {
     };
 
     const handleSalvarPedido = async () => {
+        if (pedido?.finalizado) return;
+
         if (trocandoCliente) {
             setErro("Aguarde a atualização dos produtos do novo cliente.");
             return;
@@ -1050,7 +1066,9 @@ export default function PedidosEditar() {
             console.error("Erro ao salvar pedido:", error);
             setErro(
                 extrairMensagemDeErro(error) ||
-                    "Falha ao salvar pedido. Verifique os dados e tente novamente.",
+                    (error?.response?.status === 409
+                        ? "Não foi possível salvar: o pedido ou uma ficha não permite alterações."
+                        : "Falha ao salvar pedido. Verifique os dados e tente novamente."),
             );
         } finally {
             setSalvandoPedido(false);
@@ -1087,7 +1105,7 @@ export default function PedidosEditar() {
     return (
         <>
             <div className="p-6 pt-0 mt-6 w-full relative z-0 font-['Outfit']">
-                {pedido && (
+                {pedido && !pedido.finalizado && (
                     <div className="bg-white p-10 rounded-[24px] shadow-sm w-full mx-auto">
                         <div className="mb-6">
                             <div className="flex items-start gap-3">
@@ -1201,11 +1219,25 @@ export default function PedidosEditar() {
                         </div>
 
                         {erro ? (
-                            <p className="pt-4 text-sm text-[#D75757] text-right">{erro}</p>
+                            <p role="alert" className="pt-4 text-sm text-[#D75757] text-right">
+                                {erro}
+                            </p>
                         ) : null}
                     </div>
                 )}
             </div>
+
+            <ModalAtencao
+                isOpen={pedido?.finalizado === true}
+                onConfirm={() => navigate(`/pedidos/${id}`, { replace: true })}
+                titulo={isSobDemanda ? "Pedido finalizado" : "Produção finalizada"}
+                mensagem={
+                    isSobDemanda
+                        ? "Este pedido está finalizado e não pode ser alterado ou excluído. Você será redirecionado para os detalhes."
+                        : "Esta produção está finalizada e não pode ser alterada ou excluída. Você será redirecionado para os detalhes."
+                }
+                textoBotao="Voltar aos detalhes"
+            />
 
             <ModalAtencao
                 isOpen={modalAtencaoAberto}
