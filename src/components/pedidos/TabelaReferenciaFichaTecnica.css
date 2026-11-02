@@ -1,0 +1,161 @@
+@media (max-width: 1023px) {
+    .pedido-fichas-responsivo .pedido-ficha-grid {
+        grid-template-columns: minmax(80px, 28%) repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        padding: 16px;
+        align-items: start;
+    }
+
+    .pedido-fichas-responsivo [data-campo] {
+        padding: 0;
+        border: 0;
+        background: transparent;
+        gap: 4px;
+        align-items: flex-start;
+        justify-content: flex-start;
+        text-align: left;
+        font-size: 14px;
+        cursor: inherit;
+    }
+
+    .pedido-fichas-responsivo [data-campo] > span:first-child {
+        font-size: 12px;
+        color: #898c8f;
+    }
+
+    .pedido-fichas-responsivo [data-campo="foto"] {
+        grid-column: 1;
+        grid-row: 1 / 6;
+        align-self: start;
+    }
+
+    .pedido-fichas-responsivo [data-campo="foto"] > * {
+        width: 100%;
+        max-width: none;
+        height: auto;
+        min-height: 0;
+        max-height: none;
+        aspect-ratio: 3 / 4;
+        object-fit: cover;
+        object-position: center;
+        background: #f9f9f9;
+    }
+
+    .pedido-fichas-responsivo [data-campo="interna"] {
+        grid-column: 2 / 4;
+        grid-row: 1;
+        font-size: 16px;
+    }
+
+    .pedido-fichas-responsivo [data-campo="interna"] > span {
+        display: none;
+    }
+
+    .pedido-fichas-responsivo [data-campo="cliente"] {
+        grid-column: 2 / 4;
+        grid-row: 2;
+    }
+
+    .pedido-fichas-responsivo [data-campo="cores"] {
+        grid-column: 2 / 4;
+        grid-row: 3;
+    }
+
+    .pedido-fichas-responsivo [data-campo="quantidade"] {
+        grid-column: 2;
+        grid-row: 4;
+    }
+
+    .pedido-fichas-responsivo [data-campo="preco"] {
+        grid-column: 3;
+        grid-row: 4;
+    }
+
+    .pedido-fichas-responsivo [data-campo="subtotal"] {
+        grid-column: 2 / 4;
+        grid-row: 5;
+        flex-direction: column;
+    }
+
+    .pedido-fichas-responsivo .pedido-ficha-acoes {
+        border-top: 0;
+        padding: 0 12px 8px;
+    }
+
+    .pedido-fichas-responsivo input {
+        border: 1px solid #898c8f;
+        border-radius: 8px;
+        padding: 6px;
+        font-size: 14px;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+    .pedido-fichas-responsivo .pedido-ficha-grid {
+        grid-template-columns: 120px minmax(0, 1.2fr) minmax(0, 1.4fr) minmax(0, 0.6fr) repeat(
+                2,
+                minmax(0, 1fr)
+            );
+        grid-template-rows: auto 1fr;
+        gap: 20px 14px;
+        padding: 20px;
+    }
+
+    .pedido-fichas-responsivo [data-campo="foto"] {
+        grid-row: 1 / 3;
+    }
+
+    .pedido-fichas-responsivo [data-campo="interna"] {
+        grid-column: 2 / 7;
+        font-size: 18px;
+    }
+
+    .pedido-fichas-responsivo [data-campo="cliente"] {
+        grid-column: 2;
+        grid-row: 2;
+    }
+
+    .pedido-fichas-responsivo [data-campo="cores"] {
+        grid-column: 3;
+        grid-row: 2;
+    }
+
+    .pedido-fichas-responsivo [data-campo="quantidade"] {
+        grid-column: 4;
+        grid-row: 2;
+    }
+
+    .pedido-fichas-responsivo [data-campo="preco"] {
+        grid-column: 5;
+        grid-row: 2;
+    }
+
+    .pedido-fichas-responsivo [data-campo="subtotal"] {
+        grid-column: 6;
+        grid-row: 2;
+    }
+
+    .pedido-fichas-responsivo.pedido-producao-propria .pedido-ficha-grid {
+        grid-template-columns: 120px minmax(0, 1.4fr) minmax(0, 0.6fr) repeat(2, minmax(0, 1fr));
+    }
+
+    .pedido-fichas-responsivo.pedido-producao-propria [data-campo="interna"] {
+        grid-column: 2 / 6;
+    }
+
+    .pedido-fichas-responsivo.pedido-producao-propria [data-campo="cores"] {
+        grid-column: 2;
+    }
+
+    .pedido-fichas-responsivo.pedido-producao-propria [data-campo="quantidade"] {
+        grid-column: 3;
+    }
+
+    .pedido-fichas-responsivo.pedido-producao-propria [data-campo="preco"] {
+        grid-column: 4;
+    }
+
+    .pedido-fichas-responsivo.pedido-producao-propria [data-campo="subtotal"] {
+        grid-column: 5;
+    }
+}

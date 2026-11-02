@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { calcularSubtotalFicha } from "../../utils/calcularSubtotalFicha.js";
 import { parsePreco } from "../../utils/preco";
+import "./TabelaReferenciaFichaTecnica.css";
 
 export default function TabelaReferenciaFichaTecnica({
     fichas = [],
@@ -11,8 +12,10 @@ export default function TabelaReferenciaFichaTecnica({
     onAbrirFicha,
     somenteLeitura = false,
     bloqueada = false,
+    layoutPedidoResponsivo = false,
 }) {
     const [idEmEdicao, setIdEmEdicao] = useState(null);
+    const [coresExpandidas, setCoresExpandidas] = useState([]);
 
     // Formatação de moeda para exibição normal (Subtotal, Total)
     const formatarMoeda = (valor) => {
@@ -92,7 +95,9 @@ export default function TabelaReferenciaFichaTecnica({
     };
 
     return (
-        <section className="w-full min-w-0">
+        <section
+            className={`w-full min-w-0 ${layoutPedidoResponsivo ? `pedido-fichas-responsivo ${!isSobDemanda ? "pedido-producao-propria" : ""}` : ""}`}
+        >
             <div className="flex flex-col w-full min-w-0">
                 {/* 1. CABEÇALHO DA TABELA */}
                 <div className="hidden lg:flex flex-row items-center w-full">
@@ -156,11 +161,17 @@ export default function TabelaReferenciaFichaTecnica({
 
                             const podeAbrirFicha =
                                 Boolean(onAbrirFicha) && !bloqueada && !fichaConcluida;
+                            const nomesCores = Array.isArray(ficha.cores)
+                                ? ficha.cores.map((cor) =>
+                                      typeof cor === "object" ? cor.nome : cor,
+                                  )
+                                : [];
+                            const expandiuCores = coresExpandidas.includes(itemKey);
 
                             return (
                                 <div
                                     key={itemKey}
-                                    className="group flex flex-col lg:flex-row lg:items-center w-full min-w-0 rounded-[16px] border border-[#d9d9d9] overflow-hidden lg:rounded-none lg:border-0 lg:overflow-visible"
+                                    className="pedido-ficha group flex flex-col lg:flex-row lg:items-center w-full min-w-0 rounded-[16px] border border-[#d9d9d9] overflow-hidden lg:rounded-none lg:border-0 lg:overflow-visible"
                                 >
                                     {/* Linha da Tabela */}
                                     <div
@@ -171,6 +182,7 @@ export default function TabelaReferenciaFichaTecnica({
                                             onAbrirFicha?.(ficha, itemKey);
                                         }}
                                         onKeyDown={(e) => {
+                                            if (e.target !== e.currentTarget) return;
                                             if (!podeAbrirFicha) return;
                                             if (e.key === "Enter" || e.key === " ") {
                                                 e.preventDefault();
@@ -184,10 +196,13 @@ export default function TabelaReferenciaFichaTecnica({
                                         }`}
                                     >
                                         <div
-                                            className={`${gridColsClass} text-[#404040] font-['Outfit'] font-light lg:min-h-[140px]`}
+                                            className={`pedido-ficha-grid ${gridColsClass} text-[#404040] font-['Outfit'] font-light lg:min-h-[140px]`}
                                         >
                                             {/* 1. Foto */}
-                                            <div className="col-span-2 md:col-span-1 md:row-span-2 lg:row-span-1 lg:border-r border-[#d9d9d9] p-3 md:p-4 lg:p-3 flex items-center justify-center bg-white cursor-not-allowed">
+                                            <div
+                                                data-campo="foto"
+                                                className="col-span-2 md:col-span-1 md:row-span-2 lg:row-span-1 lg:border-r border-[#d9d9d9] p-3 md:p-4 lg:p-3 flex items-center justify-center bg-white cursor-not-allowed"
+                                            >
                                                 {ficha.foto ? (
                                                     <img
                                                         src={ficha.foto}
@@ -203,6 +218,7 @@ export default function TabelaReferenciaFichaTecnica({
 
                                             {/* 2. Ref. interna */}
                                             <div
+                                                data-campo="interna"
                                                 className={`col-span-4 md:col-span-5 lg:col-span-1 lg:border-r border-[#d9d9d9] ${campoBloqueadoClass}`}
                                             >
                                                 <span className={rotuloCardClass}>
@@ -216,6 +232,7 @@ export default function TabelaReferenciaFichaTecnica({
                                             {/* 3. Ref. cliente */}
                                             {isSobDemanda && (
                                                 <div
+                                                    data-campo="cliente"
                                                     className="col-span-6 md:col-span-2 lg:col-span-1 lg:border-r border-[#d9d9d9] flex flex-col items-start lg:items-center justify-center gap-2 lg:gap-0 min-w-0 px-4 py-4 lg:px-2 lg:py-0 lg:text-center break-words [overflow-wrap:anywhere] text-base text-[#404040]"
                                                     onClick={(e) => e.stopPropagation()}
                                                     onKeyDown={(e) => e.stopPropagation()}
@@ -251,22 +268,64 @@ export default function TabelaReferenciaFichaTecnica({
 
                                             {/* 4. Cores */}
                                             <div
+                                                data-campo="cores"
                                                 className={`col-span-6 ${isSobDemanda ? "md:col-span-3" : "md:col-span-5"} lg:col-span-1 lg:border-r border-[#d9d9d9] ${campoBloqueadoClass}`}
                                             >
                                                 <span className={rotuloCardClass}>Cores</span>
-                                                {formatarCores(ficha.cores)}
+                                                {layoutPedidoResponsivo && nomesCores.length > 3 ? (
+                                                    <>
+                                                        <span className="hidden lg:inline">
+                                                            {formatarCores(ficha.cores)}
+                                                        </span>
+                                                        <div className="lg:hidden">
+                                                            {nomesCores.slice(0, 3).join(", ")}
+                                                            {expandiuCores && (
+                                                                <div className="max-h-32 overflow-y-auto">
+                                                                    {nomesCores.slice(3).join(", ")}
+                                                                </div>
+                                                            )}
+                                                            <button
+                                                                type="button"
+                                                                aria-expanded={expandiuCores}
+                                                                className="block min-h-11 text-[#4696AD] text-left"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setCoresExpandidas((prev) =>
+                                                                        expandiuCores
+                                                                            ? prev.filter(
+                                                                                  (key) =>
+                                                                                      key !==
+                                                                                      itemKey,
+                                                                              )
+                                                                            : [...prev, itemKey],
+                                                                    );
+                                                                }}
+                                                            >
+                                                                {expandiuCores
+                                                                    ? "Mostrar menos"
+                                                                    : `+ ${nomesCores.length - 3} ${nomesCores.length === 4 ? "cor" : "cores"}`}
+                                                            </button>
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    formatarCores(ficha.cores)
+                                                )}
                                             </div>
 
                                             {/* 5. Quantidade */}
                                             <div
+                                                data-campo="quantidade"
                                                 className={`col-span-3 md:col-span-2 lg:col-span-1 border-t border-r lg:border-t-0 border-[#d9d9d9] bg-[#F9F9F9] md:bg-white ${campoBloqueadoClass} font-light`}
                                             >
-                                                <span className={rotuloCardClass}>Quantidade</span>
+                                                <span className={rotuloCardClass}>
+                                                    {layoutPedidoResponsivo ? "Qtd" : "Quantidade"}
+                                                </span>
                                                 {qtd}
                                             </div>
 
                                             {/* 6. Preço unit. / Custo unit. */}
                                             <div
+                                                data-campo="preco"
                                                 className="col-span-3 md:col-span-2 lg:col-span-1 border-t md:border-r lg:border-t-0 border-[#d9d9d9] bg-[#F9F9F9] md:bg-white flex flex-col items-start lg:items-center justify-center gap-2 lg:gap-0 min-w-0 px-4 py-4 lg:px-2 lg:py-0 lg:text-center break-words [overflow-wrap:anywhere] text-base text-[#404040]"
                                                 onClick={(e) => e.stopPropagation()}
                                                 onKeyDown={(e) => e.stopPropagation()}
@@ -315,7 +374,10 @@ export default function TabelaReferenciaFichaTecnica({
                                             </div>
 
                                             {/* 7. Subtotal */}
-                                            <div className="col-span-6 md:col-span-2 lg:col-span-1 flex flex-row md:flex-col lg:flex-row items-center md:items-start lg:items-center justify-between md:justify-center lg:justify-center gap-3 lg:gap-0 min-w-0 px-4 py-4 lg:px-2 lg:py-0 border-t lg:border-t-0 border-[#d9d9d9] text-base text-[#404040] font-light break-words [overflow-wrap:anywhere]">
+                                            <div
+                                                data-campo="subtotal"
+                                                className="col-span-6 md:col-span-2 lg:col-span-1 flex flex-row md:flex-col lg:flex-row items-center md:items-start lg:items-center justify-between md:justify-center lg:justify-center gap-3 lg:gap-0 min-w-0 px-4 py-4 lg:px-2 lg:py-0 border-t lg:border-t-0 border-[#d9d9d9] text-base text-[#404040] font-light break-words [overflow-wrap:anywhere]"
+                                            >
                                                 <span className="lg:hidden text-base md:text-[#4696AD]">
                                                     {isSobDemanda ? "Subtotal" : "Subcusto"}
                                                 </span>
@@ -329,7 +391,7 @@ export default function TabelaReferenciaFichaTecnica({
                                     )}
                                     {!somenteLeitura && !fichaConcluida && (
                                         <div
-                                            className="w-full lg:w-9 shrink-0 flex flex-row lg:flex-col items-center justify-end lg:justify-center gap-2 p-2 lg:p-0 lg:pl-2 border-t lg:border-t-0 border-[#d9d9d9] transition-opacity duration-200"
+                                            className="pedido-ficha-acoes w-full lg:w-9 shrink-0 flex flex-row lg:flex-col items-center justify-end lg:justify-center gap-2 p-2 lg:p-0 lg:pl-2 border-t lg:border-t-0 border-[#d9d9d9] transition-opacity duration-200"
                                             onClick={(e) => e.stopPropagation()}
                                         >
                                             <button
