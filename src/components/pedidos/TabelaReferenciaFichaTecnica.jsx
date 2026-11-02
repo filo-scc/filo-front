@@ -96,7 +96,7 @@ export default function TabelaReferenciaFichaTecnica({
 
     return (
         <section
-            className={`w-full min-w-0 ${layoutPedidoResponsivo ? "pedido-fichas-responsivo" : ""}`}
+            className={`w-full min-w-0 ${layoutPedidoResponsivo ? `pedido-fichas-responsivo ${!isSobDemanda ? "pedido-producao-propria" : ""}` : ""}`}
         >
             <div className="flex flex-col w-full min-w-0">
                 {/* 1. CABEÇALHO DA TABELA */}
@@ -303,7 +303,7 @@ export default function TabelaReferenciaFichaTecnica({
                                                             >
                                                                 {expandiuCores
                                                                     ? "Mostrar menos"
-                                                                    : `+ ${nomesCores.length - 3} cores`}
+                                                                    : `+ ${nomesCores.length - 3} ${nomesCores.length === 4 ? "cor" : "cores"}`}
                                                             </button>
                                                         </div>
                                                     </>
